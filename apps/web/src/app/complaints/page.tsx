@@ -56,7 +56,7 @@ export default function ComplaintsPage() {
                 <span>📡 {c.channel as string || 'SISTEM'}</span>
                 <span>{new Date(c.created_at as string).toLocaleString('tr-TR')}</span>
               </div>
-              {meta.ticket_number && <div className="text-xs text-blue-600">Ticket: {meta.ticket_number as string}</div>}
+              {Boolean(meta.ticket_number) && <div className="text-xs text-blue-600">Ticket: {String(meta.ticket_number)}</div>}
             </div>
           );
         })}

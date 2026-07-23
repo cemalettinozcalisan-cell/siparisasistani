@@ -1,20 +1,23 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Truck, Package, CheckCircle2, ArrowRight, PhoneCall } from 'lucide-react';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Record<string, unknown>>({});
   const [recent, setRecent] = useState<Record<string, unknown>[]>([]);
+  const [mounted, setMounted] = useState(false);
   const tid = '00000000-0000-0000-0000-000000000001';
 
   useEffect(() => {
+    setMounted(true);
     Promise.all([
       fetch(`/api/dashboard/${tid}`).then(r => r.json()),
       fetch(`/api/timeline/recent/${tid}`).then(r => r.json()),
       fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => ({})),
     ]).then(([d, tl, h]) => {
       setStats({ ...d, ...h });
-      setRecent(tl);
+      setRecent(Array.isArray(tl) ? tl : []);
     }).catch(() => {});
   }, []);
 
@@ -23,91 +26,106 @@ export default function DashboardPage() {
   const todayRevenue = Number(stats.todayRevenue || 0);
   const aiSuccessRate = (today.aiSuccessRate as number) || 0;
   const shippedCount = ((stats.orderStats as Record<string, number>)?.shipped) || 0;
+  const pendingOrders = (stats.pendingOrders as number) || 0;
 
-  const kpiCards = [
-    { label: 'Bugunku Siparis', value: totalOrders, icon: '🛒', color: 'from-blue-500 to-blue-600', sub: 'Adet' },
-    { label: 'Bugunku Ciro', value: `${todayRevenue.toLocaleString('tr-TR')} TL`, icon: '💰', color: 'from-emerald-500 to-emerald-600', sub: 'Toplam satis' },
-    { label: 'Bekleyen Odeme', value: (stats.pendingOrders as number) || 0, icon: '⏳', color: 'from-amber-500 to-amber-600', sub: 'Onay bekliyor' },
-    { label: 'AI Basari', value: `%${aiSuccessRate || 0}`, icon: '🤖', color: 'from-violet-500 to-violet-600', sub: 'Basari orani' },
-    { label: 'Paketlenecek', value: ((stats.orderStats as Record<string, number>)?.preparing) || 0, icon: '📦', color: 'from-indigo-500 to-indigo-600', sub: 'Hazirlaniyor' },
-    { label: 'Kargoda', value: shippedCount, icon: '🚚', color: 'from-purple-500 to-purple-600', sub: 'Yolda' },
-    { label: 'Tamamlanan', value: ((stats.orderStats as Record<string, number>)?.completed) || 0, icon: '✅', color: 'from-green-500 to-green-600', sub: 'Teslim edildi' },
-    { label: 'Toplam Musteri', value: (stats.totalCustomers as number) || 0, icon: '👥', color: 'from-cyan-500 to-cyan-600', sub: 'Kayitli musteri' },
+  const kpis = [
+    { label: 'Bugunku Siparis', value: totalOrders, icon: ShoppingBag, color: 'from-blue-600 to-blue-700', formatted: String(totalOrders) },
+    { label: 'Bugunku Ciro', value: todayRevenue, icon: TrendingUp, color: 'from-emerald-600 to-emerald-700', formatted: `${todayRevenue.toLocaleString('tr-TR')} TL` },
+    { label: 'AI Basari', value: aiSuccessRate, icon: Bot, color: 'from-violet-600 to-violet-700', formatted: `%${aiSuccessRate || 0}` },
+    { label: 'Bekleyen', value: pendingOrders, icon: AlertCircle, color: 'from-amber-600 to-amber-700', formatted: String(pendingOrders) },
   ];
 
+  if (!mounted) return <div className="p-6" />;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
+      {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Isletme ozeti</p>
-        </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-gray-900">{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p className="text-xs text-gray-400">{new Date().toLocaleDateString('tr-TR', { weekday: 'long' })}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Merhaba 👋</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
-        {kpiCards.map((card) => (
-          <div key={card.label} className={`rounded-xl p-4 bg-gradient-to-br ${card.color} text-white shadow-sm`}>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl">{card.icon}</span>
-              <span className="text-xs opacity-70">{card.sub}</span>
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.label} className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 hover:shadow-premium-hover transition-all duration-300 hover:-translate-y-0.5 animate-slide-up">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{kpi.label}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{kpi.formatted}</p>
+                </div>
+                <div className={`p-2.5 rounded-lg bg-gradient-to-br ${kpi.color} text-white shadow-sm`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
             </div>
-            <div className="text-2xl font-bold mt-2">{String(card.value)}</div>
-            <div className="text-xs mt-1 opacity-90">{card.label}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">🔔 Son Aktiviteler</h2>
-            <span className="text-xs text-gray-400">{recent.length} kayit</span>
+      {/* AI Assistant + Recent Activity */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* AI Assistant */}
+        <div className="col-span-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-ai-gradient flex items-center justify-center"><Bot className="w-4 h-4 text-white" /></div>
+            <h2 className="font-semibold text-slate-900 dark:text-white text-sm">AI Asistani</h2>
           </div>
-          <div className="space-y-1.5 max-h-96 overflow-y-auto">
-            {recent.slice(0, 15).map((entry: Record<string, unknown>, i: number) => (
-              <div key={i} className="flex items-start gap-2 text-sm py-1.5 border-b border-gray-50 last:border-0">
+          <div className="space-y-2 text-sm">
+            {[
+              { icon: ShoppingBag, text: `${totalOrders} siparis alindi`, color: 'text-blue-600' },
+              { icon: AlertCircle, text: `${pendingOrders} odeme bekliyor`, color: 'text-amber-600' },
+              { icon: Bot, text: `AI basari: %${aiSuccessRate}`, color: 'text-violet-600' },
+            ].map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <div key={i} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+                  <Icon className={`w-4 h-4 ${item.color}`} />
+                  <span className="text-slate-600 dark:text-slate-300">{item.text}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="col-span-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+          <h2 className="font-semibold text-slate-900 dark:text-white text-sm">Hizli Islemler</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { href: '/orders', label: 'Siparisler', icon: ShoppingBag, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' },
+              { href: '/customers', label: 'Musteriler', icon: Users, color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' },
+              { href: '/complaints', label: 'Sikayetler', icon: AlertTriangle, color: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' },
+              { href: '/reports', label: 'Raporlar', icon: TrendingUp, color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <a key={item.href} href={item.href} className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium ${item.color} hover:brightness-95 transition-all`}>
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="col-span-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+          <h2 className="font-semibold text-slate-900 dark:text-white text-sm mb-3">Son Aktiviteler</h2>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {recent.slice(0, 6).map((entry, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs py-1.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0">
                 <span className="text-base mt-0.5">{entry.event_icon as string || '📋'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-gray-700 text-xs truncate">{entry.description as string}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(entry.created_at as string).toLocaleString('tr-TR')}
-                    <span className="ml-1.5">{entry.actor_type as string}</span>
-                  </p>
+                  <p className="text-slate-700 dark:text-slate-300 truncate">{entry.description as string}</p>
+                  <p className="text-slate-400 mt-0.5">{new Date(entry.created_at as string).toLocaleString('tr-TR')}</p>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">📊 Hizli Gorunum</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <span className="text-sm text-gray-600">📞 Bugunku Arama</span>
-              <span className="font-bold">{String(today.totalCalls || totalOrders)}</span>
-            </div>
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <span className="text-sm text-gray-600">📊 Siparise Donusum</span>
-              <span className="font-bold text-green-600">%{aiSuccessRate || 0}</span>
-            </div>
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <span className="text-sm text-gray-600">⏱ Ort. Konusma</span>
-              <span className="font-bold">{today.avgCallDuration || 0} dk</span>
-            </div>
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <span className="text-sm text-gray-600">🤖 Ort. Guven</span>
-              <span className="font-bold">%{today.avgConfidence || 0}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <a href="/orders" className="p-2.5 bg-blue-50 rounded-lg text-center text-xs text-blue-700 hover:bg-blue-100 font-medium">📋 Tum Siparisler</a>
-              <a href="/complaints" className="p-2.5 bg-red-50 rounded-lg text-center text-xs text-red-700 hover:bg-red-100 font-medium">⚠️ Sikayetler</a>
-              <a href="/customers" className="p-2.5 bg-green-50 rounded-lg text-center text-xs text-green-700 hover:bg-green-100 font-medium">👥 Musteriler</a>
-              <a href="/settings" className="p-2.5 bg-gray-50 rounded-lg text-center text-xs text-gray-700 hover:bg-gray-100 font-medium">⚙️ Ayarlar</a>
-            </div>
           </div>
         </div>
       </div>

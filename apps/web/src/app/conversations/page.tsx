@@ -64,7 +64,7 @@ export default function ConversationsPage() {
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                   {c.type === 'call' && <span>⏱ {formatDuration(c.duration as number | null)}</span>}
-                  {c.sessionLabel && <span>🆔 {c.sessionLabel as string}</span>}
+                  {Boolean(c.sessionLabel) && <span>🆔 {String(c.sessionLabel)}</span>}
                   <span>{new Date(c.createdAt as string).toLocaleString('tr-TR')}</span>
                 </div>
               </div>
@@ -85,8 +85,8 @@ export default function ConversationsPage() {
             </div>
             <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-3 text-sm">
               <div><span className="text-gray-500">Tarih</span><p className="font-medium">{new Date(selected.createdAt as string).toLocaleString('tr-TR')}</p></div>
-              {selected.duration && <div><span className="text-gray-500">Sure</span><p className="font-medium">{formatDuration(selected.duration as number | null)}</p></div>}
-              {selected.sessionLabel && <div><span className="text-gray-500">Oturum</span><p className="font-medium">{selected.sessionLabel as string}</p></div>}
+              {Boolean(selected.duration) && <div><span className="text-gray-500">Sure</span><p className="font-medium">{formatDuration(selected.duration as number | null)}</p></div>}
+              {Boolean(selected.sessionLabel) && <div><span className="text-gray-500">Oturum</span><p className="font-medium">{String(selected.sessionLabel)}</p></div>}
             </div>
             <div className="flex gap-2">
               <a href={`tel:${selected.phone}`} target="_blank"

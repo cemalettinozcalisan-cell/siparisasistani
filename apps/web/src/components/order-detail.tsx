@@ -83,7 +83,7 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
             {items.map((item: Record<string, unknown>, i: number) => (
               <div key={i} className="flex justify-between text-sm bg-white border border-gray-100 rounded-lg px-3 py-2">
                 <span className="font-medium">{item.product_name as string}</span>
-                <span className="text-gray-500">{item.quantity} {item.unit as string} × {Number(item.unit_price || 0).toLocaleString('tr-TR')} TL</span>
+                <span className="text-gray-500">{String(item.quantity)} {String(item.unit)} × {Number(item.unit_price || 0).toLocaleString('tr-TR')} TL</span>
               </div>
             ))}
           </div>

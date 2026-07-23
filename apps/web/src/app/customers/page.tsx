@@ -73,7 +73,7 @@ export default function CustomersPage() {
               </div>
               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                 <span>📦 {Number((c as Record<string, unknown>).order_count || 0)} siparis</span>
-                {c.city && <span>📍 {c.city as string}</span>}
+                {Boolean(c.city) && <span>📍 {String(c.city)}</span>}
               </div>
             </div>
           ))}

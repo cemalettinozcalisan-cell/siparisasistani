@@ -66,10 +66,10 @@ export default function CampaignsPage() {
                 {c.active ? 'AKTIF' : 'PASIF'}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mb-1">🎯 {c.condition as string}</p>
-            <p className="text-xs text-gray-500">🎁 {c.offer as string}</p>
-            {c.target_product && <p className="text-xs text-blue-500 mt-1">📦 {c.target_product as string}</p>}
-            {(c.start_date as string) && <p className="text-xs text-gray-400 mt-1">🗓 {c.start_date as string} → {c.end_date as string}</p>}
+            <p className="text-xs text-gray-500 mb-1">🎯 {String(c.condition || '')}</p>
+            <p className="text-xs text-gray-500">🎁 {String(c.offer || '')}</p>
+            {Boolean(c.target_product) && <p className="text-xs text-blue-500 mt-1">📦 {String(c.target_product)}</p>}
+            {Boolean(c.start_date) && <p className="text-xs text-gray-400 mt-1">🗓 {String(c.start_date)} → {String(c.end_date)}</p>}
           </div>
         ))}
         {campaigns.length === 0 && <div className="col-span-2 text-center py-12 text-gray-400"><p className="text-3xl mb-2">🏷️</p><p>Henuz kampanya eklenmemis</p></div>}

@@ -48,7 +48,7 @@ export default function ProductsPage() {
       }),
     });
     setShowForm(false);
-    setForm({ product_name: '', category: '', price: '', unit: 'KG' });
+    setForm({ product_name: '', category: '', price: '', unit: 'KG', sale_types: ['KG'], variable_weight: false, avg_weight_gr: '', min_weight_gr: '', max_weight_gr: '', ai_rules: '' });
     load();
   };
 

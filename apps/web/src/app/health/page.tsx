@@ -48,7 +48,7 @@ export default function HealthPage() {
           <div className={`h-3 rounded-full transition-all ${(license.usagePercent as number || 0) > 80 ? 'bg-red-500' : (license.usagePercent as number || 0) > 50 ? 'bg-yellow-500' : 'bg-green-500'}`}
             style={{ width: `${Math.min(100, license.usagePercent as number || 0)}%` }} />
         </div>
-        <p className="text-xs text-gray-400 mt-1">{license.remaining || 0} siparis hakki kaldi</p>
+        <p className="text-xs text-gray-400 mt-1">{String(license.remaining || 0)} siparis hakki kaldi</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">

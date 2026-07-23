@@ -94,7 +94,7 @@ export default function SaasPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-600">{String(usage.ordersUsed)} / {String(usage.orderLimit)} siparis</span>
               <span className={`text-sm font-bold ${(usage.usagePercent as number) > 80 ? 'text-red-600' : (usage.usagePercent as number) > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
-                %{usage.usagePercent}
+                %{String(usage.usagePercent || 0)}
               </span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-3">
