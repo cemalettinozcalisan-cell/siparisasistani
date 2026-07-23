@@ -5,6 +5,23 @@ import { SupabaseService } from '../common/supabase.client';
 export class HealthController {
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Get()
+  async systemHealth() {
+    let supabaseStatus = 'ok';
+    try {
+      const { error } = await this.supabase.db.from('tenants').select('id').limit(1);
+      if (error) supabaseStatus = 'error';
+    } catch { supabaseStatus = 'error'; }
+
+    return {
+      status: supabaseStatus === 'ok' ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      services: { supabase: supabaseStatus, deepseek: 'not_configured', openai: 'not_configured', elevenlabs: 'not_configured' },
+      uptime: process.uptime(),
+      memory: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
+    };
+  }
+
   @Get(':tenantId')
   async getHealth(@Param('tenantId') tenantId: string) {
     const today = new Date();

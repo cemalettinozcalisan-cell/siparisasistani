@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { RateLimiterMiddleware } from './common/rate-limiter';
 import { EventBusModule } from './event-bus/event-bus.module';
 import { OrderEngineModule } from './order-engine/order-engine.module';
 import { AiModule } from './ai/ai.module';
@@ -42,6 +43,10 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { ExportModule } from './export/export.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { NotificationsApiModule } from './notifications-api/notifications-api.module';
+import { AiAuditCenterModule } from './ai-audit-center/ai-audit-center.module';
+import { SaasModule } from './saas/saas.module';
+import { AdminModule } from './admin/admin.module';
 import { LicenseModule } from './license/license.module';
 import { FollowUpModule } from './followup/followup.module';
 import { AiBrainModule } from './ai/brain/ai-brain.module';
@@ -91,6 +96,10 @@ import { VoiceModule } from './voice/voice.module';
     ExportModule,
     AuthModule,
     UsersModule,
+    NotificationsApiModule,
+    AiAuditCenterModule,
+    SaasModule,
+    AdminModule,
     LicenseModule,
     FollowUpModule,
   ],
@@ -102,4 +111,8 @@ import { VoiceModule } from './voice/voice.module';
   ],
   providers: [SupabaseService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RateLimiterMiddleware).forRoutes('*');
+  }
+}

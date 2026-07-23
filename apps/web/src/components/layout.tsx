@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { NotificationBell } from '@/components/notification-bell';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -12,11 +13,15 @@ const navItems = [
   { href: '/complaints', label: 'Şikayetler', icon: '⚠️' },
   { href: '/customers', label: 'Müşteriler', icon: '👥' },
   { href: '/products', label: 'Ürünler', icon: '📦' },
+  { href: '/notifications', label: 'Bildirimler', icon: '🔔' },
+  { href: '/saas', label: 'SaaS Yonetimi', icon: '💳' },
   { href: '/campaigns', label: 'Kampanyalar', icon: '🏷️' },
   { href: '/reports', label: 'Raporlar', icon: '📊' },
   { href: '/users', label: 'Kullanicilar', icon: '👥' },
   { href: '/settings', label: 'Ayarlar', icon: '⚙️' },
+  { href: '/admin', label: 'Admin', icon: '🛡️' },
   { href: '/demo', label: 'Demo Modu', icon: '🎯' },
+  { href: '/ai-audit', label: 'AI Denetim', icon: '🔍' },
   { href: '/health', label: 'AI Health', icon: '📈' },
   { href: '/replay', label: 'Konuşma Kayıtları', icon: '🎙' },
   { href: '/ai-test', label: 'AI Test', icon: '🤖' },
@@ -125,6 +130,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-4 py-2 flex items-center justify-end gap-2">
+          <NotificationBell />
+        </div>
         {children}
       </main>
     </div>

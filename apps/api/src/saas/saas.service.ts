@@ -1,0 +1,176 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { SupabaseService } from '../common/supabase.client';
+import * as crypto from 'crypto';
+
+@Injectable()
+export class SaasService {
+  private readonly logger = new Logger(SaasService.name);
+
+  constructor(private readonly supabase: SupabaseService) {}
+
+  async getPlans() {
+    const { data } = await this.supabase.db
+      .from('subscription_plans')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order');
+    return data || [];
+  }
+
+  async getAddonPacks() {
+    const { data } = await this.supabase.db
+      .from('addon_packs')
+      .select('*')
+      .eq('active', true)
+      .order('price');
+    return data || [];
+  }
+
+  async getSubscription(tenantId: string) {
+    const { data: sub } = await this.supabase.db
+      .from('subscriptions')
+      .select('*, plan:plan_id(*)')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    if (!sub) {
+      // Create default subscription
+      const { data: plan } = await this.supabase.db
+        .from('subscription_plans')
+        .select('*')
+        .eq('code', 'starter')
+        .single();
+
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      const { data: newSub } = await this.supabase.db
+        .from('subscriptions')
+        .insert({
+          tenant_id: tenantId,
+          plan_id: plan.id,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: endDate.toISOString(),
+          order_limit: plan.order_limit,
+          orders_used: 0,
+          auto_renew: true,
+        })
+        .select('*, plan:plan_id(*)')
+        .single();
+
+      return newSub;
+    }
+
+    // Update usage count
+    const { count } = await this.supabase.db
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', sub.current_period_start);
+
+    sub.orders_used = count || 0;
+
+    return sub;
+  }
+
+  async getInvoices(tenantId: string) {
+    const { data } = await this.supabase.db
+      .from('invoices')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(24);
+    return data || [];
+  }
+
+  async getUsage(tenantId: string) {
+    const sub = await this.getSubscription(tenantId);
+    const usagePercent = sub.order_limit > 0 ? Math.min(100, Math.round((sub.orders_used / sub.order_limit) * 100)) : 0;
+
+    return {
+      planName: sub.plan?.name || 'Starter',
+      planCode: sub.plan?.code || 'starter',
+      ordersUsed: sub.orders_used,
+      orderLimit: sub.order_limit,
+      usagePercent,
+      remaining: Math.max(0, sub.order_limit - sub.orders_used),
+      status: sub.status,
+      autoRenew: sub.auto_renew,
+      autoTopup: sub.auto_topup,
+      periodEnd: sub.current_period_end,
+      gracePeriodEnd: sub.grace_period_end,
+    };
+  }
+
+  async upgradePlan(tenantId: string, planCode: string) {
+    const { data: plan } = await this.supabase.db
+      .from('subscription_plans')
+      .select('*')
+      .eq('code', planCode)
+      .single();
+
+    if (!plan) throw new Error('Plan not found');
+
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const invNumber = `INV-${Date.now()}`;
+    await this.supabase.db.from('invoices').insert({
+      tenant_id: tenantId,
+      invoice_number: invNumber,
+      description: `${plan.name} Paket Yükseltme`,
+      amount: plan.price_monthly,
+      status: 'pending',
+      payment_method: 'system',
+    });
+
+    const { data: sub } = await this.supabase.db
+      .from('subscriptions')
+      .update({
+        plan_id: plan.id,
+        order_limit: plan.order_limit,
+        current_period_start: new Date().toISOString(),
+        current_period_end: endDate.toISOString(),
+        orders_used: 0,
+      })
+      .eq('tenant_id', tenantId)
+      .select('*, plan:plan_id(*)')
+      .single();
+
+    return sub;
+  }
+
+  async purchaseAddon(tenantId: string, packCode: string) {
+    const { data: pack } = await this.supabase.db
+      .from('addon_packs')
+      .select('*')
+      .eq('code', packCode)
+      .single();
+
+    if (!pack) throw new Error('Pack not found');
+
+    const invNumber = `INV-${Date.now()}`;
+    await this.supabase.db.from('invoices').insert({
+      tenant_id: tenantId,
+      invoice_number: invNumber,
+      description: `${pack.name} Ek Paket`,
+      amount: pack.price,
+      status: 'pending',
+      payment_method: 'system',
+    });
+
+    const { data: sub } = await this.supabase.db
+      .from('subscriptions')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .single();
+
+    await this.supabase.db
+      .from('subscriptions')
+      .update({ order_limit: (sub?.order_limit || 0) + pack.order_credit })
+      .eq('tenant_id', tenantId);
+
+    return { invoice: invNumber, pack: pack.name, addedCredits: pack.order_credit };
+  }
+}

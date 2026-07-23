@@ -1,51 +1,41 @@
-# API Dokümantasyonu
+# API Referansı
 
 Base URL: `/api`
 
+## Kimlik Doğrulama
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| POST | /api/auth/login | Giriş yap |
+| GET | /api/auth/me | Oturum bilgisi |
+| POST | /api/auth/logout | Çıkış yap |
+
 ## Siparişler
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| GET | /orders/:tenantId | Sipariş listesi |
-| POST | /orders | Yeni sipariş (AI → Order Engine) |
-| PATCH | /orders/:id/status | Durum güncelle |
-| PATCH | /orders/:id/cancel | İptal |
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| POST | /api/orders/create-from-ai | AI'dan sipariş oluştur |
+| POST | /api/orders/status | Sipariş durumu güncelle |
+| GET | /api/orders-list/:tenantId | Sipariş listesi |
 
 ## Müşteriler
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| GET | /customers/:tenantId | Liste (?q=ara) |
-| GET | /customers/:tenantId/:id | Detay + sipariş geçmişi |
-| POST | /customers/:tenantId | Yeni müşteri |
-| PUT | /customers/:tenantId/:id | Güncelle |
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| GET | /api/customers/:tenantId | Müşteri listesi |
+| POST | /api/customers/:tenantId | Müşteri ekle |
 
-## Ürünler
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| GET | /products/:tenantId | Liste |
-| POST | /products/:tenantId | Ekle |
-| POST | /products/:tenantId/bulk | Excel yükleme |
-| PUT | /products/:tenantId/:id | Güncelle |
-| DELETE | /products/:tenantId/:id | Sil |
+## Şikayetler
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| POST | /api/complaints/create-from-ai | AI'dan şikayet oluştur |
 
-## Dashboard
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| GET | /dashboard/:tenantId | İstatistikler |
+## SaaS Yönetimi
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| GET | /api/saas/plans | Abonelik planları |
+| GET | /api/saas/subscription/:tenantId | Abonelik detayı |
+| POST | /api/saas/upgrade/:tenantId | Plan yükselt |
 
-## Ayarlar
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| GET | /settings/:tenantId | Tenant ayarları |
-| PUT | /settings/:tenantId | Güncelle |
-
-## AI Test
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| POST | /ai-test/simulate | Konuşma simüle et |
-| POST | /ai-test/prompt-preview | Prompt önizleme |
-| GET | /ai-test/audit/:tenantId | AI audit logları |
-
-## Onboarding
-| Metot | Path | Açıklama |
-|-------|------|----------|
-| POST | /onboarding | Yeni işletme kurulumu |
+## Sağlık
+| Metot | Endpoint | Açıklama |
+|-------|----------|----------|
+| GET | /api/health | Sistem sağlığı |
+| GET | /api/health/:tenantId | Tenant sağlık metrikleri |
