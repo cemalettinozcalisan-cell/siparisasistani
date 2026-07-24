@@ -29,9 +29,9 @@ export default function DashboardPage() {
   const pendingOrders = (stats.pendingOrders as number) || 0;
 
   const kpis = [
-    { label: 'Bugunku Siparis', value: totalOrders, icon: ShoppingBag, color: 'from-blue-600 to-blue-700', formatted: String(totalOrders) },
-    { label: 'Bugunku Ciro', value: todayRevenue, icon: TrendingUp, color: 'from-emerald-600 to-emerald-700', formatted: `${todayRevenue.toLocaleString('tr-TR')} TL` },
-    { label: 'AI Basari', value: aiSuccessRate, icon: Bot, color: 'from-violet-600 to-violet-700', formatted: `%${aiSuccessRate || 0}` },
+    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingBag, color: 'from-blue-600 to-blue-700', formatted: String(totalOrders) },
+    { label: 'Bugünkü Ciro', value: todayRevenue, icon: TrendingUp, color: 'from-emerald-600 to-emerald-700', formatted: `${todayRevenue.toLocaleString('tr-TR')} TL` },
+    { label: 'AI Başarı', value: aiSuccessRate, icon: Bot, color: 'from-violet-600 to-violet-700', formatted: `%${aiSuccessRate || 0}` },
     { label: 'Bekleyen', value: pendingOrders, icon: AlertCircle, color: 'from-amber-600 to-amber-700', formatted: String(pendingOrders) },
   ];
 
@@ -77,9 +77,9 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2 text-sm">
             {[
-              { icon: ShoppingBag, text: `${totalOrders} siparis alindi`, color: 'text-blue-600' },
-              { icon: AlertCircle, text: `${pendingOrders} odeme bekliyor`, color: 'text-amber-600' },
-              { icon: Bot, text: `AI basari: %${aiSuccessRate}`, color: 'text-violet-600' },
+              { icon: ShoppingBag, text: `${totalOrders} sipariş alındı`, color: 'text-blue-600' },
+              { icon: AlertCircle, text: `${pendingOrders} ödeme bekliyor`, color: 'text-amber-600' },
+              { icon: Bot, text: `AI başarı: %${aiSuccessRate}`, color: 'text-violet-600' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (

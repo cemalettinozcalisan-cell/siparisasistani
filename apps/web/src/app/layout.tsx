@@ -1,12 +1,13 @@
-'use client';
+import type { Metadata } from 'next';
+import './globals.css';
+import { AppShell } from '@/components/app-shell';
 
-import { usePathname } from 'next/navigation';
-import { Layout } from '@/components/layout';
+export const metadata: Metadata = {
+  title: 'SiparisAsistani',
+  description: 'AI Destekli Siparis Yonetim Sistemi',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const noLayout = pathname === '/' || pathname === '/login';
-
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans antialiased">
-        {noLayout ? children : <Layout>{children}</Layout>}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

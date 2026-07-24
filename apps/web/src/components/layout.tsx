@@ -5,23 +5,24 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { NotificationBell } from '@/components/notification-bell';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, FlaskConical, Activity, Mic, TestTube, FileText } from 'lucide-react';
+import { CommandPalette } from '@/components/command-palette';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard },
   { href: '/live', label: 'Canli Siparisler', icon: BellRing },
   { href: '/orders', label: 'Siparisler', icon: ShoppingBag },
   { href: '/conversations', label: 'Konusmalar', icon: MessageSquare },
-  { href: '/complaints', label: 'Sikayetler', icon: AlertTriangle },
-  { href: '/customers', label: 'Musteriler', icon: Users },
-  { href: '/products', label: 'Urunler', icon: Package },
+  { href: '/complaints', label: 'Şikayetler', icon: AlertTriangle },
+  { href: '/customers', label: 'Müşteriler', icon: Users },
+  { href: '/products', label: 'Ürünler', icon: Package },
   { href: '/notifications', label: 'Bildirimler', icon: BellRing },
   { href: '/campaigns', label: 'Kampanyalar', icon: Tags },
-  { href: '/saas', label: 'SaaS', icon: Settings },
-  { href: '/reports', label: 'Raporlar', icon: Activity },
-  { href: '/admin', label: 'Admin', icon: Shield },
+  { href: '/saas', label: 'Abonelik', icon: Settings },
+  { href: '/reports', label: 'Raporlar', icon: BarChart3 },
+  { href: '/admin', label: 'Yonetici', icon: Shield },
   { href: '/ai-audit', label: 'AI Denetim', icon: Mic },
-  { href: '/health', label: 'AI Health', icon: Activity },
+  { href: '/health', label: 'Sistem Durumu', icon: Activity },
   { href: '/demo', label: 'Demo', icon: FlaskConical },
   { href: '/ai-test', label: 'AI Test', icon: TestTube },
   { href: '/prompts', label: 'Promptlar', icon: FileText },
@@ -54,25 +55,20 @@ function GlobalSearch() {
         <input
           type="text" value={query} onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 200)}
-          placeholder="Ara (siparis, musteri, urun)..."
+          placeholder="Ara..."
           className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-700 border-0 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
         />
+        <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-600 rounded text-[10px] text-slate-400 font-medium">
+          ⌘K
+        </kbd>
       </div>
       {open && (results.orders?.length > 0 || results.customers?.length > 0 || results.products?.length > 0) && (
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-premium-hover z-50 p-2 space-y-0.5 max-h-72 overflow-y-auto">
           {(results.orders as { id: string; order_number: string; total_price: number; status: string }[])?.map((o) => (
             <a key={o.id} href={`/orders/${o.id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm">
-              <ShoppingBag className="w-4 h-4 text-slate-400" />
-              <span className="font-medium">#{o.order_number}</span>
+              <ShoppingBag className="w-4 h-4 text-slate-400" /><span className="font-medium">#{o.order_number}</span>
               <span className="text-slate-500">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
             </a>
-          ))}
-          {(results.customers as { id: string; name: string; phone: string }[])?.map((c) => (
-            <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm">
-              <Users className="w-4 h-4 text-slate-400" />
-              <span className="font-medium">{c.name}</span>
-              <span className="text-slate-500">{c.phone}</span>
-            </div>
           ))}
         </div>
       )}
@@ -84,7 +80,7 @@ function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   return (
     <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400">
+      className="btn-icon hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors">
       {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </button>
   );
@@ -93,13 +89,12 @@ function ThemeToggle() {
 function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { theme } = useTheme();
 
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-60'} bg-slate-900 dark:bg-slate-950 text-white flex flex-col transition-all duration-300 relative`}>
-      <div className="p-4 border-b border-slate-700/50 flex items-center gap-3">
+    <aside className={`${collapsed ? 'w-16' : 'w-56'} bg-slate-900 text-white flex flex-col transition-all duration-300 relative shrink-0`}>
+      <div className="p-4 border-b border-slate-700/50 flex items-center gap-3 h-14">
         <div className="w-8 h-8 rounded-lg bg-ai-gradient flex items-center justify-center text-white text-sm font-bold shrink-0">S</div>
-        {!collapsed && <span className="font-semibold text-sm tracking-tight">SiparisAsistani</span>}
+        {!collapsed && <span className="font-semibold text-sm tracking-tight">SiparişAsistanı</span>}
       </div>
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
@@ -119,11 +114,11 @@ function Sidebar() {
         <button onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('auth_user'); window.location.href = '/login'; }}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
           <LogOut className="w-4 h-4" />
-          {!collapsed && <span>Cikis</span>}
+          {!collapsed && <span>Çıkış</span>}
         </button>
       </div>
       <button onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+        className="absolute -right-3 top-16 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors">
         <ChevronRight className={`w-3 h-3 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
       </button>
     </aside>
@@ -139,16 +134,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  if (!mounted) return <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
+  if (!mounted) return <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
+      <CommandPalette />
       <Sidebar />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-md"><GlobalSearch /></div>

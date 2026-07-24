@@ -67,7 +67,7 @@ export default function LoginPage() {
                   </div>
                   <div className="text-left">
                     <p className={`text-sm font-medium transition-colors duration-500 ${isActive ? 'text-white' : 'text-slate-500'}`}>{step.label}</p>
-                    <p className="text-xs text-slate-600">{isActive ? 'Isleniyor...' : isPast ? 'Tamamlandi' : 'Bekliyor'}</p>
+                    <p className="text-xs text-slate-600">{isActive ? 'İşleniyor...' : isPast ? 'Tamamlandı' : 'Bekliyor'}</p>
                   </div>
                 </div>
               );
@@ -81,8 +81,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center lg:text-left">
             <div className="w-10 h-10 rounded-xl bg-ai-gradient flex items-center justify-center text-white font-bold mx-auto lg:mx-0 mb-4">S</div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Hos Geldiniz</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">SiparisAsistani paneline giris yapin</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Hoş Geldiniz</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">SiparişAsistanı paneline giriş yapın</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +115,7 @@ export default function LoginPage() {
 
             <button type="submit" disabled={loading}
               className="w-full py-2.5 bg-ai-gradient hover:bg-ai-gradient-hover text-white rounded-xl text-sm font-medium transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20">
-              {loading ? 'Giris yapiliyor...' : 'Giris Yap'}
+              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -123,7 +123,7 @@ export default function LoginPage() {
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Demo Hesap:</p>
             <p className="text-xs text-slate-600 dark:text-slate-300">demo@siparisasistani.com</p>
-            <p className="text-xs text-slate-600 dark:text-slate-300">sifre: demo123</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">şifre: demo123</p>
           </div>
         </div>
       </div>
