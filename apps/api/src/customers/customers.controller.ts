@@ -90,6 +90,45 @@ export class CustomersController {
     return data;
   }
 
+  @Post('dedup/:tenantId')
+  async dedup(@Param('tenantId') tenantId: string) {
+    try {
+      const { data: all } = await this.supabase.db
+        .from('customers')
+        .select('id, phone, name, city, created_at')
+        .eq('tenant_id', tenantId)
+        .is('deleted_at', null);
+
+      const groups = new Map<string, Record<string, unknown>[]>();
+      for (const c of all || []) {
+        const phone = (c as any).phone as string;
+        if (!phone) continue;
+        if (!groups.has(phone)) groups.set(phone, []);
+        groups.get(phone)!.push(c);
+      }
+
+      let merged = 0;
+      for (const [, group] of groups) {
+        if (group.length <= 1) continue;
+        const sorted = group.sort((a, b) => new Date(b.created_at as string).getTime() - new Date(a.created_at as string).getTime());
+        const keep = sorted[0];
+        const duplicates = sorted.slice(1);
+
+        for (const dup of duplicates) {
+          await this.supabase.db.from('orders').update({ customer_id: keep.id }).eq('customer_id', dup.id);
+          await this.supabase.db.from('whatsapp_messages').update({ customer_id: keep.id }).eq('customer_id', dup.id);
+          await this.supabase.db.from('conversation_sessions').update({ /* no customer_id field, skip */ });
+          await this.supabase.db.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', dup.id);
+          merged++;
+        }
+      }
+
+      return { merged, total: groups.size };
+    } catch (e) {
+      return { error: 'Dedup failed', detail: String(e) };
+    }
+  }
+
   @Post('fix-names/:tenantId')
   async fixNames(@Param('tenantId') tenantId: string) {
     const fixes: Record<string, string> = {

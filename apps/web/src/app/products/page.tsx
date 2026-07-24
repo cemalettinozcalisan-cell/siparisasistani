@@ -145,7 +145,19 @@ export default function ProductsPage() {
           </div>
         ))}
         {products.length === 0 && (
-          <div className="p-8 text-center text-gray-400">Henüz ürün eklenmemiş</div>
+          <div className="p-12 text-center">
+            <div className="max-w-xs mx-auto">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mb-4">
+                <span className="text-3xl">📦</span>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Henüz ürün eklenmemiş</h3>
+              <p className="text-sm text-slate-500 mt-1">İlk ürününüzü ekleyerek AI sipariş almaya başlayın.</p>
+              <button onClick={() => setShowForm(true)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20">
+                + Ürün Ekleyerek Başlayın
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -14,13 +14,13 @@ export default function OrdersPage() {
 
   const statusConfig: Record<string, { label: string; icon: string; color: string }> = {
     new: { label: 'Yeni', icon: '🆕', color: 'border-l-yellow-400 bg-yellow-50' },
-    PAYMENT_WAITING: { label: 'Odeme Bekliyor', icon: '⏳', color: 'border-l-orange-400 bg-orange-50' },
-    PAYMENT_CONFIRMED: { label: 'Odeme Onaylandi', icon: '✅', color: 'border-l-green-400 bg-green-50' },
+    PAYMENT_WAITING: { label: 'Ödeme Bekliyor', icon: '⏳', color: 'border-l-orange-400 bg-orange-50' },
+    PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', icon: '✅', color: 'border-l-green-400 bg-green-50' },
     PACKAGING: { label: 'Paketleniyor', icon: '📦', color: 'border-l-indigo-400 bg-indigo-50' },
     PACKAGED: { label: 'Paketlendi', icon: '📦', color: 'border-l-indigo-400 bg-indigo-50' },
     SHIPPED: { label: 'Kargoda', icon: '🚚', color: 'border-l-purple-400 bg-purple-50' },
     DELIVERED: { label: 'Teslim Edildi', icon: '✅', color: 'border-l-green-400 bg-green-50' },
-    CANCELLED: { label: 'Iptal', icon: '❌', color: 'border-l-red-400 bg-red-50' },
+    CANCELLED: { label: 'İptal', icon: '❌', color: 'border-l-red-400 bg-red-50' },
   };
 
   const statusList = ['all', 'new', 'PAYMENT_CONFIRMED', 'PACKAGING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
@@ -67,36 +67,42 @@ export default function OrdersPage() {
     <div className="p-4 flex gap-4 h-[calc(100vh-2rem)]">
       <div className="w-2/5 flex flex-col space-y-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Siparisler</h1>
-          <input placeholder="Musteri ara..." value={search} onChange={(e) => setSearch(e.target.value)}
+          <h1 className="text-xl font-bold">Siparişler</h1>
+          <input placeholder="Müşteri ara..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-44" />
         </div>
         <div className="flex gap-1 flex-wrap">
           {statusList.map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${filter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {s === 'all' ? 'Tumu' : `${statusConfig[s]?.icon || ''} ${statusConfig[s]?.label || s}`}
+              {s === 'all' ? 'Tümü' : `${statusConfig[s]?.icon || ''} ${statusConfig[s]?.label || s}`}
             </button>
           ))}
         </div>
         <div className="flex-1 overflow-y-auto space-y-1.5">
           {filtered.map((o) => {
-            const sc = statusConfig[o.status as string] || { icon: '📋', color: 'border-l-gray-300', label: o.status as string };
+            const sc = statusConfig[o.status as string] || { icon: '📋', color: 'border-l-gray-300 bg-white', label: o.status as string };
             return (
               <div key={o.id as string} onClick={() => loadDetail(o)}
-                className={`border-l-4 ${sc.color} bg-white rounded-r-lg p-3 cursor-pointer hover:shadow-md transition-all ${selected?.id === o.id ? 'ring-2 ring-blue-400 shadow-md' : ''}`}>
+                className={`border-l-4 ${sc.color} bg-white rounded-r-lg p-3 pr-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group ${selected?.id === o.id ? 'ring-2 ring-blue-400 shadow-md' : ''}`}>
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{sc.icon}</span>
-                    <span className="font-semibold text-sm">#{(o as Record<string, string>).order_number}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm shrink-0">{sc.icon}</span>
+                    <span className="font-semibold text-sm truncate">#{(o as Record<string, string>).order_number}</span>
                   </div>
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${o.channel === 'phone' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                    {o.channel === 'phone' ? '📞' : '💬'}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button onClick={(e) => { e.stopPropagation(); window.open(`tel:${o.customer_phone}`, '_blank'); }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 opacity-0 group-hover:opacity-100 hover:bg-blue-100 transition-all text-xs">📞</button>
+                    <button onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${o.customer_phone}`, '_blank'); }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 opacity-0 group-hover:opacity-100 hover:bg-emerald-100 transition-all text-xs">💬</button>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ml-1 ${o.channel === 'phone' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                      {o.channel === 'phone' ? '📞' : '💬'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-600">
-                  <span className="font-medium">{o.customer_name as string || 'Bilinmiyor'}</span>
-                  <span>{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</span>
+                  <span className="font-medium truncate">{o.customer_name as string || 'Bilinmiyor'}</span>
+                  <span className="font-semibold shrink-0 ml-2">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</span>
                 </div>
               </div>
             );
@@ -111,7 +117,7 @@ export default function OrdersPage() {
           <div className="h-full flex items-center justify-center text-gray-400">
             <div className="text-center">
               <p className="text-4xl mb-2">📋</p>
-              <p className="text-sm">Detayi gormek icin bir siparis secin</p>
+              <p className="text-sm">Detayı görmek için bir sipariş seçin</p>
             </div>
           </div>
         )}

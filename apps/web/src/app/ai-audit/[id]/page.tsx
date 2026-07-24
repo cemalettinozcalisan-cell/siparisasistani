@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-export default function AiAuditDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function AiAuditDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const tid = '00000000-0000-0000-0000-000000000001';
 

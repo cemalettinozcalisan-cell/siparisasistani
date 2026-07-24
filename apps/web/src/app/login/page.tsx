@@ -120,11 +120,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Demo Hesap:</p>
-            <p className="text-xs text-slate-600 dark:text-slate-300">demo@siparisasistani.com</p>
-            <p className="text-xs text-slate-600 dark:text-slate-300">şifre: demo123</p>
-          </div>
+
         </div>
       </div>
     </div>

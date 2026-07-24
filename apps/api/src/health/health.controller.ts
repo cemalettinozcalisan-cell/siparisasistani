@@ -48,16 +48,7 @@ export class HealthController {
 
       this.supabase.db
         .from('order_items')
-        .select('product_name, quantity')
-        .in('order_id',
-          this.supabase.db
-            .from('orders')
-            .select('id')
-            .eq('tenant_id', tenantId)
-            .gte('created_at', today.toISOString())
-            .is('deleted_at', null)
-            .not('status', 'eq', 'cancelled') as unknown as string[]
-        ),
+        .select('product_name, quantity'),
     ]);
 
     const todayOrders = (orders.data || []).filter(

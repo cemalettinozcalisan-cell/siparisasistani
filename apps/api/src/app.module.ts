@@ -40,6 +40,7 @@ import { OrderStatusModule } from './order-status/order-status.module';
 import { OrdersListModule } from './orders-list/orders-list.module';
 import { OrderItemsModule } from './order-items/order-items.module';
 import { ConversationsModule } from './conversations/conversations.module';
+import { WhatsAppMessagesModule } from './whatsapp-messages/whatsapp-messages.module';
 import { ExportModule } from './export/export.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -93,6 +94,7 @@ import { VoiceModule } from './voice/voice.module';
     OrdersListModule,
     OrderItemsModule,
     ConversationsModule,
+    WhatsAppMessagesModule,
     ExportModule,
     AuthModule,
     UsersModule,

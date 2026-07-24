@@ -29,6 +29,15 @@ interface OrderDetailProps {
   onStatusChange: (orderId: string, status: string) => void;
 }
 
+function AiConfidenceBadge({ label, confidence }: { label: string; confidence?: number }) {
+  const color = confidence && confidence > 90 ? 'bg-emerald-100 text-emerald-700' : confidence && confidence > 70 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${color}`}>
+      🤖 {label} {confidence ? `%${confidence}` : ''}
+    </span>
+  );
+}
+
 export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDetailProps) {
   const sc = STATUS_FLOW[order.status as string] || { label: order.status as string, icon: '📋', color: 'bg-gray-100' };
   const actions = QUICK_ACTIONS[order.status as string] || [];
@@ -38,10 +47,13 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold">Sipariş #{order.order_number as string}</h2>
+          <h2 className="text-lg font-bold">Sipariş #{(order as Record<string, string>).order_number}</h2>
           <p className="text-xs text-gray-400">{new Date(order.created_at as string).toLocaleString('tr-TR')}</p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${sc.color}`}>{sc.icon} {sc.label}</span>
+        <div className="flex items-center gap-2">
+          <AiConfidenceBadge label="AI Onaylı" confidence={order.ai_confidence as number} />
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${sc.color}`}>{sc.icon} {sc.label}</span>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -55,11 +67,11 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
                 {a.icon} {a.label}
               </button>
             ))}
-            <button onClick={() => window.open(`tel:${order.customer_phone}`, '_blank')}
+            <button onClick={() => window.open(`tel:${(order as Record<string, unknown>).customer_phone}`, '_blank')}
               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100">
               📞 Müşteriyi Ara
             </button>
-            <button onClick={() => window.open(`https://wa.me/${order.customer_phone}`, '_blank')}
+            <button onClick={() => window.open(`https://wa.me/${(order as Record<string, unknown>).customer_phone}`, '_blank')}
               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
               💬 WhatsApp
             </button>
@@ -91,23 +103,28 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
       )}
 
       {/* Timeline */}
-      <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Timeline</label>
-        <div className="space-y-2">
-          {timeline.map((entry, i) => (
-            <div key={i} className="flex gap-2">
-              <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-                {i < timeline.length - 1 && <div className="w-px flex-1 bg-blue-200" />}
+      {timeline.length > 0 && (
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Zaman Çizelgesi</label>
+          <div className="space-y-2">
+            {timeline.map((entry, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="flex flex-col items-center">
+                  <div className={`w-2 h-2 rounded-full ${entry.actor_type === 'AI' ? 'bg-violet-500' : 'bg-blue-500'} mt-1.5`} />
+                  {i < timeline.length - 1 && <div className={`w-px flex-1 ${entry.actor_type === 'AI' ? 'bg-violet-200' : 'bg-blue-200'}`} />}
+                </div>
+                <div className="pb-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-700">{entry.description as string}</p>
+                    {entry.actor_type === 'AI' && <AiConfidenceBadge label="AI" confidence={entry.confidence as number} />}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(entry.created_at as string).toLocaleString('tr-TR')} · {entry.actor_type === 'AI' ? '🤖 AI' : '👤 İnsan'}</p>
+                </div>
               </div>
-              <div className="pb-2">
-                <p className="text-sm text-gray-700">{entry.description as string}</p>
-                <p className="text-xs text-gray-400">{new Date(entry.created_at as string).toLocaleString('tr-TR')} · {entry.actor_type as string}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

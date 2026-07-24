@@ -18,14 +18,14 @@ export function NotificationBell() {
 
   useEffect(() => {
     const load = async () => {
-      const [listRes, countRes] = await Promise.all([
-        fetch(`/api/notifications-api/${tid}?limit=10`),
-        fetch(`/api/notifications-api/${tid}/unread-count`),
-      ]);
-      const list = await listRes.json();
-      const count = await countRes.json();
-      if (Array.isArray(list)) setNotifications(list);
-      setUnreadCount(count.count || 0);
+      try {
+        const [listRes, countRes] = await Promise.all([
+          fetch(`/api/notifications-api/${tid}?limit=10`),
+          fetch(`/api/notifications-api/${tid}/unread-count`),
+        ]);
+        if (listRes.ok) { const list = await listRes.json(); if (Array.isArray(list)) setNotifications(list); }
+        if (countRes.ok) { const count = await countRes.json(); setUnreadCount(count.count || 0); }
+      } catch {}
     };
     load();
     const interval = setInterval(load, 15000);
@@ -54,8 +54,8 @@ export function NotificationBell() {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-lg">
-        🔔
+      <button onClick={() => setOpen(!open)} className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-lg group">
+        <span className="inline-block group-hover:animate-[wiggle_0.4s_ease-in-out]">🔔</span>
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
             {unreadCount > 99 ? '99+' : unreadCount}

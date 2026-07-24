@@ -7,15 +7,22 @@ const ICON_MAP: Record<string, string> = {
   callback: '📞', warning: '⚠️',
 };
 
+const FILTER_TR: Record<string, string> = {
+  all: 'Tümü', new_order: 'Sipariş', payment: 'Ödeme', cargo: 'Kargo',
+  human_request: 'Yetkili', callback: 'Geri Arama', warning: 'Uyarı',
+};
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
   const [filter, setFilter] = useState('all');
   const tid = '00000000-0000-0000-0000-000000000001';
 
   const load = async () => {
-    const res = await fetch(`/api/notifications-api/${tid}?limit=100`);
-    const data = await res.json();
-    if (Array.isArray(data)) setNotifications(data);
+    try {
+      const res = await fetch(`/api/notifications-api/${tid}?limit=100`);
+      const data = await res.json();
+      if (Array.isArray(data)) setNotifications(data);
+    } catch {}
   };
   useEffect(() => { load(); }, []);
 
@@ -30,7 +37,6 @@ export default function NotificationsPage() {
   };
 
   const filtered = filter === 'all' ? notifications : notifications.filter((n) => n.type === filter);
-
   const unread = notifications.filter((n) => n.status === 'unread').length;
 
   return (
@@ -38,20 +44,20 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bildirimler</h1>
-          <p className="text-sm text-gray-500 mt-1">{unread > 0 ? `${unread} okunmamis bildirim` : 'Tum bildirimler okundu'}</p>
+          <p className="text-sm text-gray-500 mt-1">{unread > 0 ? `${unread} okunmamış bildirim` : 'Tüm bildirimler okundu'}</p>
         </div>
         {unread > 0 && (
           <button onClick={markAllRead} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100">
-            Tumunu okundu yap
+            Tümünü okundu yap
           </button>
         )}
       </div>
 
       <div className="flex gap-1.5 flex-wrap">
-        {['all', 'new_order', 'payment', 'cargo', 'human_request', 'callback', 'warning'].map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium ${filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-            {f === 'all' ? 'Tumu' : `${ICON_MAP[f] || '📋'} ${f === 'new_order' ? 'Siparis' : f === 'human_request' ? 'Yetkili' : f.charAt(0).toUpperCase() + f.slice(1)}`}
+        {Object.entries(FILTER_TR).map(([key, label]) => (
+          <button key={key} onClick={() => setFilter(key)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium ${filter === key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+            {key === 'all' ? label : `${ICON_MAP[key] || '📋'} ${label}`}
           </button>
         ))}
       </div>
@@ -84,7 +90,7 @@ export default function NotificationsPage() {
         {filtered.length === 0 && (
           <div className="p-8 text-center text-gray-400">
             <p className="text-3xl mb-2">🔔</p>
-            <p className="text-sm">Bildirim bulunamadi</p>
+            <p className="text-sm">Bildirim bulunamadı</p>
           </div>
         )}
       </div>
