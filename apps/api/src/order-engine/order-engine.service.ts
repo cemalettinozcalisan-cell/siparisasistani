@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { AiOrderInput, OrderResult } from '@siparis/types';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
+import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 
 @Injectable()
 export class OrderEngineService {
@@ -10,6 +11,7 @@ export class OrderEngineService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly eventBus: EventBusService,
+    private readonly whatsapp: WhatsAppConversationsService,
   ) {}
 
   async process(input: AiOrderInput, tenantId: string): Promise<OrderResult> {
@@ -70,6 +72,8 @@ export class OrderEngineService {
     const orderNumber = await this.generateOrderNumber(tenantId);
     const totalPrice = await this.calculateTotal(input, tenantId);
 
+    const source = input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL');
+
     const { data: order, error: orderError } = await this.supabase.db
       .from('orders')
       .insert({
@@ -77,6 +81,7 @@ export class OrderEngineService {
         customer_id: customerId,
         order_number: orderNumber,
         channel: input.channel,
+        source,
         status: 'new',
         payment_method: input.payment,
         payment_status: 'waiting',
@@ -287,5 +292,67 @@ export class OrderEngineService {
         description: `Sipariş #${order.order_number} iptal edildi`,
       }, orderId);
     }
+  }
+
+  async updateCargo(orderId: string, cargoCompany: string, trackingNumber: string): Promise<void> {
+    const { data: order } = await this.supabase.db
+      .from('orders')
+      .select('tenant_id, order_number, customer_phone, customer_id, id')
+      .eq('id', orderId)
+      .single();
+
+    if (!order) throw new Error('Order not found');
+
+    await this.supabase.db
+      .from('orders')
+      .update({
+        cargo_company: cargoCompany,
+        tracking_number: trackingNumber,
+        status: 'SHIPPED',
+      })
+      .eq('id', orderId);
+
+    const orderData = order as Record<string, unknown>;
+    const tenantId = orderData.tenant_id as string;
+
+    // Timeline event
+    await this.supabase.db.from('activity_logs').insert({
+      tenant_id: tenantId,
+      entity_type: 'order',
+      entity_id: orderId,
+      event_type: 'STATUS_SHIPPED',
+      actor_type: 'STAFF',
+      channel: 'SYSTEM',
+      description: `Kargo bilgisi girildi: ${cargoCompany} - ${trackingNumber}`,
+      metadata: { cargo_company: cargoCompany, tracking_number: trackingNumber },
+    });
+
+    // Send WhatsApp notification to customer
+    const { data: customer } = await this.supabase.db
+      .from('customers')
+      .select('name, phone')
+      .eq('id', orderData.customer_id)
+      .single();
+
+    if (customer) {
+      const customerName = (customer as any).name || 'Değerli Müşterimiz';
+      const customerPhone = (customer as any).phone;
+      const message = `Merhaba ${customerName}, #${orderData.order_number} nolu siparişiniz kargoya verilmiştir.\nKargo Firması: ${cargoCompany}\nTakip No: ${trackingNumber}\n\nSiparişAsistanı`;
+
+      if (customerPhone) {
+        try {
+          const convId = await this.whatsapp.findOrCreate(tenantId, customerPhone);
+          await this.whatsapp.addMessage({ tenantId, conversationId: convId, direction: 'outgoing', body: message });
+        } catch {}
+      }
+    }
+
+    this.eventBus.emit(SystemEvents.ORDER_SHIPPED, tenantId, {
+      entityType: 'order',
+      orderId,
+      cargoCompany,
+      trackingNumber,
+      description: `Sipariş #${orderData.order_number} kargoya verildi - ${cargoCompany} (${trackingNumber})`,
+    }, orderId);
   }
 }

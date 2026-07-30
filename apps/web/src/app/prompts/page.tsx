@@ -36,12 +36,12 @@ export default function PromptsPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Prompt Deneme Alanı</h1>
-        <p className="text-sm text-gray-500 mt-1">AI'ya tam olarak ne gönderdiğimizi gör ve düzenle</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Prompt Deneme Alanı</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">AI'ya tam olarak ne gönderdiğimizi gör ve düzenle</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
-        <p className="text-xs text-gray-500 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 space-y-2">
+        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
           Bu sayfa, AI asistanınıza hangi <strong>sistem promptlarının</strong> gönderildiğini gösterir.
           Kanal ve durum seçerek, AI'nın o andaki bağlamda tam olarak ne gördüğünü inceleyebilirsiniz.
           Promptlar, müşteri bilgileri, sipariş geçmişi ve işletme ayarlarınızı içerir.
@@ -55,14 +55,14 @@ export default function PromptsPage() {
 
       <div className="flex gap-3 items-end">
         <div>
-          <label className="text-xs text-gray-500">Kanal</label>
+          <label className="text-xs text-gray-500 dark:text-slate-400">Kanal</label>
           <select value={channel} onChange={(e) => setChannel(e.target.value)} className="block px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1">
             <option value="phone">Telefon</option>
             <option value="whatsapp">WhatsApp</option>
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">Durum</label>
+          <label className="text-xs text-gray-500 dark:text-slate-400">Durum</label>
           <select value={state} onChange={(e) => setState(e.target.value)} className="block px-3 py-2 border border-gray-300 rounded-lg text-sm mt-1">
             {states.map((s) => <option key={s} value={s}>{STATE_TR[s]}</option>)}
           </select>
@@ -79,7 +79,7 @@ export default function PromptsPage() {
       {prompt && (
         <div className="relative">
           <pre className="w-full h-96 overflow-auto px-4 py-3 bg-gray-900 text-green-400 rounded-xl text-xs font-mono whitespace-pre-wrap">{prompt}</pre>
-          <button onClick={copyPrompt} className="absolute top-2 right-2 px-3 py-1 bg-white/10 text-white rounded text-xs hover:bg-white/20">Kopyala</button>
+          <button onClick={copyPrompt} className="absolute top-2 right-2 px-3 py-1 bg-white dark:bg-slate-800/10 text-white rounded text-xs hover:bg-white dark:bg-slate-800/20">Kopyala</button>
         </div>
       )}
     </div>

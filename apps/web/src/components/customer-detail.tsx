@@ -1,4 +1,6 @@
-'use client';
+﻿'use client';
+
+import { useEffect, useState } from 'react';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -16,6 +18,32 @@ function getSegment(customer: Record<string, unknown>, ordersCount: number, tota
 }
 
 export function CustomerDetail({ customer, orders, timeline, complaints }: CustomerDetailProps) {
+  const [customerPrices, setCustomerPrices] = useState<Record<string, unknown>[]>([]);
+  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [priceForm, setPriceForm] = useState({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
+
+  const tid = '00000000-0000-0000-0000-000000000001';
+
+  const loadPrices = () => {
+    fetch(`/api/customer-prices/${tid}/${customer.id}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setCustomerPrices(d); }).catch(() => {});
+  };
+  useEffect(() => { loadPrices(); }, [customer.id]);
+
+  const handleAddPrice = async () => {
+    await fetch(`/api/customer-prices/${tid}/${customer.id}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_name: priceForm.product_name, unit: priceForm.unit, price: Number(priceForm.price), min_quantity: Number(priceForm.min_quantity) || 0 }),
+    });
+    setPriceForm({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
+    setShowPriceForm(false);
+    loadPrices();
+  };
+
+  const handleDeletePrice = async (id: string) => {
+    await fetch(`/api/customer-prices/${tid}/${customer.id}/${id}`, { method: 'DELETE' });
+    loadPrices();
+  };
+
   const totalSpent = orders.reduce((s, o) => s + Number(o.total_price || 0), 0);
   const avgBasket = orders.length > 0 ? Math.round(totalSpent / orders.length) : 0;
   const segment = getSegment(customer, orders.length, totalSpent);
@@ -23,7 +51,6 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
     ? Math.floor((Date.now() - new Date(orders[0].created_at as string).getTime()) / (1000 * 60 * 60 * 24))
     : 999;
 
-  // Product frequency
   const productCounts: Record<string, number> = {};
   orders.forEach((o: Record<string, unknown>) => {
     const items = o.items as Record<string, unknown>[] | undefined;
@@ -34,7 +61,6 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   });
   const topProducts = Object.entries(productCounts).sort(([, a], [, b]) => b - a).slice(0, 3);
 
-  // AI Insight
   const insightParts: string[] = [];
   insightParts.push(`Son ${orders.length} sipariş verdi.`);
   insightParts.push(`Ortalama sepet ${avgBasket.toLocaleString('tr-TR')} TL.`);
@@ -46,13 +72,16 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">👤</span>
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold shadow-md shrink-0">
+              {((customer.name as string) || '?')[0].toUpperCase()}
+            </div>
             <div>
-              <h2 className="text-xl font-bold">{customer.name as string}</h2>
-              <p className="text-sm text-gray-500">{customer.phone as string}</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{customer.name as string}</h2>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone as string}</p>
+              {Boolean((customer as any).address) && <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">📍 {(customer as any).address}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -83,89 +112,166 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
         </div>
 
-        {/* AI Insights */}
-        <div className="mt-4 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-3 border border-violet-100">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span>🤖</span>
-            <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide">AI Müşteri Analizi</span>
+        {/* Cari Durum */}
+        <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+              <span className="text-sm">💰</span>
+            </div>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Cari Durum</span>
           </div>
-          <p className="text-sm text-gray-700">{insightParts.join(' ')}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2.5 text-center">
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Bakiye</span>
+              <p className={`text-sm font-bold mt-0.5 ${Number((customer as any).balance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {Number((customer as any).balance || 0).toLocaleString('tr-TR')} TL
+              </p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2.5 text-center">
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Limit</span>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{Number((customer as any).credit_limit || 0).toLocaleString('tr-TR')} TL</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2.5 text-center">
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Vade</span>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{Number((customer as any).payment_term || 0) > 0 ? `${(customer as any).payment_term} Gün` : 'Peşin'}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Top Products */}
+        {/* Ozel Fiyat Listesi */}
+        <div className="mt-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-3 border border-sky-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span>🏷️</span>
+              <span className="text-xs font-semibold text-sky-700 uppercase tracking-wide">Özel Fiyat Listesi</span>
+            </div>
+            <button onClick={() => setShowPriceForm(!showPriceForm)} className="text-xs font-medium text-sky-600 hover:text-sky-800">
+              + Fiyat Ekle
+            </button>
+          </div>
+          <p className="text-xs text-sky-600 mb-2">Bu müşteriye özel fiyatlar. Sipariş alınırken otomatik uygulanır.</p>
+
+          {showPriceForm && (
+            <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-white dark:bg-slate-700 rounded-lg">
+              <input placeholder="Ürün adı" value={priceForm.product_name} onChange={(e) => setPriceForm({ ...priceForm, product_name: e.target.value })}
+                className="col-span-2 px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white" />
+              <input placeholder="Birim (KG, ADET)" value={priceForm.unit} onChange={(e) => setPriceForm({ ...priceForm, unit: e.target.value })}
+                className="px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white" />
+              <input placeholder="Fiyat (TL)" type="number" value={priceForm.price} onChange={(e) => setPriceForm({ ...priceForm, price: e.target.value })}
+                className="px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white" />
+              <input placeholder="Min miktar" type="number" value={priceForm.min_quantity} onChange={(e) => setPriceForm({ ...priceForm, min_quantity: e.target.value })}
+                className="px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white" />
+              <button onClick={handleAddPrice} className="col-span-2 px-3 py-1.5 bg-sky-600 text-white rounded-lg text-xs font-medium hover:bg-sky-700">Kaydet</button>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {(customerPrices as Record<string, unknown>[]).length === 0 ? (
+              <p className="text-xs text-sky-400 italic">Henüz özel fiyat tanımlanmamış. "+ Fiyat Ekle" ile ekleyin.</p>
+            ) : (customerPrices as Record<string, unknown>[]).map((p, i) => (
+              <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-700 px-3 py-1.5 rounded-lg text-sm">
+                <div>
+                  <span className="font-medium text-gray-900 dark:text-white">{(p as any).product_name}</span>
+                  {(p as any).min_quantity > 0 && <span className="text-xs text-sky-500 ml-1">(Min {(p as any).min_quantity} {(p as any).unit})</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sky-700 dark:text-sky-300">{Number((p as any).price).toLocaleString('tr-TR')} TL/{(p as any).unit}</span>
+                  <button onClick={() => handleDeletePrice((p as any).id)} className="text-xs text-red-400 hover:text-red-600">✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Insights */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-violet-200 dark:border-violet-800 p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
+              <span className="text-sm">🤖</span>
+            </div>
+            <span className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wide">AI Müşteri Analizi</span>
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{insightParts.join(' ')}</p>
+        </div>
+
+      </div>
+
+      {/* Customer Journey */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-1.5">🗺️ Müşteri Yolculuğu</h3>
+        <div className="space-y-2">
+          {[
+            { step: 'İlk Temas', icon: '👋', time: orders.length > 0 ? new Date(orders[orders.length - 1].created_at as string).toLocaleDateString('tr-TR') : '—', desc: 'Müşteri ilk kez ulaştı' },
+            { step: 'İlk Sipariş', icon: '📦', time: orders.length > 0 ? new Date(orders[orders.length - 1].created_at as string).toLocaleDateString('tr-TR') : '—', desc: `İlk siparişini verdi` },
+            { step: 'Toplam Sipariş', icon: '📊', time: `${orders.length} sipariş`, desc: `Toplam ${totalSpent.toLocaleString('tr-TR')} TL harcama` },
+            { step: 'Son Sipariş', icon: '🕐', time: daysSinceLastOrder > 999 ? '—' : `${daysSinceLastOrder} gün önce`, desc: daysSinceLastOrder > 60 ? 'Yeniden kazanılabilir' : 'Aktif müşteri' },
+            { step: 'Segment', icon: segment.icon, time: segment.label, desc: `${avgBasket.toLocaleString('tr-TR')} TL ortalama sepet` },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center text-sm shrink-0">
+                {item.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{item.step}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{item.desc}</p>
+              </div>
+              <span className="text-xs font-semibold text-gray-600 dark:text-slate-300 shrink-0">{item.time}</span>
+            </div>
+          ))}
+        </div>
         {topProducts.length > 0 && (
-          <div className="mt-3">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">En Çok Aldığı Ürünler</span>
-            <div className="flex gap-2 mt-1">
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+            <span className="text-xs font-semibold text-gray-500 uppercase">En Çok Alınan Ürünler</span>
+            <div className="mt-1 space-y-1">
               {topProducts.map(([name, qty], i) => (
-                <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">{name} ×{qty}</span>
+                <div key={i} className="flex justify-between text-sm bg-gray-50 dark:bg-slate-700/50 rounded px-3 py-1.5">
+                  <span className="text-gray-700 dark:text-slate-300">{name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{qty} adet</span>
+                </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* Quick Actions */}
-        <div className="flex gap-2 mt-4">
-          <a href={`tel:${customer.phone}`} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100">📞 Ara</a>
-          <a href={`https://wa.me/${customer.phone}`} target="_blank" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100">💬 WhatsApp</a>
-        </div>
       </div>
 
       {/* Orders */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">📋 Son Siparişler</h3>
-        <div className="space-y-1">
-          {orders.map((o) => (
-            <div key={o.id as string} className="flex items-center justify-between text-sm py-2 px-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">#{(o as Record<string, string>).order_number}</span>
-                <span className="text-gray-500">{o.customer_name as string}</span>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">📦 Son Siparişler</h3>
+        {orders.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Henüz sipariş yok</p>
+        ) : (
+          <div className="space-y-2">
+            {orders.slice(0, 5).map((o) => (
+              <div key={o.id as string} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">#{(o as Record<string, string>).order_number}</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400 ml-2">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</span>
+                </div>
+                <span className="text-xs text-gray-400">{new Date(o.created_at as string).toLocaleDateString('tr-TR')}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="font-medium">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs ${o.status === 'new' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{o.status as string}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Complaints */}
-      {complaints.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">⚠️ Şikayet Geçmişi</h3>
-          <div className="space-y-2">
-            {complaints.map((c, i) => {
-              const meta = c.metadata as Record<string, unknown> || {};
-              return (
-                <div key={i} className="text-sm p-2 bg-red-50 rounded border border-red-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-red-800">{meta.type as string || c.event_type as string}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${(meta.severity as string) === 'HIGH' ? 'bg-red-200 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>{meta.severity as string || 'NORMAL'}</span>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">{c.description as string}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{new Date(c.created_at as string).toLocaleString('tr-TR')}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Timeline */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">📋 Aktivite Geçmişi</h3>
-        <div className="space-y-1.5 max-h-60 overflow-y-auto">
-          {timeline.map((entry, i) => (
-            <div key={i} className="flex gap-2 text-sm py-1.5 border-b border-gray-50 last:border-0">
-              <span className="text-base">{entry.event_icon as string || '📋'}</span>
-              <div className="flex-1">
-                <p className="text-gray-700 text-xs">{entry.description as string}</p>
-                <p className="text-xs text-gray-400">{new Date(entry.created_at as string).toLocaleString('tr-TR')} · {entry.actor_type as string}</p>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">📋 Aktivite Geçmişi</h3>
+        {timeline.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Aktivite bulunmuyor</p>
+        ) : (
+          <div className="space-y-2">
+            {timeline.slice(0, 10).map((entry, i) => (
+              <div key={i} className="flex gap-2 text-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                <div>
+                  <p className="text-gray-700 dark:text-slate-300">{entry.description as string}</p>
+                  <p className="text-xs text-gray-400">{new Date(entry.created_at as string).toLocaleString('tr-TR')}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

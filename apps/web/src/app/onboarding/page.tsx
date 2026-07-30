@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 
@@ -52,8 +52,8 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full text-center space-y-6">
-          <div className="text-6xl">🎉</div>
-          <h1 className="text-3xl font-bold text-gray-900">Kurulum Basariyla Tamamlandi</h1>
+          <div className="text-6xl">??</div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Kurulum Basariyla Tamamlandi</h1>
           <div className="space-y-3 text-left bg-green-50 rounded-xl p-4">
             {[
               'Firma olusturuldu',
@@ -63,16 +63,16 @@ export default function OnboardingPage() {
               result.loadDemoData ? 'Demo urunleri eklendi' : null,
             ].filter(Boolean).map((msg, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-green-800">
-                <span>✅</span> {msg}
+                <span>?</span> {msg}
               </div>
             ))}
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 dark:text-slate-300">
             <p>E-posta: <strong>{result.ownerEmail as string}</strong></p>
             <p>Giris yapmak icin panele tiklayin</p>
           </div>
           <a href="/login" className="block w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">
-            🚀 Panele Git
+            ?? Panele Git
           </a>
         </div>
       </div>
@@ -83,11 +83,11 @@ export default function OnboardingPage() {
     switch (step) {
       case 0: return (
         <div className="text-center space-y-4 py-8">
-          <div className="text-6xl">👋</div>
+          <div className="text-6xl">??</div>
           <h2 className="text-2xl font-bold">SiparisAsistani'na Hos Geldiniz</h2>
-          <p className="text-gray-500">Isletmenizi 10 dakikada kurun. AI destekli siparis asistaniniz hazir olsun.</p>
+          <p className="text-gray-500 dark:text-slate-400">Isletmenizi 10 dakikada kurun. AI destekli siparis asistaniniz hazir olsun.</p>
           <div className="grid grid-cols-2 gap-3 mt-6 text-sm">
-            {['🤖 AI Siparis Alma', '📞 Telefon Entegrasyonu', '💬 WhatsApp', '📊 Dashboard', '👥 Musteri Yonetimi', '📦 Kargo Takibi'].map((f) => (
+            {['?? AI Siparis Alma', '?? Telefon Entegrasyonu', '?? WhatsApp', '?? Dashboard', '?? Musteri Yonetimi', '?? Kargo Takibi'].map((f) => (
               <div key={f} className="bg-blue-50 rounded-lg p-3 text-blue-700">{f}</div>
             ))}
           </div>
@@ -115,11 +115,11 @@ export default function OnboardingPage() {
       case 2: return (
         <div className="space-y-3">
           <h2 className="text-xl font-bold">Logo</h2>
-          <p className="text-sm text-gray-500">Firma logonuzu ekleyin (URL veya dosya)</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Firma logonuzu ekleyin (URL veya dosya)</p>
           <input placeholder="Logo URL (opsiyonel)" value={form.logoUrl} onChange={(e) => update('logoUrl', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-400 text-sm">
-            📁 Logo yuklemek icin tiklayin (ileride)
+            ?? Logo yuklemek icin tiklayin (ileride)
           </div>
         </div>
       );
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
             {['female', 'male'].map((g) => (
               <button key={g} onClick={() => update('voiceGender', g)}
                 className={`p-4 rounded-xl border-2 text-center transition-colors ${form.voiceGender === g ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
-                <span className="text-2xl">{g === 'female' ? '👩' : '👨'}</span>
+                <span className="text-2xl">{g === 'female' ? '??' : '??'}</span>
                 <p className="text-xs mt-1">{g === 'female' ? 'Kadin Ses' : 'Erkek Ses'}</p>
               </button>
             ))}
@@ -208,8 +208,8 @@ export default function OnboardingPage() {
           </label>
           {form.businessHoursEnabled && (
             <div className="grid grid-cols-2 gap-3 mt-2">
-              <div><label className="text-xs text-gray-500">Acilis</label><input type="time" value={form.businessHoursStart} onChange={(e) => update('businessHoursStart', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
-              <div><label className="text-xs text-gray-500">Kapanis</label><input type="time" value={form.businessHoursEnd} onChange={(e) => update('businessHoursEnd', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
+              <div><label className="text-xs text-gray-500 dark:text-slate-400">Acilis</label><input type="time" value={form.businessHoursStart} onChange={(e) => update('businessHoursStart', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
+              <div><label className="text-xs text-gray-500 dark:text-slate-400">Kapanis</label><input type="time" value={form.businessHoursEnd} onChange={(e) => update('businessHoursEnd', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
             </div>
           )}
         </div>
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
       case 9: return (
         <div className="space-y-3">
           <h2 className="text-xl font-bold">Ilk Yonetici Hesabi</h2>
-          <p className="text-sm text-gray-500">Sisteme giris yapacak yonetici bilgileri</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Sisteme giris yapacak yonetici bilgileri</p>
           <input placeholder="Ad Soyad" value={form.ownerName} onChange={(e) => update('ownerName', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           <input placeholder="E-posta" type="email" value={form.ownerEmail} onChange={(e) => update('ownerEmail', e.target.value)}
@@ -229,17 +229,17 @@ export default function OnboardingPage() {
       case 10: return (
         <div className="space-y-3">
           <h2 className="text-xl font-bold">Demo Veri</h2>
-          <p className="text-sm text-gray-500">Sistemi test etmek icin ornek veriler yuklensin mi?</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Sistemi test etmek icin ornek veriler yuklensin mi?</p>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => update('loadDemoData', true)}
               className={`p-4 rounded-xl border-2 text-center ${form.loadDemoData ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
-              <span className="text-2xl">✅</span>
+              <span className="text-2xl">?</span>
               <p className="text-sm font-medium mt-1">Evet, yukle</p>
               <p className="text-xs text-gray-400">3 ornek urun eklensin</p>
             </button>
             <button onClick={() => update('loadDemoData', false)}
               className={`p-4 rounded-xl border-2 text-center ${!form.loadDemoData ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
-              <span className="text-2xl">🚫</span>
+              <span className="text-2xl">??</span>
               <p className="text-sm font-medium mt-1">Hayir, bos basla</p>
               <p className="text-xs text-gray-400">Urunleri sonra eklerim</p>
             </button>
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
       );
       case 11: return (
         <div className="space-y-4 text-center py-4">
-          <div className="text-5xl">🚀</div>
+          <div className="text-5xl">??</div>
           <h2 className="text-2xl font-bold">Kurulum Hazir</h2>
           <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2">
             {[
@@ -260,14 +260,14 @@ export default function OnboardingPage() {
               ['Demo Veri', form.loadDemoData ? 'Yuklenecek' : 'Yuklenmeyecek'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between text-sm">
-                <span className="text-gray-500">{label}</span>
+                <span className="text-gray-500 dark:text-slate-400">{label}</span>
                 <span className="font-medium">{value}</span>
               </div>
             ))}
           </div>
           <button onClick={submit} disabled={loading}
             className="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 text-lg">
-            {loading ? 'Kurulum yapiliyor...' : '🎉 Kurulumu Tamamla'}
+            {loading ? 'Kurulum yapiliyor...' : '?? Kurulumu Tamamla'}
           </button>
         </div>
       );

@@ -6,7 +6,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<Record<string, unknown>[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'staff' });
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const ROLE_TR: Record<string, string> = { owner: 'Sahip', manager: 'Yönetici', staff: 'Personel' };
+const tid = '00000000-0000-0000-0000-000000000001';
 
   const load = () => {
     fetch(`/api/users/${tid}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setUsers(d); }).catch(() => {});
@@ -32,8 +33,8 @@ export default function UsersPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kullanici Yonetimi</h1>
-          <p className="text-sm text-gray-500 mt-1">{users.length} kullanici</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kullanici Yonetimi</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{users.length} kullanici</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Kullanici Ekle</button>
@@ -46,9 +47,9 @@ export default function UsersPage() {
             <input placeholder="E-posta" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             <input placeholder="Sifre" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
+              <option value="owner">Sahip</option>
+              <option value="manager">Yönetici</option>
+              <option value="staff">Personel</option>
             </select>
           </div>
           <button onClick={create} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Kaydet</button>
@@ -62,10 +63,10 @@ export default function UsersPage() {
               <div className={`w-2 h-2 rounded-full ${u.active ? 'bg-green-500' : 'bg-gray-300'}`} />
               <div>
                 <div className="font-medium text-sm">{u.name as string}</div>
-                <div className="text-xs text-gray-500">{u.email as string}</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400">{u.email as string}</div>
               </div>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${u.role === 'owner' ? 'bg-purple-100 text-purple-700' : u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                {u.role as string}
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${u.role === 'owner' ? 'bg-purple-100 text-purple-700' : u.role === 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 dark:text-slate-200'}`}>
+                {ROLE_TR[u.role as string] || (u.role as string)}
               </span>
             </div>
             <div className="flex items-center gap-2">

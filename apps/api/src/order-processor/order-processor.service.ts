@@ -16,6 +16,7 @@ export interface AiOrderOutput {
   phone?: string;
   channel: string;
   sessionId?: string;
+  source?: string;
 }
 
 export interface OrderResult {
@@ -44,7 +45,7 @@ export class OrderProcessorService {
     const orderNumber = await this.generateOrderNumber(input.tenantId);
 
     // 3. Calculate total from DB prices (not AI's estimate)
-    const totalPrice = await this.calculateTotal(input.tenantId, input.products);
+    const totalPrice = await this.calculateTotal(input.tenantId, input.products, input.source);
 
     // 4. Create order
     const { data: order, error: orderError } = await this.supabase.db
@@ -54,7 +55,7 @@ export class OrderProcessorService {
         customer_id: customerId,
         order_number: orderNumber,
         channel: input.channel || 'phone',
-        source: input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL',
+        source: input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL'),
         status: 'new',
         payment_method: this.mapPayment(input.payment),
         payment_status: input.payment && input.payment !== 'UNKNOWN' ? 'paid' : 'waiting',
@@ -191,7 +192,7 @@ export class OrderProcessorService {
 
     const { data: allProducts } = await this.supabase.db
       .from('products')
-      .select('id, product_name, price')
+      .select('id, product_name, price, wholesale_price')
       .eq('tenant_id', tenantId);
 
     if (!allProducts) return null;
@@ -205,15 +206,19 @@ export class OrderProcessorService {
       return dbName === normalized || dbName.includes(normalized) || normalized.includes(dbName);
     });
 
-    if (match) return match as { id: string; price: number };
+    if (match) return match as { id: string; price: number; wholesale_price?: number };
     return null;
   }
 
-  private async calculateTotal(tenantId: string, products: { product_name: string; quantity: number; unit: string }[]): Promise<number> {
+  private async calculateTotal(tenantId: string, products: { product_name: string; quantity: number; unit: string }[], source?: string): Promise<number> {
+    const isWholesale = source === 'WHOLESALE';
     let total = 0;
     for (const p of products) {
       const product = await this.findProduct(tenantId, p.product_name);
-      const price = product ? Number(product.price) : 0;
+      let price = product ? Number(product.price) : 0;
+      if (isWholesale && product && Number(product.wholesale_price) > 0) {
+        price = Number(product.wholesale_price);
+      }
       total += price * p.quantity;
     }
     return total;

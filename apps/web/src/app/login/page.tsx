@@ -66,8 +66,8 @@ export default function LoginPage() {
                     <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   </div>
                   <div className="text-left">
-                    <p className={`text-sm font-medium transition-colors duration-500 ${isActive ? 'text-white' : 'text-slate-500'}`}>{step.label}</p>
-                    <p className="text-xs text-slate-600">{isActive ? 'İşleniyor...' : isPast ? 'Tamamlandı' : 'Bekliyor'}</p>
+                    <p className={`text-sm font-medium transition-colors duration-500 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>{step.label}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{isActive ? 'İşleniyor...' : isPast ? 'Tamamlandı' : 'Bekliyor'}</p>
                   </div>
                 </div>
               );
@@ -100,7 +100,7 @@ export default function LoginPage() {
                   className="w-full px-3.5 py-2.5 pr-10 border border-slate-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
                   placeholder="••••••••" required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-300">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>

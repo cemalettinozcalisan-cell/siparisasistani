@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -69,18 +69,18 @@ export default function SettingsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ayarlar</h1>
-          <p className="text-sm text-gray-500">Isletme tercihleri</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ayarlar</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Isletme tercihleri</p>
         </div>
-        {saved && <span className="text-sm text-green-600 font-medium">✓ Kaydedildi</span>}
+        {saved && <span className="text-sm text-green-600 font-medium">? Kaydedildi</span>}
       </div>
 
       {sections.map((section) => (
         <div key={section.title} className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900">{section.title}</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">{section.title}</h2>
           {section.items.map((item) => (
             <div key={item.key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{item.label}</span>
+              <span className="text-sm text-gray-700 dark:text-slate-200">{item.label}</span>
               {item.type === 'toggle' ? (
                 <button onClick={() => update(item.key, !item.value)}
                   className={`w-10 h-5 rounded-full transition-colors relative ${item.value ? 'bg-blue-600' : 'bg-gray-200'}`}>

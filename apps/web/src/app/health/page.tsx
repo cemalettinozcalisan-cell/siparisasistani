@@ -31,23 +31,23 @@ export default function HealthPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">AI Health</h1>
-      <p className="text-sm text-gray-500 mt-1">Sistem durumu ve AI performansı</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Health</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Sistem durumu ve AI performansı</p>
 
       <div className="grid grid-cols-3 gap-3">
         {SERVICES.map((s) => (
-          <div key={s} className={`rounded-xl border-2 p-4 flex items-center justify-between ${health[s] ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+          <div key={s} className={`rounded-xl border-2 p-4 flex items-center justify-between ${health[s] ? 'border-green-200 bg-green-50' : 'border-gray-200 dark:border-slate-700 bg-gray-50'}`}>
             <span className="font-medium text-sm">{s}</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${health[s] ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-500'}`}>{health[s] ? '🟢 Çalışıyor' : '⚪ Bağlı Değil'}</span>
+            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${health[s] ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-500 dark:text-slate-400'}`}>{health[s] ? '🟢 Çalışıyor' : '⚪ Bağlı Değil'}</span>
           </div>
         ))}
       </div>
 
-      <div className={`rounded-xl border-2 p-5 ${isOverLimit ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'}`}>
-        <h2 className="font-semibold text-gray-900 mb-3">📋 Kullanım Lisansı</h2>
+      <div className={`rounded-xl border-2 p-5 ${isOverLimit ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">📋 Kullanım Lisansı</h2>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-600">Plan: <strong>{String(license.plan || 'Pro')}</strong></span>
-          <span className={`text-sm font-medium ${isOverLimit ? 'text-red-700' : 'text-gray-600'}`}>
+          <span className="text-sm text-gray-600 dark:text-slate-300">Plan: <strong>{String(license.plan || 'Pro')}</strong></span>
+          <span className={`text-sm font-medium ${isOverLimit ? 'text-red-700' : 'text-gray-600 dark:text-slate-300'}`}>
             {used} / {limit} sipariş
           </span>
         </div>
@@ -64,7 +64,7 @@ export default function HealthPage() {
           ) : (
             <p className="text-xs text-gray-400">{remaining} sipariş hakkınız kaldı</p>
           )}
-          <span className="text-xs font-semibold text-gray-500">%{percent}</span>
+          <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">%{percent}</span>
         </div>
         {isOverLimit && (
           <div className="mt-4 flex gap-2">

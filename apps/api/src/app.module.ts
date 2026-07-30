@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { RateLimiterMiddleware } from './common/rate-limiter';
 import { EventBusModule } from './event-bus/event-bus.module';
 import { OrderEngineModule } from './order-engine/order-engine.module';
@@ -14,6 +15,7 @@ import { ActivityLogModule } from './activity-log/activity-log.module';
 import { AiAuditModule } from './ai/audit/ai-audit.module';
 import { DashboardController } from './dashboard/dashboard.controller';
 import { CustomersController } from './customers/customers.controller';
+import { CustomerPricesController } from './customers/customer-prices.controller';
 import { ProductsController } from './products/products.controller';
 import { SettingsController } from './settings/settings.controller';
 import { OnboardingModule } from './onboarding/onboarding.module';
@@ -53,10 +55,18 @@ import { FollowUpModule } from './followup/followup.module';
 import { AiBrainModule } from './ai/brain/ai-brain.module';
 import { OrderLockModule } from './order-lock/order-lock.module';
 import { VoiceModule } from './voice/voice.module';
+import { InstagramModule } from './instagram/instagram.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { KvkkModule } from './kvkk/kvkk.module';
+import { BackupModule } from './backup/backup.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { QueueMonitorModule } from './queue-monitor/queue-monitor.module';
+import { SalesEngineModule } from './sales-engine/sales-engine.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     EventBusModule,
     OrderEngineModule,
     AiModule,
@@ -104,10 +114,18 @@ import { VoiceModule } from './voice/voice.module';
     AdminModule,
     LicenseModule,
     FollowUpModule,
+    InstagramModule,
+    WebhookModule,
+    KvkkModule,
+    BackupModule,
+    ApiKeysModule,
+    QueueMonitorModule,
+    SalesEngineModule,
   ],
   controllers: [
     DashboardController,
     CustomersController,
+    CustomerPricesController,
     ProductsController,
     SettingsController,
   ],

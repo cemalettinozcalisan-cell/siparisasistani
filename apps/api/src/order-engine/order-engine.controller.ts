@@ -25,4 +25,12 @@ export class OrderEngineController {
   async cancelOrder(@Param('id') id: string) {
     return this.engine.cancelOrder(id);
   }
+
+  @Patch(':id/cargo')
+  async updateCargo(
+    @Param('id') id: string,
+    @Body() body: { cargo_company: string; tracking_number: string },
+  ) {
+    return this.engine.updateCargo(id, body.cargo_company, body.tracking_number);
+  }
 }

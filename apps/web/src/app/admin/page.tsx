@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -14,12 +14,12 @@ export default function AdminPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Yönetici Paneli</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">Yönetici Paneli</h1>
         <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">SÜPER YÖNETİCİ</span>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
-        <p className="text-sm text-gray-600 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 space-y-2">
+        <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-300 leading-relaxed">
           Bu sayfa, tüm sisteme ait genel istatistikleri gösterir. <strong>Süper yönetici</strong> rolündeki kullanıcılar
           buradan tüm firmaları (tenant) görüntüleyebilir, sistem genelindeki sipariş, müşteri, ciro ve AI konuşma
           verilerini takip edebilir.
@@ -46,7 +46,7 @@ export default function AdminPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold">Kayıtlı Firmalar ({tenants.length})</h2>
         </div>
@@ -55,11 +55,11 @@ export default function AdminPage() {
             <div key={t.id as string} className="flex items-center justify-between px-4 py-3">
               <div>
                 <p className="text-sm font-medium">{t.company_name as string}</p>
-                <p className="text-xs text-gray-500">{t.email as string} · {t.phone as string}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 dark:text-slate-400">{t.email as string} · {t.phone as string}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">{t.city as string || '-'}</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs ${t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`px-1.5 py-0.5 rounded text-xs ${t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 dark:text-slate-400 dark:text-slate-400'}`}>
                   {t.status as string}
                 </span>
               </div>

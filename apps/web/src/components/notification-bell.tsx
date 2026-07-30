@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,14 +64,14 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 className="font-semibold text-sm">Bildirimler</h3>
             <div className="flex gap-2">
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-xs text-blue-600 hover:text-blue-800">Tumunu okundu yap</button>
               )}
-              <button onClick={() => { router.push('/notifications'); setOpen(false); }} className="text-xs text-gray-400 hover:text-gray-600">Tumunu gor</button>
+              <button onClick={() => { router.push('/notifications'); setOpen(false); }} className="text-xs text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:text-slate-300">Tumunu gor</button>
             </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
@@ -87,8 +87,8 @@ export function NotificationBell() {
                   onClick={() => { if (n.status === 'unread') markRead(n.id as string); setOpen(false); }}>
                   <span className="text-base mt-0.5">{ICON_MAP[n.type as string] || '📋'}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-900">{n.title as string}</p>
-                    <p className="text-xs text-gray-500 truncate">{n.message as string}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-white dark:text-white">{n.title as string}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 dark:text-slate-400 truncate">{n.message as string}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">
                       {new Date(n.created_at as string).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       {n.status === 'unread' && <span className="ml-1.5 w-1.5 h-1.5 inline-block rounded-full bg-blue-500 align-middle" />}

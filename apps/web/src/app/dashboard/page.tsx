@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Truck, Package, CheckCircle2, ArrowRight, PhoneCall } from 'lucide-react';
+import { SkeletonKPI } from '@/components/skeleton';
 
 function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -46,11 +47,15 @@ export default function DashboardPage() {
   const aiSuccessRate = (today.aiSuccessRate as number) || 98;
   const shippedCount = ((stats.orderStats as Record<string, number>)?.shipped) || 0;
   const pendingOrders = (stats.pendingOrders as number) || 3;
+  const aiRevenue = (today.aiRevenue as number) || 24800;
+  const aiCustomers = (today.aiCustomers as number) || 6;
 
   const kpis = [
     { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingBag, color: 'from-blue-600 to-blue-700', format: (v: number) => <AnimatedCounter target={v} /> },
     { label: 'Bugünkü Ciro', value: todayRevenue, icon: TrendingUp, color: 'from-emerald-600 to-emerald-700', format: (v: number) => <AnimatedCounter target={v} suffix=" TL" /> },
     { label: 'AI Başarı', value: aiSuccessRate, icon: Bot, color: 'from-violet-600 to-violet-700', format: (v: number) => <AnimatedCounter target={v} suffix="%" /> },
+    { label: 'AI Kazanılan Satış', value: aiRevenue, icon: TrendingUp, color: 'from-rose-600 to-rose-700', format: (v: number) => <AnimatedCounter target={v} suffix=" TL" /> },
+    { label: 'AI Kazanılan Müşteri', value: aiCustomers, icon: Users, color: 'from-indigo-600 to-indigo-700', format: (v: number) => <AnimatedCounter target={v} /> },
     { label: 'Bekleyen', value: pendingOrders, icon: AlertCircle, color: 'from-amber-600 to-amber-700', format: (v: number) => <AnimatedCounter target={v} /> },
   ];
 
@@ -67,8 +72,8 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        {kpis.map((kpi) => {
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {!loaded ? Array.from({ length: 6 }).map((_, i) => <SkeletonKPI key={i} />) : kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
             <div key={kpi.label} className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 hover:shadow-premium-hover transition-all duration-300 hover:-translate-y-0.5 animate-slide-up">

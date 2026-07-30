@@ -70,6 +70,10 @@ export class AuthService {
     return session;
   }
 
+  validateToken(token: string): { userId: string; tenantId: string; role: string; name: string; email: string } | null {
+    return this.sessions.get(token) || null;
+  }
+
   logout(token: string) {
     this.sessions.delete(token);
     return { success: true };

@@ -34,14 +34,14 @@ export default function CampaignsPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kampanyalar</h1>
-          <p className="text-sm text-gray-500 mt-1">AI'nin musteriye onerecegi kampanyalari yonetin</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kampanyalar</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">AI'nin musteriye onerecegi kampanyalari yonetin</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Kampanya Ekle</button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="Kampanya Adi" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             <input placeholder="Hedef Urun" value={form.targetProduct} onChange={(e) => setForm({ ...form, targetProduct: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
@@ -58,16 +58,16 @@ export default function CampaignsPage() {
 
       <div className="grid grid-cols-2 gap-3">
         {campaigns.map((c) => (
-          <div key={c.id as string} className={`rounded-xl border-2 p-4 ${c.active ? 'border-green-200 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+          <div key={c.id as string} className={`rounded-xl border-2 p-4 ${c.active ? 'border-green-200 bg-white dark:bg-slate-800' : 'border-gray-200 dark:border-slate-700 bg-gray-50 opacity-60'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-900">{c.title as string}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{c.title as string}</h3>
               <button onClick={() => toggleActive(c.id as string)}
-                className={`px-2 py-0.5 rounded text-xs font-medium ${c.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                className={`px-2 py-0.5 rounded text-xs font-medium ${c.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500 dark:text-slate-400'}`}>
                 {c.active ? 'AKTIF' : 'PASIF'}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mb-1">🎯 {String(c.condition || '')}</p>
-            <p className="text-xs text-gray-500">🎁 {String(c.offer || '')}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">🎯 {String(c.condition || '')}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">🎁 {String(c.offer || '')}</p>
             {Boolean(c.target_product) && <p className="text-xs text-blue-500 mt-1">📦 {String(c.target_product)}</p>}
             {Boolean(c.start_date) && <p className="text-xs text-gray-400 mt-1">🗓 {String(c.start_date)} → {String(c.end_date)}</p>}
           </div>

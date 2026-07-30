@@ -1,11 +1,15 @@
-import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TenantGuard } from '../auth/tenant.guard';
+import { Roles } from '../auth/roles.decorator';
 import * as crypto from 'crypto';
 
+@UseGuards(TenantGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Roles('owner')
   @Get(':tenantId')
   async list(@Param('tenantId') tenantId: string) {
     const { data } = await this.supabase.db

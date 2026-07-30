@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -19,10 +19,10 @@ export default function AiAuditPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">AI Denetim Merkezi</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">AI Denetim Merkezi</h1>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <p className="text-sm text-gray-600 leading-relaxed">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-300 leading-relaxed">
           Bu sayfa, AI asistanınızın yaptığı tüm konuşmaları ve kararları denetlemenizi sağlar.
           Hangi mesajlara nasıl yanıt verdiği, ne kadar sürede yanıtladığı, güven skoru ve
           token kullanımı gibi detayları görebilirsiniz. Başarısız olan konuşmaları tespit
@@ -46,7 +46,7 @@ export default function AiAuditPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
         <div className="px-4 py-3 border-b border-gray-100 font-semibold text-sm">Son Konuşmalar</div>
         <div className="divide-y">
           {conversations.map((c) => (
@@ -54,7 +54,7 @@ export default function AiAuditPage() {
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span>{c.success ? '✅' : '❌'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate font-medium">{c.userMessage as string || 'Mesaj yok'}</p>
+                  <p className="text-sm text-gray-900 dark:text-white dark:text-white truncate font-medium">{c.userMessage as string || 'Mesaj yok'}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                     <span>🤖 {c.model as string}</span>
                     <span>⏱ {c.latency as number}ms</span>

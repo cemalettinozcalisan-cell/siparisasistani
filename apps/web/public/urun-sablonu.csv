@@ -1,0 +1,5 @@
+﻿ürün_adı;kategori;birim_fiyat;birim;satış_tipleri;min_sipariş_miktari;toptan_fiyat;ai_kuralı
+Dana Parmak Sucuk;Kasap Ürünleri;890;KG;KG/SAP;0;780;Sap ağırlığı değişir net fiyat tartımdan sonra
+Afyon Kaymak;Süt Ürünleri;450;KG;KG;0;0;
+Kangal Sucuk;Kasap Ürünleri;750;KG;KG/SAP;0;650;
+Yumurta 30lu;Yumurta;180;KOLI;KOLI/PALET;10;150;Minimum 10 koli

@@ -111,7 +111,19 @@
   60% { transform: rotate(6deg); }
   80% { transform: rotate(-4deg); }
 }
+@keyframes textGradientShift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
 
 .animate-slide-up { animation: slideUp 0.3s ease-out; }
 .animate-fade-in { animation: fadeIn 0.2s ease-out; }
 .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+.animate-gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 25%, #ec4899 50%, #3b82f6 75%, #6366f1 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: textGradientShift 4s linear infinite;
+}

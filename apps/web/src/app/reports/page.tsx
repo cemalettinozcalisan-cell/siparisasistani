@@ -64,8 +64,8 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">📊 Raporlar</h1>
-      <p className="text-sm text-gray-500">İşletme performansı</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">📊 Raporlar</h1>
+      <p className="text-sm text-gray-500 dark:text-slate-400">İşletme performansı</p>
 
       <div className="grid grid-cols-4 gap-4">
         {[
@@ -83,8 +83,8 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">📊 Kanal Dağılımı</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">📊 Kanal Dağılımı</h2>
           <div className="space-y-3">
             {[{ icon: '📞', label: 'Telefon', count: channelCounts.phone, color: 'bg-blue-500' },
               { icon: '💬', label: 'WhatsApp', count: channelCounts.whatsapp, color: 'bg-green-500' }
@@ -102,8 +102,8 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">📋 Sipariş Durumları</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">📋 Sipariş Durumları</h2>
           <div className="space-y-2">
             {Object.entries(statusCounts).map(([status, count]) => (
               <div key={status} className="flex justify-between text-sm">
@@ -115,9 +115,9 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900">📋 Son Siparişler</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">📋 Son Siparişler</h2>
           <div className="flex gap-2">
             <button onClick={downloadPDF} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100">📄 PDF İndir</button>
             <a href={`/api/export/orders/${tid}`} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100">📥 CSV</a>
@@ -127,7 +127,7 @@ export default function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 border-b">
+              <tr className="text-left text-gray-500 dark:text-slate-400 border-b">
                 <th className="pb-2 pr-4">Sipariş</th>
                 <th className="pb-2 pr-4">Müşteri</th>
                 <th className="pb-2 pr-4">Tutar</th>
