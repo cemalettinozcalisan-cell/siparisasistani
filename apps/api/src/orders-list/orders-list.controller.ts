@@ -87,6 +87,12 @@ export class OrdersListController {
       { id: 'ord-005', order_number: '26-00005', total_price: 920, status: 'DELIVERED', channel: 'whatsapp', source: 'WHATSAPP', notes: '', customer_note: '', created_at: new Date(now - 18000000).toISOString(), customer_name: 'Ali Kaya', customer_phone: '05411223344', customer_address: 'İstanbul, Kadıköy, Moda Cad. No:12' },
       // PERAKENDE order
       { id: 'ord-006', order_number: '26-00006', total_price: 3200, status: 'SHIPPED', channel: 'phone', source: 'PERAKENDE', notes: '', customer_note: 'Zile basın', created_at: new Date(now - 21600000).toISOString(), customer_name: 'Mustafa Öztürk', customer_phone: '05551234567', customer_address: 'Afyonkarahisar, Merkez, Uzun Çarşı No:3' },
+      // INSTAGRAM orders
+      { id: 'ord-007', order_number: '26-00007', total_price: 1200, status: 'new', channel: 'instagram', source: 'INSTAGRAM', notes: '', customer_note: 'Instagram DM üzerinden sipariş', created_at: new Date(now - 25200000).toISOString(), customer_name: '@ibrahim_yildiz — İbrahim Yıldız', customer_phone: '05438765432', customer_address: 'İstanbul, Üsküdar' },
+      { id: 'ord-008', order_number: '26-00008', total_price: 640, status: 'PAYMENT_CONFIRMED', channel: 'instagram', source: 'INSTAGRAM', notes: '', customer_note: 'Instagram DM üzerinden sipariş', created_at: new Date(now - 28800000).toISOString(), customer_name: '@zeynep_arslan — Zeynep Arslan', customer_phone: '05328765432', customer_address: 'Ankara, Çankaya' },
+      // WEBSITE orders
+      { id: 'ord-009', order_number: '26-00009', total_price: 2450, status: 'PACKAGING', channel: 'website', source: 'WEBSITE', notes: '', customer_note: 'Web sitesinden otomatik sipariş', created_at: new Date(now - 32400000).toISOString(), customer_name: 'Ayşe Demir', customer_phone: '05339876543', customer_address: 'Afyonkarahisar, Merkez' },
+      { id: 'ord-010', order_number: '26-00010', total_price: 890, status: 'new', channel: 'website', source: 'WEBSITE', notes: '', customer_note: 'Web sitesinden otomatik sipariş', created_at: new Date(now - 36000000).toISOString(), customer_name: 'Elif Koç', customer_phone: '05411239876', customer_address: 'İzmir, Bornova' },
     ];
 
     if (sourceFilter && sourceFilter !== 'all') {

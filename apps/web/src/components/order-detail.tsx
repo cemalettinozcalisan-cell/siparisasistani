@@ -132,7 +132,22 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
           </div>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0"><Package className="w-4 h-4 text-amber-600 dark:text-amber-400" /></div>
-            <div><p className="text-xs text-slate-400">Kanal</p><p className="text-sm font-medium text-slate-900 dark:text-white">{order.channel === 'phone' ? '📞 Telefon' : '💬 WhatsApp'}</p></div>
+            <div>
+              <p className="text-xs text-slate-400">Kanal</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">
+                {(() => {
+                  const ch = (order.channel as string) || '';
+                  const src = (order.source as string) || '';
+                  if (ch === 'instagram' || src === 'INSTAGRAM') return '📸 Instagram';
+                  if (ch === 'website' || src === 'WEBSITE') return '🌐 Web Sitesi';
+                  if (ch === 'phone' || src === 'PHONE') return '📞 Telefon';
+                  if (ch === 'whatsapp' || src === 'WHATSAPP') return '💬 WhatsApp';
+                  if (src === 'WHOLESALE') return '📦 Toptan';
+                  if (src === 'MANUAL' || src === 'PERAKENDE') return '🏪 Perakende';
+                  return '💬 WhatsApp';
+                })()}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center shrink-0"><MapPin className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Header } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Header } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { PrintFormatService } from './print-format.service';
 
@@ -19,6 +19,55 @@ export class PrintPreviewController {
     private readonly supabase: SupabaseService,
     private readonly format: PrintFormatService,
   ) {}
+
+  @Post('test/:tenantId')
+  async printTest(@Param('tenantId') tenantId: string) {
+    try {
+      const { data: settings } = await this.supabase.db
+        .from('tenant_settings')
+        .select('printer_type, printer_copy_count')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      const printerType = (settings as Record<string, unknown>)?.printer_type || 'thermal';
+      const copies = (settings as Record<string, unknown>)?.printer_copy_count || 1;
+
+      const mockOrder: Record<string, unknown> = {
+        source: 'PHONE',
+        order_number: '26-TEST-' + Date.now().toString().slice(-6),
+        date: new Date().toLocaleString('tr-TR'),
+        customer_name: 'Test Müşterisi',
+        customer_phone: '0555 000 00 00',
+        items: [
+          { product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 890 },
+        ],
+        total_price: 890,
+        note: 'Bu bir test fişidir.',
+        tenant_name: 'SiparişAsistanı',
+        tenant_phone: '0850 000 00 00',
+      };
+
+      const items = mockOrder.items as Record<string, unknown>[];
+
+      const content = printerType === 'a4'
+        ? this.format.generateA4(mockOrder, items)
+        : this.format.generateThermal(mockOrder, items);
+
+      return {
+        success: true,
+        printer_type: printerType,
+        copies,
+        content,
+      };
+    } catch {
+      return {
+        success: true,
+        printer_type: 'thermal',
+        copies: 1,
+        content: '--- TEST FIŞI ---\nSiparişAsistanı\nTarih: ' + new Date().toLocaleString('tr-TR') + '\nBu bir test çıktısıdır.\n--- SON ---',
+      };
+    }
+  }
 
   @Get('preview/:tenantId/:orderId')
   async preview(@Param('tenantId') tenantId: string, @Param('orderId') orderId: string, @Query('format') format?: string) {

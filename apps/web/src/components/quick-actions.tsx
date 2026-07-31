@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, ShoppingBag, Users, Package, Tags } from 'lucide-react';
 
 const ACTIONS = [
@@ -12,6 +12,14 @@ const ACTIONS = [
 
 export function QuickActions() {
   const [open, setOpen] = useState(false);
+  const [role, setRole] = useState('owner');
+
+  useEffect(() => {
+    try { setRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {}
+  }, []);
+
+  // Staff users can't create new items
+  if (role === 'staff') return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">

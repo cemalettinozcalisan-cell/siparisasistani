@@ -50,11 +50,25 @@ export class ApiKeysService {
       switch (provider) {
         case 'deepseek':
         case 'openai':
+        case 'anthropic':
+        case 'bilge_ai':
+        case 'azure_speech':
           status = (data as any).api_key ? 'configured' : 'missing_key';
           break;
         case 'netgsm':
+        case 'twilio':
           status = (data as any).api_key && (data as any).api_secret ? 'configured' : 'missing_credentials';
           break;
+        case 'openai_tts': {
+          const { data: openaiRow } = await this.supabase.db
+            .from('api_keys')
+            .select('api_key')
+            .eq('tenant_id', tenantId)
+            .eq('provider', 'openai')
+            .single();
+          status = openaiRow?.api_key ? 'configured' : 'missing_key';
+          break;
+        }
         default:
           status = (data as any).api_key ? 'configured' : 'missing_key';
       }

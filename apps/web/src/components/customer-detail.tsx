@@ -21,6 +21,9 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   const [customerPrices, setCustomerPrices] = useState<Record<string, unknown>[]>([]);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [priceForm, setPriceForm] = useState({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
+  const [userRole, setUserRole] = useState('owner');
+
+  useEffect(() => { try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {} }, []);
 
   const tid = '00000000-0000-0000-0000-000000000001';
 
@@ -139,6 +142,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
         </div>
 
         {/* Ozel Fiyat Listesi */}
+        {userRole !== 'staff' && (
         <div className="mt-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-3 border border-sky-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
@@ -182,6 +186,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
             ))}
           </div>
         </div>
+        )}
 
         {/* AI Insights */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-violet-200 dark:border-violet-800 p-4 shadow-sm hover:shadow-md transition-all duration-200">

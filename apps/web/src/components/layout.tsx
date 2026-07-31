@@ -8,31 +8,44 @@ import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
 import { QuickActions } from '@/components/quick-actions';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'] },
-  { href: '/live', label: 'Canlı Siparişler', icon: BellRing, roles: ['owner', 'manager', 'staff'] },
-  { href: '/orders', label: 'Tüm Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'] },
-  { href: '/conversations', label: 'Görüşmeler', icon: MessageSquare, roles: ['owner', 'manager', 'staff'] },
-  { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'] },
-  { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'] },
-  { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager'] },
-  { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'] },
-  { href: '/settings', label: 'Ayarlar', icon: Settings, roles: ['owner', 'manager'] },
-  { href: '/users', label: 'Kullanıcılar', icon: Users, roles: ['owner'] },
-  { href: '/campaigns', label: 'Kampanyalar', icon: Tags, roles: ['owner', 'manager'] },
-  { href: '/sales-automation', label: 'AI Satış Motoru', icon: Bot, roles: ['owner', 'manager'] },
-  { href: '/integrations', label: 'Entegrasyonlar', icon: Webhook, roles: ['owner', 'manager'] },
-  { href: '/api-keys', label: 'API Anahtarları', icon: Key, roles: ['owner'] },
-  { href: '/saas', label: 'Abonelik', icon: CreditCard, roles: ['owner'] },
-  { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager'] },
-  { href: '/admin', label: 'Yönetici', icon: Shield, roles: ['owner'] },
-  { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner', 'manager'] },
-  { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'] },
-  { href: '/demo', label: 'Demo', icon: FlaskConical, roles: ['owner', 'manager', 'staff'] },
-  { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner', 'manager', 'staff'] },
-  { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner', 'manager'] },
+  // Ana (8) — all roles
+  { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/live', label: 'Canlı Siparişler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/orders', label: 'Tüm Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/conversations', label: 'Görüşmeler', icon: MessageSquare, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  // Kampanya & Satış — owner, manager
+  { href: '/campaigns', label: 'Kampanyalar', icon: Tags, roles: ['owner', 'manager'], group: 'campaigns' },
+  { href: '/sales-automation', label: 'AI Satış Motoru', icon: Bot, roles: ['owner', 'manager'], group: 'campaigns' },
+  // Abonelik — owner, manager
+  { href: '/saas', label: 'Abonelik', icon: CreditCard, roles: ['owner', 'manager'], group: 'saas' },
+  // Ayarlar — role-based
+  { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'settings' },
+  { href: '/settings', label: 'İşletme Ayarları', icon: Settings, roles: ['owner', 'manager'], group: 'settings' },
+  { href: '/users', label: 'Kullanıcılar', icon: Users, roles: ['owner', 'manager'], group: 'settings' },
+  { href: '/integrations', label: 'Entegrasyonlar', icon: Webhook, roles: ['owner'], group: 'settings' },
+  { href: '/api-keys', label: 'API Anahtarları', icon: Key, roles: ['owner'], group: 'settings' },
+  { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner'], group: 'settings' },
+  { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
+  { href: '/demo', label: 'Demo', icon: FlaskConical, roles: ['owner'], group: 'settings' },
+  { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
+  { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
+  // Geliştirici — owner only
+  { href: '/admin', label: 'Geliştirici', icon: Shield, roles: ['owner'], group: 'admin' },
+];
+
+const SIDEBAR_GROUPS = [
+  { key: 'main', label: null, icon: null },
+  { key: 'campaigns', label: 'Pazarlama', icon: Tags },
+  { key: 'saas', label: null, icon: null },
+  { key: 'settings', label: 'Ayarlar', icon: Settings },
+  { key: 'admin', label: null, icon: null },
 ];
 
 function GlobalSearch() {
@@ -106,35 +119,90 @@ function ThemeToggle() {
   );
 }
 
+function getUserRole(): string {
+  if (typeof window === 'undefined') return 'owner';
+  try { return JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'; } catch { return 'owner'; }
+}
+
 function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const userRole = typeof window !== 'undefined' ? (() => { try { return JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'; } catch { return 'owner'; } })() : 'owner';
+  const [userRole, setUserRole] = useState('owner');
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ campaigns: false, settings: false });
 
-  const visibleItems = navItems.filter((item) => item.roles.includes(userRole));
+  useEffect(() => { setUserRole(getUserRole()); }, []);
+
+  // Auto-expand groups if current path is inside them
+  useEffect(() => {
+    setOpenGroups(prev => {
+      const next = { ...prev };
+      const inCampaign = navItems.filter(i => i.group === 'campaigns').some(i => pathname === i.href || pathname.startsWith(i.href + '/'));
+      const inSettings = navItems.filter(i => i.group === 'settings').some(i => pathname === i.href || pathname.startsWith(i.href + '/'));
+      if (inCampaign) next.campaigns = true;
+      if (inSettings) next.settings = true;
+      return next;
+    });
+  }, [pathname]);
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderNavLink = (item: typeof navItems[0]) => {
+    const Icon = item.icon;
+    const active = pathname === item.href || pathname.startsWith(item.href + '/');
+    return (
+      <Link key={item.href} href={item.href} onClick={mobileOpen ? onClose : undefined}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${active ? 'bg-ai-gradient text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+        <Icon className="w-4 h-4 shrink-0" />
+        {!collapsed && <span>{item.label}</span>}
+        {active && !collapsed && <ChevronRight className="w-3 h-3 ml-auto" />}
+      </Link>
+    );
+  };
 
   const inner = (
     <>
       <div className="p-4 border-b border-slate-700/50 flex items-center gap-3 h-14">
         <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0" />
-        {!collapsed && <span className="font-semibold text-sm tracking-tight">SiparişAsistanı</span>}
+        {!collapsed && <span className="font-semibold text-sm">SiparişAsistanı</span>}
         {mobileOpen && (
-          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden">
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden"><X className="w-5 h-5" /></button>
         )}
       </div>
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(item.href + '/');
+        {SIDEBAR_GROUPS.map(group => {
+          const items = navItems.filter(i => i.group === group.key && i.roles.includes(userRole));
+          if (items.length === 0) return null;
+
+          // Main group: render directly
+          if (group.key === 'main' || group.key === 'saas' || group.key === 'admin') {
+            return (
+              <div key={group.key}>
+                {items.map(item => renderNavLink(item))}
+                {group.key !== 'admin' && <div className="my-1 border-t border-slate-700/50 mx-2" />}
+              </div>
+            );
+          }
+
+          // Collapsible groups
+          const isOpen = openGroups[group.key] || false;
+          const GroupIcon = group.icon!;
           return (
-            <Link key={item.href} href={item.href} onClick={mobileOpen ? onClose : undefined}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${active ? 'bg-ai-gradient text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              <Icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-              {active && !collapsed && <ChevronRight className="w-3 h-3 ml-auto" />}
-            </Link>
+            <div key={group.key}>
+              <button onClick={() => toggleGroup(group.key)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800 ${!collapsed ? '' : 'justify-center'}`}>
+                <GroupIcon className="w-4 h-4 shrink-0" />
+                {!collapsed && <span className="flex-1 text-left text-sm font-semibold text-slate-300">{group.label}</span>}
+                {!collapsed && (isOpen ? <ChevronUp className="w-3.5 h-3.5 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 shrink-0" />)}
+              </button>
+              {isOpen && !collapsed && (
+                <div className="ml-2 pl-4 border-l border-slate-700/50 space-y-0.5">
+                  {items.map(item => renderNavLink(item))}
+                </div>
+              )}
+              <div className="my-1 border-t border-slate-700/50 mx-2" />
+            </div>
           );
         })}
       </nav>
@@ -192,7 +260,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const originalFetch = window.fetch;
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+      const isApi = url.startsWith('/api/');
+      if (!isApi) return originalFetch(input, init);
+
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          const headers = new Headers(init?.headers);
+          if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+          return originalFetch(input, { ...init, headers });
+        }
+      } catch {}
+      return originalFetch(input, init);
+    };
+    return () => { window.fetch = originalFetch; };
+  }, []);
+
   if (!mounted) return <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
 
   return (

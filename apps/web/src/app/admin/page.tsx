@@ -14,7 +14,7 @@ export default function AdminPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">Yönetici Paneli</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Geliştirici Paneli</h1>
         <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">SÜPER YÖNETİCİ</span>
       </div>
 

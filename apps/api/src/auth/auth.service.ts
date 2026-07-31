@@ -60,6 +60,18 @@ export class AuthService {
         this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
         return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
       }
+      if (email === 'demo2@siparisasistani.com' && password === 'demo123') {
+        const token = crypto.randomBytes(32).toString('hex');
+        const mockUser = { id: 'demo2-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'manager', name: 'Yönetici Kullanici', email: 'demo2@siparisasistani.com' };
+        this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
+        return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
+      }
+      if (email === 'demo3@siparisasistani.com' && password === 'demo123') {
+        const token = crypto.randomBytes(32).toString('hex');
+        const mockUser = { id: 'demo3-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'staff', name: 'Personel Kullanici', email: 'demo3@siparisasistani.com' };
+        this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
+        return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
+      }
       throw new UnauthorizedException('Gecersiz email veya sifre');
     }
   }
