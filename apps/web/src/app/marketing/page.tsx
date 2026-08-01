@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, Plus, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save, Package } from 'lucide-react';
+import { X, Plus, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 interface Campaign {
@@ -23,11 +23,11 @@ export default function MarketingPage() {
   const [tab, setTab] = useState<'automation' | 'campaigns'>('automation');
   const [settings, setSettings] = useState<Record<string, unknown>>({});
   const [stats, setStats] = useState<Record<string, unknown>>({});
-  const [salesCampaigns, setSalesCampaigns] = useState<Record<string, unknown>[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
   const [userRole, setUserRole] = useState('owner');
   const tid = getTenantId();
   const isOwner = userRole === 'owner';
@@ -42,16 +42,14 @@ export default function MarketingPage() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [sRes, cRes, stRes, scRes] = await Promise.all([
+      const [sRes, cRes, stRes] = await Promise.all([
         fetch(`/api/settings/${tid}`).then(r => r.json()),
         fetch(`/api/campaigns/${tid}`).then(r => r.json()),
         fetch(`/api/sales-engine/stats/${tid}`).then(r => r.json()),
-        fetch(`/api/sales-engine/campaigns/${tid}`).then(r => r.json()),
       ]);
       setSettings(sRes);
       if (Array.isArray(cRes)) setCampaigns(cRes);
       setStats(stRes);
-      if (Array.isArray(scRes)) setSalesCampaigns(scRes);
     } catch {}
   }, [tid]);
 
@@ -60,14 +58,26 @@ export default function MarketingPage() {
   const saveSetting = async (key: string, value: unknown) => {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
-    await fetch(`/api/settings/${tid}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated),
-    });
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
+    try {
+      await fetch(`/api/settings/${tid}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated),
+      });
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError('Kaydedilemedi, lütfen tekrar deneyin.');
+      setSettings(settings); // Rollback
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const triggerAutomation = async () => {
-    await fetch(`/api/sales-engine/trigger/${tid}`, { method: 'POST' });
+    try {
+      await fetch(`/api/sales-engine/trigger/${tid}`, { method: 'POST' });
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setError('Otomasyon tetiklenemedi.');
+      setTimeout(() => setError(''), 3000);
+    }
     loadAll();
   };
 
@@ -83,24 +93,39 @@ export default function MarketingPage() {
       target_product: form.targetProduct || null,
       start_date: form.startDate || null, end_date: form.endDate || null, active: true,
     };
-    if (editingId) {
-      await fetch(`/api/campaigns/${tid}/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    } else {
-      await fetch(`/api/campaigns/${tid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    try {
+      if (editingId) {
+        await fetch(`/api/campaigns/${tid}/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } else {
+        await fetch(`/api/campaigns/${tid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      setShowForm(false);
+      loadAll();
+    } catch {
+      setError('Kampanya kaydedilemedi.');
+      setTimeout(() => setError(''), 3000);
     }
-    setShowForm(false);
-    loadAll();
   };
 
   const toggleCampaign = async (c: Campaign) => {
-    await fetch(`/api/campaigns/${tid}/${c.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !c.active }) });
-    loadAll();
+    try {
+      await fetch(`/api/campaigns/${tid}/${c.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !c.active }) });
+      loadAll();
+    } catch {
+      setError('Durum değiştirilemedi.');
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const deleteCampaign = async (c: Campaign) => {
     if (!confirm(`${c.title} kampanyasını silmek istediğinize emin misiniz?`)) return;
-    await fetch(`/api/campaigns/${tid}/${c.id}`, { method: 'DELETE' });
-    loadAll();
+    try {
+      await fetch(`/api/campaigns/${tid}/${c.id}`, { method: 'DELETE' });
+      loadAll();
+    } catch {
+      setError('Kampanya silinemedi.');
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
@@ -121,6 +146,9 @@ export default function MarketingPage() {
 
       {saved && (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">✅ Kaydedildi</div>
+      )}
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">❌ {error}</div>
       )}
 
       {/* Tabs */}
@@ -147,7 +175,7 @@ export default function MarketingPage() {
               { label: 'Gönderilen Mesaj', value: String(stats.sent || 0), icon: '📤', border: 'border-blue-200' },
               { label: 'Tekrar Sipariş Oranı', value: `%${stats.reorder || 0}`, icon: '🔄', border: 'border-emerald-200' },
               { label: 'Kurtarılan Sepet', value: String(stats.abandoned_cart || 0), icon: '🛒', border: 'border-amber-200' },
-              { label: 'Otomatik Ciro', value: `${Number(stats.revenue || 0).toLocaleString('tr-TR')} TL`, icon: '💰', border: 'border-violet-200' },
+              { label: 'Doğum Günü Mesajı', value: String(stats.birthday || 0), icon: '🎂', border: 'border-pink-200' },
             ].map((card) => (
               <div key={card.label} className={`bg-white dark:bg-slate-800 border ${card.border} rounded-xl p-4 shadow-sm`}>
                 <span className="text-lg">{card.icon}</span>

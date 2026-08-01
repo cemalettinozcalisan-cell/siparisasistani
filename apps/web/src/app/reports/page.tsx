@@ -79,7 +79,6 @@ export default function ReportsPage() {
   const [customTo, setCustomTo] = useState('');
   const [showExport, setShowExport] = useState(false);
   const [showDate, setShowDate] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [userRole, setUserRole] = useState('owner');
   const tid = getTenantId();
 
@@ -250,24 +249,6 @@ export default function ReportsPage() {
       {downloadMsg && (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">📥 {downloadMsg}</div>
       )}
-
-      {/* Nasıl Çalışır? */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-        <button onClick={() => setShowInfo(!showInfo)}
-          className="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-          <span className="flex items-center gap-2">💡 Bu sayfa nasıl çalışır?</span>
-          <span className={`text-xs text-gray-400 transition-transform ${showInfo ? 'rotate-180' : ''}`}>▼</span>
-        </button>
-        {showInfo && (
-          <div className="px-5 pb-4 space-y-2 text-sm text-gray-600 dark:text-slate-400 border-t border-slate-50 dark:border-slate-700/50">
-            <p className="pt-3"><strong>📦 Toplam Sipariş:</strong> Seçili tarih aralığındaki tüm siparişlerin sayısı.</p>
-            <p><strong>💰 Toplam Ciro:</strong> Seçili tarih aralığındaki siparişlerin toplam tutarı (TL).</p>
-            <p><strong>🛒 Ortalama Sepet:</strong> Ciro ÷ Sipariş Sayısı. Müşteri başına düşen ortalama harcama.</p>
-            <p><strong>🎯 Teslimat Oranı:</strong> Teslim edilen siparişlerin tüm siparişlere oranı (%).</p>
-            <p className="text-xs text-gray-400 pt-1">📅 Tarih filtresi ile istediğiniz dönemi seçebilir, 📥 Dışa Aktar ile PDF veya Excel raporu alabilirsiniz.</p>
-          </div>
-        )}
-      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
