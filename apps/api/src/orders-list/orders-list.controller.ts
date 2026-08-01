@@ -70,7 +70,7 @@ export class OrdersListController {
       // Inject demo channel-diverse orders so reports always show all channels
       const demoChannels = this.getMockOrders(source);
       const existingChannels = new Set(results.map((r) => String(r.channel).toLowerCase()));
-      const injected = demoChannels.filter((d) => !existingChannels.has(String(d.channel).toLowerCase())).slice(0, 4);
+      const injected = demoChannels.filter((d) => !existingChannels.has(String(d.channel).toLowerCase()));
       const merged = [...results, ...injected];
 
       // Filter by source if requested
