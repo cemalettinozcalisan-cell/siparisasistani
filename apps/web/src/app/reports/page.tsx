@@ -11,6 +11,18 @@ function authHeaders(): Record<string, string> {
   } catch { return {}; }
 }
 
+async function downloadCSV(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { headers: authHeaders() });
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } catch {}
+}
+
 const STATUS_TR: Record<string, string> = {
   PAYMENT_CONFIRMED: 'Ödeme Onaylandı', DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargolandı',
   PACKAGING: 'Paketleniyor', PACKAGED: 'Paketlendi', PENDING: 'Bekliyor', PROCESSING: 'Hazırlanıyor',
@@ -63,6 +75,7 @@ export default function ReportsPage() {
   const [search, setSearch] = useState('');
   const [dateOption, setDateOption] = useState('last_30');
   const [customFrom, setCustomFrom] = useState('');
+  const [downloadMsg, setDownloadMsg] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [showExport, setShowExport] = useState(false);
   const [showDate, setShowDate] = useState(false);
@@ -214,17 +227,21 @@ export default function ReportsPage() {
                 <button onClick={exportPDF} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-red-500" /> PDF İndir
                 </button>
-                <a href={`/api/export/orders/${tid}`} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 block">
+                <button onClick={() => { downloadCSV(`/api/export/orders/${tid}`, 'siparisler.csv'); setDownloadMsg('Siparişler CSV indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000); setShowExport(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                   <Package className="w-4 h-4 text-emerald-500" /> Siparişler CSV
-                </a>
-                <a href={`/api/export/customers/${tid}`} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 block">
+                </button>
+                <button onClick={() => { downloadCSV(`/api/export/customers/${tid}`, 'musteriler.csv'); setDownloadMsg('Müşteriler CSV indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000); setShowExport(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
                   <Users2 className="w-4 h-4 text-blue-500" /> Müşteriler CSV
-                </a>
+                </button>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {downloadMsg && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">📥 {downloadMsg}</div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -4,6 +4,17 @@ import { SupabaseService } from '../common/supabase.client';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
 
+const STATUS_TR: Record<string, string> = {
+  PAYMENT_CONFIRMED: 'Ödeme Onaylandı', DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargolandı',
+  PACKAGING: 'Paketleniyor', PACKAGED: 'Paketlendi', PENDING: 'Bekliyor', PROCESSING: 'Hazırlanıyor',
+  COMPLETED: 'Tamamlandı', CANCELLED: 'İptal', REFUNDED: 'İade', NEW: 'Yeni', APPROVED: 'Onaylandı',
+  PREPARING: 'Hazırlanıyor', shipped: 'Kargolandı',
+};
+
+function tr(status: string): string {
+  return STATUS_TR[status] || status;
+}
+
 @UseGuards(TenantGuard)
 @Controller('export')
 export class ExportController {
@@ -25,15 +36,13 @@ export class ExportController {
       Telefon: (o.customer as Record<string, unknown>)?.phone || '',
       Sehir: (o.customer as Record<string, unknown>)?.city || '',
       Tutar: o.total_price,
-      Durum: o.status,
+      Durum: tr(String(o.status || '')),
       Kanal: o.channel,
       Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
     }));
 
-    const csv = [
-      Object.keys(rows[0] || {}).join(','),
-      ...rows.map((r) => Object.values(r).map((v) => `"${v}"`).join(',')),
-    ].join('\n');
+    const header = 'SiparisNo,Musteri,Telefon,Sehir,Tutar,Durum,Kanal,Tarih';
+    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(','))].join('\n');
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
@@ -52,17 +61,23 @@ export class ExportController {
       .order('created_at', { ascending: false })
       .limit(1000);
 
-    const rows = (data || []).map((c: Record<string, unknown>) => ({
-      Ad: c.name,
-      Telefon: c.phone,
-      Sehir: c.city,
-      KayitTarihi: new Date(c.created_at as string).toLocaleDateString('tr-TR'),
-    }));
+    const seen = new Set<string>();
+    const rows = (data || [])
+      .filter((c: Record<string, unknown>) => {
+        const phone = String(c.phone || '');
+        if (seen.has(phone)) return false;
+        seen.add(phone);
+        return true;
+      })
+      .map((c: Record<string, unknown>) => ({
+        Ad: c.name,
+        Telefon: c.phone,
+        Sehir: c.city || '',
+        KayitTarihi: new Date(c.created_at as string).toLocaleDateString('tr-TR'),
+      }));
 
-    const csv = [
-      Object.keys(rows[0] || {}).join(','),
-      ...rows.map((r) => Object.values(r).map((v) => `"${v}"`).join(',')),
-    ].join('\n');
+    const header = 'Ad,Telefon,Sehir,KayitTarihi';
+    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(','))].join('\n');
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
