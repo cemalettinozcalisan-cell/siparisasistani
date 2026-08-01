@@ -386,8 +386,8 @@ export default function AiAuditPage() {
                 </div>
               )}
 
-              {/* Parsed JSON */}
-              {detail.parsed_json && Object.keys(detail.parsed_json).length > 0 && (
+              {/* Parsed JSON — Owner only */}
+              {isOwner && detail.parsed_json && Object.keys(detail.parsed_json).length > 0 && (
                 <div>
                   <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 block">Parse Edilmiş JSON</label>
                   <div className="bg-slate-900 text-emerald-400 rounded-lg p-3 text-xs font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
