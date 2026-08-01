@@ -1,11 +1,15 @@
-import { Controller, Get, Param, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Param, Query, Logger, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TenantGuard } from '../auth/tenant.guard';
+import { Roles } from '../auth/roles.decorator';
 
+@UseGuards(TenantGuard)
 @Controller('orders-list')
 export class OrdersListController {
   private readonly logger = new Logger(OrdersListController.name);
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Roles('owner', 'manager', 'staff')
   @Get(':tenantId')
   async list(
     @Param('tenantId') tenantId: string,

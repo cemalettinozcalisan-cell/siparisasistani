@@ -1,10 +1,14 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TenantGuard } from '../auth/tenant.guard';
+import { Roles } from '../auth/roles.decorator';
 
+@UseGuards(TenantGuard)
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Roles('owner', 'manager')
   @Get(':tenantId')
   async getStats(@Param('tenantId') tenantId: string) {
     const today = new Date();

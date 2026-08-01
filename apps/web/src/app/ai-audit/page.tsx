@@ -1,7 +1,7 @@
 ﻿'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Search, X, Eye, Bot, ChevronRight } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { X, Eye, Bot } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 interface LogEntry {

@@ -1,11 +1,15 @@
-import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { SupabaseService } from '../common/supabase.client';
+import { TenantGuard } from '../auth/tenant.guard';
+import { Roles } from '../auth/roles.decorator';
 
+@UseGuards(TenantGuard)
 @Controller('export')
 export class ExportController {
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Roles('owner', 'manager')
   @Get('orders/:tenantId')
   async exportOrders(@Param('tenantId') tenantId: string, @Res() res: Response) {
     const { data } = await this.supabase.db
@@ -38,6 +42,7 @@ export class ExportController {
     res.send('\uFEFF' + csv);
   }
 
+  @Roles('owner', 'manager')
   @Get('customers/:tenantId')
   async exportCustomers(@Param('tenantId') tenantId: string, @Res() res: Response) {
     const { data } = await this.supabase.db
