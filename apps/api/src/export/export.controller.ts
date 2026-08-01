@@ -41,8 +41,8 @@ export class ExportController {
       Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
     }));
 
-    const header = 'SiparisNo,Musteri,Telefon,Sehir,Tutar,Durum,Kanal,Tarih';
-    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(','))].join('\n');
+    const header = 'SiparisNo;Musteri;Telefon;Sehir;Tutar;Durum;Kanal;Tarih';
+    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
@@ -76,8 +76,8 @@ export class ExportController {
         KayitTarihi: new Date(c.created_at as string).toLocaleDateString('tr-TR'),
       }));
 
-    const header = 'Ad,Telefon,Sehir,KayitTarihi';
-    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(','))].join('\n');
+    const header = 'Ad;Telefon;Sehir;KayitTarihi';
+    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',

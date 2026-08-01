@@ -158,11 +158,11 @@ export default function ReportsPage() {
     )
     : orders;
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
+    setDownloadMsg('PDF rapor hazırlanıyor...');
+    setShowExport(false);
     const rows = filteredOrders.slice(0, 50).map((o) => `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status)] || o.status}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`).join('');
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
       body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px}
       .stats{display:flex;gap:16px;margin:20px 0}.stat{background:#f3f4f6;padding:14px 24px;border-radius:10px;flex:1}
       .stat .label{font-size:12px;color:#6b7280}.stat .value{font-size:24px;font-weight:bold;color:#111827}
@@ -174,9 +174,16 @@ export default function ReportsPage() {
     <div class="stats"><div class="stat"><div class="label">Toplam Sipariş</div><div class="value">${totalOrders}</div></div><div class="stat"><div class="label">Toplam Ciro</div><div class="value">${totalRevenue.toLocaleString('tr-TR')} TL</div></div></div>
     <h2 style="margin-top:24px;color:#374151">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th>Tarih</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div>
-    <script>window.onload=function(){window.print()}<\/script></body></html>`);
-    win.document.close();
-    setShowExport(false);
+    </body></html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Siparis_Raporu_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setDownloadMsg('PDF rapor indirildi');
+    setTimeout(() => setDownloadMsg(''), 3000);
   };
 
   return (
