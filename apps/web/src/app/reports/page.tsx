@@ -161,7 +161,7 @@ export default function ReportsPage() {
   const exportPDF = async () => {
     setDownloadMsg('PDF rapor hazırlanıyor...');
     setShowExport(false);
-    const rows = filteredOrders.slice(0, 50).map((o) => `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status)] || o.status}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`).join('');
+    const rows = filteredOrders.slice(0, 50).map((o) => `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
       body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px}
       .stats{display:flex;gap:16px;margin:20px 0}.stat{background:#f3f4f6;padding:14px 24px;border-radius:10px;flex:1}
@@ -305,8 +305,8 @@ export default function ReportsPage() {
           </div>
           <div className="space-y-2">
             {Object.entries(statusCounts).sort(([, a], [, b]) => b - a).map(([status, count]) => {
-              const tr = STATUS_TR[status] || status;
-              const color = STATUS_COLOR[status] || 'bg-slate-100 text-slate-600';
+              const tr = STATUS_TR[status.toUpperCase()] || status;
+              const color = STATUS_COLOR[status.toUpperCase()] || 'bg-slate-100 text-slate-600';
               return (
                 <div key={status} className="flex items-center justify-between">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${color}`}>{tr}</span>
@@ -389,14 +389,14 @@ export default function ReportsPage() {
                 const channel = String(o.channel || 'phone').toLowerCase();
                 const channelLabel = channel === 'phone' ? '📞 Telefon' : channel === 'whatsapp' ? '💬 WhatsApp' : channel === 'instagram' ? '📸 Instagram' : '🌐 Web';
                 const status = String(o.status || '');
-                const statusColor = STATUS_COLOR[status] || 'bg-slate-100 text-slate-600';
+                const statusColor = STATUS_COLOR[status.toUpperCase()] || 'bg-slate-100 text-slate-600';
                 return (
                   <tr key={String(o.id)} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-white">#{String(o.order_number || '')}</td>
                     <td className="px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300">{String(o.customer_name || '—')}</td>
                     <td className="px-4 py-2.5 text-sm text-right font-medium text-gray-700 dark:text-slate-300">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td>
                     <td className="px-4 py-2.5 text-xs text-gray-500">{channelLabel}</td>
-                    <td className="px-4 py-2.5"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}>{STATUS_TR[status] || status}</span></td>
+                    <td className="px-4 py-2.5"><span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}>{STATUS_TR[status.toUpperCase()] || status}</span></td>
                     <td className="px-4 py-2.5 text-xs text-gray-400">{new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td>
                   </tr>
                 );
