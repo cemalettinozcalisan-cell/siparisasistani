@@ -161,7 +161,11 @@ export default function ReportsPage() {
   const exportPDF = async () => {
     setDownloadMsg('PDF rapor hazırlanıyor...');
     setShowExport(false);
-    const rows = filteredOrders.slice(0, 50).map((o) => `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`).join('');
+    const rows = filteredOrders.slice(0, 50).map((o) => {
+      const ch = String(o.channel || 'phone').toLowerCase();
+      const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web' : ch === 'manual' ? '🏪 Manuel' : ch === 'wholesale' ? '📦 Toptan' : ch;
+      return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`;
+    }).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
       body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px}
       .stats{display:flex;gap:16px;margin:20px 0}.stat{background:#f3f4f6;padding:14px 24px;border-radius:10px;flex:1}
@@ -172,7 +176,7 @@ export default function ReportsPage() {
     </style></head><body>
     <h1>📊 Sipariş Raporu</h1><p style="color:#6b7280">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     <div class="stats"><div class="stat"><div class="label">Toplam Sipariş</div><div class="value">${totalOrders}</div></div><div class="stat"><div class="label">Toplam Ciro</div><div class="value">${totalRevenue.toLocaleString('tr-TR')} TL</div></div></div>
-    <h2 style="margin-top:24px;color:#374151">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th>Tarih</th></tr></thead><tbody>${rows}</tbody></table>
+    <h2 style="margin-top:24px;color:#374151">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div>
     </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -283,7 +287,8 @@ export default function ReportsPage() {
               { icon: '📸', label: 'Instagram', count: channels.instagram || 0, color: 'bg-pink-500' },
               { icon: '🌐', label: 'Web Sitesi', count: channels.website || 0, color: 'bg-sky-500' },
               { icon: '🏪', label: 'Manuel', count: channels.manual || 0, color: 'bg-gray-500' },
-            ].filter((c) => c.count > 0 || totalOrders === 0).map((c) => (
+              { icon: '📦', label: 'Toptan', count: channels.wholesale || 0, color: 'bg-orange-500' },
+            ].map((c) => (
               <div key={c.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600 dark:text-slate-400">{c.icon} {c.label}</span>

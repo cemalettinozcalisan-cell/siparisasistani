@@ -11,6 +11,11 @@ const STATUS_TR: Record<string, string> = {
   PREPARING: 'Hazırlanıyor', shipped: 'Kargolandı',
 };
 
+const CHANNEL_TR: Record<string, string> = {
+  phone: '📞 Telefon', whatsapp: '💬 WhatsApp', instagram: '📸 Instagram',
+  website: '🌐 Web Sitesi', manual: '🏪 Manuel', wholesale: '📦 Toptan',
+};
+
 function tr(status: string): string {
   return STATUS_TR[status] || status;
 }
@@ -37,7 +42,7 @@ export class ExportController {
       Sehir: (o.customer as Record<string, unknown>)?.city || '',
       Tutar: o.total_price,
       Durum: tr(String(o.status || '')),
-      Kanal: o.channel,
+      Kanal: CHANNEL_TR[String(o.channel || '').toLowerCase()] || String(o.channel || ''),
       Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
     }));
 
