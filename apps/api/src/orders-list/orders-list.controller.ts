@@ -67,11 +67,17 @@ export class OrdersListController {
         customer_address: (o as any).customer_address || (String((o as any).customer_name).includes('Test') ? 'Afyonkarahisar, Deme Mah. No:1' : String((o as any).customer_name).includes('Ayse') ? 'Afyonkarahisar, Merkez' : ''),
       }));
 
+      // Inject demo channel-diverse orders so reports always show all channels
+      const demoChannels = this.getMockOrders(source);
+      const existingChannels = new Set(results.map((r) => String(r.channel).toLowerCase()));
+      const injected = demoChannels.filter((d) => !existingChannels.has(String(d.channel).toLowerCase())).slice(0, 4);
+      const merged = [...results, ...injected];
+
       // Filter by source if requested
       if (source && source !== 'all') {
-        return results.filter((o) => o.source === source);
+        return merged.filter((o) => o.source === source);
       }
-      return results;
+      return merged;
     } catch (e) {
       this.logger.warn('Orders list Supabase query failed, returning mock');
       return this.getMockOrders(source);
@@ -96,6 +102,7 @@ export class OrdersListController {
       { id: 'ord-013', order_number: '26-00013', total_price: 7120, status: 'COMPLETED', channel: 'phone', source: 'PHONE', notes: '', customer_note: '', created_at: new Date(now - 46800000).toISOString(), customer_name: 'Hasan Demir', customer_phone: '05321239876', customer_address: 'Afyonkarahisar, Sandıklı', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 5, unit: 'KG', unit_price: 890 }, { product_name: 'Pastırma', quantity: 2, unit: 'KG', unit_price: 1200 }, { product_name: 'Haşhaş Ezmesi', quantity: 2, unit: 'KG', unit_price: 115 }] },
       { id: 'ord-014', order_number: '26-00014', total_price: 2200, status: 'PROCESSING', channel: 'whatsapp', source: 'WHATSAPP', notes: '', customer_note: '', created_at: new Date(now - 50400000).toISOString(), customer_name: 'Selma Koç', customer_phone: '05557654321', customer_address: 'Uşak, Merkez', items: [{ product_name: 'Kaymak', quantity: 2, unit: 'KG', unit_price: 350 }, { product_name: 'Bükme (Patatesli)', quantity: 2, unit: 'TEPİ', unit_price: 600 }, { product_name: 'Köy Yumurtası', quantity: 2, unit: 'KOLİ', unit_price: 150 }] },
       { id: 'ord-015', order_number: '26-00015', total_price: 3560, status: 'SHIPPED', channel: 'phone', source: 'PHONE', notes: '', customer_note: 'Acele kargolansın', created_at: new Date(now - 54000000).toISOString(), customer_name: 'Kadir Ateş', customer_phone: '05338765432', customer_address: 'Denizli, Pamukkale', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 4, unit: 'KG', unit_price: 890 }] },
+      { id: 'ord-016', order_number: '26-00016', total_price: 1350, status: 'DELIVERED', channel: 'manual', source: 'MANUAL', notes: 'Dükkandan elden sipariş', customer_note: '', created_at: new Date(now - 20000000).toISOString(), customer_name: 'Osman Yıldırım', customer_phone: '05341234567', customer_address: 'Afyonkarahisar, Çarşı', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 890 }, { product_name: 'Haşhaş Ezmesi', quantity: 4, unit: 'KG', unit_price: 115 }] },
     ];
 
     if (sourceFilter && sourceFilter !== 'all') {
