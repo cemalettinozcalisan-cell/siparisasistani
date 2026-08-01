@@ -186,7 +186,15 @@ export class AiAuditCenterController {
       .eq('id', id)
       .single();
 
-    return data || { error: 'Not found' };
+    if (data) return data;
+
+    if (String(id).startsWith('mock-')) {
+      const logs = generateMockLogs(tenantId);
+      const found = logs.find((l) => l.id === id);
+      if (found) return found;
+    }
+
+    return { error: 'Not found' };
   }
 }
 
