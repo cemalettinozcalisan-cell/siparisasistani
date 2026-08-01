@@ -11,6 +11,26 @@ import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
 import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 
+// Sync fetch interceptor — must run before any component renders
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+    const isApi = url.startsWith('/api/');
+    if (!isApi) return originalFetch(input, init);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        const headers = new Headers(init?.headers);
+        if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+        return originalFetch(input, { ...init, headers });
+      }
+    } catch {}
+    return originalFetch(input, init);
+  };
+}
+
 const navItems = [
   // Ana (8) — all roles
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'], group: 'main' },
@@ -259,27 +279,6 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const originalFetch = window.fetch;
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
-      const isApi = url.startsWith('/api/');
-      if (!isApi) return originalFetch(input, init);
-
-      try {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          const headers = new Headers(init?.headers);
-          if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-          return originalFetch(input, { ...init, headers });
-        }
-      } catch {}
-      return originalFetch(input, init);
-    };
-    return () => { window.fetch = originalFetch; };
-  }, []);
 
   if (!mounted) return <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
 
