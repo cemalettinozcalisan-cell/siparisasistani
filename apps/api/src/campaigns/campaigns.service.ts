@@ -76,4 +76,14 @@ export class CampaignsService {
   invalidateCache(tenantId: string) {
     this.cache.delete(tenantId);
   }
+
+  async delete(tenantId: string, id: string) {
+    await this.supabase.db
+      .from('campaigns')
+      .delete()
+      .eq('tenant_id', tenantId)
+      .eq('id', id);
+    this.cache.delete(tenantId);
+    return { success: true };
+  }
 }

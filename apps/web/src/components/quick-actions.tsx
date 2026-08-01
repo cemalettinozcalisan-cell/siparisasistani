@@ -7,7 +7,7 @@ const ACTIONS = [
   { href: '/orders', label: 'Yeni Sipariş', icon: ShoppingBag, color: 'bg-blue-500 hover:bg-blue-600' },
   { href: '/customers', label: 'Yeni Müşteri', icon: Users, color: 'bg-emerald-500 hover:bg-emerald-600' },
   { href: '/products', label: 'Yeni Ürün', icon: Package, color: 'bg-violet-500 hover:bg-violet-600' },
-  { href: '/campaigns', label: 'Yeni Kampanya', icon: Tags, color: 'bg-amber-500 hover:bg-amber-600' },
+  { href: '/marketing', label: 'Yeni Kampanya', icon: Tags, color: 'bg-amber-500 hover:bg-amber-600' },
 ];
 
 export function QuickActions() {

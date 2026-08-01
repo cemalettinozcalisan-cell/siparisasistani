@@ -21,9 +21,8 @@ const navItems = [
   { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  // Kampanya & Satış — owner, manager
-  { href: '/campaigns', label: 'Kampanyalar', icon: Tags, roles: ['owner', 'manager'], group: 'campaigns' },
-  { href: '/sales-automation', label: 'AI Satış Motoru', icon: Bot, roles: ['owner', 'manager'], group: 'campaigns' },
+  // Pazarlama — owner, manager
+  { href: '/marketing', label: 'Pazarlama', icon: Tags, roles: ['owner', 'manager'], group: 'main' },
   // Abonelik — owner, manager
   { href: '/saas', label: 'Abonelik', icon: CreditCard, roles: ['owner', 'manager'], group: 'saas' },
   // Ayarlar — role-based
@@ -43,7 +42,6 @@ const navItems = [
 
 const SIDEBAR_GROUPS = [
   { key: 'main', label: null, icon: null },
-  { key: 'campaigns', label: 'Pazarlama', icon: Tags },
   { key: 'saas', label: null, icon: null },
   { key: 'settings', label: 'Ayarlar', icon: Settings },
   { key: 'admin', label: null, icon: null },
@@ -129,7 +127,7 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [userRole, setUserRole] = useState('owner');
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ campaigns: false, settings: false });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ settings: false });
 
   useEffect(() => { setUserRole(getUserRole()); }, []);
 
@@ -137,9 +135,7 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
   useEffect(() => {
     setOpenGroups(prev => {
       const next = { ...prev };
-      const inCampaign = navItems.filter(i => i.group === 'campaigns').some(i => pathname === i.href || pathname.startsWith(i.href + '/'));
       const inSettings = navItems.filter(i => i.group === 'settings').some(i => pathname === i.href || pathname.startsWith(i.href + '/'));
-      if (inCampaign) next.campaigns = true;
       if (inSettings) next.settings = true;
       return next;
     });
