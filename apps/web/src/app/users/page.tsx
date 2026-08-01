@@ -138,6 +138,7 @@ export default function UsersPage() {
     const q = search.toLowerCase();
     const matchesSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    if (currentUserRole === 'manager' && u.role === 'owner') return false;
     return matchesSearch && matchesRole;
   });
 
