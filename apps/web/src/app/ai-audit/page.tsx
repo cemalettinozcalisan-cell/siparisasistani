@@ -1,7 +1,8 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, X, Eye, Bot, ChevronRight } from 'lucide-react';
+import { getTenantId, getUserRole } from '@/lib/tenant';
 
 interface LogEntry {
   id: string;
@@ -79,8 +80,13 @@ export default function AiAuditPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [detail, setDetail] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState('owner');
   const [filters, setFilters] = useState({ from: '', to: '', model: '', status: '' });
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
+
+  useEffect(() => { setUserRole(getUserRole()); }, []);
+
+  const isOwner = userRole === 'owner';
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -143,15 +149,15 @@ export default function AiAuditPage() {
 
       {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className={`grid grid-cols-2 md:grid-cols-3 ${isOwner ? 'lg:grid-cols-6' : 'lg:grid-cols-4'} gap-3`}>
           {[
-            { label: 'Toplam Konuşma', value: stats.total, icon: '💬', color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800' },
-            { label: 'Başarılı', value: stats.successful, icon: '✅', color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800' },
-            { label: 'Hatalı', value: stats.failed, icon: '❌', color: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400', border: 'border-red-200 dark:border-red-800' },
-            { label: 'Başarı Oranı', value: `%${stats.aiSuccessRate}`, icon: '📊', color: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400', border: 'border-violet-200 dark:border-violet-800' },
-            { label: 'Toplam Token', value: formatTokens(stats.totalTokens), icon: '⚡', color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800' },
-            { label: 'Ort. Süre', value: `${stats.avgLatency}ms`, icon: '⏱️', color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800' },
-          ].map((card) => (
+            { label: 'Toplam Konuşma', value: stats.total, icon: '💬', color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800', ownerOnly: false },
+            { label: 'Başarılı', value: stats.successful, icon: '✅', color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', ownerOnly: false },
+            { label: 'Hatalı', value: stats.failed, icon: '❌', color: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400', border: 'border-red-200 dark:border-red-800', ownerOnly: false },
+            { label: 'Başarı Oranı', value: `%${stats.aiSuccessRate}`, icon: '📊', color: 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400', border: 'border-violet-200 dark:border-violet-800', ownerOnly: false },
+            { label: 'Toplam Token', value: formatTokens(stats.totalTokens), icon: '⚡', color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', ownerOnly: true },
+            { label: 'Ort. Süre', value: `${stats.avgLatency}ms`, icon: '⏱️', color: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', ownerOnly: true },
+          ].filter(card => isOwner || !card.ownerOnly).map((card) => (
             <div key={card.label} className={`bg-white dark:bg-slate-800 border ${card.border} rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-lg">{card.icon}</span>
@@ -168,8 +174,8 @@ export default function AiAuditPage() {
         </div>
       )}
 
-      {/* Trend & Model Distribution Row */}
-      {stats && (
+      {/* Trend & Model Distribution Row — Owner only */}
+      {stats && isOwner && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Daily Trend */}
           <div className="md:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
@@ -257,18 +263,18 @@ export default function AiAuditPage() {
                 <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Tarih</th>
                 <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Mesaj</th>
                 <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Model</th>
-                <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Süre</th>
+                {isOwner && <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Süre</th>}
                 <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Güven</th>
-                <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Token</th>
+                {isOwner && <th className="text-left px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Token</th>}
                 <th className="text-right px-3 py-2.5 text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Detay</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-700/30">
               {loading && (
-                <tr><td colSpan={7} className="px-3 py-12 text-center text-gray-400 text-sm">Yükleniyor...</td></tr>
+                <tr><td colSpan={isOwner ? 7 : 5} className="px-3 py-12 text-center text-gray-400 text-sm">Yükleniyor...</td></tr>
               )}
               {!loading && logs.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-12 text-center text-gray-400 text-sm">
+                <tr><td colSpan={isOwner ? 7 : 5} className="px-3 py-12 text-center text-gray-400 text-sm">
                   <Bot className="w-8 h-8 mx-auto mb-2 opacity-30" />Henüz AI konuşması yok
                 </td></tr>
               )}
@@ -287,9 +293,11 @@ export default function AiAuditPage() {
                   <td className="px-3 py-2.5">
                     <span className={modelBadge(l.model)}>{l.model}</span>
                   </td>
+                  {isOwner && (
                   <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap">
                     {l.latency ? `${l.latency}ms` : '—'}
                   </td>
+                  )}
                   <td className="px-3 py-2.5">
                     {l.confidence != null ? (
                       <span className={`inline-flex text-xs font-semibold ${l.confidence >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
@@ -297,9 +305,11 @@ export default function AiAuditPage() {
                       </span>
                     ) : <span className="text-xs text-gray-300">—</span>}
                   </td>
+                  {isOwner && (
                   <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-slate-400 whitespace-nowrap">
                     {formatTokens(l.tokens)}
                   </td>
+                  )}
                   <td className="px-3 py-2.5 text-right">
                     <button onClick={() => openDetail(l.id)}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors">
@@ -348,8 +358,8 @@ export default function AiAuditPage() {
                 </div>
               </div>
 
-              {/* System Prompt */}
-              {detail.system_prompt && (
+              {/* System Prompt — Owner only */}
+              {isOwner && detail.system_prompt && (
                 <div>
                   <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 block">System Prompt</label>
                   <div className="bg-slate-900 text-slate-300 rounded-lg p-3 text-xs font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">

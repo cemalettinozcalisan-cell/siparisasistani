@@ -1,10 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TenantGuard } from '../auth/tenant.guard';
+import { Roles } from '../auth/roles.decorator';
 
+@UseGuards(TenantGuard)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly supabase: SupabaseService) {}
 
+  @Roles('owner')
   @Get('stats')
   async getStats() {
     const [tenants, orders, customers, payments, users, conversations] = await Promise.all([
@@ -29,6 +33,7 @@ export class AdminController {
     };
   }
 
+  @Roles('owner')
   @Get('tenants')
   async listTenants() {
     const { data } = await this.supabase.db

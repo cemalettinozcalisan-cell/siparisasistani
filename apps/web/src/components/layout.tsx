@@ -7,6 +7,7 @@ import { ThemeProvider, useTheme } from 'next-themes';
 import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
 import { QuickActions } from '@/components/quick-actions';
+import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
 import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -31,7 +32,7 @@ const navItems = [
   { href: '/users', label: 'Kullanıcılar', icon: Users, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/integrations', label: 'Entegrasyonlar', icon: Webhook, roles: ['owner'], group: 'settings' },
   { href: '/api-keys', label: 'API Anahtarları', icon: Key, roles: ['owner'], group: 'settings' },
-  { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner'], group: 'settings' },
+  { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
   { href: '/demo', label: 'Demo', icon: FlaskConical, roles: ['owner'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
@@ -299,6 +300,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
             </button>
             <div className="flex-1 max-w-md"><GlobalSearch /></div>
             <div className="flex items-center gap-1 lg:gap-2">
+              <TenantSwitcher />
               <ThemeToggle />
               <NotificationBell />
             </div>

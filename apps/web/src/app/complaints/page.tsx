@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Filter, AlertTriangle, Bot, CheckCircle2, ChevronRight, MessageSquare, PhoneCall, Camera } from 'lucide-react';
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string; badge: string }> = {
@@ -18,6 +18,7 @@ export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
   const tid = '00000000-0000-0000-0000-000000000001';
 
   useEffect(() => {
@@ -134,7 +135,8 @@ export default function ComplaintsPage() {
           const isResolved = c.event_type === 'COMPLAINT_RESOLVED';
 
           return (
-            <div key={i} className={`bg-white dark:bg-slate-800 rounded-xl border p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-start justify-between ${isResolved ? 'border-green-200 dark:border-green-800' : 'border-slate-200 dark:border-slate-700'}`}>
+            <React.Fragment key={i}>
+            <div className={`bg-white dark:bg-slate-800 rounded-xl border p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-start justify-between ${isResolved ? 'border-green-200 dark:border-green-800' : 'border-slate-200 dark:border-slate-700'}`}>
               {/* Left */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -167,12 +169,47 @@ export default function ComplaintsPage() {
                     <CheckCircle2 className="w-3.5 h-3.5" /> Çözüldü
                   </span>
                 ) : (
-                  <button className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
-                    İncele <ChevronRight className="w-3.5 h-3.5" />
+                  <button onClick={() => setExpanded(expanded === c.id ? null : String(c.id))}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
+                    {expanded === c.id ? 'Kapat' : 'İncele'} <ChevronRight className={`w-3.5 h-3.5 transition-transform ${expanded === c.id ? 'rotate-90' : ''}`} />
                   </button>
                 )}
               </div>
             </div>
+            {/* Expanded Detail */}
+            {expanded === c.id && (
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Açıklama</span>
+                  <span className="text-slate-700 dark:text-slate-300">{c.description as string}</span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Oluşturan</span>
+                  <span className="text-slate-700 dark:text-slate-300">{c.actor_type === 'AI' ? '🤖 Yapay Zeka' : c.actor_type === 'HUMAN' ? '👤 Müşteri' : '👨‍💼 Personel'}</span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Kanal</span>
+                  <span className="text-slate-700 dark:text-slate-300">{channelIcon} {channel}</span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Ticket No</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-mono">{String(meta.ticket_number || '—')}</span>
+                </div>
+                <div className="col-span-2 flex items-center gap-2">
+                  {!isResolved && (
+                    <button onClick={() => {
+                      const updated = complaints.map(x => x.id === c.id ? { ...x, event_type: 'COMPLAINT_RESOLVED' } : x);
+                      setComplaints(updated);
+                      setExpanded(null);
+                    }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Çözüldü Olarak İşaretle
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            </React.Fragment>
           );
         })}
       </div>

@@ -41,7 +41,7 @@ function getCost(model: string, promptTokens: number, completionTokens: number):
 export class AiAuditCenterController {
   constructor(private readonly supabase: SupabaseService) {}
 
-  @Roles('owner')
+  @Roles('owner', 'manager')
   @Get('stats/:tenantId')
   async stats(
     @Param('tenantId') tenantId: string,
@@ -122,7 +122,7 @@ export class AiAuditCenterController {
     };
   }
 
-  @Roles('owner')
+  @Roles('owner', 'manager')
   @Get('conversations/:tenantId')
   async conversations(
     @Param('tenantId') tenantId: string,
@@ -168,7 +168,7 @@ export class AiAuditCenterController {
     }));
   }
 
-  @Roles('owner')
+  @Roles('owner', 'manager')
   @Get('conversations/:tenantId/:id')
   async conversationDetail(@Param('tenantId') tenantId: string, @Param('id') id: string) {
     const { data } = await this.supabase.db
