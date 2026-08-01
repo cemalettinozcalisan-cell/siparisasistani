@@ -4,9 +4,16 @@ import { useEffect, useState, useMemo } from 'react';
 import { Download, FileText, Users2, Package, PhoneCall, MessageCircle, Search, ChevronDown } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
+function authHeaders(): Record<string, string> {
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch { return {}; }
+}
+
 const STATUS_TR: Record<string, string> = {
   PAYMENT_CONFIRMED: 'Ödeme Onaylandı', DELIVERED: 'Teslim Edildi', SHIPPED: 'Kargolandı',
-  PACKAGING: 'Paketleniyor', PENDING: 'Bekliyor', PROCESSING: 'Hazırlanıyor',
+  PACKAGING: 'Paketleniyor', PACKAGED: 'Paketlendi', PENDING: 'Bekliyor', PROCESSING: 'Hazırlanıyor',
   COMPLETED: 'Tamamlandı', CANCELLED: 'İptal', REFUNDED: 'İade',
   PREPARING: 'Hazırlanıyor', NEW: 'Yeni', APPROVED: 'Onaylandı',
 };
@@ -16,6 +23,7 @@ const STATUS_COLOR: Record<string, string> = {
   COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400',
   SHIPPED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
   PACKAGING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
+  PACKAGED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400',
   PREPARING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
   PROCESSING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
   PENDING: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
@@ -53,7 +61,7 @@ export default function ReportsPage() {
   const [orders, setOrders] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [dateOption, setDateOption] = useState('this_month');
+  const [dateOption, setDateOption] = useState('last_30');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [showExport, setShowExport] = useState(false);
@@ -67,7 +75,7 @@ export default function ReportsPage() {
   useEffect(() => {
     setLoading(true);
     const { from, to } = dateOption === 'custom' ? { from: customFrom, to: customTo } : getDateRange(dateOption);
-    fetch(`/api/orders-list/${tid}?limit=500`)
+    fetch(`/api/orders-list/${tid}?limit=500`, { headers: authHeaders() })
       .then((r) => r.json())
       .then((data) => {
         const list = (Array.isArray(data) ? data : []) as Record<string, unknown>[];
