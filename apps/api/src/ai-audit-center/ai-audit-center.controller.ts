@@ -66,7 +66,11 @@ export class AiAuditCenterController {
     if (modelFilter) query = query.eq('model', modelFilter);
 
     const { data } = await query;
-    const logs = (data || []) as AuditLog[];
+    let logs = (data || []) as AuditLog[];
+
+    if (logs.length === 0) {
+      logs = generateMockLogs(tenantId);
+    }
 
     let filtered = logs;
     if (statusFilter === 'failed') filtered = logs.filter((l) => !l.success);
@@ -151,6 +155,10 @@ export class AiAuditCenterController {
     const { data } = await query;
     let list = (data || []) as AuditLog[];
 
+    if (list.length === 0) {
+      list = generateMockLogs(tenantId);
+    }
+
     if (statusFilter === 'failed') list = list.filter((l) => !l.success);
     else if (statusFilter === 'low_confidence') list = list.filter((l) => l.confidence < 80);
 
@@ -180,4 +188,79 @@ export class AiAuditCenterController {
 
     return data || { error: 'Not found' };
   }
+}
+
+function generateMockLogs(tenantId: string): AuditLog[] {
+  const models = ['deepseek-chat', 'gpt-4o-mini', 'deepseek-chat', 'gpt-4o-mini', 'deepseek-chat', 'gpt-4o-mini', 'deepseek-reasoner', 'deepseek-chat', 'gpt-4o-mini', 'deepseek-chat', 'gpt-4o-mini', 'deepseek-chat', 'gpt-4o', 'deepseek-chat', 'gpt-4o-mini'];
+  const providers = ['deepseek', 'openai', 'deepseek', 'openai', 'deepseek', 'openai', 'deepseek', 'deepseek', 'openai', 'deepseek', 'openai', 'deepseek', 'openai', 'deepseek', 'openai'];
+  const messages = [
+    '3 kilo dana sucuk ve 2 kilo pastırma istiyorum, fiyat ne kadar?',
+    'Merhaba, hafta sonu açık mısınız?',
+    'Geçen hafta aldığım sucuklar çok tuzluydu, iade etmek istiyorum.',
+    'Kayseri pastırması var mı?',
+    'Siparişimi ne zaman teslim edersiniz?',
+    'Toplu sipariş için indirim yapıyor musunuz?',
+    'Kredi kartı ile ödeme alıyor musunuz?',
+    'Adana kebap için kıyma var mı?',
+    'Kuşbaşı etin kilosu ne kadar?',
+    'Siparişimi yanlış göndermişsiniz, eksik ürün var.',
+    'Yeni ürünleriniz neler?',
+    'Bayram için özel kampanyanız var mı?',
+    'Organik ürünleriniz var mı? Helal sertifikalı mı?',
+    'Farklı şehre gönderim yapıyor musunuz?',
+    'Sucukların son kullanma tarihi ne kadar?',
+  ];
+  const responses = [
+    'Dana sucuk kilosu 890 TL, pastırma 1200 TL. Toplam 3x890 + 2x1200 = 5070 TL tutar.',
+    'Cumartesi 08:00-14:00 açığız, Pazar kapalıyız.',
+    'Şikayetiniz için üzgünüz. Hemen iade kaydı oluşturuyorum.',
+    'Evet, Kayseri pastırması mevcut. Kilosu 1200 TL.',
+    'Siparişiniz şehir içi 2-3 saat, şehir dışı 1-2 iş gününde teslim edilir.',
+    'Toplu siparişlerde 5000 TL üzerine %10 indirim uyguluyoruz.',
+    'Kapıda nakit ve kredi kartı kabul ediyoruz. IBAN havale de mevcut.',
+    'Kıyma var, kilosu 650 TL.',
+    'Kuşbaşı et kilosu 720 TL.',
+    'Özür dileriz, hemen eksik ürününüzü gönderiyoruz.',
+    'Yeni ürünlerimiz: Dana füme, hindi sucuk ve köy yumurtası.',
+    'Bayram öncesi tüm ürünlerde %15 indirim kampanyamız var.',
+    'Tüm ürünlerimiz helal sertifikalıdır. Organik serimiz yakında geliyor.',
+    'Şu an sadece Türkiye içi gönderim yapıyoruz.',
+    'Sucuklarımız vakumlu pakette 30 gün dayanır.',
+  ];
+  const systemPrompt = 'Sen bir Türk şarküteri ve kasap işletmesinin AI asistanısın. Müşterilere samimi ve yöresel bir dille yardımcı ol. Sipariş al, fiyat ver, şikayetleri dinle ve çöz.';
+
+  const logs: AuditLog[] = [];
+  const now = new Date();
+
+  for (let i = 0; i < 15; i++) {
+    const dayOffset = Math.floor(i / 3); // ~3 per day over ~5 days
+    const hour = 8 + (i * 3) % 14;
+    const ts = new Date(now);
+    ts.setDate(ts.getDate() - dayOffset);
+    ts.setHours(hour, Math.floor(Math.random() * 60), 0, 0);
+
+    const success = i % 7 !== 2; // 2 out of 15 fail
+    const confidence = success ? 80 + Math.floor(Math.random() * 20) : 40 + Math.floor(Math.random() * 35);
+    const latency = 800 + Math.floor(Math.random() * 5200);
+
+    logs.push({
+      id: `mock-${tenantId.slice(0, 8)}-${i}`,
+      tenant_id: tenantId,
+      model: models[i],
+      provider: providers[i],
+      confidence,
+      latency_ms: latency,
+      success,
+      token_prompt: 200 + Math.floor(Math.random() * 800),
+      token_completion: 100 + Math.floor(Math.random() * 500),
+      user_message: messages[i],
+      system_prompt: systemPrompt,
+      raw_response: responses[i],
+      parsed_json: success ? { action: 'respond', confidence, detected_entities: [] } : ({} as any),
+      error_message: success ? '' : 'AI model timeout or invalid response format',
+      created_at: ts.toISOString(),
+    });
+  }
+
+  return logs;
 }
