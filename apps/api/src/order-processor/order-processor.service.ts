@@ -5,7 +5,7 @@ import { TimelineService } from '../timeline/timeline.service';
 
 export interface AiOrderOutput {
   tenantId: string;
-  customer: { name?: string; phone?: string };
+  customer: { name?: string; phone?: string; birthday?: string };
   products: { product_name: string; quantity: number; unit: string }[];
   address?: string;
   payment?: string;
@@ -40,6 +40,16 @@ export class OrderProcessorService {
   async process(input: AiOrderOutput): Promise<OrderResult> {
     // 1. Find or create customer
     const customerId = await this.resolveCustomer(input.tenantId, input.customer, input.phone);
+
+    // 1.5 Save birthday if provided
+    if (input.customer?.birthday) {
+      try {
+        await this.supabase.db.from('customers')
+          .update({ birth_date: `2000-${input.customer.birthday}` })
+          .eq('id', customerId)
+          .is('birth_date', null);
+      } catch {}
+    }
 
     // 2. Generate order number
     const orderNumber = await this.generateOrderNumber(input.tenantId);

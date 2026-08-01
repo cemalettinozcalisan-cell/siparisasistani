@@ -43,7 +43,7 @@ export class SalesEngineService {
     try {
       const { data: tenants } = await this.supabase.db
         .from('tenant_settings')
-        .select('tenant_id, sales_automation_enabled, reorder_reminder_days, birthday_reminder_enabled, holiday_campaigns_enabled')
+        .select('tenant_id, sales_automation_enabled, reorder_reminder_days, birthday_reminder_enabled, holiday_campaigns_enabled, birthday_discount_type, birthday_discount_value, birthday_message_template')
         .eq('sales_automation_enabled', true);
 
       for (const t of tenants || []) {
@@ -53,7 +53,7 @@ export class SalesEngineService {
           await this.processReorderReminders(tid, (t as any).reorder_reminder_days);
         }
         if ((t as any).birthday_reminder_enabled) {
-          await this.processBirthdayReminders(tid);
+          await this.processBirthdayReminders(tid, (t as any).birthday_discount_type || 'percent', (t as any).birthday_discount_value || 10, (t as any).birthday_message_template || '');
         }
         if ((t as any).holiday_campaigns_enabled) {
           await this.processHolidayCampaigns(tid);
@@ -105,19 +105,55 @@ export class SalesEngineService {
     }
   }
 
-  private async processBirthdayReminders(tenantId: string) {
+  private async processBirthdayReminders(tenantId: string, discountType: string, discountValue: number, messageTemplate: string) {
     const today = new Date();
-    const monthDay = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
 
     const { data: customers } = await this.supabase.db
       .from('customers')
-      .select('id, name, phone')
+      .select('id, name, phone, birth_date')
       .eq('tenant_id', tenantId)
+      .not('birth_date', 'is', null)
       .is('deleted_at', null);
-    // Birthday detection would need a birthday field on customers - for now use a sample
-    // In production, customers would have a birth_date column
 
-    this.logger.log(`[Birthday] Tenant ${tenantId}: Checked for ${monthDay}`);
+    if (!customers?.length) return;
+
+    let sentCount = 0;
+    for (const c of customers) {
+      const birthDate = String((c as any).birth_date).split('T')[0]; // "2000-05-15"
+      const parts = birthDate.split('-');
+      if (parts.length < 3) continue;
+      const birthMonth = parts[1];
+      const birthDay = parts[2];
+
+      if (birthMonth !== month || birthDay !== day) continue;
+
+      let message: string;
+      if (messageTemplate) {
+        message = messageTemplate.replace('{name}', (c as any).name || 'Değerli Müşterimiz');
+      } else {
+        const discountDesc = discountType === 'percent' ? `%${discountValue} indirim` :
+          discountType === 'fixed' ? `${discountValue} TL indirim` : 'ücretsiz kargo';
+        message = `İyi ki doğdunuz ${(c as any).name || 'Değerli Müşterimiz'}! 🎂 Doğum gününüze özel ${discountDesc} kazandınız. Bugün yapacağınız alışverişte geçerlidir.`;
+      }
+
+      await this.logCampaign(tenantId, 'birthday', (c as any).id, message, (c as any).phone);
+
+      // Create notification
+      try {
+        await this.supabase.db.from('notifications').insert({
+          tenant_id: tenantId,
+          type: 'birthday',
+          title: `🎂 Doğum Günü: ${(c as any).name}`,
+          message: `Doğum günü mesajı gönderildi — ${message.substring(0, 40)}...`,
+          status: 'unread',
+        });
+      } catch {}
+      sentCount++;
+    }
+
+    this.logger.log(`[Birthday] Tenant ${tenantId}: ${sentCount} birthday messages sent for ${month}-${day}`);
   }
 
   private async processHolidayCampaigns(tenantId: string) {
