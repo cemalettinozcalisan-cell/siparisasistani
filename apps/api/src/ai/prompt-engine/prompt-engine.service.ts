@@ -85,7 +85,7 @@ export class PromptEngineService {
       '{',
       '  "intent": "ORDER|COMPLAINT|PRICE_INFO|PRODUCT_INFO|CALLBACK|HUMAN_TRANSFER",',
       '  "reply": "Merhaba Mehmet Bey, Ahmet Ipek Sucuklari\'na hos geldiniz. Hemen not ediyorum:\n• 2 kg Dana Parmak Sucuk\n• 1 kg Pastirma\n\n• Teslimat:\nAnkara / Etimesgut\n\nYaklasik toplam:\n2.980 TL\nKesin tutar tartimdan sonra netlesecektir.\nOdeme yonteminizi ogrenebilir miyim? IBAN havalesi veya kredi karti?\n(Bu asamada kampanya teklif etme. Kampanya sadece odeme bilgisi alindiktan sonra gelir.)",',
-      '  "customer": { "name": "Mehmet Yilmaz", "phone": "05321234567", "birthday": "15-05|null" },',
+      '  "customer": { "name": "Mehmet Yilmaz", "phone": "05321234567", "birthday": "15-05|null", "company_name": "ABC Gida Ltd Sti|null", "identity_number": "1234567890|null" },',
       '  "products": [',
       '    { "product_name": "Dana Parmak Sucuk", "quantity": 2, "unit": "KG" }',
       '  ],',

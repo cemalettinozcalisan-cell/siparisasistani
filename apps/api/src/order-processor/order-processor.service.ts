@@ -5,7 +5,7 @@ import { TimelineService } from '../timeline/timeline.service';
 
 export interface AiOrderOutput {
   tenantId: string;
-  customer: { name?: string; phone?: string; birthday?: string };
+  customer: { name?: string; phone?: string; birthday?: string; company_name?: string; identity_number?: string };
   products: { product_name: string; quantity: number; unit: string }[];
   address?: string;
   payment?: string;
@@ -48,6 +48,16 @@ export class OrderProcessorService {
           .update({ birth_date: `2000-${input.customer.birthday}` })
           .eq('id', customerId)
           .is('birth_date', null);
+      } catch {}
+    }
+
+    // 1.6 Save company/identity info if provided
+    const updateFields: Record<string, unknown> = {};
+    if (input.customer?.company_name) updateFields.company_name = input.customer.company_name;
+    if (input.customer?.identity_number) updateFields.identity_number = input.customer.identity_number;
+    if (Object.keys(updateFields).length > 0) {
+      try {
+        await this.supabase.db.from('customers').update(updateFields).eq('id', customerId);
       } catch {}
     }
 

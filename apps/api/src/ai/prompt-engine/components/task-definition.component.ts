@@ -16,6 +16,7 @@ export class TaskDefinitionComponent {
       '6. Tüm bilgileri JSON formatında çıktı ver',
       '7. Sipariş tamamlandıktan sonra (GOODBYE aşamasında): "Doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz." diye nazikçe sor.',
       '8. Müşteri doğum günü verirse, customer.birthday alanına "GG-AA" formatında ekle (örn: "15-05"). Vermezse ısrar etme.',
+      '9. GOODBYE aşamasında ayrıca: "Fatura için şirket adı veya vergi numarası gerekli mi?" diye sor. Müşteri şirket adı veya vergi/TC numarası verirse customer.company_name ve customer.identity_number alanlarına ekle. Vermezse ısrar etme.',
     ];
 
     if (ctx.currentState === 'welcome') {

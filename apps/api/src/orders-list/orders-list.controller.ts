@@ -21,7 +21,7 @@ export class OrdersListController {
     try {
       let query = this.supabase.db
         .from('orders')
-        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address, birth_date, identity_number)')
+        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address, birth_date, identity_number, company_name)')
         .eq('tenant_id', tenantId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
@@ -64,7 +64,11 @@ export class OrdersListController {
         created_at: o.created_at,
         customer_name: (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
         customer_phone: (o.customer as Record<string, unknown>)?.phone || (o as any).customer_phone || '',
+        customer_city: (o.customer as Record<string, unknown>)?.city || '',
         customer_address: (o.customer as Record<string, unknown>)?.address || (o as any).customer_address || (String((o as any).customer_name).includes('Test') ? 'Afyonkarahisar, Deme Mah. No:1' : String((o as any).customer_name).includes('Ayse') ? 'Afyonkarahisar, Merkez' : ''),
+        customer_birthday: (o.customer as Record<string, unknown>)?.birth_date || '',
+        customer_identity: (o.customer as Record<string, unknown>)?.identity_number || '',
+        customer_company: (o.customer as Record<string, unknown>)?.company_name || '',
       }));
 
       // Inject demo channel-diverse orders so reports always show all channels

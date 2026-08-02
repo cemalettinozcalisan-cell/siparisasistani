@@ -34,7 +34,7 @@ export class ExportController {
   async comprehensive(@Param('tenantId') tenantId: string, @Res() res: Response) {
     const { data: orders } = await this.supabase.db
       .from('orders')
-      .select('id, order_number, total_price, status, channel, created_at, notes, customer:customer_id(name, phone, city, address, birth_date, identity_number)')
+      .select('id, order_number, total_price, status, channel, created_at, notes, customer:customer_id(name, phone, city, address, birth_date, identity_number, company_name)')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(1000);
@@ -72,6 +72,7 @@ export class ExportController {
       rows.push({
         SiparisNo: o.order_number,
         Musteri: cust.name || '',
+        Sirket: cust.company_name || '',
         Telefon: cust.phone || '',
         Sehir: cust.city || '',
         Adres: cust.address || '',
@@ -93,21 +94,21 @@ export class ExportController {
     const now = new Date().toLocaleDateString('tr-TR');
 
     if (!hasInstagram) {
-      rows.push({ SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Telefon: '05438765432', Sehir: 'İstanbul', Adres: 'İstanbul, Üsküdar', Urunler: '1 KG Pastırma', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
-      rows.push({ SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Telefon: '05328765432', Sehir: 'Ankara', Adres: 'Ankara, Çankaya', Urunler: '3 KG Haşhaş Ezmesi, 1 KG Kaymak', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Sirket: '', Telefon: '05438765432', Sehir: 'İstanbul', Adres: 'İstanbul, Üsküdar', Urunler: '1 KG Pastırma', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Sirket: '', Telefon: '05328765432', Sehir: 'Ankara', Adres: 'Ankara, Çankaya', Urunler: '3 KG Haşhaş Ezmesi, 1 KG Kaymak', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasWeb) {
-      rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
-      rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Sirket: 'Demir Gıda Ltd.', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '15 Mayıs', VergiTC: '1234567890' });
+      rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Sirket: '', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasManuel) {
-      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Sirket: '', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasToptan) {
-      rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Sirket: 'Şahin Toptan Gıda A.Ş.', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', VergiTC: '9876543210' });
     }
 
-    const header = 'SiparisNo;Musteri;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;VergiTC';
+    const header = 'SiparisNo;Musteri;Sirket;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;VergiTC';
     const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 
     res.set({
