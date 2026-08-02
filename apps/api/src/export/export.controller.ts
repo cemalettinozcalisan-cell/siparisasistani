@@ -42,7 +42,8 @@ export class ExportController {
     const rows: Record<string, unknown>[] = [];
 
     for (const o of orders || []) {
-      const cust = (o as any).customer || {};
+      const custRaw = (o as any).customer;
+      const cust = Array.isArray(custRaw) ? custRaw[0] || {} : (custRaw || {});
       const orderId = String(o.id);
 
       let itemsText = '';
