@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Download, FileText, Users2, Package, PhoneCall, MessageCircle, Search, ChevronDown } from 'lucide-react';
+import { Download, FileText, Package, PhoneCall, Search, ChevronDown } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -163,20 +163,23 @@ export default function ReportsPage() {
     setShowExport(false);
     const rows = filteredOrders.slice(0, 50).map((o) => {
       const ch = String(o.channel || 'phone').toLowerCase();
-      const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web' : ch === 'manual' ? '🏪 Manuel' : ch === 'wholesale' ? '📦 Toptan' : ch;
-      return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`;
+      const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web Sitesi' : ch === 'manual' ? '🏪 Manuel' : ch === 'wholesale' ? '📦 Toptan' : ch;
+      const phone = String(o.customer_phone || '');
+      const city = String(o.customer_address || '');
+      const items = (o.items as Record<string, unknown>[])?.map((i: any) => `${i.quantity} ${i.unit} ${i.product_name}`).join(', ') || '';
+      return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${phone}</td><td>${city}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td></tr>`;
     }).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
-      body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px}
-      .stats{display:flex;gap:16px;margin:20px 0}.stat{background:#f3f4f6;padding:14px 24px;border-radius:10px;flex:1}
-      .stat .label{font-size:12px;color:#6b7280}.stat .value{font-size:24px;font-weight:bold;color:#111827}
-      table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-      th{background:#4f46e5;color:#fff;padding:8px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e5e7eb}
-      .footer{margin-top:30px;font-size:11px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:12px}
+      body{font-family:Arial,sans-serif;margin:20px;color:#333;font-size:12px}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:6px;font-size:18px}
+      .stats{display:flex;gap:12px;margin:16px 0}.stat{background:#f3f4f6;padding:10px 18px;border-radius:8px;flex:1}
+      .stat .label{font-size:10px;color:#6b7280}.stat .value{font-size:20px;font-weight:bold;color:#111827}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-size:10px}
+      th{background:#4f46e5;color:#fff;padding:5px 6px;text-align:left}td{padding:4px 6px;border-bottom:1px solid #e5e7eb}
+      .footer{margin-top:20px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px}
     </style></head><body>
-    <h1>📊 Sipariş Raporu</h1><p style="color:#6b7280">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    <h1>📊 Sipariş Raporu</h1><p style="color:#6b7280;font-size:11px">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     <div class="stats"><div class="stat"><div class="label">Toplam Sipariş</div><div class="value">${totalOrders}</div></div><div class="stat"><div class="label">Toplam Ciro</div><div class="value">${totalRevenue.toLocaleString('tr-TR')} TL</div></div></div>
-    <h2 style="margin-top:24px;color:#374151">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th></tr></thead><tbody>${rows}</tbody></table>
+    <h2 style="margin-top:20px;color:#374151;font-size:14px">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Telefon</th><th>Adres</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div>
     </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -234,15 +237,12 @@ export default function ReportsPage() {
               <Download className="w-4 h-4" /> Dışa Aktar <ChevronDown className="w-3.5 h-3.5" />
             </button>
             {showExport && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-40 py-1" onClick={() => setShowExport(false)}>
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-40 py-1" onClick={() => setShowExport(false)}>
                 <button onClick={exportPDF} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-red-500" /> PDF İndir
+                  <FileText className="w-4 h-4 text-red-500" /> PDF Rapor
                 </button>
-                <button onClick={() => { downloadCSV(`/api/export/orders/${tid}`, 'siparisler.csv'); setDownloadMsg('Siparişler CSV indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000); setShowExport(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-emerald-500" /> Siparişler CSV
-                </button>
-                <button onClick={() => { downloadCSV(`/api/export/customers/${tid}`, 'musteriler.csv'); setDownloadMsg('Müşteriler CSV indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000); setShowExport(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                  <Users2 className="w-4 h-4 text-blue-500" /> Müşteriler CSV
+                <button onClick={() => { downloadCSV(`/api/export/comprehensive/${tid}`, 'siparis_raporu.csv'); setDownloadMsg('Excel rapor indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000); setShowExport(false); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-emerald-500" /> Excel Rapor
                 </button>
               </div>
             )}

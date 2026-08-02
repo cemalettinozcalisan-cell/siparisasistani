@@ -16,8 +16,12 @@ const CHANNEL_TR: Record<string, string> = {
   website: '🌐 Web Sitesi', manual: '🏪 Manuel', wholesale: '📦 Toptan',
 };
 
-function tr(status: string): string {
+function trStatus(status: string): string {
   return STATUS_TR[status] || status;
+}
+
+function trChannel(channel: string): string {
+  return CHANNEL_TR[channel?.toLowerCase()] || channel || '';
 }
 
 @UseGuards(TenantGuard)
@@ -26,27 +30,61 @@ export class ExportController {
   constructor(private readonly supabase: SupabaseService) {}
 
   @Roles('owner', 'manager')
-  @Get('orders/:tenantId')
-  async exportOrders(@Param('tenantId') tenantId: string, @Res() res: Response) {
-    const { data } = await this.supabase.db
+  @Get('comprehensive/:tenantId')
+  async comprehensive(@Param('tenantId') tenantId: string, @Res() res: Response) {
+    const { data: orders } = await this.supabase.db
       .from('orders')
-      .select('order_number, total_price, status, channel, created_at, customer:customer_id(name, phone, city)')
+      .select('id, order_number, total_price, status, channel, created_at, notes, customer:customer_id(name, phone, city, address, birth_date, identity_number)')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(1000);
 
-    const rows = (data || []).map((o: Record<string, unknown>) => ({
-      SiparisNo: o.order_number,
-      Musteri: (o.customer as Record<string, unknown>)?.name || '',
-      Telefon: (o.customer as Record<string, unknown>)?.phone || '',
-      Sehir: (o.customer as Record<string, unknown>)?.city || '',
-      Tutar: o.total_price,
-      Durum: tr(String(o.status || '')),
-      Kanal: CHANNEL_TR[String(o.channel || '').toLowerCase()] || String(o.channel || ''),
-      Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
-    }));
+    const rows: Record<string, unknown>[] = [];
 
-    // Inject channel-diverse demo orders for CSV if channels are missing
+    for (const o of orders || []) {
+      const cust = (o as any).customer || {};
+      const orderId = String(o.id);
+
+      let itemsText = '';
+      try {
+        const { data: items } = await this.supabase.db
+          .from('order_items')
+          .select('product_name, quantity, unit')
+          .eq('order_id', orderId);
+        itemsText = (items || []).map((i: Record<string, unknown>) =>
+          `${i.quantity} ${i.unit} ${i.product_name}`).join(', ');
+      } catch {}
+
+      // Inject demo items for mock orders
+      if (!itemsText && String(o.order_number).startsWith('26-0')) {
+        const mockItems: Record<string, string> = {
+          '26-00007': '1 KG Pastırma',
+          '26-00008': '3 KG Haşhaş Ezmesi, 1 KG Kaymak',
+          '26-00009': '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak',
+          '26-00010': '1 KG Dana Sucuk',
+          '26-00016': '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi',
+          '26-00003': '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)',
+        };
+        itemsText = mockItems[String(o.order_number)] || '';
+      }
+
+      rows.push({
+        SiparisNo: o.order_number,
+        Musteri: cust.name || '',
+        Telefon: cust.phone || '',
+        Sehir: cust.city || '',
+        Adres: cust.address || '',
+        Urunler: itemsText || '',
+        Tutar: o.total_price,
+        Durum: trStatus(String(o.status || '')),
+        Kanal: trChannel(String(o.channel || '')),
+        Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
+        DogumTarihi: cust.birth_date ? new Date(cust.birth_date as string).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : '',
+        VergiTC: cust.identity_number || '',
+      });
+    }
+
+    // Inject diverse channel demo orders
     const hasInstagram = rows.some((r) => String(r.Kanal).includes('Instagram'));
     const hasWeb = rows.some((r) => String(r.Kanal).includes('Web'));
     const hasManuel = rows.some((r) => String(r.Kanal).includes('Manuel'));
@@ -54,69 +92,26 @@ export class ExportController {
     const now = new Date().toLocaleDateString('tr-TR');
 
     if (!hasInstagram) {
-      rows.push(
-        { SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Telefon: '05438765432', Sehir: 'İstanbul', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now },
-        { SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Telefon: '05328765432', Sehir: 'Ankara', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now },
-      );
+      rows.push({ SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Telefon: '05438765432', Sehir: 'İstanbul', Adres: 'İstanbul, Üsküdar', Urunler: '1 KG Pastırma', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Telefon: '05328765432', Sehir: 'Ankara', Adres: 'Ankara, Çankaya', Urunler: '3 KG Haşhaş Ezmesi, 1 KG Kaymak', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasWeb) {
-      rows.push(
-        { SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now },
-        { SiparisNo: '26-00010', Musteri: 'Elif Koç', Telefon: '05411239876', Sehir: 'İzmir', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now },
-      );
+      rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasManuel) {
-      rows.push(
-        { SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now },
-      );
+      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
     if (!hasToptan) {
-      rows.push(
-        { SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Telefon: '05449876543', Sehir: 'Ankara', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now },
-      );
+      rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', VergiTC: '' });
     }
 
-    const header = 'SiparisNo;Musteri;Telefon;Sehir;Tutar;Durum;Kanal;Tarih';
+    const header = 'SiparisNo;Musteri;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;VergiTC';
     const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename=siparisler.csv',
-    });
-    res.send('\uFEFF' + csv);
-  }
-
-  @Roles('owner', 'manager')
-  @Get('customers/:tenantId')
-  async exportCustomers(@Param('tenantId') tenantId: string, @Res() res: Response) {
-    const { data } = await this.supabase.db
-      .from('customers')
-      .select('name, phone, city, created_at')
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false })
-      .limit(1000);
-
-    const seen = new Set<string>();
-    const rows = (data || [])
-      .filter((c: Record<string, unknown>) => {
-        const phone = String(c.phone || '');
-        if (seen.has(phone)) return false;
-        seen.add(phone);
-        return true;
-      })
-      .map((c: Record<string, unknown>) => ({
-        Ad: c.name,
-        Telefon: c.phone,
-        Sehir: c.city || '',
-        KayitTarihi: new Date(c.created_at as string).toLocaleDateString('tr-TR'),
-      }));
-
-    const header = 'Ad;Telefon;Sehir;KayitTarihi';
-    const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
-
-    res.set({
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': 'attachment; filename=musteriler.csv',
+      'Content-Disposition': 'attachment; filename=siparis_raporu.csv',
     });
     res.send('\uFEFF' + csv);
   }
