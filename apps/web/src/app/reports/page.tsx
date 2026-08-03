@@ -176,7 +176,7 @@ export default function ReportsPage() {
         birthday = !isNaN(d.getTime()) ? d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : String(birthdayRaw);
       }
       const identity = String((o as any).customer_identity || '');
-      return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${company || '-'}</td><td>${phone}</td><td>${city}</td><td>${address}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td><td>${birthday || '-'}</td><td>${identity || '-'}</td></tr>`;
+      return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${company || '-'}</td><td>${phone}</td><td>${city}</td><td>${address}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td><td>${birthday || '-'}</td><td>${identity || '-'}</td><td>${identity || '-'}</td></tr>`;
     }).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>
       body{font-family:Arial,sans-serif;margin:20px;color:#333;font-size:12px}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:6px;font-size:18px}
@@ -188,7 +188,7 @@ export default function ReportsPage() {
     </style></head><body>
     <h1>📊 Sipariş Raporu</h1><p style="color:#6b7280;font-size:11px">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     <div class="stats"><div class="stat"><div class="label">Toplam Sipariş</div><div class="value">${totalOrders}</div></div><div class="stat"><div class="label">Toplam Ciro</div><div class="value">${totalRevenue.toLocaleString('tr-TR')} TL</div></div></div>
-    <h2 style="margin-top:20px;color:#374151;font-size:14px">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Şirket</th><th>Tel</th><th>Şehir</th><th>Adres</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th><th>Doğum</th><th>TC/Vergi</th></tr></thead><tbody>${rows}</tbody></table>
+    <h2 style="margin-top:20px;color:#374151;font-size:14px">📋 Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Şirket</th><th>Tel</th><th>Şehir</th><th>Adres</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th><th>Doğum</th><th>TC</th><th>Vergi No</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div>
     </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });

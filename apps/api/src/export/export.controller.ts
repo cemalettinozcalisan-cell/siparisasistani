@@ -82,7 +82,8 @@ export class ExportController {
         Kanal: trChannel(String(o.channel || '')),
         Tarih: new Date(o.created_at as string).toLocaleDateString('tr-TR'),
         DogumTarihi: cust.birth_date ? new Date(cust.birth_date as string).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : '',
-        VergiTC: cust.identity_number || '',
+        TC: cust.identity_number || '',
+        VergiNo: cust.identity_number || '',
       });
     }
 
@@ -94,21 +95,21 @@ export class ExportController {
     const now = new Date().toLocaleDateString('tr-TR');
 
     if (!hasInstagram) {
-      rows.push({ SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Sirket: '', Telefon: '05438765432', Sehir: 'İstanbul', Adres: 'İstanbul, Üsküdar', Urunler: '1 KG Pastırma', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
-      rows.push({ SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Sirket: '', Telefon: '05328765432', Sehir: 'Ankara', Adres: 'Ankara, Çankaya', Urunler: '3 KG Haşhaş Ezmesi, 1 KG Kaymak', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00007', Musteri: 'İbrahim Yıldız', Sirket: '', Telefon: '05438765432', Sehir: 'İstanbul', Adres: 'İstanbul, Üsküdar', Urunler: '1 KG Pastırma', Tutar: 1200, Durum: 'Hazırlanıyor', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
+      rows.push({ SiparisNo: '26-00008', Musteri: 'Zeynep Arslan', Sirket: '', Telefon: '05328765432', Sehir: 'Ankara', Adres: 'Ankara, Çankaya', Urunler: '3 KG Haşhaş Ezmesi, 1 KG Kaymak', Tutar: 640, Durum: 'Teslim Edildi', Kanal: '📸 Instagram', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
     }
     if (!hasWeb) {
-      rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Sirket: 'Demir Gıda Ltd.', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '15 Mayıs', VergiTC: '1234567890' });
-      rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Sirket: '', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Sirket: 'Demir Gıda Ltd.', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '15 Mayıs', TC: '1234567890', VergiNo: '1234567890' });
+      rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Sirket: '', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
     }
     if (!hasManuel) {
-      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Sirket: '', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', VergiTC: '' });
+      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Sirket: '', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
     }
     if (!hasToptan) {
-      rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Sirket: 'Şahin Toptan Gıda A.Ş.', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', VergiTC: '9876543210' });
+      rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Sirket: 'Şahin Toptan Gıda A.Ş.', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', TC: '9876543210', VergiNo: '9876543210' });
     }
 
-    const header = 'SiparisNo;Musteri;Sirket;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;VergiTC';
+    const header = 'SiparisNo;Musteri;Sirket;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;TC;VergiNo';
     const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 
     res.set({

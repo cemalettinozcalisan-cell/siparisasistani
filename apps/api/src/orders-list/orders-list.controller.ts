@@ -21,7 +21,7 @@ export class OrdersListController {
     try {
       let query = this.supabase.db
         .from('orders')
-        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address, birth_date, identity_number, company_name)')
+        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address)')
         .eq('tenant_id', tenantId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });

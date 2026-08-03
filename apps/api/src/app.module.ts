@@ -65,7 +65,7 @@ import { SalesEngineModule } from './sales-engine/sales-engine.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
     EventBusModule,
     OrderEngineModule,

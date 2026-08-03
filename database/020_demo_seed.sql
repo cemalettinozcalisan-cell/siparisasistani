@@ -18,11 +18,20 @@ declare
   v_customer_phones text[] := array['05321234567','05339876543','05411223344','05449876543','05551234567','05328765432','05438765432','05559876543','05321239876','05411239876'];
   i int; j int; k int; seq int := 0;
 begin
+  -- Clean existing demo orders and associated data
+  delete from order_items where order_id in (select id from orders where tenant_id = v_tenant_id);
+  delete from activity_logs where tenant_id = v_tenant_id and entity_type = 'order';
+  delete from orders where tenant_id = v_tenant_id;
+  delete from customers where tenant_id = v_tenant_id;
+  delete from products where tenant_id = v_tenant_id;
+  delete from tenant_settings where tenant_id = v_tenant_id;
+  delete from users where tenant_id = v_tenant_id;
+  delete from tenants where id = v_tenant_id;
+
   -- Tenant
   insert into tenants (id, company_name, domain, phone, email, iban, address, city, tax_number)
   values (v_tenant_id, 'Demo İşletme', 'demo', '05320000000', 'demo@demo.com',
-    'TR12 0001 2345 6789 0001 2345 67', 'Atatürk Cad. No:42', 'Afyonkarahisar', '1234567890')
-  on conflict (id) do nothing;
+    'TR12 0001 2345 6789 0001 2345 67', 'Atatürk Cad. No:42', 'Afyonkarahisar', '1234567890');
 
   -- Settings
   insert into tenant_settings (tenant_id, voice_gender, brand_voice, greeting_style, ai_style,
@@ -31,6 +40,11 @@ begin
   values (v_tenant_id, 'female', 'yoresel', 'firma_ad', 'yoresel',
     true, true, true, true, true, '08:00', '18:30')
   on conflict (tenant_id) do nothing;
+
+  -- Demo User (for login)
+  insert into users (tenant_id, name, email, phone, password, role, active)
+  values (v_tenant_id, 'Demo Owner', 'demo@siparisasistani.com', '05320000000',
+    'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'owner', true);
 
   -- Ürünler
   for i in 1..array_length(v_product_names, 1) loop
@@ -67,8 +81,7 @@ begin
         v_status, 'iban'::payment_method,
         case when v_status in ('DELIVERED'::order_status, 'shipped'::order_status, 'completed'::order_status) then 'paid'::payment_status else 'waiting'::payment_status end,
         v_product_prices[1 + (j % 7)] * (1 + (j % 3)),
-        v_date, v_date)
-      on conflict (id) do nothing;
+        v_date, v_date);
 
       -- Order items
       for k in 1..(1 + (j % 3)) loop
