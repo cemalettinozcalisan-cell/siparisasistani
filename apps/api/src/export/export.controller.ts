@@ -32,29 +32,36 @@ export class ExportController {
   @Roles('owner', 'manager')
   @Get('comprehensive/:tenantId')
   async comprehensive(@Param('tenantId') tenantId: string, @Res() res: Response) {
+    try {
     const { data: orders } = await this.supabase.db
       .from('orders')
-      .select('id, order_number, total_price, status, channel, created_at, notes, customer:customer_id(name, phone, city, address, birth_date, identity_number, company_name)')
+      .select('id, order_number, total_price, status, channel, created_at, notes, customer:customer_id(name, phone, city, address)')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(1000);
 
     const rows: Record<string, unknown>[] = [];
 
+    // Bulk fetch all order items at once
+    let itemsMap: Record<string, string> = {};
+    try {
+      const { data: allItems } = await this.supabase.db
+        .from('order_items')
+        .select('order_id, product_name, quantity, unit')
+        .in('order_id', (orders || []).map((o: Record<string, unknown>) => o.id));
+      for (const item of allItems || []) {
+        const oid = String((item as any).order_id);
+        const text = `${(item as any).quantity} ${(item as any).unit} ${(item as any).product_name}`;
+        itemsMap[oid] = itemsMap[oid] ? itemsMap[oid] + ', ' + text : text;
+      }
+    } catch {}
+
     for (const o of orders || []) {
       const custRaw = (o as any).customer;
       const cust = Array.isArray(custRaw) ? custRaw[0] || {} : (custRaw || {});
       const orderId = String(o.id);
 
-      let itemsText = '';
-      try {
-        const { data: items } = await this.supabase.db
-          .from('order_items')
-          .select('product_name, quantity, unit')
-          .eq('order_id', orderId);
-        itemsText = (items || []).map((i: Record<string, unknown>) =>
-          `${i.quantity} ${i.unit} ${i.product_name}`).join(', ');
-      } catch {}
+      let itemsText = itemsMap[orderId] || '';
 
       // Inject demo items for mock orders
       if (!itemsText && String(o.order_number).startsWith('26-0')) {
@@ -117,5 +124,15 @@ export class ExportController {
       'Content-Disposition': 'attachment; filename=siparis_raporu.csv',
     });
     res.send('\uFEFF' + csv);
+    } catch (e) {
+      const header = 'SiparisNo;Musteri;Sirket;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;TC;VergiNo';
+      const now = new Date().toLocaleDateString('tr-TR');
+      const fallback = [
+        { SiparisNo: '26-HATA', Musteri: 'Hata', Sirket: '', Telefon: '', Sehir: '', Adres: '', Urunler: 'Veri çekilemedi', Tutar: 0, Durum: 'Hata', Kanal: '', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' },
+      ];
+      const csv = [header, ...fallback.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
+      res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename=siparis_raporu.csv' });
+      res.send('\uFEFF' + csv);
+    }
   }
 }

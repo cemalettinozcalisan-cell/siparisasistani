@@ -23,7 +23,6 @@ export class OrdersListController {
         .from('orders')
         .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address)')
         .eq('tenant_id', tenantId)
-        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (status && status !== 'all') {
@@ -34,7 +33,11 @@ export class OrdersListController {
       if (source && source !== 'all') query = query.eq('source', source.toUpperCase());
       if (q) query = query.or(`order_number.ilike.%${q}%`);
 
-      const { data } = await query.limit(parseInt(limit || '100'));
+      const { data, error } = await query.limit(parseInt(limit || '100'));
+      if (error) {
+        this.logger.error(`Supabase query error: ${JSON.stringify(error)}`);
+        return this.getMockOrders(source);
+      }
       const rawOrders = data || [];
 
       if (rawOrders.length === 0) return this.getMockOrders(source);
@@ -63,7 +66,7 @@ export class OrdersListController {
       if (source && source !== 'all') return merged.filter((o) => o.source === source);
       return merged;
     } catch (e) {
-      this.logger.warn('Orders list Supabase query failed, returning mock');
+      this.logger.warn(`Orders list Supabase query failed: ${String(e)}, returning mock`);
       return this.getMockOrders(source);
     }
   }
