@@ -25,7 +25,12 @@ export default function IntegrationsPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [testPrinting, setTestPrinting] = useState(false);
   const [testPrintResult, setTestPrintResult] = useState<string | null>(null);
+  const [origin, setOrigin] = useState('');
   const tid = '00000000-0000-0000-0000-000000000001';
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/settings/${tid}`).then((r) => r.json()).then((d) => setSettings(d)).catch(() => {});
@@ -70,7 +75,7 @@ export default function IntegrationsPage() {
   };
 
   const copyUrl = async (url: string, platform: string) => {
-    const fullUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}${url}`;
+    const fullUrl = `${origin}${url}`;
     try {
       await navigator.clipboard.writeText(fullUrl);
       setCopied(platform);
@@ -293,7 +298,7 @@ export default function IntegrationsPage() {
             <div key={w.platform} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
               <span className="text-sm font-medium text-gray-700 dark:text-slate-300 w-28 shrink-0">{w.platform}</span>
               <code className="flex-1 text-xs bg-slate-900 text-emerald-400 px-3 py-1.5 rounded-lg font-mono truncate mx-3 select-all">
-                {typeof window !== 'undefined' ? window.location.origin : ''}{w.url}
+                {origin}{w.url}
               </code>
               <button
                 onClick={() => copyUrl(w.url, w.platform)}
