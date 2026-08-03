@@ -169,7 +169,12 @@ export default function ReportsPage() {
       const address = String((o as any).customer_address || '');
       const company = String((o as any).customer_company || '');
       const items = (o.items as Record<string, unknown>[])?.map((i: any) => `${i.quantity} ${i.unit} ${i.product_name}`).join(', ') || '';
-      const birthday = (o as any).customer_birthday ? new Date(String((o as any).customer_birthday)).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : '';
+      const birthdayRaw = (o as any).customer_birthday;
+      let birthday = '';
+      if (birthdayRaw) {
+        const d = new Date(String(birthdayRaw));
+        birthday = !isNaN(d.getTime()) ? d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : String(birthdayRaw);
+      }
       const identity = String((o as any).customer_identity || '');
       return `<tr><td>#${String(o.order_number || '')}</td><td>${o.customer_name || '-'}</td><td>${company || '-'}</td><td>${phone}</td><td>${city}</td><td>${address}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${STATUS_TR[String(o.status).toUpperCase()] || o.status}</td><td>${chLabel}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td><td>${birthday || '-'}</td><td>${identity || '-'}</td></tr>`;
     }).join('');
