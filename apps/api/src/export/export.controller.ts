@@ -112,6 +112,17 @@ export class ExportController {
       rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Sirket: 'Şahin Toptan Gıda A.Ş.', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', TC: '9876543210', VergiNo: '9876543210' });
     }
 
+    rows.sort((a, b) => {
+      const parseDate = (dateStr: string) => {
+        const [d, m, y] = String(dateStr).split('.');
+        return new Date(`${y}-${m}-${d}`).getTime();
+      };
+      const da = parseDate(String(a.Tarih));
+      const db = parseDate(String(b.Tarih));
+      if (db !== da) return db - da;
+      return String(b.SiparisNo).localeCompare(String(a.SiparisNo));
+    });
+
     const header = 'SiparisNo;Musteri;Sirket;Telefon;Sehir;Adres;Urunler;Tutar;Durum;Kanal;Tarih;DogumTarihi;TC;VergiNo';
     const csv = [header, ...rows.map((r) => Object.values(r).map((v) => `"${String(v ?? '')}"`).join(';'))].join('\n');
 

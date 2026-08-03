@@ -174,4 +174,89 @@ export class CustomersController {
     }
     return { fixed, total: Object.keys(fixes).length };
   }
+
+  @Post('bulk-import/:tenantId')
+  async bulkImport(
+    @Param('tenantId') tenantId: string,
+    @Body() body: { rows: Array<Record<string, string>>; skipDuplicates?: boolean },
+  ) {
+    const { rows, skipDuplicates = true } = body;
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      return { imported: 0, skipped: 0, errors: ['Geçersiz veya boş veri'] };
+    }
+
+    let imported = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const name = String(row.name || row.Name || row['Ad Soyad'] || '').trim();
+      const phone = String(row.phone || row.Phone || row.Telefon || '').trim()
+        .replace(/[\s\-.()]/g, '')
+        .replace(/^0/, '');
+
+      if (!name || !phone) {
+        skipped++;
+        errors.push(`Satır ${i + 2}: Ad veya telefon eksik`);
+        continue;
+      }
+
+      const { data: existing } = await this.supabase.db
+        .from('customers')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('phone', phone)
+        .is('deleted_at', null)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        if (skipDuplicates) {
+          skipped++;
+          continue;
+        }
+        const { error: updateErr } = await this.supabase.db
+          .from('customers')
+          .update({
+            name,
+            city: String(row.city || row.City || row['Şehir'] || ''),
+            address: String(row.address || row.Address || row.Adres || ''),
+            company_name: String(row.company_name || row.companyName || row['Şirket'] || ''),
+            birth_date: String(row.birth_date || row.birthDate || row['Doğum Tarihi'] || '') || null,
+            identity_number: String(row.identity_number || row.identityNumber || row['TC'] || '') || null,
+          })
+          .eq('id', existing[0].id);
+        if (updateErr) {
+          skipped++;
+          errors.push(`Satır ${i + 2} (${phone}): Güncelleme hatası - ${updateErr.message}`);
+        } else {
+          imported++;
+        }
+        continue;
+      }
+
+      const { error: insertErr } = await this.supabase.db
+        .from('customers')
+        .insert({
+          tenant_id: tenantId,
+          name,
+          phone,
+          city: String(row.city || row.City || row['Şehir'] || ''),
+          address: String(row.address || row.Address || row.Adres || ''),
+          company_name: String(row.company_name || row.companyName || row['Şirket'] || ''),
+          birth_date: String(row.birth_date || row.birthDate || row['Doğum Tarihi'] || '') || null,
+          identity_number: String(row.identity_number || row.identityNumber || row['TC'] || '') || null,
+          created_at: new Date().toISOString(),
+        });
+
+      if (insertErr) {
+        skipped++;
+        errors.push(`Satır ${i + 2} (${phone}): ${insertErr.message}`);
+      } else {
+        imported++;
+      }
+    }
+
+    return { imported, skipped, total: rows.length, errors: errors.slice(0, 10) };
+  }
 }

@@ -161,7 +161,12 @@ export default function ReportsPage() {
   const exportPDF = async () => {
     setDownloadMsg('PDF rapor hazırlanıyor...');
     setShowExport(false);
-    const rows = filteredOrders.slice(0, 50).map((o) => {
+    const rows = [...filteredOrders].sort((a, b) => {
+      const da = new Date(String(a.created_at)).toDateString();
+      const db = new Date(String(b.created_at)).toDateString();
+      if (db !== da) return db.localeCompare(da);
+      return String(b.order_number || '').localeCompare(String(a.order_number || ''));
+    }).slice(0, 50).map((o) => {
       const ch = String(o.channel || 'phone').toLowerCase();
       const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web Sitesi' : ch === 'wholesale' ? '📦 Toptan' : ch;
       const phone = String((o as any).customer_phone || '');
