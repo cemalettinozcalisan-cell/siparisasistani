@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, X, Edit3, Key, Trash2, Shield, Users2, Eye, Upload, FileSpreadsheet, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Search, Plus, X, Edit3, Key, Trash2, Shield, Users2, Eye } from 'lucide-react';
 
 function authHeaders(): Record<string, string> {
   try {
@@ -64,16 +63,6 @@ export default function UsersPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'staff', active: true });
   const tid = '00000000-0000-0000-0000-000000000001';
 
-  // Bulk import states
-  const [showImport, setShowImport] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreview, setImportPreview] = useState<Array<Record<string, string>>>([]);
-  const [importHeaders, setImportHeaders] = useState<string[]>([]);
-  const [importMapping, setImportMapping] = useState<Record<string, string>>({});
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
-  const [importing, setImporting] = useState(false);
-  const IMPORT_FIELDS: Record<string, string> = { name: 'Ad Soyad', phone: 'Telefon', city: 'Şehir', address: 'Adres', company_name: 'Şirket', birth_date: 'Doğum Tarihi', identity_number: 'TC / Vergi No' };
-
   useEffect(() => {
     try { setCurrentUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {}
   }, []);
@@ -95,74 +84,6 @@ export default function UsersPage() {
 
   const openAdd = () => { setEditingUser(null); resetForm(); setShowModal(true); };
   const openEdit = (u: User) => { setEditingUser(u); setForm({ name: u.name, email: u.email, password: '', role: u.role, active: u.active }); setShowModal(true); setError(''); };
-
-  const [nameKey, phoneKey, cityKey, addressKey, companyKey, birthdateKey, identityKey] = Object.keys(IMPORT_FIELDS);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportFile(file);
-    setImportResult(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
-        const headers = Object.keys(data[0] || {});
-        setImportPreview(data.slice(0, 5));
-        setImportHeaders(headers);
-        const autoMap: Record<string, string> = {};
-        for (const h of headers) {
-          const hl = h.toLowerCase();
-          if (hl.includes('ad') && hl.includes('soy')) autoMap[nameKey] = h;
-          else if (hl.includes('telefon') || hl.includes('phone') || hl.includes('tel')) autoMap[phoneKey] = h;
-          else if (hl.includes('şehir') || hl.includes('city') || hl.includes('il')) autoMap[cityKey] = h;
-          else if (hl.includes('adres') || hl.includes('address')) autoMap[addressKey] = h;
-          else if (hl.includes('şirket') || hl.includes('company') || hl.includes('firma')) autoMap[companyKey] = h;
-          else if (hl.includes('doğum') || hl.includes('birth') || hl.includes('dogum')) autoMap[birthdateKey] = h;
-          else if (hl.includes('tc') || hl.includes('vergi') || hl.includes('kimlik') || hl.includes('identity')) autoMap[identityKey] = h;
-        }
-        setImportMapping(autoMap);
-      } catch { setImportPreview([]); setImportHeaders([]); }
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const doImport = async () => {
-    setImporting(true);
-    setImportResult(null);
-    try {
-      const file = importFile!;
-      const data = await new Promise<Array<Record<string, string>>>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const wb = XLSX.read(ev.target?.result, { type: 'binary' });
-          const sheet = wb.Sheets[wb.SheetNames[0]];
-          resolve(XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' }));
-        };
-        reader.readAsBinaryString(file);
-      });
-      const mapped = data.map((row) => {
-        const result: Record<string, string> = {};
-        for (const [field, header] of Object.entries(importMapping)) {
-          if (header && row[header] !== undefined) result[field] = String(row[header]);
-        }
-        return result;
-      }).filter((r) => r.name || r.phone);
-
-      const res = await fetch(`/api/customers/bulk-import/${tid}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ rows: mapped, skipDuplicates: true }),
-      });
-      const json = await res.json();
-      setImportResult(json);
-      if (json.imported > 0) load();
-    } catch { setImportResult({ imported: 0, skipped: 0, errors: ['Sunucu hatası'] }); }
-    setImporting(false);
-  };
-
-  const resetImport = () => { setShowImport(false); setImportFile(null); setImportPreview([]); setImportHeaders([]); setImportMapping({}); setImportResult(null); };
 
   const save = async () => {
     if (!form.name || !form.email) { setError('Ad Soyad ve E-posta zorunludur'); return; }
@@ -235,11 +156,6 @@ export default function UsersPage() {
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{users.length} kullanıcı</p>
         </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowImport(true)}
-
-className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-100 dark:hover:bg-amber-900/30">
-              <Upload size={15} /> Excel'den Müşteri Yükle
-            </button>
             <button onClick={() => setShowMatrix(!showMatrix)}
             className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             <Eye className="w-4 h-4" /> {showMatrix ? 'Matrisi Gizle' : 'Yetki Matrisi'}
@@ -455,118 +371,6 @@ className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-
             <div className="flex justify-end gap-2">
               <button onClick={() => setDeletingUser(null)} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300">İptal</button>
               <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Sil</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Import Modal */}
-      {showImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { if (!importing) resetImport(); }}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">Excel'den Müşteri Yükle</h3>
-              </div>
-              <button onClick={resetImport} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><X size={18} /></button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {!importResult && (
-                <>
-                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-8 text-center">
-                    <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileChange} className="hidden" id="import-file" />
-                    <label htmlFor="import-file" className="cursor-pointer flex flex-col items-center gap-2">
-                      <Upload size={28} className="text-slate-400" />
-                      <span className="text-sm text-gray-600 dark:text-slate-300">
-                        {importFile ? importFile.name : 'Excel veya CSV dosyası sürükleyin ya da seçin'}
-                      </span>
-                      {!importFile && <span className="text-xs text-slate-400">.xlsx, .xls, .csv</span>}
-                    </label>
-                  </div>
-
-                  {importHeaders.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Sütun Eşleştirme</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(IMPORT_FIELDS).map(([field, label]) => (
-                          <div key={field} className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 w-24 flex-shrink-0">{label}</span>
-                            <select
-                              value={importMapping[field] || ''}
-                              onChange={(e) => setImportMapping({ ...importMapping, [field]: e.target.value })}
-                              className="flex-1 px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
-                              <option value="">-- Seçin --</option>
-                              {importHeaders.map((h) => <option key={h} value={h}>{h}</option>)}
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {importPreview.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Önizleme (ilk {Math.min(importPreview.length, 5)} satır)</h4>
-                      <div className="overflow-auto">
-                        <table className="w-full text-xs border border-slate-200 dark:border-slate-700">
-                          <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-700">
-                              {importHeaders.map((h) => <th key={h} className="px-2 py-1.5 text-left text-slate-600 dark:text-slate-300 border-b">{h}</th>)}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {importPreview.slice(0, 5).map((row, i) => (
-                              <tr key={i} className="border-b border-slate-100 dark:border-slate-700">
-                                {importHeaders.map((h) => <td key={h} className="px-2 py-1 text-slate-700 dark:text-slate-300">{String(row[h] || '')}</td>)}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {importResult && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                    <Download size={20} />
-                    <span className="font-semibold">İçe aktarma tamamlandı</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-bold text-emerald-600">{importResult.imported}</div>
-                      <div className="text-xs text-emerald-500">içe aktarıldı</div>
-                    </div>
-                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-bold text-amber-600">{importResult.skipped}</div>
-                      <div className="text-xs text-amber-500">atlandı</div>
-                    </div>
-                  </div>
-                  {importResult.errors.length > 0 && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                      <p className="text-xs text-red-600 mb-1 font-medium">Hatalar:</p>
-                      {importResult.errors.map((e, i) => <p key={i} className="text-xs text-red-500">{e}</p>)}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-              <button onClick={resetImport} disabled={importing} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">İptal</button>
-              {!importResult && importFile && importMapping.name && importMapping.phone && (
-                <button onClick={doImport} disabled={importing}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50">
-                  {importing ? 'Yükleniyor...' : 'Yüklemeyi Başlat'}
-                </button>
-              )}
-              {importResult && (
-                <button onClick={resetImport} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">Kapat</button>
-              )}
             </div>
           </div>
         </div>
