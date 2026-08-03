@@ -1,9 +1,9 @@
 ﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Activity, Database, MessageSquare, Phone, MessageCircle, Brain, Clock, Users, TrendingUp, Zap, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight } from 'lucide-react';
 
-interface ServiceInfo { name: string; status: 'ok' | 'down' | 'not_configured'; tip: string; }
+interface ServiceInfo { name: string; status: 'ok' | 'down' | 'not_configured'; tip: string; techName?: string; }
 
 interface HealthData {
   services: Record<string, ServiceInfo>;
@@ -17,17 +17,19 @@ interface LicenseInfo { plan: string; used: number; limit: number; remaining: nu
 
 const SERVICE_ICONS: Record<string, typeof Brain> = {
   aiBrain: Brain,
+  netgsm: PhoneCall,
   voice: Phone,
-  sms: MessageCircle,
   whatsapp: MessageSquare,
+  instagram: Camera,
   database: Database,
 };
 
 const SERVICE_ROUTES: Record<string, string> = {
   aiBrain: '/integrations',
+  netgsm: '/integrations',
   voice: '/integrations',
-  sms: '/integrations',
   whatsapp: '/integrations',
+  instagram: '/integrations',
   database: '',
 };
 
@@ -41,8 +43,13 @@ export default function HealthPage() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [license, setLicense] = useState<LicenseInfo | null>(null);
   const [now, setNow] = useState(new Date());
+  const [userRole, setUserRole] = useState('owner');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const tid = '00000000-0000-0000-0000-000000000001';
+
+  useEffect(() => {
+    try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {}
+  }, []);
 
   const load = async () => {
     const [h, l] = await Promise.all([
@@ -56,10 +63,11 @@ export default function HealthPage() {
     } else {
       setHealth({
         services: {
-          aiBrain: { name: 'Sipariş Alan AI Beyin', status: 'ok', tip: 'AI' },
-          voice: { name: 'Telefonla Konuşan Ses', status: 'not_configured', tip: 'Ses' },
-          sms: { name: 'Bilgilendirme SMSleri', status: 'not_configured', tip: 'SMS' },
+          aiBrain: { name: 'Sipariş Alan AI Beyin', status: 'ok', tip: 'AI', techName: 'DeepSeek / OpenAI' },
+          netgsm: { name: 'Telefon Santralı (NetGSM)', status: 'not_configured', tip: 'Santral' },
+          voice: { name: 'Telefonla Konuşan Ses', status: 'not_configured', tip: 'Ses', techName: 'ElevenLabs' },
           whatsapp: { name: 'WhatsApp Haberleşme Hattı', status: 'not_configured', tip: 'WhatsApp' },
+          instagram: { name: 'Instagram Sipariş Hattı', status: 'not_configured', tip: 'Instagram' },
           database: { name: 'Müşteri ve Ürün Veritabanı', status: 'ok', tip: 'Veritabanı' },
         },
         today: { totalCalls: 0, aiSuccessRate: 97, humanTransferCount: 2, avgCallDuration: 3, avgConfidence: 94 },
@@ -112,18 +120,21 @@ export default function HealthPage() {
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
           <Zap size={15} className="text-amber-500" /> Servis Bağlantıları
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {Object.entries(health.services).map(([key, svc]) => {
             const Icon = SERVICE_ICONS[key] || Database;
             const cfg = STATUS_CONFIG[svc.status];
             const isProblem = svc.status !== 'ok';
             return (
               <div key={key}
-                className={`bg-white dark:bg-slate-800 rounded-xl border ${cfg.color} p-4 flex flex-col items-center text-center gap-2 transition-all hover:shadow-sm ${isProblem ? 'hover:border-red-300 dark:hover:border-red-700' : ''}`}>
+                className={`bg-white dark:bg-slate-800 rounded-xl border ${cfg.color} p-4 flex flex-col items-center text-center gap-1.5 transition-all hover:shadow-sm ${isProblem ? 'hover:border-red-300 dark:hover:border-red-700' : ''}`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${svc.status === 'ok' ? 'bg-emerald-50 dark:bg-emerald-900/20' : svc.status === 'down' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
                   <Icon size={18} className={svc.status === 'ok' ? 'text-emerald-600' : svc.status === 'down' ? 'text-red-500' : 'text-slate-400'} />
                 </div>
                 <span className="text-xs font-medium text-gray-700 dark:text-slate-200 leading-tight">{svc.name}</span>
+                {userRole === 'owner' && svc.techName && (
+                  <span className="text-[9px] text-slate-400 -mt-0.5">{svc.techName}</span>
+                )}
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>
                   {cfg.label}
                 </span>
