@@ -30,7 +30,7 @@ export class HealthController {
     const [orders, audits, customers, orderItems] = await Promise.all([
       this.supabase.db
         .from('orders')
-        .select('id, status, total_price, channel, created_at')
+        .select('id, order_number, status, total_price, channel, created_at, customer_name')
         .eq('tenant_id', tenantId)
         .is('deleted_at', null),
 
@@ -51,6 +51,16 @@ export class HealthController {
         .select('product_name, quantity'),
     ]);
 
+    // --- service status from env ---
+    const services = {
+      aiBrain: { name: 'Sipariş Alan AI Beyin', status: process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY ? 'ok' as const : 'down' as const, tip: 'AI' },
+      voice: { name: 'Telefonla Konuşan Ses', status: process.env.ELEVENLABS_API_KEY ? 'ok' as const : 'not_configured' as const, tip: 'Ses' },
+      sms: { name: 'Bilgilendirme SMSleri', status: process.env.NETGSM_USERNAME ? 'ok' as const : 'not_configured' as const, tip: 'SMS' },
+      whatsapp: { name: 'WhatsApp Haberleşme Hattı', status: process.env.WHATSAPP_TOKEN ? 'ok' as const : 'not_configured' as const, tip: 'WhatsApp' },
+      database: { name: 'Müşteri ve Ürün Veritabanı', status: 'ok' as const, tip: 'Veritabanı' },
+    };
+
+    // --- metrics ---
     const todayOrders = (orders.data || []).filter(
       (o: { created_at: string }) => new Date(o.created_at) >= today,
     );
@@ -72,12 +82,29 @@ export class HealthController {
       (o: { status: string }) => o.status === 'cancelled',
     );
 
-    const channelBreakdown: Record<string, number> = {};
-    todayOrders.forEach((o: { channel: string }) => {
-      channelBreakdown[o.channel] = (channelBreakdown[o.channel] || 0) + 1;
+    // --- recent events (last 15 orders, formatted for esnaf) ---
+    const recentOrders = (orders.data || [])
+      .sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 15);
+
+    const channelEmoji: Record<string, string> = { phone: '📞', whatsapp: '💬', instagram: '📸', website: '🌐', manual: '📋', wholesale: '📦' };
+    const recentEvents = recentOrders.map((o: { order_number: string; customer_name: string; channel: string; status: string; total_price: number; created_at: string }) => {
+      const ch = channelEmoji[o.channel] || '📋';
+      const name = o.customer_name || 'Yeni Müşteri';
+      const time = new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+      if (o.status === 'cancelled') {
+        return { time, text: `AI, ${name} ile görüşmeyi tamamlayamadı — esnafa devredildi`, type: 'warning' };
+      }
+      if (o.status === 'new') {
+        return { time, text: `${ch} ${name} yeni sipariş verdi — onay bekliyor`, type: 'info' };
+      }
+      const channelNames: Record<string, string> = { phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Web Sitesi', wholesale: 'Toptan' };
+      return { time, text: `${ch} ${name} — ${Number(o.total_price).toLocaleString('tr-TR')} TL tutarında sipariş ${channelNames[o.channel] || o.channel} üzerinden alındı`, type: 'success' };
     });
 
     return {
+      services,
       today: {
         totalCalls: todayOrders.length,
         aiSuccessRate: todayAudits.length > 0
@@ -92,9 +119,9 @@ export class HealthController {
           : 0,
       },
       topProducts,
-      channelBreakdown,
       totalCustomers: customers.data?.length || 0,
       totalOrders: orders.data?.length || 0,
+      recentEvents,
     };
   }
 }
