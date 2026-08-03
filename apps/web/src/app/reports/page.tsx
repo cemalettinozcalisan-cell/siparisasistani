@@ -163,7 +163,7 @@ export default function ReportsPage() {
     setShowExport(false);
     const rows = filteredOrders.slice(0, 50).map((o) => {
       const ch = String(o.channel || 'phone').toLowerCase();
-      const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web Sitesi' : ch === 'manual' ? '🏪 Manuel' : ch === 'wholesale' ? '📦 Toptan' : ch;
+      const chLabel = ch === 'phone' ? '📞 Telefon' : ch === 'whatsapp' ? '💬 WhatsApp' : ch === 'instagram' ? '📸 Instagram' : ch === 'website' ? '🌐 Web Sitesi' : ch === 'wholesale' ? '📦 Toptan' : ch;
       const phone = String((o as any).customer_phone || '');
       const city = String((o as any).customer_city || '');
       const address = String((o as any).customer_address || '');
@@ -295,7 +295,6 @@ export default function ReportsPage() {
               { icon: '💬', label: 'WhatsApp', count: channels.whatsapp || 0, color: 'bg-emerald-500' },
               { icon: '📸', label: 'Instagram', count: channels.instagram || 0, color: 'bg-pink-500' },
               { icon: '🌐', label: 'Web Sitesi', count: channels.website || 0, color: 'bg-sky-500' },
-              { icon: '🏪', label: 'Manuel', count: channels.manual || 0, color: 'bg-gray-500' },
               { icon: '📦', label: 'Toptan', count: channels.wholesale || 0, color: 'bg-orange-500' },
             ].map((c) => (
               <div key={c.label}>

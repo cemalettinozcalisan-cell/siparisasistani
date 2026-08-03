@@ -13,7 +13,7 @@ const STATUS_TR: Record<string, string> = {
 
 const CHANNEL_TR: Record<string, string> = {
   phone: '📞 Telefon', whatsapp: '💬 WhatsApp', instagram: '📸 Instagram',
-  website: '🌐 Web Sitesi', manual: '🏪 Manuel', wholesale: '📦 Toptan',
+  website: '🌐 Web Sitesi', wholesale: '📦 Toptan',
 };
 
 function trStatus(status: string): string {
@@ -97,7 +97,6 @@ export class ExportController {
     // Inject diverse channel demo orders
     const hasInstagram = rows.some((r) => String(r.Kanal).includes('Instagram'));
     const hasWeb = rows.some((r) => String(r.Kanal).includes('Web'));
-    const hasManuel = rows.some((r) => String(r.Kanal).includes('Manuel'));
     const hasToptan = rows.some((r) => String(r.Kanal).includes('Toptan'));
     const now = new Date().toLocaleDateString('tr-TR');
 
@@ -108,9 +107,6 @@ export class ExportController {
     if (!hasWeb) {
       rows.push({ SiparisNo: '26-00009', Musteri: 'Ayşe Demir', Sirket: 'Demir Gıda Ltd.', Telefon: '05339876543', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Merkez', Urunler: '1 KG Dana Parmak Sucuk, 1 KG Pastırma, 1 KG Kaymak', Tutar: 2450, Durum: 'Paketleniyor', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '15 Mayıs', TC: '1234567890', VergiNo: '1234567890' });
       rows.push({ SiparisNo: '26-00010', Musteri: 'Elif Koç', Sirket: '', Telefon: '05411239876', Sehir: 'İzmir', Adres: 'İzmir, Bornova', Urunler: '1 KG Dana Sucuk', Tutar: 890, Durum: 'İptal', Kanal: '🌐 Web Sitesi', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
-    }
-    if (!hasManuel) {
-      rows.push({ SiparisNo: '26-00016', Musteri: 'Osman Yıldırım', Sirket: '', Telefon: '05341234567', Sehir: 'Afyonkarahisar', Adres: 'Afyonkarahisar, Çarşı', Urunler: '1 KG Dana Parmak Sucuk, 4 KG Haşhaş Ezmesi', Tutar: 1350, Durum: 'Teslim Edildi', Kanal: '🏪 Manuel', Tarih: now, DogumTarihi: '', TC: '', VergiNo: '' });
     }
     if (!hasToptan) {
       rows.push({ SiparisNo: '26-00003', Musteri: 'Fatma Şahin', Sirket: 'Şahin Toptan Gıda A.Ş.', Telefon: '05449876543', Sehir: 'Ankara', Adres: 'Ankara, Çankaya Mah. İş Merkezi No:15', Urunler: '30 KOLİ Köy Yumurtası, 15 TEPİ Bükme (Patatesli)', Tutar: 28500, Durum: 'Onaylandı', Kanal: '📦 Toptan', Tarih: now, DogumTarihi: '', TC: '9876543210', VergiNo: '9876543210' });
