@@ -9,7 +9,7 @@ import { CommandPalette } from '@/components/command-palette';
 import { QuickActions } from '@/components/quick-actions';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, FlaskConical, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
@@ -53,7 +53,6 @@ const navItems = [
   { href: '/api-keys', label: 'API Anahtarları', icon: Key, roles: ['owner'], group: 'settings' },
   { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
-  { href: '/demo', label: 'Demo', icon: FlaskConical, roles: ['owner'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
   { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
   // Geliştirici — owner only

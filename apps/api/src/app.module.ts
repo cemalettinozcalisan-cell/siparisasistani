@@ -25,7 +25,6 @@ import { HealthModule } from './health/health.module';
 import { ReplayModule } from './replay/replay.module';
 import { SupabaseService } from './common/supabase.client';
 import { NetgsmModule } from './netgsm/netgsm.module';
-import { DemoModule } from './demo/demo.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { AliasEngineModule } from './alias-engine/alias-engine.module';
 import { ClarificationModule } from './clarification/clarification.module';
@@ -87,7 +86,6 @@ import { SalesEngineModule } from './sales-engine/sales-engine.module';
     OrderLockModule,
     VoiceModule,
     NetgsmModule,
-    DemoModule,
     CampaignsModule,
     AliasEngineModule,
     ClarificationModule,
