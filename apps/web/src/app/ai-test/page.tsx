@@ -29,14 +29,18 @@ export default function AiTestPage() {
           messages: updated.map((m) => ({ role: m.role === 'user' ? 'customer' : 'assistant', content: m.content })),
         }),
       });
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
-      setResult(data);
-      const parsed = data.parsed as Record<string, unknown> || {};
-      const reply = String(parsed.reply || data.response || 'Yanıt alınamadı.');
-      setMessages([...updated, { role: 'assistant', content: reply }]);
+      if (res.ok) {
+        const data = await res.json();
+        setResult(data);
+        const parsed = data.parsed as Record<string, unknown> || {};
+        const reply = String(parsed.reply || data.response || 'Yanıt alınamadı.');
+        setMessages([...updated, { role: 'assistant', content: reply }]);
+      } else {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        setMessages([...updated, { role: 'assistant', content: `AI şu anda yanıt veremiyor. Sistem Durumu sayfasından API anahtarlarınızı kontrol edin. (${(err as any).message || res.status})` }]);
+      }
     } catch {
-      setMessages([...updated, { role: 'assistant', content: 'Bağlantı hatası. Backend çalışmıyor olabilir.' }]);
+      setMessages([...updated, { role: 'assistant', content: 'Sunucuya bağlanılamadı. Backend çalıştığından emin olun.' }]);
     }
     setLoading(false);
   };
