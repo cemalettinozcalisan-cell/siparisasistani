@@ -12,6 +12,7 @@ export class SalesCoachComponent {
     const voice = settings?.brand_voice || 'yoresel';
     const greeting = settings?.greeting_style || 'firma_ad';
     const cargoSettings = await this.getCargoSettings(ctx.tenantId);
+    const invoice = cargoSettings as any; // invoice fields are in the same tenant_settings row but not in the typed select
 
     return [
       '=== SIPARISASISTANI AI ANAYASASI v2.0 ===',
@@ -130,6 +131,17 @@ export class SalesCoachComponent {
       '- Numara NetGSM\'den geliyor, asla sorma.',
       'WHATSAPP: Kisa, net, emoji kullanilabilir. Numara biliniyor, sorma.',
       'INSTAGRAM: Kisa, net. Numara bilinmiyorsa sor.',
+      '',
+      '--- FATURA VE VERGI KURALLARI ---',
+      `e-Fatura modulu: ${invoice?.invoice_enabled ? 'AKTIF' : 'PASIF (fatura surecine girme)'}`,
+      `Fatura limiti: ${Number(invoice?.invoice_limit) || 12000} TL (bu tutar uzerinde fatura ZORUNLU)`,
+      `Uzaktan satista otomatik e-Arsiv: ${invoice?.invoice_remote_auto ? 'AKTIF' : 'PASIF'}`,
+      `KDV: %${Number(invoice?.invoice_default_vat) || 20}`,
+      `TCKN politikasi: ${String(invoice?.invoice_tc_policy || 'optional') === 'required' ? 'ZORUNLU — TC Kimlik No istemek zorundasin' : 'OPSIYONEL — verirse kaydet, vermezse Nihai Tuketici olarak isle'}`,
+      `AI fatura davranisi: ${String(invoice?.invoice_ai_behavior || 'end')}`,
+      '',
+      `Siparis tutari fatura limitini asiyorsa siparis sonunda fatura bilgisi (TCKN/VKN) toplaman GEREKIR.`,
+      `Fatura modulu PASIF ise fatura bilgisi HIC sorma.`,
       '',
       this.getVoiceRules(voice, greeting, companyName),
       '',

@@ -641,6 +641,123 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* 8. Fatura & Vergi Ayarları */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <SectionHeader icon={CreditCard} title="Fatura & Vergi Ayarları" />
+
+        {/* Status Card */}
+        <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg grid grid-cols-3 gap-3 text-center text-xs">
+          <div>
+            <div className={`w-3 h-3 rounded-full mx-auto mb-1 ${settings?.invoice_enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <div className="text-gray-500">e-Belge</div>
+            <div className={`font-semibold ${settings?.invoice_enabled ? 'text-emerald-600' : 'text-slate-400'}`}>{settings?.invoice_enabled ? 'Aktif' : 'Pasif'}</div>
+          </div>
+          <div>
+            <div className="w-3 h-3 rounded-full mx-auto mb-1 bg-slate-300" />
+            <div className="text-gray-500">Entegratör</div>
+            <div className="font-semibold text-slate-400">Bağlı Değil</div>
+          </div>
+          <div>
+            <div className="w-3 h-3 rounded-full mx-auto mb-1 bg-slate-300" />
+            <div className="text-gray-500">Ortam</div>
+            <div className="font-semibold text-slate-400">—</div>
+          </div>
+        </div>
+
+        {/* Main Toggle */}
+        <div className="space-y-4">
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+            <Row label="e-Fatura / e-Arşiv Entegrasyonu" desc="Aktif edildiğinde vergi kuralları ve fatura bilgisi toplama özellikleri açılır">
+              <Toggle enabled={!!settings?.invoice_enabled} onChange={(v) => saveAndKeep('invoice_enabled', v)} />
+            </Row>
+          </div>
+
+          {!!settings?.invoice_enabled && (
+            <div className="space-y-4">
+              {/* Vergi Kuralları */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg space-y-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Vergi Kuralları</label>
+
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Zorunlu Fatura Limiti (TL)</label>
+                  <input
+                    type="number"
+                    value={Number(settings?.invoice_limit) || 12000}
+                    onChange={(e) => saveAndKeep('invoice_limit', Number(e.target.value))}
+                    className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-44"
+                  />
+                  <span className="text-xs text-gray-400 ml-2">{Number(settings?.invoice_limit || 12000).toLocaleString('tr-TR')} TL üzeri siparişlerde fatura zorunlu</span>
+                </div>
+
+                <Row label="Limit Aşımında Otomatik e-Arşiv Taslağı" desc="Limit aşıldığında siparişe otomatik fatura bayrağı eklenir">
+                  <Toggle enabled={!!settings?.invoice_limit_auto} onChange={(v) => saveAndKeep('invoice_limit_auto', v)} />
+                </Row>
+
+                <Row label="Uzaktan/Kargo Satışlarda Otomatik e-Arşiv" desc="Kargo ile gönderilen tüm siparişlere fatura zorunluluğu">
+                  <Toggle enabled={!!settings?.invoice_remote_auto} onChange={(v) => saveAndKeep('invoice_remote_auto', v)} />
+                </Row>
+
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Varsayılan KDV Oranı (%)</label>
+                  <select
+                    value={String(settings?.invoice_default_vat || '20')}
+                    onChange={(e) => saveAndKeep('invoice_default_vat', Number(e.target.value))}
+                    className="px-2 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                    <option value="1">%1</option>
+                    <option value="10">%10</option>
+                    <option value="20">%20</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Fatura Alt Bilgisi / Not</label>
+                  <textarea
+                    value={String(settings?.invoice_footer_note || '')}
+                    onChange={(e) => saveAndKeep('invoice_footer_note', e.target.value)}
+                    placeholder='İnternet satışı teslimat belgesidir. Afyon Vergi Dairesi VKN 1234567890'
+                    className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-indigo-400 outline-none resize-none"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              {/* Kimlik Bilgisi Politikası */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg space-y-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Kimlik Bilgisi Politikası</label>
+
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Bireysel Müşteri TCKN Politikası</label>
+                  <select
+                    value={String(settings?.invoice_tc_policy || 'optional')}
+                    onChange={(e) => saveAndKeep('invoice_tc_policy', e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-full">
+                    <option value="optional">Opsiyonel — Müşteri verirse kaydet, vermezse Nihai Tüketici olarak işle</option>
+                    <option value="required">Zorunlu — AI sipariş alırken TCKN istemek zorundadır</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">AI Fatura Davranışı</label>
+                  <select
+                    value={String(settings?.invoice_ai_behavior || 'end')}
+                    onChange={(e) => saveAndKeep('invoice_ai_behavior', e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-full">
+                    <option value="never">Hiç sorma — Fatura sürecine AI karışmaz</option>
+                    <option value="end">Sipariş sonunda sor — Veda aşamasında fatura bilgisi topla</option>
+                    <option value="required_only">Sadece gerekiyorsa sor — Limit aşıldıysa veya uzaktan satışsa sor</option>
+                    <option value="always">Her siparişte sor — Sipariş başında fatura bilgisi topla</option>
+                  </select>
+                </div>
+
+                <Row label="Kurumsal Müşteri Zorunlu Alanları" desc="Şirket siparişlerinde Vergi No, Vergi Dairesi ve Unvan zorunlu olarak toplanır">
+                  <Toggle enabled={!!settings?.invoice_company_required} onChange={(v) => saveAndKeep('invoice_company_required', v)} />
+                </Row>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Bottom save */}
       <div className="flex justify-end">
         <button
