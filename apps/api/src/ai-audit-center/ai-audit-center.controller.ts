@@ -265,7 +265,7 @@ function generateMockLogs(tenantId: string): AuditLog[] {
       system_prompt: systemPrompt,
       raw_response: responses[i],
       parsed_json: success ? { action: 'respond', confidence, detected_entities: [] } : ({} as any),
-      error_message: success ? '' : 'AI model timeout or invalid response format',
+      error_message: success ? '' : 'AI yanıt formatı hatalı veya zaman aşımı — model cevap üretemedi',
       created_at: ts.toISOString(),
     });
   }
