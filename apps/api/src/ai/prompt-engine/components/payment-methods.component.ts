@@ -19,6 +19,13 @@ export class PaymentMethodsComponent {
       .eq('id', ctx.tenantId)
       .single();
 
+    // Check cargo COD setting
+    const { data: cargoSettings } = await this.supabase.db
+      .from('tenant_settings')
+      .select('cargo_cod_enabled, cargo_cod_fee')
+      .eq('tenant_id', ctx.tenantId)
+      .maybeSingle();
+
     const methods: string[] = [];
 
     if (tenant?.iban) {
@@ -33,14 +40,20 @@ export class PaymentMethodsComponent {
     if (settings?.payment_iyzico) {
       methods.push('- Kredi Kartı (Iyzico)');
     }
+    if (cargoSettings?.cargo_cod_enabled) {
+      const codFee = Number(cargoSettings.cargo_cod_fee) || 0;
+      methods.push(`- Kapıda Ödeme (Nakit/Kredi Kartı)${codFee > 0 ? `: +${codFee} TL hizmet bedeli` : ''}`);
+    }
 
     if (methods.length === 0) return '';
 
-    return ['[ÖDEME YÖNTEMLERİ — SADECE BUNLAR MEVCUTTUR, BAŞKA YÖNTEM UYDURMA]',
+    const hasCOD = !!cargoSettings?.cargo_cod_enabled;
+    return ['[ÖDEME YÖNTEMLERİ — SADECE BUNLAR MEVCUTTUR]',
       ...methods,
       '',
-      'ÖNEMLİ: Sadece yukarıdaki yöntemler geçerlidir. Kapıda ödeme, nakit, kapıda kart ASLA teklif etme.',
-      'Müşteri "kapıda" veya "nakit" derse: "Maalesef kapıda ödeme seçeneğimiz yok. IBAN veya kredi kartı kullanabilirsiniz." de.',
+      hasCOD
+        ? 'Kapıda ödeme mevcuttur, müşteri isterse teklif et.'
+        : 'Kapıda ödeme YOKTUR. Müşteri "kapıda" veya "nakit" derse: "Maalesef kapıda ödeme seçeneğimiz yok. IBAN veya kredi kartı kullanabilirsiniz." de.',
     ].join('\n');
   }
 }

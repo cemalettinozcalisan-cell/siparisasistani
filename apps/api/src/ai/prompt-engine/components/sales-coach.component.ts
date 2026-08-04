@@ -144,19 +144,51 @@ export class SalesCoachComponent {
   }
 
   private getCargoText(settings: Record<string, unknown> | null): string {
-    if (!settings) return 'Kargo ucreti yoksa söyleme.';
-    const lines: string[] = [];
+    if (!settings) return 'Kargo ucreti tanimli degil. Toplam tutara DAHIL ETME. Musteri sorarsa "Kargo ucreti siparis sonrasi hesaplanacaktir" de. Asla ucretsiz/kargo dahil deme.';
+
+    const rules: string[] = [];
+    const freeEnabled = settings['cargo_free_enabled'];
+    const freeThreshold = Number(settings['cargo_free_threshold']) || 0;
+    const codEnabled = settings['cargo_cod_enabled'];
+    const codFee = Number(settings['cargo_cod_fee']) || 0;
+    const defaultPrice = Number(settings['cargo_default_price']) || 0;
+
+    // Active cargo companies
     const companies = ['yurtici', 'mng', 'aras'];
+    const activeFirms: string[] = [];
     for (const co of companies) {
-      const enabled = settings[`${co}_enabled`];
-      const price = settings[`${co}_price`];
-      if (enabled) {
-        lines.push(`${co} aktif - ${price} TL`);
+      if (settings[`${co}_enabled`]) {
+        activeFirms.push(`${co} - ${settings[`${co}_price`] || 0} TL`);
       }
     }
-    return lines.length > 0
-      ? `Aktif kargo firmalari: ${lines.join(', ')}. Toplam tutara kargo ucretini ekle.`
-      : 'Kargo ucreti tanimli degil. Toplam tutara DAHIL ETME. Musteri sorarsa "Kargo ucreti siparis sonrasi hesaplanacaktir" de. Asla ucretsiz/kargo dahil deme.';
+
+    if (activeFirms.length > 0) {
+      rules.push(`Aktif kargo firmalari: ${activeFirms.join(', ')}.`);
+
+      // Free shipping threshold
+      if (freeEnabled && freeThreshold > 0) {
+        rules.push(`Ucretsiz kargo: ${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir. Siparis tutari ${freeThreshold} TL altindaysa kargo ucretini ekle.`);
+      } else {
+        rules.push('Toplam tutara kargo ucretini ekle.');
+      }
+
+      // COD
+      if (codEnabled) {
+        rules.push(`Kapida odeme secenegi mevcuttur${codFee > 0 ? ` (+${codFee} TL hizmet bedeli)` : ''}. Musteri isterse kapida nakit veya kart ile odeyebilir.`);
+      }
+    } else if (defaultPrice > 0) {
+      rules.push(`Kargo ucreti: ${defaultPrice} TL. Toplam tutara ekle.`);
+      if (freeEnabled && freeThreshold > 0) {
+        rules.push(`Ucretsiz kargo: ${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir.`);
+      }
+      if (codEnabled) {
+        rules.push(`Kapida odeme mevcuttur${codFee > 0 ? ` (+${codFee} TL)` : ''}.`);
+      }
+    } else {
+      rules.push('Kargo ucreti tanimli degil. Toplam tutara DAHIL ETME. Musteri sorarsa "Kargo ucreti siparis sonrasi hesaplanacaktir" de. Asla ucretsiz/kargo dahil deme.');
+    }
+
+    return rules.join(' ');
   }
 
   private getVoiceRules(voice: string, greeting: string, companyName: string): string {
@@ -195,7 +227,7 @@ export class SalesCoachComponent {
   private async getCargoSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price')
+      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_threshold, cargo_cod_enabled, cargo_cod_fee, cargo_default_price')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     return data;

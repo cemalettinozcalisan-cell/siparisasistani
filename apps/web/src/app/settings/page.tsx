@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package } from 'lucide-react';
 
 const DAYS = [
   { key: 'monday', label: 'Pazartesi' },
@@ -467,6 +467,89 @@ export default function SettingsPage() {
             placeholder="Hafta sonu verilen şehir dışı siparişler Pazartesi kargoya verilir"
             addLabel="Ekle"
           />
+        </div>
+      </div>
+
+      {/* 7. Kargo Ayarları */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+        <SectionHeader icon={Package} title="Kargo Ayarları" />
+
+        <div className="space-y-4">
+          {/* Ücretsiz Kargo */}
+          <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+            <Row label="Ücretsiz Kargo" desc="Belirli tutar üzeri siparişlerde kargo ücreti alınmaz">
+              <Toggle enabled={!!settings?.cargo_free_enabled} onChange={(v) => saveAndKeep('cargo_free_enabled', v)} />
+            </Row>
+            {!!settings?.cargo_free_enabled && (
+              <div>
+                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Ücretsiz kargo eşik tutarı (TL)</label>
+                <input
+                  type="number"
+                  value={Number(settings?.cargo_free_threshold) || 0}
+                  onChange={(e) => saveAndKeep('cargo_free_threshold', Number(e.target.value))}
+                  className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+                  placeholder="örn: 500"
+                />
+                <span className="text-xs text-gray-400 ml-2">{Number(settings?.cargo_free_threshold) || 500} TL ve üzeri ücretsiz</span>
+              </div>
+            )}
+          </div>
+
+          {/* Kapıda Ödeme */}
+          <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+            <Row label="Kapıda Ödeme" desc="Kargo ile kapıda nakit veya kart tahsilatı">
+              <Toggle enabled={!!settings?.cargo_cod_enabled} onChange={(v) => saveAndKeep('cargo_cod_enabled', v)} />
+            </Row>
+            {!!settings?.cargo_cod_enabled && (
+              <div>
+                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Kapıda ödeme ek ücreti (TL)</label>
+                <input
+                  type="number"
+                  value={Number(settings?.cargo_cod_fee) || 0}
+                  onChange={(e) => saveAndKeep('cargo_cod_fee', Number(e.target.value))}
+                  className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+                  placeholder="örn: 10"
+                />
+                <span className="text-xs text-gray-400 ml-2">Kapıda ödemede müşteriden +{Number(settings?.cargo_cod_fee) || 10} TL alınır</span>
+              </div>
+            )}
+          </div>
+
+          {/* Varsayılan Kargo Ücreti */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+            <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Varsayılan kargo ücreti (TL)</label>
+            <input
+              type="number"
+              value={Number(settings?.cargo_default_price) || 0}
+              onChange={(e) => saveAndKeep('cargo_default_price', Number(e.target.value))}
+              className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+              placeholder="örn: 60"
+            />
+            <span className="text-xs text-gray-400 ml-2">Hiçbir kargo firması seçili değilse bu ücret kullanılır</span>
+          </div>
+
+          {/* Kargo Firmaları */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg space-y-3">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Kargo Firmaları</label>
+            {['yurtici', 'mng', 'aras'].map((firm) => (
+              <div key={firm} className={`flex items-center gap-3 ${settings?.[`${firm}_enabled`] ? '' : 'opacity-50'}`}>
+                <span className="text-sm text-gray-600 dark:text-slate-300 w-32 capitalize">{firm === 'yurtici' ? 'Yurtiçi Kargo' : firm === 'mng' ? 'MNG Kargo' : 'Aras Kargo'}</span>
+                <Toggle enabled={!!settings?.[`${firm}_enabled`]} onChange={(v) => saveAndKeep(`${firm}_enabled`, v)} />
+                {!!settings?.[`${firm}_enabled`] && (
+                  <>
+                    <input
+                      type="number"
+                      value={Number(settings?.[`${firm}_price`]) || 0}
+                      onChange={(e) => saveAndKeep(`${firm}_price`, Number(e.target.value))}
+                      className="px-2 py-1 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-24"
+                      placeholder="Ücret"
+                    />
+                    <span className="text-xs text-gray-400">TL</span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
