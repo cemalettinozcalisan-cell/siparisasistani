@@ -75,6 +75,62 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
+const JSON_LABELS: Record<string, string> = {
+  action: 'Aksiyon',
+  confidence: 'Güven Skoru',
+  detected_entities: 'Tespit Edilenler',
+  customer: 'Müşteri',
+  name: 'Adı',
+  phone: 'Telefon',
+  birthday: 'Doğum Günü',
+  company_name: 'Şirket',
+  identity_number: 'TC / Vergi No',
+  products: 'Ürünler',
+  product_name: 'Ürün',
+  quantity: 'Miktar',
+  unit: 'Birim',
+  address: 'Adres',
+  payment: 'Ödeme',
+  method: 'Yöntem',
+  confirmed: 'Onaylandı',
+  reply: 'AI Yanıtı',
+  needs_human: 'İnsan Müdahalesi Gerekli',
+  total: 'Toplam',
+  order_number: 'Sipariş No',
+};
+
+function renderParsedJson(obj: Record<string, unknown>, depth = 0): string {
+  const indent = '  '.repeat(depth);
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const label = JSON_LABELS[key] || key;
+    if (Array.isArray(value)) {
+      lines.push(`${indent}${label}:`);
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) {
+          // Product array: format as "{quantity} {unit} {name}"
+          const p = item as Record<string, unknown>;
+          if (p.product_name && p.quantity) {
+            lines.push(`${indent}  • ${p.quantity} ${p.unit || 'adet'} ${p.product_name}`);
+          } else {
+            lines.push(`${indent}  • ${JSON.stringify(item)}`);
+          }
+        } else {
+          lines.push(`${indent}  • ${item}`);
+        }
+      }
+    } else if (typeof value === 'object' && value !== null) {
+      lines.push(`${indent}${label}:`);
+      lines.push(renderParsedJson(value as Record<string, unknown>, depth + 1));
+    } else if (typeof value === 'boolean') {
+      lines.push(`${indent}${label}: ${value ? 'Evet' : 'Hayır'}`);
+    } else {
+      lines.push(`${indent}${label}: ${value ?? '—'}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export default function AiAuditPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -349,7 +405,7 @@ export default function AiAuditPage() {
                   <div className="font-bold text-gray-700 dark:text-slate-300">{detail.latency_ms || 0}ms</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-2">
-                  <span className="text-gray-400">Provider</span>
+                  <span className="text-gray-400">Sağlayıcı</span>
                   <div className="font-bold text-gray-700 dark:text-slate-300">{detail.provider || '—'}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-2">
@@ -389,9 +445,9 @@ export default function AiAuditPage() {
               {/* Parsed JSON — Owner only */}
               {isOwner && detail.parsed_json && Object.keys(detail.parsed_json).length > 0 && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 block">Parse Edilmiş JSON</label>
-                  <div className="bg-slate-900 text-emerald-400 rounded-lg p-3 text-xs font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
-                    {JSON.stringify(detail.parsed_json, null, 2)}
+                  <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 block">AI Çıktı Analizi</label>
+                  <div className="bg-slate-900 text-slate-300 rounded-lg p-3 text-xs font-mono leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                    {renderParsedJson(detail.parsed_json)}
                   </div>
                 </div>
               )}
