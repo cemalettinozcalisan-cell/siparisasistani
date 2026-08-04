@@ -699,14 +699,29 @@ export default function SettingsPage() {
 
                 <div>
                   <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Varsayılan KDV Oranı (%)</label>
-                  <select
-                    value={String(settings?.invoice_default_vat || '20')}
-                    onChange={(e) => saveAndKeep('invoice_default_vat', Number(e.target.value))}
-                    className="px-2 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
-                    <option value="1">%1</option>
-                    <option value="10">%10</option>
-                    <option value="20">%20</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0" max="100" step="0.5"
+                      value={Number(settings?.invoice_default_vat) || 20}
+                      onChange={(e) => saveAndKeep('invoice_default_vat', Number(e.target.value))}
+                      className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-28"
+                    />
+                    <div className="flex gap-1">
+                      {[1, 8, 10, 18, 20].map((rate) => (
+                        <button
+                          key={rate}
+                          onClick={() => saveAndKeep('invoice_default_vat', rate)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                            Number(settings?.invoice_default_vat || 20) === rate
+                              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                              : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-600 hover:bg-slate-50'
+                          }`}>
+                          %{rate}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
