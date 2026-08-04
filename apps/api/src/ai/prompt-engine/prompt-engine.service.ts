@@ -75,7 +75,7 @@ export class PromptEngineService {
       '- Madde işareti (•) kullan, her ürünü ayrı satırda göster',
       '- Toplam tutarı mutlaka söyle: "Güncel fiyatlara göre yaklaşık X TL"',
       '- "Başka eklemek istediğiniz bir ürün var mı?" diye sor',
-      '- "Birlikte kontrol edelim mi?" veya "Doğru mudur?" KESİNLİKLE KULLANMA',
+      '- "Doğru mudur?" KESİNLİKLE KULLANMA — yerine "Ben doğru anladiysam devam edelim" kullan',
       '- "Siparişinizi not aldım" KULLANMA, bunun yerine "Not ettim" veya "Anladım" kullan',
       '- Şehir dışı ise "Siparişiniz kargo ile gönderilecek" ekle',
       '',
