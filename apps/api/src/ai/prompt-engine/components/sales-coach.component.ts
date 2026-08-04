@@ -148,7 +148,10 @@ export class SalesCoachComponent {
 
     const rules: string[] = [];
     const freeEnabled = settings['cargo_free_enabled'];
+    const freeType = String(settings['cargo_free_type'] || 'amount');
     const freeThreshold = Number(settings['cargo_free_threshold']) || 0;
+    const freeWeight = Number(settings['cargo_free_weight']) || 0;
+    const freeQuantity = Number(settings['cargo_free_quantity']) || 0;
     const codEnabled = settings['cargo_cod_enabled'];
     const codFee = Number(settings['cargo_cod_fee']) || 0;
     const defaultPrice = Number(settings['cargo_default_price']) || 0;
@@ -165,9 +168,15 @@ export class SalesCoachComponent {
     if (activeFirms.length > 0) {
       rules.push(`Aktif kargo firmalari: ${activeFirms.join(', ')}.`);
 
-      // Free shipping threshold
-      if (freeEnabled && freeThreshold > 0) {
-        rules.push(`Ucretsiz kargo: ${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir. Siparis tutari ${freeThreshold} TL altindaysa kargo ucretini ekle.`);
+      // Free shipping based on type
+      if (freeEnabled) {
+        if (freeType === 'weight' && freeWeight > 0) {
+          rules.push(`Ucretsiz kargo: ${freeWeight} KG ve uzeri siparislerde kargo ucretsizdir. Siparis ${freeWeight} KG altindaysa kargo ucretini ekle.`);
+        } else if (freeType === 'quantity' && freeQuantity > 0) {
+          rules.push(`Ucretsiz kargo: ${freeQuantity} adet/koli/palet ve uzeri siparislerde kargo ucretsizdir. Altindaysa kargo ucretini ekle.`);
+        } else if (freeThreshold > 0) {
+          rules.push(`Ucretsiz kargo: ${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir. Siparis tutari ${freeThreshold} TL altindaysa kargo ucretini ekle.`);
+        }
       } else {
         rules.push('Toplam tutara kargo ucretini ekle.');
       }
@@ -178,8 +187,14 @@ export class SalesCoachComponent {
       }
     } else if (defaultPrice > 0) {
       rules.push(`Kargo ucreti: ${defaultPrice} TL. Toplam tutara ekle.`);
-      if (freeEnabled && freeThreshold > 0) {
-        rules.push(`Ucretsiz kargo: ${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir.`);
+      if (freeEnabled) {
+        if (freeType === 'weight' && freeWeight > 0) {
+          rules.push(`Ucretsiz kargo: ${freeWeight} KG ve uzeri siparislerde kargo ucretsizdir.`);
+        } else if (freeType === 'quantity' && freeQuantity > 0) {
+          rules.push(`Ucretsiz kargo: ${freeQuantity} adet/koli/palet ve uzeri siparislerde kargo ucretsizdir.`);
+        } else if (freeThreshold > 0) {
+          rules.push(`${freeThreshold} TL ve uzeri siparislerde kargo ucretsizdir.`);
+        }
       }
       if (codEnabled) {
         rules.push(`Kapida odeme mevcuttur${codFee > 0 ? ` (+${codFee} TL)` : ''}.`);
@@ -227,7 +242,7 @@ export class SalesCoachComponent {
   private async getCargoSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_threshold, cargo_cod_enabled, cargo_cod_fee, cargo_default_price')
+      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     return data;

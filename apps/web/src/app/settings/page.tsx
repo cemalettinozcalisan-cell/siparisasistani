@@ -458,15 +458,56 @@ export default function SettingsPage() {
 
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-300 block mb-2">Özel Kargo / Teslimat Kuralları</label>
-          <CrudList
-            items={deliveryRules}
-            inputValue={ruleInput}
-            onInputChange={setRuleInput}
-            onAdd={() => addItem(deliveryRules, setDeliveryRules, ruleInput, setRuleInput, 'delivery_rules')}
-            onRemove={(i) => removeItem(deliveryRules, setDeliveryRules, i, 'delivery_rules')}
-            placeholder="Hafta sonu verilen şehir dışı siparişler Pazartesi kargoya verilir"
-            addLabel="Ekle"
-          />
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                value={ruleInput}
+                onChange={(e) => setRuleInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const trimmed = ruleInput.trim();
+                    if (trimmed && !deliveryRules.includes(trimmed)) {
+                      const next = [...deliveryRules, trimmed];
+                      setDeliveryRules(next); setRuleInput('');
+                      saveAndKeep('delivery_rules', next);
+                    }
+                  }
+                }}
+                placeholder="Hafta sonu verilen şehir dışı siparişler Pazartesi kargoya verilir"
+                className="flex-1 px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
+              />
+              <button
+                onClick={() => {
+                  const trimmed = ruleInput.trim();
+                  if (trimmed && !deliveryRules.includes(trimmed)) {
+                    const next = [...deliveryRules, trimmed];
+                    setDeliveryRules(next); setRuleInput('');
+                    saveAndKeep('delivery_rules', next);
+                  }
+                }}
+                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1">
+                <Plus className="w-3.5 h-3.5" /> Ekle
+              </button>
+            </div>
+            {deliveryRules.length > 0 && (
+              <div className="space-y-1">
+                {deliveryRules.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm text-gray-700 dark:text-slate-300 group">
+                    <span>{item}</span>
+                    <button
+                      onClick={() => {
+                        const next = deliveryRules.filter((_, idx) => idx !== i);
+                        setDeliveryRules(next);
+                        saveAndKeep('delivery_rules', next);
+                      }}
+                      className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -477,20 +518,64 @@ export default function SettingsPage() {
         <div className="space-y-4">
           {/* Ücretsiz Kargo */}
           <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-            <Row label="Ücretsiz Kargo" desc="Belirli tutar üzeri siparişlerde kargo ücreti alınmaz">
+            <Row label="Ücretsiz Kargo" desc="Belirli şartlar üzeri siparişlerde kargo ücreti alınmaz">
               <Toggle enabled={!!settings?.cargo_free_enabled} onChange={(v) => saveAndKeep('cargo_free_enabled', v)} />
             </Row>
             {!!settings?.cargo_free_enabled && (
-              <div>
-                <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Ücretsiz kargo eşik tutarı (TL)</label>
-                <input
-                  type="number"
-                  value={Number(settings?.cargo_free_threshold) || 0}
-                  onChange={(e) => saveAndKeep('cargo_free_threshold', Number(e.target.value))}
-                  className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
-                  placeholder="örn: 500"
-                />
-                <span className="text-xs text-gray-400 ml-2">{Number(settings?.cargo_free_threshold) || 500} TL ve üzeri ücretsiz</span>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Eşik Türü</label>
+                  <select
+                    value={String(settings?.cargo_free_type || 'amount')}
+                    onChange={(e) => saveAndKeep('cargo_free_type', e.target.value)}
+                    className="px-2 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                    <option value="amount">Tutar (TL)</option>
+                    <option value="weight">Ağırlık (KG)</option>
+                    <option value="quantity">Adet / Koli / Palet</option>
+                  </select>
+                </div>
+
+                {String(settings?.cargo_free_type || 'amount') === 'amount' && (
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Ücretsiz kargo eşik tutarı (TL)</label>
+                    <input
+                      type="number"
+                      value={Number(settings?.cargo_free_threshold) || 0}
+                      onChange={(e) => saveAndKeep('cargo_free_threshold', Number(e.target.value))}
+                      className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+                      placeholder="örn: 500"
+                    />
+                    <span className="text-xs text-gray-400 ml-2">{Number(settings?.cargo_free_threshold) || 500} TL ve üzeri ücretsiz</span>
+                  </div>
+                )}
+
+                {String(settings?.cargo_free_type || 'amount') === 'weight' && (
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Ücretsiz kargo ağırlık eşiği (KG)</label>
+                    <input
+                      type="number"
+                      value={Number(settings?.cargo_free_weight) || 0}
+                      onChange={(e) => saveAndKeep('cargo_free_weight', Number(e.target.value))}
+                      className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+                      placeholder="örn: 10"
+                    />
+                    <span className="text-xs text-gray-400 ml-2">{Number(settings?.cargo_free_weight) || 10} KG ve üzeri ücretsiz</span>
+                  </div>
+                )}
+
+                {String(settings?.cargo_free_type || 'amount') === 'quantity' && (
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-slate-400 block mb-1">Ücretsiz kargo adet eşiği (Koli/Palet/Adet)</label>
+                    <input
+                      type="number"
+                      value={Number(settings?.cargo_free_quantity) || 0}
+                      onChange={(e) => saveAndKeep('cargo_free_quantity', Number(e.target.value))}
+                      className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-40"
+                      placeholder="örn: 5"
+                    />
+                    <span className="text-xs text-gray-400 ml-2">{Number(settings?.cargo_free_quantity) || 5} adet/koli/palet ve üzeri ücretsiz</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
