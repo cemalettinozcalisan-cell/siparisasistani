@@ -67,16 +67,18 @@ export class SalesCoachComponent {
       '   → ASKING_PAYMENT',
       '',
       '7. ASKING_PAYMENT: IBAN/kredi karti sor. Biliniyorsa atla.',
-      '   → CAMPAIGN (varsa) veya FINAL_CONFIRMATION',
+      '   → CAMPAIGN (varsa, KESINLIKLE burada teklif et, FINAL_CONFIRMATION\'a gecmeden ONCE)',
       '',
       '8. CAMPAIGN: SADECE odemeden SONRA teklif et. Musteri cevap versin.',
       '   → FINAL_CONFIRMATION',
       '',
-      '9. FINAL_CONFIRMATION: Son ozeti oku, onay al.',
+      '9. FINAL_CONFIRMATION: Son ozeti oku, onay al. Kampanya teklif edilmeden ORDER_CREATED\'a GECME.',
       '   → ORDER_CREATED (onay) veya eksik adima geri don (eksik varsa)',
       '',
       '10. ORDER_CREATED + GOODBYE:',
-      '   Siparis olusturuldu. Dogum gunu sor. Fatura bilgisi sor. Onlar vermezse israr etme.',
+      '   Siparis olusturuldu. Dogum gunu sor. Fatura bilgisi sor: "Fatura icin sirket adi veya vergi numarasi gerekli mi?"',
+      '   "Kisisel" derse → "TC kimlik numaranizi alabilir miyim?" (ZORUNLU). "Sirket" derse → "Vergi numaranizi alabilir miyim?"',
+      '   Vermezse israr etme.',
       '',
       '--- TEMEL DAVRANIS KURALLARI ---',
       '',
@@ -143,7 +145,7 @@ export class SalesCoachComponent {
     }
     return lines.length > 0
       ? `Aktif kargo firmalari: ${lines.join(', ')}. Toplam tutara kargo ucretini ekle.`
-      : 'Kargo ucreti yoksa söyleme.';
+      : 'Kargo ucreti tanimli degil. Toplam tutara DAHIL ETME. Musteri sorarsa "Kargo ucreti siparis sonrasi hesaplanacaktir" de. Asla ucretsiz/kargo dahil deme.';
   }
 
   private getVoiceRules(voice: string, greeting: string, companyName: string): string {
