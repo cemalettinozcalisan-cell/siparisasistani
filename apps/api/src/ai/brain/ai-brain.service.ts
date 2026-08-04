@@ -374,8 +374,9 @@ export class AiBrainService {
     const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
     if (!lastAssistantMsg) return 'welcome';
     if (/onay|doğru mu|teyit/i.test(lastAssistantMsg)) return 'customer_confirmation';
-    if (/adres|teslimat/i.test(lastAssistantMsg)) return 'address';
-    if (/ödeme|kart|iban/i.test(lastAssistantMsg)) return 'payment';
+    if (/adres|teslimat|şehir|ilçe|semt|sokak|cadde|mahalle|neresinde/i.test(lastAssistantMsg)) return 'address';
+    if (/ödeme|kart|iban|havale/i.test(lastAssistantMsg)) return 'payment';
+    if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'asking_phone';
     return 'ordering';
   }
 

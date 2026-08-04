@@ -26,7 +26,7 @@ export default function AiTestPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenantId: '00000000-0000-0000-0000-000000000001',
-          messages: updated.map((m) => ({ role: m.role === 'user' ? 'customer' : 'assistant', content: m.content })),
+          messages: updated.map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
         }),
       });
       if (res.ok) {

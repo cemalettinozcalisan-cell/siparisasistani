@@ -32,7 +32,7 @@ export class AiTestController {
       tenantId: body.tenantId,
       tenantName: tenantNames[body.tenantId],
       channel: 'phone' as const,
-      currentState: 'ordering',
+      currentState: this.detectState(body.messages),
       customerPhone: '',
     };
 
@@ -106,5 +106,15 @@ export class AiTestController {
   @Get('audit/:tenantId')
   async getAudit(@Param('tenantId') tenantId: string) {
     return this.audit.getByTenant(tenantId, 50);
+  }
+
+  private detectState(messages: { role: string; content: string }[]): string {
+    const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
+    if (!lastAssistantMsg) return 'welcome';
+    if (/onay|doğru mu|teyit|olustur/i.test(lastAssistantMsg)) return 'customer_confirmation';
+    if (/adres|teslimat|şehir|ilçe|semt|sokak|cadde|mahalle|neresinde|gönderiyoruz/i.test(lastAssistantMsg)) return 'address';
+    if (/ödeme|kart|iban|havale/i.test(lastAssistantMsg)) return 'payment';
+    if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'asking_phone';
+    return 'ordering';
   }
 }

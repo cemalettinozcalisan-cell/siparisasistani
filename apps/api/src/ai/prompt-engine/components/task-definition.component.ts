@@ -12,7 +12,7 @@ export class TaskDefinitionComponent {
       '2. Ürün kataloğundaki ürünlerle eşleştir',
       '3. Her ürünü tek tek onaylat',
       '4. Toplam sipariş özetini oku',
-      '5. Müşteri onayından sonra adres ve ödeme bilgisini al',
+      '5. Özetten sonra sırasıyla: adres (ZORUNLU), telefon (bilinmiyorsa ZORUNLU), ödeme yöntemini al',
       '6. Tüm bilgileri JSON formatında çıktı ver',
       '7. Sipariş tamamlandıktan sonra (GOODBYE aşamasında): "Doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz." diye nazikçe sor.',
       '8. Müşteri doğum günü verirse, customer.birthday alanına "GG-AA" formatında ekle (örn: "15-05"). Vermezse ısrar etme.',
@@ -26,7 +26,9 @@ export class TaskDefinitionComponent {
     } else if (ctx.currentState === 'customer_confirmation') {
       tasks.push('', '[ŞU ANKİ ADIM] Onay - Sipariş özetini oku ve onay iste.');
     } else if (ctx.currentState === 'address') {
-      tasks.push('', '[ŞU ANKİ ADIM] Adres - Teslimat adresini öğren.');
+      tasks.push('', '[ŞU ANKİ ADIM] Adres - Teslimat adresini (şehir, ilçe, mahalle/sokak) öğren.');
+    } else if (ctx.currentState === 'asking_phone') {
+      tasks.push('', '[ŞU ANKİ ADIM] Telefon - Müşterinin telefon numarasını öğren.');
     } else if (ctx.currentState === 'payment') {
       tasks.push('', '[ŞU ANKİ ADIM] Ödeme - Ödeme yöntemini belirle.');
     }
