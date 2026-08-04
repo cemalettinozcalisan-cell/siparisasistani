@@ -89,7 +89,7 @@ export default function SettingsPage() {
         body: JSON.stringify(body),
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 3000);
     } catch {}
     setSaving(false);
   };
@@ -206,7 +206,10 @@ export default function SettingsPage() {
       </div>
 
       {saved && (
-        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300">✅ Kaydedildi</div>
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-emerald-200 dark:bg-emerald-800 flex items-center justify-center text-xs">✓</span>
+          Tüm ayarlar başarıyla kaydedildi
+        </div>
       )}
 
       {/* 1. AI Ayarları — DOKUNULMAZ */}
@@ -643,9 +646,17 @@ export default function SettingsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg disabled:opacity-50 ${
+            saved ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'
+          } text-white`}
         >
-          <Save className="w-4 h-4" /> {saving ? 'Kaydediliyor...' : 'Tümünü Kaydet'}
+          {saving ? (
+            <>Kaydediliyor...</>
+          ) : saved ? (
+            <>✓ Kaydedildi</>
+          ) : (
+            <><Save className="w-4 h-4" /> Tümünü Kaydet</>
+          )}
         </button>
       </div>
     </div>
