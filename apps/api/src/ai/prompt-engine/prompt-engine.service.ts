@@ -16,7 +16,7 @@ export interface PromptContext {
   customerName?: string;
   customerId?: string;
   customerBirthday?: string;
-  channel: 'phone' | 'whatsapp';
+  channel: 'phone' | 'whatsapp' | 'instagram';
   currentState: string;
   collectedData?: Record<string, unknown>;
 }

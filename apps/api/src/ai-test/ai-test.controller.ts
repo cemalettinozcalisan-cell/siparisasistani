@@ -19,21 +19,44 @@ export class AiTestController {
   async simulate(@Body() body: {
     tenantId: string;
     messages: { role: string; content: string }[];
+    channel?: string;
+    customerPhone?: string;
   }) {
     const start = Date.now();
     const provider = this.aiFactory.getProvider();
+    const channel = (body.channel || 'phone') as 'phone' | 'whatsapp' | 'instagram';
 
-    const tenantNames: Record<string, string> = {
-      'a0000000-0000-0000-0000-000000000001': 'Ahmet İpek Sucukları',
-      'demo-tenant-id': 'Demo İşletme',
-    };
+    // Resolve tenant name from DB
+    let tenantName = 'Demo İşletme';
+    try {
+      const { data } = await this.supabase.db
+        .from('tenants')
+        .select('company_name')
+        .eq('id', body.tenantId)
+        .single();
+      if (data) tenantName = data.company_name as string;
+    } catch {}
+
+    // Lookup customer if phone provided
+    let customerName = '';
+    if (body.customerPhone) {
+      const { data } = await this.supabase.db
+        .from('customers')
+        .select('name')
+        .eq('tenant_id', body.tenantId)
+        .eq('phone', body.customerPhone)
+        .is('deleted_at', null)
+        .limit(1);
+      if (data && data.length > 0) customerName = data[0].name as string;
+    }
 
     const promptCtx = {
       tenantId: body.tenantId,
-      tenantName: tenantNames[body.tenantId],
-      channel: 'phone' as const,
+      tenantName,
+      channel,
       currentState: this.detectState(body.messages),
-      customerPhone: '',
+      customerPhone: body.customerPhone || '',
+      customerName,
     };
 
     const systemPrompt = await this.promptEngine.buildSystemPrompt(promptCtx);
@@ -70,7 +93,11 @@ export class AiTestController {
       parsed,
       latency,
       model: provider.name,
-      promptPreview: fullPrompt.substring(0, 2000),
+      promptPreview: fullPrompt.substring(0, 3000),
+      detectedState: this.detectState(body.messages),
+      intent: parsed.intent || 'unknown',
+      channel,
+      hasMemory: !!customerName,
     };
   }
 
@@ -92,14 +119,6 @@ export class AiTestController {
 
     return {
       prompt: [systemPrompt, '', outputFormat].join('\n'),
-      components: {
-        businessInfo: true,
-        productCatalog: true,
-        paymentMethods: true,
-        conversationRules: true,
-        customerContext: true,
-        taskDefinition: true,
-      },
     };
   }
 
