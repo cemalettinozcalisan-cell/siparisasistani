@@ -36,6 +36,11 @@ export class PaymentMethodsComponent {
 
     if (methods.length === 0) return '';
 
-    return ['[ÖDEME YÖNTEMLERİ]', ...methods].join('\n');
+    return ['[ÖDEME YÖNTEMLERİ — SADECE BUNLAR MEVCUTTUR, BAŞKA YÖNTEM UYDURMA]',
+      ...methods,
+      '',
+      'ÖNEMLİ: Sadece yukarıdaki yöntemler geçerlidir. Kapıda ödeme, nakit, kapıda kart ASLA teklif etme.',
+      'Müşteri "kapıda" veya "nakit" derse: "Maalesef kapıda ödeme seçeneğimiz yok. IBAN veya kredi kartı kullanabilirsiniz." de.',
+    ].join('\n');
   }
 }
