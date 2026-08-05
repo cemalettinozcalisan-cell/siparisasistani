@@ -3,6 +3,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, Play, Package, AlertTriangle, CheckCircle, Clock, Layers, Volume2, VolumeX, RefreshCw } from 'lucide-react';
 
+function authHeaders(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('auth_token');
+    return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+  } catch { return { 'Content-Type': 'application/json' }; }
+}
+
 const CHANNELS = [
   { key: 'all', label: 'Tümü', icon: Layers, color: 'bg-slate-100 text-slate-600' },
   { key: 'PHONE', label: 'Telefon', icon: PhoneCall, color: 'bg-blue-100 text-blue-600' },
@@ -91,7 +98,7 @@ export default function OrdersPage() {
       const params = new URLSearchParams();
       if (channelFilter !== 'all') params.set('source', channelFilter);
       params.set('limit', '200');
-      const res = await fetch(`/api/orders-list/${tid}?${params.toString()}`);
+      const res = await fetch(`/api/orders-list/${tid}?${params.toString()}`, { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
         const newOrders = data as Order[];
@@ -133,7 +140,7 @@ export default function OrdersPage() {
   const selectOrder = async (order: Order) => {
     setSelected(order);
     try {
-      const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`);
+      const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`, { headers: authHeaders() });
       const data = await res.json();
       const match = Array.isArray(data) ? data.find((o: Order) => o.id === order.id) : null;
       if (match?.items) setItems(match.items as Order['items']);
@@ -142,14 +149,14 @@ export default function OrdersPage() {
   };
 
   const updateStatus = async (orderId: string, status: string) => {
-    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status }) });
     loadOrders();
     setSelected(null);
   };
 
   const handleCargo = async () => {
     if (!selected || !cargoForm.company || !cargoForm.tracking) return;
-    await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
+    await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
     loadOrders();
     setSelected(null);
     setShowCargo(false);
@@ -158,7 +165,7 @@ export default function OrdersPage() {
 
   const handleEdit = async () => {
     if (!selected) return;
-    await fetch(`/api/orders-list/${tid}/${selected.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editForm) });
+    await fetch(`/api/orders-list/${tid}/${selected.id}`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify(editForm) });
     loadOrders();
     setSelected(null);
     setShowEdit(false);
@@ -166,14 +173,14 @@ export default function OrdersPage() {
 
   const handleDelete = async () => {
     if (!selected || !confirm('Bu siparişi silmek istediğinize emin misiniz?')) return;
-    await fetch(`/api/orders-list/${tid}/${selected.id}`, { method: 'DELETE' });
+    await fetch(`/api/orders-list/${tid}/${selected.id}`, { method: 'DELETE', headers: authHeaders() });
     loadOrders();
     setSelected(null);
   };
 
   const handleCancel = async () => {
     if (!selected) return;
-    await fetch(`/api/orders/${selected.id}/cancel`, { method: 'PATCH' });
+    await fetch(`/api/orders/${selected.id}/cancel`, { method: 'PATCH', headers: authHeaders() });
     loadOrders();
     setSelected(null);
   };

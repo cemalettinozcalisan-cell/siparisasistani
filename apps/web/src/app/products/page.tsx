@@ -26,7 +26,7 @@ export default function ProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
-    fetch('/api/products/demo-tenant-id').then(r => r.json()).then(setProducts).catch(() => {});
+    fetch('/api/products/demo-tenant-id').then(r => r.json()).then(d => setProducts(Array.isArray(d) ? d : [])).catch(() => {});
   };
   useEffect(() => { load(); }, []);
 
