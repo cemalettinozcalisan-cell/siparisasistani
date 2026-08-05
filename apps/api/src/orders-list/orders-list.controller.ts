@@ -57,8 +57,8 @@ export class OrdersListController {
       }));
 
       const demoChannels = this.getMockOrders(source);
-      const existingChannels = new Set(results.map((r) => String(r.channel).toLowerCase()));
-      const injected = demoChannels.filter((d) => !existingChannels.has(String(d.channel).toLowerCase()));
+      const existingIds = new Set(results.map((r) => r.id));
+      const injected = demoChannels.filter((d) => !existingIds.has(d.id));
       const merged = [...results, ...injected].sort((a, b) =>
         new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime()
       );

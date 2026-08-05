@@ -153,6 +153,9 @@ function OrdersPageContent() {
     return () => clearInterval(interval);
   }, [loadOrders]);
 
+  // Sync tab from sidebar clicks (URL changes but component doesn't re-mount)
+  useEffect(() => { const tab = searchParams.get('tab') || 'active'; setActiveTab(tab === 'history' ? 'history' : 'active'); }, [searchParams]);
+
   const loadOrderItems = async (order: Order) => {
     // Check if items already exist on the order
     if (order.items && order.items.length > 0) {
@@ -228,7 +231,7 @@ function OrdersPageContent() {
       customer_company: selected?.customer_company || '', tax_office: selected?.tax_office || '',
       customer_identity: selected?.customer_identity || '', customer_note: selected?.customer_note || '',
     });
-    setEditItems([...items]);
+    setEditItems(items.length > 0 ? [...items] : [{ product_name: '', quantity: 1, unit: 'KG', unit_price: 0 }]);
     setShowEdit(true);
   };
 
