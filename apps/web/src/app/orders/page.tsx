@@ -142,12 +142,17 @@ function OrdersPageContent() {
 
   const selectOrder = async (order: Order) => {
     setSelected(order);
-    try {
-      const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`, { headers: authHeaders() });
-      const data = await res.json();
-      const match = Array.isArray(data) ? data.find((o: Order) => o.id === order.id) : null;
-      setItems(match?.items || []);
-    } catch { setItems([]); }
+    // Try to use items from the order itself first (mock data has them)
+    if (order.items && order.items.length > 0) {
+      setItems(order.items);
+    } else {
+      try {
+        const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`, { headers: authHeaders() });
+        const data = await res.json();
+        const match = Array.isArray(data) ? data.find((o: Order) => o.id === order.id) : null;
+        setItems(match?.items || []);
+      } catch { setItems([]); }
+    }
   };
 
   const handleApproveAndShip = async () => {
@@ -320,38 +325,39 @@ function OrdersPageContent() {
       )}
 
       {/* Compact Order Cards */}
-      <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
+      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {displayOrders.map((o) => {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
-          const paymentLabel = o.status === 'PAYMENT_WAITING' ? '💳 Ödeme Bekliyor' : o.status === 'PAYMENT_CONFIRMED' ? '✅ Ödendi' : '';
           return (
             <div
               key={o.id}
               onClick={() => selectOrder(o)}
-              className={`bg-white dark:bg-slate-800 rounded-lg border px-3 py-2 cursor-pointer hover:shadow-md transition-all ${
+              className={`bg-white dark:bg-slate-800 rounded-xl border px-4 py-3 cursor-pointer hover:shadow-md transition-all ${
                 selected?.id === o.id
                   ? 'ring-2 ring-indigo-400 border-indigo-300 dark:border-indigo-600'
                   : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-              } ${o.status === 'new' ? 'border-l-3 border-l-emerald-400' : ''}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="font-semibold text-xs text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
+              } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
                   {chCfg && (
                     <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}>
                       <ChIcon size={10} />
                     </span>
                   )}
-                  {paymentLabel && <span className="text-[10px] text-gray-400 shrink-0">{paymentLabel}</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badge.cls}`}>{badge.label}</span>
-                  <span className="text-xs text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
-                  <span className="font-semibold text-xs text-gray-900 dark:text-white shrink-0">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
-                  <span className="flex items-center gap-0.5 text-[10px] text-gray-400 shrink-0">
-                    <TimerBadge date={o.created_at} />
-                  </span>
-                  {o.customer_city && <span className="text-[10px] text-gray-400 shrink-0 flex items-center gap-0.5"><MapPin size={10} /> {o.customer_city}</span>}
+                  <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
+                <span className="flex items-center gap-0.5"><TimerBadge date={o.created_at} /></span>
+                {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
+                {o.customer_note && <span className="text-amber-500 truncate">📝 {o.customer_note.substring(0, 30)}</span>}
               </div>
             </div>
           );
@@ -499,13 +505,15 @@ function OrdersPageContent() {
         </div>
       )}
 
-      {/* Chat History Drawer */}
+      {/* Chat History Drawer — must be above slide-over (z-50) */}
       {showChat && selected && (
-        <ChatHistoryDrawer
-          orderId={selected.id}
-          customerPhone={selected.customer_phone || ''}
-          onClose={() => setShowChat(false)}
-        />
+        <div className="fixed inset-0 z-[60]">
+          <ChatHistoryDrawer
+            orderId={selected.id}
+            customerPhone={selected.customer_phone || ''}
+            onClose={() => setShowChat(false)}
+          />
+        </div>
       )}
     </div>
   );
