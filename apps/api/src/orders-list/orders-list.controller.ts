@@ -94,6 +94,7 @@ export class OrdersListController {
     return orders;
   }
 
+  @Roles('owner', 'manager', 'staff')
   @Patch(':tenantId/:id')
   async update(
     @Param('tenantId') tenantId: string,
@@ -111,6 +112,7 @@ export class OrdersListController {
     return data;
   }
 
+  @Roles('owner', 'manager', 'staff')
   @Delete(':tenantId/:id')
   async remove(@Param('tenantId') tenantId: string, @Param('id') id: string) {
     const { error } = await this.supabase.db

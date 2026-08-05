@@ -48,7 +48,7 @@ export default function NotificationsPage() {
 
   const NAV_MAP: Record<string, string> = {
     new_order: '/orders', payment: '/orders', cargo: '/orders',
-    human_request: '/complaints', callback: '/conversations', warning: '/health',
+    human_request: '/complaints', callback: '/orders', warning: '/health',
   };
 
   const handleClick = (n: Record<string, unknown>) => {

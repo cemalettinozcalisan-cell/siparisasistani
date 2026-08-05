@@ -9,7 +9,7 @@ import { CommandPalette } from '@/components/command-palette';
 import { QuickActions } from '@/components/quick-actions';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, MessageSquare, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
