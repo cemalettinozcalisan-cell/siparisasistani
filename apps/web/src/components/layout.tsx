@@ -32,21 +32,19 @@ if (typeof window !== 'undefined') {
 }
 
 const navItems = [
-  // Ana (8) — all roles
+  // Ana
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/live', label: 'Canlı Siparişler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/orders', label: 'Tüm Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/conversations', label: 'Görüşmeler', icon: MessageSquare, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/orders', label: 'Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  // Pazarlama — owner, manager
+  // Pazarlama
   { href: '/marketing', label: 'Pazarlama', icon: Tags, roles: ['owner', 'manager'], group: 'main' },
-  // Abonelik — owner, manager
+  // Abonelik
   { href: '/saas', label: 'Abonelik', icon: CreditCard, roles: ['owner', 'manager'], group: 'saas' },
-  // Ayarlar — role-based
-  { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'settings' },
+  // Ayarlar
   { href: '/settings', label: 'İşletme Ayarları', icon: Settings, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/users', label: 'Kullanıcılar', icon: Users, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/integrations', label: 'Entegrasyonlar', icon: Webhook, roles: ['owner'], group: 'settings' },
@@ -55,7 +53,7 @@ const navItems = [
   { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
   { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
-  // Geliştirici — owner only
+  // Geliştirici
   { href: '/admin', label: 'Geliştirici', icon: Shield, roles: ['owner'], group: 'admin' },
 ];
 

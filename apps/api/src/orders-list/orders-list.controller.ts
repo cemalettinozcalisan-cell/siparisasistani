@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Query, Body, Logger, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -92,5 +92,33 @@ export class OrdersListController {
     ];
     if (sourceFilter && sourceFilter !== 'all') return orders.filter((o) => o.source === sourceFilter);
     return orders;
+  }
+
+  @Patch(':tenantId/:id')
+  async update(
+    @Param('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const { data, error } = await this.supabase.db
+      .from('orders')
+      .update(body)
+      .eq('tenant_id', tenantId)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  @Delete(':tenantId/:id')
+  async remove(@Param('tenantId') tenantId: string, @Param('id') id: string) {
+    const { error } = await this.supabase.db
+      .from('orders')
+      .delete()
+      .eq('tenant_id', tenantId)
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    return { deleted: true };
   }
 }

@@ -28,6 +28,7 @@ const STATUS_TR: Record<string, string> = {
   PACKAGING: 'Paketleniyor', PACKAGED: 'Paketlendi', PENDING: 'Bekliyor', PROCESSING: 'Hazırlanıyor',
   COMPLETED: 'Tamamlandı', CANCELLED: 'İptal', REFUNDED: 'İade',
   PREPARING: 'Hazırlanıyor', NEW: 'Yeni', APPROVED: 'Onaylandı',
+  PAYMENT_WAITING: 'Ödeme Bekliyor',
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -43,6 +44,7 @@ const STATUS_COLOR: Record<string, string> = {
   APPROVED: 'bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400',
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400',
   REFUNDED: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+  PAYMENT_WAITING: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400',
   PAYMENT_CONFIRMED: 'bg-teal-100 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400',
 };
 
