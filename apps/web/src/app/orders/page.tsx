@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin } from 'lucide-react';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
 function authHeaders(): Record<string, string> {
@@ -12,11 +13,11 @@ function authHeaders(): Record<string, string> {
 }
 
 const CHANNELS = [
-  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-blue-500 text-white', light: 'bg-blue-50 text-blue-700' },
-  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-emerald-500 text-white', light: 'bg-emerald-50 text-emerald-700' },
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-sky-500 text-white', light: 'bg-sky-50 text-sky-700' },
-  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white', light: 'bg-pink-50 text-pink-700' },
-  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-indigo-500 text-white', light: 'bg-indigo-50 text-indigo-700' },
+  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md', light: 'bg-blue-50 text-blue-600 border border-blue-200' },
+  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md', light: 'bg-emerald-50 text-emerald-600 border border-emerald-200' },
+  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md', light: 'bg-sky-50 text-sky-600 border border-sky-200' },
+  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md', light: 'bg-pink-50 text-pink-600 border border-pink-200' },
+  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-indigo-400 to-purple-600 text-white shadow-md', light: 'bg-indigo-50 text-indigo-600 border border-indigo-200' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -29,15 +30,18 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   DELIVERED: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700' },
   COMPLETED: { label: 'Tamamlandı', cls: 'bg-teal-100 text-teal-700' },
   CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700' },
+  APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
 };
 
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING', 'PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'];
+
 const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_name', label: 'Müşteri Ad Soyad' },
   { key: 'customer_phone', label: 'Telefon' },
   { key: 'customer_city', label: 'Şehir' },
   { key: 'customer_address', label: 'Adres' },
   { key: 'customer_company', label: 'Firma' },
+  { key: 'tax_office', label: 'Vergi Dairesi' },
   { key: 'customer_identity', label: 'TCKN / VKN' },
   { key: 'customer_note', label: 'Sipariş Notu' },
 ];
@@ -59,12 +63,22 @@ interface Order {
   id: string; order_number: string; total_price: number; status: string; channel: string; source: string;
   notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
   customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
-  customer_company: string; items?: Array<{ product_name: string; quantity: number; unit: string; unit_price: number }>;
+  customer_company: string; tax_office?: string; items?: Array<{ product_name: string; quantity: number; unit: string; unit_price: number }>;
 }
 
 export default function OrdersPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-gray-400">Yükleniyor...</div>}>
+      <OrdersPageContent />
+    </Suspense>
+  );
+}
+
+function OrdersPageContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'active';
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>(initialTab === 'history' ? 'history' : 'active');
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [showFilter, setShowFilter] = useState(false);
   const [filterChannel, setFilterChannel] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -132,14 +146,12 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`, { headers: authHeaders() });
       const data = await res.json();
       const match = Array.isArray(data) ? data.find((o: Order) => o.id === order.id) : null;
-      if (match?.items) setItems(match.items as Order['items']);
-      else setItems([]);
+      setItems(match?.items || []);
     } catch { setItems([]); }
   };
 
   const handleApproveAndShip = async () => {
     if (!selected || !cargoForm.company || !cargoForm.tracking) return;
-    // Update status to PAYMENT_CONFIRMED then SHIPPED with cargo
     await fetch(`/api/orders/${selected.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'PAYMENT_CONFIRMED' }) });
     await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
     loadOrders();
@@ -165,6 +177,7 @@ export default function OrdersPage() {
 
   const handleCancel = async () => {
     if (!selected) return;
+    if (!confirm('Bu sipariş iptal edilecektir. Onaylıyor musunuz?')) return;
     await fetch(`/api/orders/${selected.id}/cancel`, { method: 'PATCH', headers: authHeaders() });
     loadOrders();
     setSelected(null);
@@ -210,7 +223,9 @@ export default function OrdersPage() {
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Siparişler</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+          {activeTab === 'active' ? '⚡ Aktif Siparişler' : '📜 Geçmiş Siparişler'}
+        </h1>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400">{displayOrders.length} sipariş</span>
           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
@@ -222,31 +237,8 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Active / History Tabs */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'active'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
-          }`}>
-          ⚡ Aktif Siparişler
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'history'
-              ? 'bg-slate-700 text-white shadow-lg'
-              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
-          }`}>
-          📜 Geçmiş Siparişler
-        </button>
-      </div>
-
       {/* Top Row: Channel badges + Filter + Search */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Channel badges — always colorful */}
         {CHANNELS.map((c) => {
           const Icon = c.icon;
           const isActive = filterChannel === c.key;
@@ -254,24 +246,23 @@ export default function OrdersPage() {
             <button
               key={c.key}
               onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
-                isActive ? c.cls + ' ring-2 ring-offset-1 ring-current/30 scale-105' : c.light
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'
               }`}>
               <Icon size={12} /> {c.label}
             </button>
           );
         })}
 
-        {/* Filter Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowFilter(!showFilter)}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
               filterStatus !== 'all' || filterChannel !== 'all'
-                ? 'bg-indigo-500 text-white'
+                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
             }`}>
-            <Filter size={12} /> Filtrele {filterStatus !== 'all' || filterChannel !== 'all' ? `(${filterStatus !== 'all' ? 1 : 0}${filterStatus !== 'all' && filterChannel !== 'all' ? '+' : ''}${filterChannel !== 'all' ? 1 : 0})` : ''}
+            <Filter size={12} /> Filtrele
           </button>
           {showFilter && (
             <div className="absolute top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-3 z-20 min-w-[200px]" onMouseLeave={() => setShowFilter(false)}>
@@ -310,7 +301,6 @@ export default function OrdersPage() {
           )}
         </div>
 
-        {/* Search */}
         <div className="relative flex-1 min-w-[140px]">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -329,40 +319,38 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Order Cards */}
-      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+      {/* Compact Order Cards */}
+      <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
         {displayOrders.map((o) => {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
+          const paymentLabel = o.status === 'PAYMENT_WAITING' ? '💳 Ödeme Bekliyor' : o.status === 'PAYMENT_CONFIRMED' ? '✅ Ödendi' : '';
           return (
             <div
               key={o.id}
               onClick={() => selectOrder(o)}
-              className={`bg-white dark:bg-slate-800 rounded-xl border p-3 cursor-pointer hover:shadow-md transition-all ${
+              className={`bg-white dark:bg-slate-800 rounded-lg border px-3 py-2 cursor-pointer hover:shadow-md transition-all ${
                 selected?.id === o.id
                   ? 'ring-2 ring-indigo-400 border-indigo-300 dark:border-indigo-600'
                   : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-              } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-sm text-gray-900 dark:text-white">#{o.order_number}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
-                    {chCfg && (
-                      <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.light}`}>
-                        <ChIcon size={10} /> {chCfg.label}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-700 dark:text-slate-200 mt-0.5 truncate">{o.customer_name || '—'}</div>
-                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
+              } ${o.status === 'new' ? 'border-l-3 border-l-emerald-400' : ''}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="font-semibold text-xs text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
+                  {chCfg && (
+                    <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}>
+                      <ChIcon size={10} />
+                    </span>
+                  )}
+                  {paymentLabel && <span className="text-[10px] text-gray-400 shrink-0">{paymentLabel}</span>}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badge.cls}`}>{badge.label}</span>
+                  <span className="text-xs text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
+                  <span className="font-semibold text-xs text-gray-900 dark:text-white shrink-0">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                  <span className="flex items-center gap-0.5 text-[10px] text-gray-400 shrink-0">
                     <TimerBadge date={o.created_at} />
-                    {o.customer_city && <span>📍 {o.customer_city}</span>}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="font-bold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</div>
+                  </span>
+                  {o.customer_city && <span className="text-[10px] text-gray-400 shrink-0 flex items-center gap-0.5"><MapPin size={10} /> {o.customer_city}</span>}
                 </div>
               </div>
             </div>
@@ -392,7 +380,7 @@ export default function OrdersPage() {
                   <div className="space-y-2 text-sm">
                     <div className="font-semibold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
                     {selected.customer_phone && <div className="text-gray-500">📱 {selected.customer_phone}</div>}
-                    {selected.customer_address && <div className="text-gray-500">📍 {selected.customer_address}</div>}
+                    {selected.customer_address && <div className="text-gray-500"><MapPin size={14} className="inline mr-1" />{selected.customer_address}</div>}
                     {selected.customer_city && <div className="text-gray-500">🏙️ {selected.customer_city}</div>}
                   </div>
 
@@ -400,6 +388,7 @@ export default function OrdersPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                     {selected.customer_company && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}
                     {selected.customer_identity && <div><span className="text-gray-400">{selected.customer_company ? 'VKN:' : 'TCKN:'}</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_identity}</span></div>}
+                    {selected.tax_office && <div><span className="text-gray-400">Vergi D.:</span> <span className="text-gray-700 dark:text-slate-300">{selected.tax_office}</span></div>}
                   </div>
 
                   {/* Notes */}
@@ -430,7 +419,7 @@ export default function OrdersPage() {
                     )}
                   </div>
 
-                  {/* Cargo Form (if showing) */}
+                  {/* Cargo Form */}
                   {showCargo && (
                     <div className="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
                       <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Kargo Bilgisi</h3>
@@ -439,7 +428,7 @@ export default function OrdersPage() {
                       <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })}
                         placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
                       <button onClick={handleApproveAndShip}
-                        className="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-500/20">
+                        className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700">
                         ✅ Ödemeyi Onayla & Kargoya Ver
                       </button>
                     </div>
@@ -460,7 +449,7 @@ export default function OrdersPage() {
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Kaydet</button>
+                    <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/20">Kaydet</button>
                     <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-500">İptal</button>
                   </div>
                 </div>
@@ -471,37 +460,37 @@ export default function OrdersPage() {
             {!showEdit && (
               <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
                 <button onClick={() => { setShowChat(true); }}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:shadow font-medium">
                   <Eye size={13} /> Görüşme
                 </button>
-                <button onClick={() => { setEditForm({ customer_name: selected.customer_name || '', customer_phone: selected.customer_phone || '', customer_city: selected.customer_city || '', customer_address: selected.customer_address || '', customer_company: selected.customer_company || '', customer_identity: selected.customer_identity || '', customer_note: selected.customer_note || '' }); setShowEdit(true); }}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                <button onClick={() => { setEditForm({ customer_name: selected.customer_name || '', customer_phone: selected.customer_phone || '', customer_city: selected.customer_city || '', customer_address: selected.customer_address || '', customer_company: selected.customer_company || '', tax_office: selected.tax_office || '', customer_identity: selected.customer_identity || '', customer_note: selected.customer_note || '' }); setShowEdit(true); }}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:shadow font-medium">
                   <Edit3 size={13} /> Düzenle
                 </button>
                 <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-medium">
                   <Printer size={13} /> Yazdır
                 </button>
                 <button onClick={() => setShowCargo(!showCargo)}
                   className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${
-                    showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-                  } hover:bg-emerald-200`}>
+                    showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                  } hover:shadow`}>
                   <Truck size={13} /> Öde&Kargo
                 </button>
                 <button onClick={handleCancel}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-100 font-medium">
-                  <AlertTriangle size={13} /> İptal Et
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/30 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-medium">
+                  <AlertTriangle size={13} /> Siparişi İptal Et
                 </button>
                 <button onClick={handleDelete}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:bg-red-100 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-medium">
                   <Trash2 size={13} /> Sil
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-medium">
                   <MessageCircle size={13} /> WA
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-100 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-medium">
                   <PhoneCall size={13} /> Ara
                 </button>
               </div>

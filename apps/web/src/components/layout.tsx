@@ -9,7 +9,7 @@ import { CommandPalette } from '@/components/command-palette';
 import { QuickActions } from '@/components/quick-actions';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Zap, Clock } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
@@ -34,7 +34,8 @@ if (typeof window !== 'undefined') {
 const navItems = [
   // Ana
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/orders', label: 'Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/orders?tab=active', label: 'Aktif Siparişler', icon: Zap, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/orders?tab=history', label: 'Geçmiş Siparişler', icon: Clock, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },

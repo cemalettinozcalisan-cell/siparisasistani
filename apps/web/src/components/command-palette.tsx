@@ -6,7 +6,7 @@ import { Search, ShoppingBag, Users, AlertTriangle, Package, LayoutDashboard, Se
 
 const PAGES = [
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, keywords: 'dashboard kontrol panel ana sayfa' },
-  { href: '/orders', label: 'Siparisler', icon: ShoppingBag, keywords: 'siparis order' },
+  { href: '/orders?tab=active', label: 'Aktif Siparisler', icon: ShoppingBag, keywords: 'siparis order aktif' },
   { href: '/customers', label: 'Musteriler', icon: Users, keywords: 'musteri customer cari' },
   { href: '/complaints', label: 'Sikayetler', icon: AlertTriangle, keywords: 'sikayet complaint ticket' },
   { href: '/products', label: 'Urunler', icon: Package, keywords: 'urun product stok' },
