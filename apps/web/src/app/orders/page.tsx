@@ -12,6 +12,8 @@ function authHeaders(): Record<string, string> {
   } catch { return { 'Content-Type': 'application/json' }; }
 }
 
+// Status labels: API returns English status keys (PAYMENT_CONFIRMED, SHIPPED, etc.)
+// STATUS_BADGE maps them to Turkish display labels automatically
 const CHANNELS = [
   { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md', light: 'bg-blue-50 text-blue-600 border border-blue-200' },
   { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md', light: 'bg-emerald-50 text-emerald-600 border border-emerald-200' },
@@ -31,9 +33,12 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   COMPLETED: { label: 'Tamamlandı', cls: 'bg-teal-100 text-teal-700' },
   CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700' },
   APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PROCESSING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
+  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
 };
 
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING', 'PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'];
+const HISTORY_STATUSES = ['SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING'];
 
 const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_name', label: 'Müşteri Ad Soyad' },
@@ -46,6 +51,15 @@ const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_note', label: 'Sipariş Notu' },
 ];
 
+type OrderItem = { product_name: string; quantity: number; unit: string; unit_price: number };
+
+interface Order {
+  id: string; order_number: string; total_price: number; status: string; channel: string; source: string;
+  notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
+  customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
+  customer_company: string; tax_office?: string; items?: OrderItem[];
+}
+
 function TimerBadge({ date }: { date: string }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -54,16 +68,9 @@ function TimerBadge({ date }: { date: string }) {
     const interval = setInterval(update, 30000);
     return () => clearInterval(interval);
   }, [date]);
-  if (elapsed < 60) return <span className="text-[10px] text-gray-400">{elapsed}s</span>;
-  if (elapsed < 3600) return <span className="text-[10px] text-gray-400">{Math.floor(elapsed / 60)}dk</span>;
-  return <span className="text-[10px] text-gray-400">{Math.floor(elapsed / 3600)}sa</span>;
-}
-
-interface Order {
-  id: string; order_number: string; total_price: number; status: string; channel: string; source: string;
-  notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
-  customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
-  customer_company: string; tax_office?: string; items?: Array<{ product_name: string; quantity: number; unit: string; unit_price: number }>;
+  if (elapsed < 60) return <span>{elapsed}s</span>;
+  if (elapsed < 3600) return <span>{Math.floor(elapsed / 60)}dk</span>;
+  return <span>{Math.floor(elapsed / 3600)}sa</span>;
 }
 
 export default function OrdersPage() {
@@ -84,12 +91,13 @@ function OrdersPageContent() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
-  const [items, setItems] = useState<Order['items']>([]);
+  const [items, setItems] = useState<OrderItem[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notification, setNotification] = useState<{ id: string; name: string } | null>(null);
   const [prevIds, setPrevIds] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [editItems, setEditItems] = useState<OrderItem[]>([]);
   const [showCargo, setShowCargo] = useState(false);
   const [cargoForm, setCargoForm] = useState({ company: '', tracking: '' });
   const [showChat, setShowChat] = useState(false);
@@ -112,7 +120,7 @@ function OrdersPageContent() {
     try {
       const params = new URLSearchParams();
       if (filterChannel !== 'all') params.set('source', filterChannel);
-      params.set('limit', '200');
+      params.set('limit', '500');
       const res = await fetch(`/api/orders-list/${tid}?${params.toString()}`, { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -140,24 +148,37 @@ function OrdersPageContent() {
     return () => clearInterval(interval);
   }, [loadOrders]);
 
-  const selectOrder = async (order: Order) => {
-    setSelected(order);
-    // Try to use items from the order itself first (mock data has them)
+  const loadOrderItems = async (order: Order) => {
+    // Check if items already exist on the order
     if (order.items && order.items.length > 0) {
       setItems(order.items);
-    } else {
-      try {
-        const res = await fetch(`/api/orders-list/${tid}?q=${order.order_number}`, { headers: authHeaders() });
-        const data = await res.json();
-        const match = Array.isArray(data) ? data.find((o: Order) => o.id === order.id) : null;
-        setItems(match?.items || []);
-      } catch { setItems([]); }
+      return;
     }
+    // Fetch items from API
+    try {
+      const res = await fetch(`/api/order-items/${order.id}`, { headers: authHeaders() });
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch { setItems([]); }
+  };
+
+  const selectOrder = (order: Order) => {
+    setSelected(order);
+    loadOrderItems(order);
   };
 
   const handleApproveAndShip = async () => {
     if (!selected || !cargoForm.company || !cargoForm.tracking) return;
     await fetch(`/api/orders/${selected.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'PAYMENT_CONFIRMED' }) });
+    await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
+    loadOrders();
+    setSelected(null);
+    setShowCargo(false);
+    setCargoForm({ company: '', tracking: '' });
+  };
+
+  const handleRevise = async () => {
+    if (!selected || !cargoForm.company || !cargoForm.tracking) return;
     await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
     loadOrders();
     setSelected(null);
@@ -190,29 +211,32 @@ function OrdersPageContent() {
 
   const handlePrint = () => {
     if (!selected) return;
-    window.open(`/api/print/render/${tid}/${selected.id}`, '_blank');
+    window.open(`/api/print/preview/${tid}/${selected.id}`, '_blank');
   };
 
-  const closeSlide = () => { setSelected(null); setShowEdit(false); setShowCargo(false); };
+  const closeSlide = () => { setSelected(null); setShowEdit(false); setShowCargo(false); setItems([]); };
 
-  const activeOrders = orders.filter((o) => {
-    const inActive = ACTIVE_STATUSES.includes(o.status);
+  const openEdit = () => {
+    setEditForm({
+      customer_name: selected?.customer_name || '', customer_phone: selected?.customer_phone || '',
+      customer_city: selected?.customer_city || '', customer_address: selected?.customer_address || '',
+      customer_company: selected?.customer_company || '', tax_office: selected?.tax_office || '',
+      customer_identity: selected?.customer_identity || '', customer_note: selected?.customer_note || '',
+    });
+    setEditItems([...items]);
+    setShowEdit(true);
+  };
+
+  const isActive = (status: string) => ACTIVE_STATUSES.includes(status);
+  const isHistory = (status: string) => HISTORY_STATUSES.includes(status);
+
+  const filtered = orders.filter((o) => {
+    if (activeTab === 'active' && !isActive(o.status)) return false;
+    if (activeTab === 'history' && !isHistory(o.status)) return false;
     if (filterStatus !== 'all') {
       if (filterStatus === 'pending' && !['new', 'PAYMENT_WAITING'].includes(o.status)) return false;
       if (filterStatus === 'approved' && !['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'].includes(o.status)) return false;
       if (filterStatus === 'payment' && o.status !== 'PAYMENT_WAITING') return false;
-    }
-    if (!inActive) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!String(o.order_number || '').toLowerCase().includes(q) && !String(o.customer_name || '').toLowerCase().includes(q)) return false;
-    }
-    return true;
-  }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-  const historyOrders = orders.filter((o) => {
-    if (ACTIVE_STATUSES.includes(o.status)) return false;
-    if (filterStatus !== 'all') {
       if (filterStatus === 'cancelled' && o.status !== 'CANCELLED') return false;
     }
     if (search) {
@@ -220,13 +244,14 @@ function OrdersPageContent() {
       if (!String(o.order_number || '').toLowerCase().includes(q) && !String(o.customer_name || '').toLowerCase().includes(q)) return false;
     }
     return true;
-  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  });
 
-  const displayOrders = activeTab === 'active' ? activeOrders : historyOrders;
+  const displayOrders = activeTab === 'active'
+    ? filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    : filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
           {activeTab === 'active' ? '⚡ Aktif Siparişler' : '📜 Geçmiş Siparişler'}
@@ -242,30 +267,22 @@ function OrdersPageContent() {
         </div>
       </div>
 
-      {/* Top Row: Channel badges + Filter + Search */}
+      {/* Channel badges + Filter + Search */}
       <div className="flex items-center gap-2 flex-wrap">
         {CHANNELS.map((c) => {
           const Icon = c.icon;
           const isActive = filterChannel === c.key;
           return (
-            <button
-              key={c.key}
-              onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'
-              }`}>
+            <button key={c.key} onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'}`}>
               <Icon size={12} /> {c.label}
             </button>
           );
         })}
-
         <div className="relative">
-          <button
-            onClick={() => setShowFilter(!showFilter)}
+          <button onClick={() => setShowFilter(!showFilter)}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
-              filterStatus !== 'all' || filterChannel !== 'all'
-                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
+              filterStatus !== 'all' || filterChannel !== 'all' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
             }`}>
             <Filter size={12} /> Filtrele
           </button>
@@ -273,80 +290,42 @@ function OrdersPageContent() {
             <div className="absolute top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-3 z-20 min-w-[200px]" onMouseLeave={() => setShowFilter(false)}>
               <div className="text-[10px] text-gray-400 uppercase font-semibold mb-1.5">Durum</div>
               <div className="space-y-1">
-                {[
-                  { key: 'all', label: 'Tümü' },
-                  { key: 'pending', label: '⏳ Beklemede' },
-                  { key: 'approved', label: '✅ Onaylandı' },
-                  { key: 'payment', label: '💳 Ödeme Bekliyor' },
-                  { key: 'cancelled', label: '❌ İptal' },
-                ].map((s) => (
+                {[{ key: 'all', label: 'Tümü' },{ key: 'pending', label: '⏳ Beklemede' },{ key: 'approved', label: '✅ Onaylandı' },{ key: 'payment', label: '💳 Ödeme Bekliyor' },{ key: 'cancelled', label: '❌ İptal' }].map((s) => (
                   <button key={s.key} onClick={() => { setFilterStatus(s.key); setShowFilter(false); }}
-                    className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    {s.label}
-                  </button>
+                    className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>{s.label}</button>
                 ))}
-              </div>
-              <div className="text-[10px] text-gray-400 uppercase font-semibold mt-2 mb-1.5 pt-2 border-t">Kanal (Tümü)</div>
-              <div className="space-y-1">
-                <button onClick={() => { setFilterChannel('all'); setShowFilter(false); }}
-                  className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterChannel === 'all' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
-                  📋 Tüm Kanallar
-                </button>
-                {CHANNELS.map((c) => {
-                  const Icon = c.icon;
-                  return (
-                    <button key={c.key} onClick={() => { setFilterChannel(c.key); setShowFilter(false); }}
-                      className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterChannel === c.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
-                      <Icon size={11} className="inline mr-1" /> {c.label}
-                    </button>
-                  );
-                })}
               </div>
             </div>
           )}
         </div>
-
         <div className="relative flex-1 min-w-[140px]">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="No veya isim ara..."
-            className="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="No veya isim ara..."
+            className="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none" />
         </div>
       </div>
 
-      {/* Notification Banner */}
       {notification && (
         <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 animate-pulse">
           🔔 Yeni sipariş: {notification.name}
         </div>
       )}
 
-      {/* Compact Order Cards */}
+      {/* Order Cards */}
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {displayOrders.map((o) => {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
           return (
-            <div
-              key={o.id}
-              onClick={() => selectOrder(o)}
+            <div key={o.id} onClick={() => selectOrder(o)}
               className={`bg-white dark:bg-slate-800 rounded-xl border px-4 py-3 cursor-pointer hover:shadow-md transition-all ${
-                selected?.id === o.id
-                  ? 'ring-2 ring-indigo-400 border-indigo-300 dark:border-indigo-600'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                selected?.id === o.id ? 'ring-2 ring-indigo-400 border-indigo-300 dark:border-indigo-600' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
               } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
-                  {chCfg && (
-                    <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}>
-                      <ChIcon size={10} />
-                    </span>
-                  )}
+                  {chCfg && (<span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={10} /></span>)}
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -355,7 +334,7 @@ function OrdersPageContent() {
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
-                <span className="flex items-center gap-0.5"><TimerBadge date={o.created_at} /></span>
+                <TimerBadge date={o.created_at} />
                 {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
                 {o.customer_note && <span className="text-amber-500 truncate">📝 {o.customer_note.substring(0, 30)}</span>}
               </div>
@@ -369,7 +348,7 @@ function OrdersPageContent() {
         )}
       </div>
 
-      {/* Slide-over Müşteri Kartı */}
+      {/* Slide-over */}
       {selected && (
         <div className="fixed inset-0 z-50" onClick={closeSlide}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -382,32 +361,24 @@ function OrdersPageContent() {
             <div className="p-4 space-y-4">
               {!showEdit ? (
                 <>
-                  {/* Customer Info */}
                   <div className="space-y-2 text-sm">
                     <div className="font-semibold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
                     {selected.customer_phone && <div className="text-gray-500">📱 {selected.customer_phone}</div>}
                     {selected.customer_address && <div className="text-gray-500"><MapPin size={14} className="inline mr-1" />{selected.customer_address}</div>}
                     {selected.customer_city && <div className="text-gray-500">🏙️ {selected.customer_city}</div>}
                   </div>
-
-                  {/* Meta */}
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                     {selected.customer_company && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}
                     {selected.customer_identity && <div><span className="text-gray-400">{selected.customer_company ? 'VKN:' : 'TCKN:'}</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_identity}</span></div>}
                     {selected.tax_office && <div><span className="text-gray-400">Vergi D.:</span> <span className="text-gray-700 dark:text-slate-300">{selected.tax_office}</span></div>}
                   </div>
-
-                  {/* Notes */}
                   {(selected.customer_note || selected.notes) && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
-                      📝 {selected.customer_note || selected.notes}
-                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">📝 {selected.customer_note || selected.notes}</div>
                   )}
 
-                  {/* Products + Total */}
                   <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
                     <div className="text-xs text-gray-400 mb-1">Sipariş Kalemleri</div>
-                    {items && items.length > 0 ? (
+                    {items.length > 0 ? (
                       <div className="space-y-1 mb-2">
                         {items.map((item, i) => (
                           <div key={i} className="flex justify-between text-sm">
@@ -421,39 +392,53 @@ function OrdersPageContent() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{Number(selected.total_price).toLocaleString('tr-TR')} TL</div>
+                      <div className="text-sm text-gray-400">Ürün bilgisi yüklenemedi — sayfayı yenileyip tekrar deneyin</div>
                     )}
                   </div>
 
-                  {/* Cargo Form */}
-                  {showCargo && (
+                  {/* Cargo Form (active only) */}
+                  {showCargo && activeTab === 'active' && (
                     <div className="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
                       <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Kargo Bilgisi</h3>
-                      <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })}
-                        placeholder="Kargo firması (örn: MNG)" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
-                      <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })}
-                        placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
-                      <button onClick={handleApproveAndShip}
-                        className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-500/20 hover:from-emerald-600 hover:to-emerald-700">
-                        ✅ Ödemeyi Onayla & Kargoya Ver
-                      </button>
+                      <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })} placeholder="Kargo firması (örn: MNG)" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })} placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <button onClick={handleApproveAndShip} className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20">✅ Ödemeyi Onayla & Kargoya Ver</button>
+                    </div>
+                  )}
+                  {/* Cargo Form (history - revise only) */}
+                  {showCargo && activeTab === 'history' && (
+                    <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">Kargo Bilgisini Düzelt</h3>
+                      <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })} placeholder="Kargo firması" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })} placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <button onClick={handleRevise} className="w-full px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-amber-500/20">🔄 Kargo Bilgisini Güncelle</button>
                     </div>
                   )}
                 </>
               ) : (
-                /* Edit Form — Turkish labels */
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">Siparişi Düzenle</h3>
                   {EDIT_FIELDS.map(({ key, label }) => (
                     <div key={key}>
                       <label className="text-[10px] text-gray-400 block mb-0.5">{label}</label>
-                      <input
-                        value={editForm[key] || ''}
-                        onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
-                        className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
-                      />
+                      <input value={editForm[key] || ''} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                        className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
                     </div>
                   ))}
+                  {/* Products readonly */}
+                  {items.length > 0 && (
+                    <div>
+                      <label className="text-[10px] text-gray-400 block mb-1">Sipariş Edilen Ürünler</label>
+                      <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-1">
+                        {items.map((item, i) => (
+                          <div key={i} className="flex justify-between text-xs text-gray-600 dark:text-slate-300">
+                            <span>{item.quantity}x {item.unit} {item.product_name}</span>
+                            <span>{(item.quantity * item.unit_price).toLocaleString('tr-TR')} TL</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/20">Kaydet</button>
                     <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-500">İptal</button>
@@ -462,41 +447,46 @@ function OrdersPageContent() {
               )}
             </div>
 
-            {/* Bottom Action Buttons */}
+            {/* Bottom Buttons */}
             {!showEdit && (
               <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
-                <button onClick={() => { setShowChat(true); }}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:shadow font-medium">
+                <button onClick={() => setShowChat(true)}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
                   <Eye size={13} /> Görüşme
                 </button>
-                <button onClick={() => { setEditForm({ customer_name: selected.customer_name || '', customer_phone: selected.customer_phone || '', customer_city: selected.customer_city || '', customer_address: selected.customer_address || '', customer_company: selected.customer_company || '', tax_office: selected.tax_office || '', customer_identity: selected.customer_identity || '', customer_note: selected.customer_note || '' }); setShowEdit(true); }}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:shadow font-medium">
+                <button onClick={openEdit}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
                   <Edit3 size={13} /> Düzenle
                 </button>
                 <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-medium">
                   <Printer size={13} /> Yazdır
                 </button>
-                <button onClick={() => setShowCargo(!showCargo)}
-                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${
-                    showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                  } hover:shadow`}>
-                  <Truck size={13} /> Öde&Kargo
-                </button>
+                {activeTab === 'active' ? (
+                  <button onClick={() => setShowCargo(!showCargo)}
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 text-emerald-600 dark:text-emerald-400'} hover:shadow`}>
+                    <Truck size={13} /> Öde&Kargo
+                  </button>
+                ) : (
+                  <button onClick={() => setShowCargo(!showCargo)}
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${showCargo ? 'bg-amber-100 text-amber-700' : 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 text-amber-600 dark:text-amber-400'} hover:shadow`}>
+                    <Truck size={13} /> Revize
+                  </button>
+                )}
                 <button onClick={handleCancel}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/30 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-medium">
-                  <AlertTriangle size={13} /> Siparişi İptal Et
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-medium">
+                  <AlertTriangle size={13} /> Sip.İptal
                 </button>
                 <button onClick={handleDelete}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-medium">
                   <Trash2 size={13} /> Sil
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-medium">
                   <MessageCircle size={13} /> WA
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-medium">
                   <PhoneCall size={13} /> Ara
                 </button>
               </div>
@@ -505,14 +495,10 @@ function OrdersPageContent() {
         </div>
       )}
 
-      {/* Chat History Drawer — must be above slide-over (z-50) */}
+      {/* Chat Drawer */}
       {showChat && selected && (
         <div className="fixed inset-0 z-[60]">
-          <ChatHistoryDrawer
-            orderId={selected.id}
-            customerPhone={selected.customer_phone || ''}
-            onClose={() => setShowChat(false)}
-          />
+          <ChatHistoryDrawer orderId={selected.id} customerPhone={selected.customer_phone || ''} onClose={() => setShowChat(false)} />
         </div>
       )}
     </div>
