@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, Play, Package, AlertTriangle, CheckCircle, Clock, Layers, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter } from 'lucide-react';
+import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
 function authHeaders(): Record<string, string> {
   try {
@@ -11,20 +12,11 @@ function authHeaders(): Record<string, string> {
 }
 
 const CHANNELS = [
-  { key: 'all', label: 'Tümü', icon: Layers, color: 'bg-slate-100 text-slate-600' },
-  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, color: 'bg-blue-100 text-blue-600' },
-  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, color: 'bg-emerald-100 text-emerald-600' },
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, color: 'bg-sky-100 text-sky-600' },
-  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, color: 'bg-pink-100 text-pink-600' },
-  { key: 'WEBSITE', label: 'Web', icon: Globe, color: 'bg-indigo-100 text-indigo-600' },
-];
-
-const STATUS_TABS = [
-  { key: 'all', label: 'Tümü' },
-  { key: 'pending', label: '⏳ Beklemede', statuses: ['new', 'processing', 'preparing'] },
-  { key: 'approved', label: '✅ Onaylandı', statuses: ['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED', 'SHIPPED', 'DELIVERED', 'COMPLETED'] },
-  { key: 'payment', label: '💳 Ödeme Bekliyor', statuses: ['PAYMENT_WAITING'] },
-  { key: 'cancelled', label: '❌ İptal', statuses: ['CANCELLED'] },
+  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-blue-500 text-white', light: 'bg-blue-50 text-blue-700' },
+  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-emerald-500 text-white', light: 'bg-emerald-50 text-emerald-700' },
+  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-sky-500 text-white', light: 'bg-sky-50 text-sky-700' },
+  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 to-purple-600 text-white', light: 'bg-pink-50 text-pink-700' },
+  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-indigo-500 text-white', light: 'bg-indigo-50 text-indigo-700' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -37,12 +29,18 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   DELIVERED: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700' },
   COMPLETED: { label: 'Tamamlandı', cls: 'bg-teal-100 text-teal-700' },
   CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700' },
-  APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PROCESSING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
-  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
 };
 
-const SOURCE_LABELS: Record<string, string> = { PHONE: '📱 Telefon', WHATSAPP: '💬 WhatsApp', SMS: '📲 SMS', INSTAGRAM: '📸 Instagram', WEBSITE: '🌐 Web' };
+const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING', 'PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'];
+const EDIT_FIELDS: { key: string; label: string }[] = [
+  { key: 'customer_name', label: 'Müşteri Ad Soyad' },
+  { key: 'customer_phone', label: 'Telefon' },
+  { key: 'customer_city', label: 'Şehir' },
+  { key: 'customer_address', label: 'Adres' },
+  { key: 'customer_company', label: 'Firma' },
+  { key: 'customer_identity', label: 'TCKN / VKN' },
+  { key: 'customer_note', label: 'Sipariş Notu' },
+];
 
 function TimerBadge({ date }: { date: string }) {
   const [elapsed, setElapsed] = useState(0);
@@ -66,8 +64,10 @@ interface Order {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [channelFilter, setChannelFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterChannel, setFilterChannel] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
   const [items, setItems] = useState<Order['items']>([]);
@@ -78,6 +78,7 @@ export default function OrdersPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [showCargo, setShowCargo] = useState(false);
   const [cargoForm, setCargoForm] = useState({ company: '', tracking: '' });
+  const [showChat, setShowChat] = useState(false);
   const audioCtx = useRef<AudioContext | null>(null);
   const tid = '00000000-0000-0000-0000-000000000001';
 
@@ -96,7 +97,7 @@ export default function OrdersPage() {
   const loadOrders = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (channelFilter !== 'all') params.set('source', channelFilter);
+      if (filterChannel !== 'all') params.set('source', filterChannel);
       params.set('limit', '200');
       const res = await fetch(`/api/orders-list/${tid}?${params.toString()}`, { headers: authHeaders() });
       const data = await res.json();
@@ -117,25 +118,13 @@ export default function OrdersPage() {
         setOrders(newOrders);
       }
     } catch {}
-  }, [channelFilter, prevIds, beep]);
+  }, [filterChannel, prevIds, beep]);
 
   useEffect(() => {
     loadOrders();
     const interval = setInterval(loadOrders, 10000);
     return () => clearInterval(interval);
   }, [loadOrders]);
-
-  const filtered = orders.filter((o) => {
-    if (search) {
-      const q = search.toLowerCase();
-      if (!String(o.order_number || '').toLowerCase().includes(q) && !String(o.customer_name || '').toLowerCase().includes(q)) return false;
-    }
-    if (statusFilter !== 'all') {
-      const tab = STATUS_TABS.find((t) => t.key === statusFilter);
-      if (tab?.statuses && !tab.statuses.includes(o.status)) return false;
-    }
-    return true;
-  }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const selectOrder = async (order: Order) => {
     setSelected(order);
@@ -148,14 +137,10 @@ export default function OrdersPage() {
     } catch { setItems([]); }
   };
 
-  const updateStatus = async (orderId: string, status: string) => {
-    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status }) });
-    loadOrders();
-    setSelected(null);
-  };
-
-  const handleCargo = async () => {
+  const handleApproveAndShip = async () => {
     if (!selected || !cargoForm.company || !cargoForm.tracking) return;
+    // Update status to PAYMENT_CONFIRMED then SHIPPED with cargo
+    await fetch(`/api/orders/${selected.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'PAYMENT_CONFIRMED' }) });
     await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
     loadOrders();
     setSelected(null);
@@ -185,73 +170,156 @@ export default function OrdersPage() {
     setSelected(null);
   };
 
-  const quickAction = (order: Order) => {
-    if (order.status === 'new' || order.status === 'PAYMENT_WAITING') return { label: 'Ödeme Onayla', next: 'PAYMENT_CONFIRMED' };
-    if (order.status === 'PAYMENT_CONFIRMED') return { label: 'Paketle', next: 'PACKAGING' };
-    if (order.status === 'PACKAGING') return { label: 'Paketlendi', next: 'PACKAGED' };
-    if (order.status === 'PACKAGED') return { label: 'Kargoya Ver', next: 'SHIPPED' };
-    if (order.status === 'SHIPPED') return { label: 'Teslim Edildi', next: 'DELIVERED' };
-    return null;
+  const handlePrint = () => {
+    if (!selected) return;
+    window.open(`/api/print/render/${tid}/${selected.id}`, '_blank');
   };
+
+  const closeSlide = () => { setSelected(null); setShowEdit(false); setShowCargo(false); };
+
+  const activeOrders = orders.filter((o) => {
+    const inActive = ACTIVE_STATUSES.includes(o.status);
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'pending' && !['new', 'PAYMENT_WAITING'].includes(o.status)) return false;
+      if (filterStatus === 'approved' && !['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'].includes(o.status)) return false;
+      if (filterStatus === 'payment' && o.status !== 'PAYMENT_WAITING') return false;
+    }
+    if (!inActive) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!String(o.order_number || '').toLowerCase().includes(q) && !String(o.customer_name || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  const historyOrders = orders.filter((o) => {
+    if (ACTIVE_STATUSES.includes(o.status)) return false;
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'cancelled' && o.status !== 'CANCELLED') return false;
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      if (!String(o.order_number || '').toLowerCase().includes(q) && !String(o.customer_name || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const displayOrders = activeTab === 'active' ? activeOrders : historyOrders;
 
   return (
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
-      {/* Header & Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white mr-2">Siparişler</h1>
-        <span className="text-xs text-gray-400">{filtered.length} sipariş</span>
-        <button onClick={() => setSoundEnabled(!soundEnabled)} className="ml-auto p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-          {soundEnabled ? <Volume2 size={16} className="text-gray-400" /> : <VolumeX size={16} className="text-gray-300" />}
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Siparişler</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">{displayOrders.length} sipariş</span>
+          <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+            {soundEnabled ? <Volume2 size={16} className="text-gray-400" /> : <VolumeX size={16} className="text-gray-300" />}
+          </button>
+          <button onClick={loadOrders} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+            <RefreshCw size={16} className="text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Active / History Tabs */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setActiveTab('active')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'active'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
+          }`}>
+          ⚡ Aktif Siparişler
         </button>
-        <button onClick={loadOrders} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-          <RefreshCw size={16} className="text-gray-400" />
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'history'
+              ? 'bg-slate-700 text-white shadow-lg'
+              : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
+          }`}>
+          📜 Geçmiş Siparişler
         </button>
       </div>
 
-      {/* Channel Tabs */}
-      <div className="flex gap-1.5 flex-wrap">
+      {/* Top Row: Channel badges + Filter + Search */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Channel badges — always colorful */}
         {CHANNELS.map((c) => {
           const Icon = c.icon;
+          const isActive = filterChannel === c.key;
           return (
             <button
               key={c.key}
-              onClick={() => setChannelFilter(c.key)}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                channelFilter === c.key
-                  ? `${c.color} ring-1 ring-offset-1 ring-current/20`
-                  : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
+              onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
+                isActive ? c.cls + ' ring-2 ring-offset-1 ring-current/30 scale-105' : c.light
               }`}>
-              <Icon size={13} /> {c.label}
+              <Icon size={12} /> {c.label}
             </button>
           );
         })}
-      </div>
 
-      {/* Status Tabs */}
-      <div className="flex gap-1.5">
-        {STATUS_TABS.map((t) => (
+        {/* Filter Dropdown */}
+        <div className="relative">
           <button
-            key={t.key}
-            onClick={() => setStatusFilter(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              statusFilter === t.key
-                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
+            onClick={() => setShowFilter(!showFilter)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
+              filterStatus !== 'all' || filterChannel !== 'all'
+                ? 'bg-indigo-500 text-white'
+                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
             }`}>
-            {t.label}
+            <Filter size={12} /> Filtrele {filterStatus !== 'all' || filterChannel !== 'all' ? `(${filterStatus !== 'all' ? 1 : 0}${filterStatus !== 'all' && filterChannel !== 'all' ? '+' : ''}${filterChannel !== 'all' ? 1 : 0})` : ''}
           </button>
-        ))}
-      </div>
+          {showFilter && (
+            <div className="absolute top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-3 z-20 min-w-[200px]" onMouseLeave={() => setShowFilter(false)}>
+              <div className="text-[10px] text-gray-400 uppercase font-semibold mb-1.5">Durum</div>
+              <div className="space-y-1">
+                {[
+                  { key: 'all', label: 'Tümü' },
+                  { key: 'pending', label: '⏳ Beklemede' },
+                  { key: 'approved', label: '✅ Onaylandı' },
+                  { key: 'payment', label: '💳 Ödeme Bekliyor' },
+                  { key: 'cancelled', label: '❌ İptal' },
+                ].map((s) => (
+                  <button key={s.key} onClick={() => { setFilterStatus(s.key); setShowFilter(false); }}
+                    className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-gray-400 uppercase font-semibold mt-2 mb-1.5 pt-2 border-t">Kanal (Tümü)</div>
+              <div className="space-y-1">
+                <button onClick={() => { setFilterChannel('all'); setShowFilter(false); }}
+                  className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterChannel === 'all' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                  📋 Tüm Kanallar
+                </button>
+                {CHANNELS.map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <button key={c.key} onClick={() => { setFilterChannel(c.key); setShowFilter(false); }}
+                      className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterChannel === c.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>
+                      <Icon size={11} className="inline mr-1" /> {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Sipariş no veya müşteri adı ile ara..."
-          className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
-        />
+        {/* Search */}
+        <div className="relative flex-1 min-w-[140px]">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="No veya isim ara..."
+            className="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
+          />
+        </div>
       </div>
 
       {/* Notification Banner */}
@@ -261,12 +329,12 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Order Cards Grid */}
+      {/* Order Cards */}
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-        {filtered.map((o) => {
-          const action = quickAction(o);
+        {displayOrders.map((o) => {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
-          const isNew = o.status === 'new';
+          const chCfg = CHANNELS.find((c) => c.key === o.source);
+          const ChIcon = chCfg?.icon || Globe;
           return (
             <div
               key={o.id}
@@ -275,68 +343,52 @@ export default function OrdersPage() {
                 selected?.id === o.id
                   ? 'ring-2 ring-indigo-400 border-indigo-300 dark:border-indigo-600'
                   : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-              } ${isNew ? 'border-l-4 border-l-emerald-400' : ''}`}>
+              } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm text-gray-900 dark:text-white">#{o.order_number}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
-                    {SOURCE_LABELS[o.source] && (
-                      <span className="text-[10px] text-gray-400">{SOURCE_LABELS[o.source]}</span>
+                    {chCfg && (
+                      <span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.light}`}>
+                        <ChIcon size={10} /> {chCfg.label}
+                      </span>
                     )}
                   </div>
                   <div className="text-sm text-gray-700 dark:text-slate-200 mt-0.5 truncate">{o.customer_name || '—'}</div>
                   <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
                     <TimerBadge date={o.created_at} />
                     {o.customer_city && <span>📍 {o.customer_city}</span>}
-                    {o.customer_note && <span>📝 {o.customer_note.substring(0, 20)}</span>}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-bold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</div>
-                  {action && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); updateStatus(o.id, action.next); }}
-                      className="mt-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded text-[10px] font-medium hover:bg-indigo-100">
-                      {action.label}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
           );
         })}
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm">Sipariş bulunamadı</div>
+        {displayOrders.length === 0 && (
+          <div className="text-center py-12 text-gray-400 text-sm">
+            {activeTab === 'active' ? 'Aktif sipariş yok 🎉' : 'Geçmiş sipariş bulunamadı'}
+          </div>
         )}
       </div>
 
       {/* Slide-over Müşteri Kartı */}
       {selected && (
-        <div className="fixed inset-0 z-50" onClick={() => { setSelected(null); setShowEdit(false); setShowCargo(false); }}>
+        <div className="fixed inset-0 z-50" onClick={closeSlide}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-4 py-3 flex items-center justify-between z-10">
-              <span className="font-semibold text-gray-900 dark:text-white">Müşteri Detayı</span>
-              <button onClick={() => { setSelected(null); setShowEdit(false); setShowCargo(false); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><X size={18} /></button>
+              <span className="font-semibold text-gray-900 dark:text-white">#{selected.order_number}</span>
+              <button onClick={closeSlide} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><X size={18} /></button>
             </div>
 
             <div className="p-4 space-y-4">
-              {/* Source Badge */}
-              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium ${
-                selected.source === 'WHATSAPP' ? 'bg-emerald-100 text-emerald-700' :
-                selected.source === 'INSTAGRAM' ? 'bg-pink-100 text-pink-700' :
-                selected.source === 'SMS' ? 'bg-sky-100 text-sky-700' :
-                selected.source === 'WEBSITE' ? 'bg-indigo-100 text-indigo-700' :
-                'bg-blue-100 text-blue-700'
-              }`}>
-                {SOURCE_LABELS[selected.source] || selected.source}
-              </div>
-
-              {/* Customer Info */}
               {!showEdit ? (
                 <>
+                  {/* Customer Info */}
                   <div className="space-y-2 text-sm">
                     <div className="font-semibold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
                     {selected.customer_phone && <div className="text-gray-500">📱 {selected.customer_phone}</div>}
@@ -344,11 +396,10 @@ export default function OrdersPage() {
                     {selected.customer_city && <div className="text-gray-500">🏙️ {selected.customer_city}</div>}
                   </div>
 
-                  {/* Payment & Identity */}
+                  {/* Meta */}
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                    {selected.customer_company && <div><span className="text-gray-400">Şirket:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}
-                    {selected.customer_identity && <div><span className="text-gray-400">{selected.customer_company ? 'Vergi No:' : 'TC:'}</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_identity}</span></div>}
-                    {selected.customer_birthday && <div><span className="text-gray-400">Doğum:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_birthday}</span></div>}
+                    {selected.customer_company && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}
+                    {selected.customer_identity && <div><span className="text-gray-400">{selected.customer_company ? 'VKN:' : 'TCKN:'}</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_identity}</span></div>}
                   </div>
 
                   {/* Notes */}
@@ -358,89 +409,114 @@ export default function OrdersPage() {
                     </div>
                   )}
 
-                  {/* Order Summary */}
+                  {/* Products + Total */}
                   <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
-                    <div className="text-xs text-gray-400 mb-1">Sipariş</div>
+                    <div className="text-xs text-gray-400 mb-1">Sipariş Kalemleri</div>
                     {items && items.length > 0 ? (
-                      <div className="space-y-1">
+                      <div className="space-y-1 mb-2">
                         {items.map((item, i) => (
                           <div key={i} className="flex justify-between text-sm">
-                            <span className="text-gray-700 dark:text-slate-300">{item.quantity} {item.unit} {item.product_name}</span>
+                            <span className="text-gray-700 dark:text-slate-300">{item.quantity}x {item.unit} {item.product_name}</span>
                             <span className="text-gray-500">{(item.quantity * item.unit_price).toLocaleString('tr-TR')} TL</span>
                           </div>
                         ))}
                         <div className="border-t pt-1 flex justify-between font-semibold text-sm">
-                          <span className="text-gray-700 dark:text-slate-300">Toplam</span>
+                          <span>Toplam</span>
                           <span className="text-gray-900 dark:text-white">{Number(selected.total_price).toLocaleString('tr-TR')} TL</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">{Number(selected.total_price).toLocaleString('tr-TR')} TL</div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white mb-2">{Number(selected.total_price).toLocaleString('tr-TR')} TL</div>
                     )}
                   </div>
+
+                  {/* Cargo Form (if showing) */}
+                  {showCargo && (
+                    <div className="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                      <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Kargo Bilgisi</h3>
+                      <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })}
+                        placeholder="Kargo firması (örn: MNG)" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })}
+                        placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
+                      <button onClick={handleApproveAndShip}
+                        className="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-emerald-500/20">
+                        ✅ Ödemeyi Onayla & Kargoya Ver
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
-                /* Edit Form */
+                /* Edit Form — Turkish labels */
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">Siparişi Düzenle</h3>
-                  {['customer_name', 'customer_phone', 'customer_address', 'customer_city', 'customer_company', 'customer_identity', 'customer_birthday', 'customer_note'].map((field) => (
-                    <div key={field}>
-                      <label className="text-[10px] text-gray-400 block mb-0.5 uppercase">{field.replace('customer_', '')}</label>
+                  {EDIT_FIELDS.map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="text-[10px] text-gray-400 block mb-0.5">{label}</label>
                       <input
-                        value={editForm[field] || ''}
-                        onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}
-                        className="w-full px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+                        value={editForm[key] || ''}
+                        onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                        className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
                       />
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium">Kaydet</button>
-                    <button onClick={() => setShowEdit(false)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500">İptal</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Cargo Form */}
-              {showCargo && (
-                <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">Kargo Bilgisi</h3>
-                  <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })}
-                    placeholder="Kargo firması (örn: MNG)" className="w-full px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-                  <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })}
-                    placeholder="Takip numarası" className="w-full px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-                  <div className="flex gap-2">
-                    <button onClick={handleCargo} className="flex-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium">Kaydet ve Bildirim Gönder</button>
-                    <button onClick={() => setShowCargo(false)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-500">İptal</button>
+                    <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Kaydet</button>
+                    <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-500">İptal</button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Action Buttons */}
+            {/* Bottom Action Buttons */}
             {!showEdit && (
-              <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-3 gap-2">
-                <a href={`/replay?order=${selected.id}`} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+              <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
+                <button onClick={() => { setShowChat(true); }}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
                   <Eye size={13} /> Görüşme
-                </a>
-                <button onClick={() => { setEditForm({ customer_name: selected.customer_name || '', customer_phone: selected.customer_phone || '', customer_address: selected.customer_address || '', customer_city: selected.customer_city || '', customer_company: selected.customer_company || '', customer_identity: selected.customer_identity || '', customer_birthday: selected.customer_birthday || '', customer_note: selected.customer_note || '' }); setShowEdit(true); }} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                </button>
+                <button onClick={() => { setEditForm({ customer_name: selected.customer_name || '', customer_phone: selected.customer_phone || '', customer_city: selected.customer_city || '', customer_address: selected.customer_address || '', customer_company: selected.customer_company || '', customer_identity: selected.customer_identity || '', customer_note: selected.customer_note || '' }); setShowEdit(true); }}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
                   <Edit3 size={13} /> Düzenle
                 </button>
-                <button onClick={() => setShowCargo(!showCargo)} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
-                  <Truck size={13} /> Kargo
+                <button onClick={handlePrint}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                  <Printer size={13} /> Yazdır
                 </button>
-                <button onClick={handleCancel} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-100 font-medium">
+                <button onClick={() => setShowCargo(!showCargo)}
+                  className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${
+                    showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                  } hover:bg-emerald-200`}>
+                  <Truck size={13} /> Öde&Kargo
+                </button>
+                <button onClick={handleCancel}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-100 font-medium">
                   <AlertTriangle size={13} /> İptal Et
                 </button>
-                <button onClick={handleDelete} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:bg-red-100 font-medium">
+                <button onClick={handleDelete}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:bg-red-100 font-medium">
                   <Trash2 size={13} /> Sil
                 </button>
-                <a href={`tel:${selected.customer_phone || ''}`} className="inline-flex items-center justify-center gap-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-100 font-medium">
+                <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 font-medium">
+                  <MessageCircle size={13} /> WA
+                </button>
+                <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-100 font-medium">
                   <PhoneCall size={13} /> Ara
-                </a>
+                </button>
               </div>
             )}
           </div>
         </div>
+      )}
+
+      {/* Chat History Drawer */}
+      {showChat && selected && (
+        <ChatHistoryDrawer
+          orderId={selected.id}
+          customerPhone={selected.customer_phone || ''}
+          onClose={() => setShowChat(false)}
+        />
       )}
     </div>
   );
