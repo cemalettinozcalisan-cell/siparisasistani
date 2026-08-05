@@ -214,9 +214,9 @@ function OrdersPageContent() {
     setSelected(null);
   };
 
-  const handlePrint = () => {
+      const handlePrint = () => {
     if (!selected) return;
-    window.open(`/api/print/preview/${tid}/${selected.id}`, '_blank');
+    window.open(`/api/print/render/${tid}/${selected.id}`, '_blank');
   };
 
   const closeSlide = () => { setSelected(null); setShowEdit(false); setShowCargo(false); setItems([]); };
@@ -437,11 +437,19 @@ function OrdersPageContent() {
                   {/* Products readonly */}
                   {editItems.length > 0 && (
                     <div>
-                      <label className="text-[10px] text-gray-400 block mb-1">Sipariş Edilen Ürünler</label>
+                      <label className="text-[10px] text-gray-400 block mb-1">Sipariş Edilen Ürünler (düzenlenebilir)</label>
                       <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-2">
                         {editItems.map((item, i) => (
                           <div key={i} className="flex items-center gap-1.5 text-xs">
-                            <span className="text-gray-600 dark:text-slate-300 flex-1">{item.product_name}</span>
+                            <input
+                              value={item.product_name}
+                              onChange={(e) => {
+                                const next = [...editItems];
+                                next[i] = { ...next[i], product_name: e.target.value };
+                                setEditItems(next);
+                              }}
+                              className="flex-1 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+                            />
                             <input
                               type="number" min="1"
                               value={item.quantity}
@@ -452,7 +460,15 @@ function OrdersPageContent() {
                               }}
                               className="w-12 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
                             />
-                            <span className="text-gray-400">{item.unit}</span>
+                            <input
+                              value={item.unit}
+                              onChange={(e) => {
+                                const next = [...editItems];
+                                next[i] = { ...next[i], unit: e.target.value };
+                                setEditItems(next);
+                              }}
+                              className="w-12 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                            />
                             <input
                               type="number" min="0"
                               value={item.unit_price}
@@ -527,9 +543,7 @@ function OrdersPageContent() {
 
       {/* Chat Drawer */}
       {showChat && selected && (
-        <div className="fixed inset-0 z-[60]">
-          <ChatHistoryDrawer orderId={selected.id} customerPhone={selected.customer_phone || ''} onClose={() => setShowChat(false)} />
-        </div>
+        <ChatHistoryDrawer orderId={selected.id} customerPhone={selected.customer_phone || ''} onClose={() => setShowChat(false)} />
       )}
     </div>
   );

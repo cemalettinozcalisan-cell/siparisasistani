@@ -18,6 +18,10 @@ const MOCK_ITEMS: Record<string, Record<string, unknown>[]> = {
   'ord-019': [{ product_name: 'Pastırma', quantity: 1, unit: 'KG', unit_price: 1200, total: 1200 }, { product_name: 'Kangal Sucuk', quantity: 1, unit: 'KG', unit_price: 750, total: 750 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 300, total: 300 }],
   'ord-020': [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', unit_price: 890, total: 1780 }],
   'ord-021': [{ product_name: 'Acılı Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 920, total: 920 }],
+  'ord-022': [{ product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 300, total: 300 }],
+  'ord-023': [{ product_name: 'Pastırma', quantity: 1, unit: 'KG', unit_price: 1200, total: 1200 }, { product_name: 'Tulum Peyniri', quantity: 2, unit: 'KG', unit_price: 500, total: 1000 }],
+  'ord-024': [{ product_name: 'Kaymak', quantity: 2, unit: 'KG', unit_price: 350, total: 700 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 450, total: 450 }],
+  'ord-025': [{ product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 890, total: 890 }, { product_name: 'Kangal Sucuk', quantity: 1, unit: 'KG', unit_price: 750, total: 750 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 120, total: 120 }],
 };
 
 @Controller('order-items')
