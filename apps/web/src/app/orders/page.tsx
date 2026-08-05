@@ -23,22 +23,27 @@ const CHANNELS = [
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  new: { label: 'Yeni', cls: 'bg-blue-100 text-blue-700' },
-  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', cls: 'bg-indigo-100 text-indigo-700' },
-  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
-  PACKAGING: { label: 'Paketleniyor', cls: 'bg-violet-100 text-violet-700' },
-  PACKAGED: { label: 'Paketlendi', cls: 'bg-purple-100 text-purple-700' },
-  SHIPPED: { label: 'Kargolandı', cls: 'bg-emerald-100 text-emerald-700' },
-  DELIVERED: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700' },
-  COMPLETED: { label: 'Tamamlandı', cls: 'bg-teal-100 text-teal-700' },
-  CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700' },
-  APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PROCESSING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
-  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-cyan-100 text-cyan-700' },
+  new: { label: '🆕 Yeni', cls: 'bg-blue-100 text-blue-700' },
+  PAYMENT_WAITING: { label: '💳 Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
+  PAYMENT_CONFIRMED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PACKAGING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PACKAGED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  SHIPPED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  DELIVERED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  COMPLETED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  CANCELLED: { label: '❌ İptal', cls: 'bg-red-100 text-red-700' },
+  APPROVED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PROCESSING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PREPARING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
 };
 
-const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING', 'PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'];
-const HISTORY_STATUSES = ['SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING'];
+const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING'];
+const HISTORY_STATUSES = ['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING', 'PREPARING'];
+
+const PAYMENT_LABELS: Record<string, string> = {
+  IBAN: '🏦 IBAN', 'Kapıda Nakit': '💵 Kapıda Nakit', 'Kapıda Kredi Kartı': '💳 Kapıda Kart',
+  'Link ile Ödeme': '🔗 Link', CASH: '💵 Nakit', CARD: '💳 Kart',
+};
 
 const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_name', label: 'Müşteri Ad Soyad' },
@@ -57,7 +62,7 @@ interface Order {
   id: string; order_number: string; total_price: number; status: string; channel: string; source: string;
   notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
   customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
-  customer_company: string; tax_office?: string; items?: OrderItem[];
+  customer_company: string; tax_office?: string; payment?: string; items?: OrderItem[];
 }
 
 function TimerBadge({ date }: { date: string }) {
@@ -234,9 +239,8 @@ function OrdersPageContent() {
     if (activeTab === 'active' && !isActive(o.status)) return false;
     if (activeTab === 'history' && !isHistory(o.status)) return false;
     if (filterStatus !== 'all') {
-      if (filterStatus === 'pending' && !['new', 'PAYMENT_WAITING'].includes(o.status)) return false;
-      if (filterStatus === 'approved' && !['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED'].includes(o.status)) return false;
       if (filterStatus === 'payment' && o.status !== 'PAYMENT_WAITING') return false;
+      if (filterStatus === 'approved' && o.status === 'CANCELLED') return false;
       if (filterStatus === 'cancelled' && o.status !== 'CANCELLED') return false;
     }
     if (search) {
@@ -290,7 +294,10 @@ function OrdersPageContent() {
             <div className="absolute top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-3 z-20 min-w-[200px]" onMouseLeave={() => setShowFilter(false)}>
               <div className="text-[10px] text-gray-400 uppercase font-semibold mb-1.5">Durum</div>
               <div className="space-y-1">
-                {[{ key: 'all', label: 'Tümü' },{ key: 'pending', label: '⏳ Beklemede' },{ key: 'approved', label: '✅ Onaylandı' },{ key: 'payment', label: '💳 Ödeme Bekliyor' },{ key: 'cancelled', label: '❌ İptal' }].map((s) => (
+                {(activeTab === 'active'
+                  ? [{ key: 'all', label: 'Tümü' }, { key: 'payment', label: '💳 Ödeme Bekliyor' }]
+                  : [{ key: 'all', label: 'Tümü' }, { key: 'approved', label: '✅ Onaylananlar' }, { key: 'cancelled', label: '❌ İptal Edilenler' }]
+                ).map((s) => (
                   <button key={s.key} onClick={() => { setFilterStatus(s.key); setShowFilter(false); }}
                     className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>{s.label}</button>
                 ))}
@@ -317,6 +324,7 @@ function OrdersPageContent() {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
+          const pmLabel = o.payment ? PAYMENT_LABELS[o.payment] || `💳 ${o.payment}` : '';
           return (
             <div key={o.id} onClick={() => selectOrder(o)}
               className={`bg-white dark:bg-slate-800 rounded-xl border px-4 py-3 cursor-pointer hover:shadow-md transition-all ${
@@ -329,6 +337,7 @@ function OrdersPageContent() {
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {pmLabel && <span className="text-[10px] text-gray-500 shrink-0">{pmLabel}</span>}
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
                   <span className="font-semibold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
