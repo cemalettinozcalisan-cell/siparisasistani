@@ -435,14 +435,35 @@ function OrdersPageContent() {
                     </div>
                   ))}
                   {/* Products readonly */}
-                  {items.length > 0 && (
+                  {editItems.length > 0 && (
                     <div>
                       <label className="text-[10px] text-gray-400 block mb-1">Sipariş Edilen Ürünler</label>
-                      <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-1">
-                        {items.map((item, i) => (
-                          <div key={i} className="flex justify-between text-xs text-gray-600 dark:text-slate-300">
-                            <span>{item.quantity}x {item.unit} {item.product_name}</span>
-                            <span>{(item.quantity * item.unit_price).toLocaleString('tr-TR')} TL</span>
+                      <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-2">
+                        {editItems.map((item, i) => (
+                          <div key={i} className="flex items-center gap-1.5 text-xs">
+                            <span className="text-gray-600 dark:text-slate-300 flex-1">{item.product_name}</span>
+                            <input
+                              type="number" min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const next = [...editItems];
+                                next[i] = { ...next[i], quantity: Number(e.target.value) || 1 };
+                                setEditItems(next);
+                              }}
+                              className="w-12 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                            />
+                            <span className="text-gray-400">{item.unit}</span>
+                            <input
+                              type="number" min="0"
+                              value={item.unit_price}
+                              onChange={(e) => {
+                                const next = [...editItems];
+                                next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 };
+                                setEditItems(next);
+                              }}
+                              className="w-16 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                            />
+                            <span className="text-gray-400">TL</span>
                           </div>
                         ))}
                       </div>

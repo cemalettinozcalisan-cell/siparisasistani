@@ -24,7 +24,25 @@ if (typeof window !== 'undefined') {
       if (token) {
         const headers = new Headers(init?.headers);
         if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-        return originalFetch(input, { ...init, headers });
+        const res = await originalFetch(input, { ...init, headers });
+        // Auto re-login on 401 (backend restart clears in-memory sessions)
+        if (res.status === 401) {
+          try {
+            const reAuth = await originalFetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'demo@siparisasistani.com', password: 'demo123' }),
+            });
+            if (reAuth.ok) {
+              const data = await reAuth.json();
+              localStorage.setItem('auth_token', data.token);
+              localStorage.setItem('auth_user', JSON.stringify(data.user));
+              headers.set('Authorization', `Bearer ${data.token}`);
+              return originalFetch(input, { ...init, headers });
+            }
+          } catch {}
+        }
+        return res;
       }
     } catch {}
     return originalFetch(input, init);

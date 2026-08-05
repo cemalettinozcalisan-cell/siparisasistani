@@ -15,6 +15,9 @@ const MOCK_ITEMS: Record<string, Record<string, unknown>[]> = {
   'ord-016': [{ product_name: 'Kangal Sucuk', quantity: 2, unit: 'KG', unit_price: 750, total: 1500 }],
   'ord-017': [{ product_name: 'Acılı Parmak Sucuk', quantity: 2, unit: 'KG', unit_price: 920, total: 1840 }],
   'ord-018': [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', unit_price: 890, total: 1780 }, { product_name: 'Kaymak', quantity: 2, unit: 'KG', unit_price: 450, total: 900 }],
+  'ord-019': [{ product_name: 'Pastırma', quantity: 1, unit: 'KG', unit_price: 1200, total: 1200 }, { product_name: 'Kangal Sucuk', quantity: 1, unit: 'KG', unit_price: 750, total: 750 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 300, total: 300 }],
+  'ord-020': [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', unit_price: 890, total: 1780 }],
+  'ord-021': [{ product_name: 'Acılı Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 920, total: 920 }],
 };
 
 @Controller('order-items')
