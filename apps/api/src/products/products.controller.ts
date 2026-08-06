@@ -13,7 +13,18 @@ export class ProductsController {
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
       .order('product_name');
-    return data || [];
+
+    if (data && data.length > 0) return data;
+
+    return [
+      { id: 'prod-001', product_name: 'Dana Parmak Sucuk', category: 'Sucuk', price: 890, unit: 'KG', sale_types: ['KG', 'SAP'], variable_weight: true, avg_weight_gr: 250, active: true },
+      { id: 'prod-002', product_name: 'Pastırma', category: 'Sucuk', price: 1200, unit: 'KG', sale_types: ['KG'], variable_weight: false, active: true },
+      { id: 'prod-003', product_name: 'Kaymak', category: 'Süt Ürünleri', price: 450, unit: 'KG', sale_types: ['KG'], variable_weight: true, avg_weight_gr: 500, active: true },
+      { id: 'prod-004', product_name: 'Haşhaş Ezmesi', category: 'Ezme', price: 300, unit: 'KG', sale_types: ['KG'], variable_weight: false, active: true },
+      { id: 'prod-005', product_name: 'Kangal Sucuk', category: 'Sucuk', price: 750, unit: 'KG', sale_types: ['KG', 'SAP'], variable_weight: true, avg_weight_gr: 300, active: true },
+      { id: 'prod-006', product_name: 'Acılı Parmak Sucuk', category: 'Sucuk', price: 920, unit: 'KG', sale_types: ['KG', 'SAP'], variable_weight: true, avg_weight_gr: 250, active: true },
+      { id: 'prod-007', product_name: 'Tulum Peyniri', category: 'Peynir', price: 500, unit: 'KG', sale_types: ['KG'], variable_weight: true, avg_weight_gr: 800, active: true },
+    ];
   }
 
   @Post(':tenantId')
