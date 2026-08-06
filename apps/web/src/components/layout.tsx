@@ -70,6 +70,7 @@ const navItems = [
   { href: '/api-keys', label: 'API Anahtarları', icon: Key, roles: ['owner'], group: 'settings' },
   { href: '/ai-audit', label: 'AI Denetim', icon: Mic, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
+  { href: '/settings/audit-logs', label: 'Sistem Logları', icon: BarChart3, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
   { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
   // Geliştirici
