@@ -112,9 +112,50 @@ export class OrdersListController {
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
+    // Split customer fields from order fields
+    const customerFields: Record<string, unknown> = {};
+    const orderFields: Record<string, unknown> = {};
+    const custKeys = ['customer_name', 'customer_phone', 'customer_city', 'customer_address', 'customer_company', 'tax_office', 'customer_identity', 'customer_birthday'];
+
+    // For mock/demo orders (non-UUID IDs), skip all DB ops
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}/.test(id)) {
+      this.eventBus.emit(SystemEvents.ORDER_UPDATED, tenantId, { orderId: id, changedFields: Object.keys(body).filter((k) => k !== 'tenant_id' && k !== 'id'), mock: true }, id);
+      return { id, ...body, _mock: true };
+    }
+
+    for (const [key, value] of Object.entries(body)) {
+      if (key.startsWith('customer_')) {
+        const dbKey = key === 'customer_name' ? 'name' : key === 'customer_phone' ? 'phone' : key === 'customer_city' ? 'city' : key === 'customer_address' ? 'address' : key === 'customer_company' ? 'company_name' : key === 'customer_identity' ? 'identity_number' : key === 'customer_birthday' ? 'birth_date' : key.replace('customer_', '');
+        if (value !== undefined && value !== '') customerFields[dbKey] = value;
+        if (key === 'customer_note') orderFields['customer_note'] = value;
+      } else {
+        orderFields[key] = value;
+      }
+    }
+
+    // Update customer record if fields exist
+    if (Object.keys(customerFields).length > 0) {
+      try {
+        const { data: orderData } = await this.supabase.db
+          .from('orders')
+          .select('customer_id')
+          .eq('id', id)
+          .single();
+
+        if (orderData?.customer_id) {
+          await this.supabase.db
+            .from('customers')
+            .update(customerFields)
+            .eq('id', orderData.customer_id)
+            .eq('tenant_id', tenantId);
+        }
+      } catch {}
+    }
+
+    // Update order record
     const { data, error } = await this.supabase.db
       .from('orders')
-      .update(body)
+      .update(orderFields)
       .eq('tenant_id', tenantId)
       .eq('id', id)
       .select()
