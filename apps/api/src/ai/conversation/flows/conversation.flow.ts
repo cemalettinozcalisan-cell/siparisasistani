@@ -29,7 +29,7 @@ export class ConversationService {
   async startSession(
     sessionId: string,
     tenantId: string,
-    channel: 'phone' | 'whatsapp',
+    channel: 'phone' | 'whatsapp' | 'sms',
     customerPhone: string,
   ): Promise<string> {
     const promptCtx: PromptContext = {

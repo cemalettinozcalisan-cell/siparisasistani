@@ -88,7 +88,7 @@ export class HealthController {
       .sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 15);
 
-    const channelEmoji: Record<string, string> = { phone: '📞', whatsapp: '💬', instagram: '📸', website: '🌐', manual: '📋', wholesale: '📦' };
+    const channelEmoji: Record<string, string> = { phone: '📞', whatsapp: '💬', instagram: '📸', website: '🌐', sms: '📲', manual: '📋', wholesale: '📦' };
     const recentEvents = recentOrders.map((o: { order_number: string; customer_name: string; channel: string; status: string; total_price: number; created_at: string }) => {
       const ch = channelEmoji[o.channel] || '📋';
       const name = o.customer_name || 'Yeni Müşteri';
@@ -100,7 +100,7 @@ export class HealthController {
       if (o.status === 'new') {
         return { time, text: `${ch} ${name} yeni sipariş verdi — onay bekliyor`, type: 'info' };
       }
-      const channelNames: Record<string, string> = { phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Web Sitesi', wholesale: 'Toptan' };
+      const channelNames: Record<string, string> = { phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Web Sitesi', sms: 'SMS', wholesale: 'Toptan' };
       return { time, text: `${ch} ${name} — ${Number(o.total_price).toLocaleString('tr-TR')} TL tutarında sipariş ${channelNames[o.channel] || o.channel} üzerinden alındı`, type: 'success' };
     });
 
