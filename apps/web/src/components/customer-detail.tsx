@@ -21,9 +21,17 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   const [customerPrices, setCustomerPrices] = useState<Record<string, unknown>[]>([]);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [priceForm, setPriceForm] = useState({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
+  const [products, setProducts] = useState<Array<{ product_name: string; unit: string; price: number }>>([]);
   const [userRole, setUserRole] = useState('owner');
 
   useEffect(() => { try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {} }, []);
+  useEffect(() => {
+    fetch(`/api/products/${tid}`).then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setProducts(d.map((p: any) => ({
+        product_name: p.product_name || p.name || '', unit: p.unit || 'KG', price: Number(p.price || 0),
+      })));
+    }).catch(() => {});
+  }, []);
 
   const tid = '00000000-0000-0000-0000-000000000001';
 
@@ -88,15 +96,15 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
             <button onClick={() => window.open(`tel:${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
               📞 Ara
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
               💬 WhatsApp
             </button>
             <button onClick={() => alert('Müşteri düzenleme özelliği bir sonraki güncellemede eklenecektir.')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
               ✏️ Düzenle
             </button>
           </div>
@@ -177,8 +185,14 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
             </div>
             {showPriceForm && (
               <div className="grid grid-cols-2 gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                <input placeholder="Ürün adı" value={priceForm.product_name} onChange={(e) => setPriceForm({ ...priceForm, product_name: e.target.value })}
-                  className="col-span-2 px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800" />
+                <select value={priceForm.product_name} onChange={(e) => {
+                  const sel = products.find(p => p.product_name === e.target.value);
+                  setPriceForm({ ...priceForm, product_name: e.target.value, unit: sel?.unit || 'KG', price: sel?.price ? String(sel.price) : priceForm.price });
+                }}
+                  className="col-span-2 px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
+                  <option value="">-- Ürün Seçin --</option>
+                  {products.map(p => (<option key={p.product_name} value={p.product_name}>{p.product_name} ({p.price.toLocaleString('tr-TR')} TL/{p.unit})</option>))}
+                </select>
                 <select value={priceForm.unit} onChange={(e) => setPriceForm({ ...priceForm, unit: e.target.value })}
                   className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
                   <option value="KG">KG</option>
