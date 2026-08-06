@@ -281,7 +281,7 @@ function OrdersPageContent() {
           const isActive = filterChannel === c.key;
           return (
             <button key={c.key} onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? c.cls + ' shadow-lg scale-105' : c.cls + ' opacity-60'}`}>
               <Icon size={15} /> {c.label}
             </button>
           );
