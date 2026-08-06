@@ -81,6 +81,8 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   else if (daysSinceLastOrder <= 7) insightParts.push('Son 7 günde sipariş vermiş, aktif müşteri.');
   if (complaints.length > 0) insightParts.push(`${complaints.length} şikayet kaydı var, öncelikli ilgilenilmeli.`);
 
+  const riskScore = daysSinceLastOrder > 180 ? '🔴 Yüksek Risk' : daysSinceLastOrder > 90 ? '🟡 Orta Risk' : daysSinceLastOrder <= 7 ? '🟢 Düşük Risk (Aktif)' : '🟢 Düşük Risk';
+
   return (
     <div className="space-y-3">
       {/* Header with button group */}
@@ -233,6 +235,11 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 shadow-sm">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">🤖 AI Müşteri Analizi</h3>
             <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed">{insightParts.join(' ')}</p>
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
+              <span className="text-[10px] text-gray-400">Risk Skoru:</span>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${riskScore.includes('Yüksek') ? 'bg-red-100 text-red-700' : riskScore.includes('Orta') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{riskScore}</span>
+              {complaints.length > 0 && <span className="text-[10px] text-red-500">⚠️ {complaints.length} şikayet</span>}
+            </div>
           </div>
 
           {/* Top Products */}

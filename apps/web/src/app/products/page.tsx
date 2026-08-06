@@ -77,6 +77,11 @@ export default function ProductsPage() {
     load();
   };
 
+  const deleteProduct = async (id: string) => {
+    if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+    await fetch(`/api/products/demo-tenant-id/${id}`, { method: 'DELETE' });
+    load();
+  };
   const toggleActive = async (id: string, active: boolean) => {
     await fetch(`/api/products/demo-tenant-id/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !active }) });
     load();
@@ -120,6 +125,10 @@ export default function ProductsPage() {
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all shadow-sm">
               <Plus className="w-4 h-4" /> Ürün Ekle
             </button>
+            <button onClick={() => window.open(`/api/products/demo-tenant-id`, '_blank')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all shadow-sm">
+              📄 PDF İndir
+            </button>
           </div>
         </div>
       )}
@@ -157,7 +166,8 @@ export default function ProductsPage() {
                   <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">Fiyat</th>
                   <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">Satış Tipleri</th>
                   <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">AI Kuralı</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">Durum</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">Durum</th>
+                  <th className="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -187,11 +197,19 @@ export default function ProductsPage() {
                         </span>
                       ) : <span className="text-slate-300 dark:text-slate-600">-</span>}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-center">
                       <button onClick={() => toggleActive(p.id, p.active)}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${p.active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
                         {p.active ? 'Aktif' : 'Pasif'}
                       </button>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => deleteProduct(p.id)}
+                          className="px-2 py-1 text-[10px] font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+                          Sil
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
