@@ -17,9 +17,9 @@ function authHeaders(): Record<string, string> {
 const CHANNELS = [
   { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' },
   { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md' },
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md' },
   { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md' },
-  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-indigo-400 to-purple-600 text-white shadow-md' },
+  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md' },
+  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -275,13 +275,13 @@ function OrdersPageContent() {
       </div>
 
       {/* Channel badges + Filter + Search */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-800 rounded-full p-1 shadow-sm">
         {CHANNELS.map((c) => {
           const Icon = c.icon;
           const isActive = filterChannel === c.key;
           return (
             <button key={c.key} onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? c.cls + ' scale-105' : c.cls + ' opacity-60'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${c.cls} ${isActive ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ring-white/50 scale-105' : ''}`}>
               <Icon size={15} /> {c.label}
             </button>
           );
