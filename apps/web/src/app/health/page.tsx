@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, MessageCircle } from 'lucide-react';
+import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, MessageCircle, Users, ShoppingBag } from 'lucide-react';
 
 interface ServiceInfo { name: string; status: 'ok' | 'down' | 'not_configured'; tip: string; techName?: string; }
 
@@ -224,52 +224,78 @@ export default function HealthPage() {
       {/* License Card */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
-          <Database size={15} className="text-slate-500" /> Kullanım ve Lisans
+          <Database size={15} className="text-indigo-500" /> Kullanım ve Lisans
         </h2>
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">Plan: {license?.plan || 'Pro'}</span>
-                <span className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full font-medium">
-                  {used.toLocaleString('tr-TR')} / {limit.toLocaleString('tr-TR')} sipariş
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Left: Plan + Progress */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">Plan:</span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold rounded-full shadow-sm">
+                  <Zap size={12} /> {license?.plan || 'Pro'}
+                </span>
+                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
+                  percent > 95 ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                  percent >= 80 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                  'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                }`}>
+                  {used.toLocaleString('tr-TR')} / {limit.toLocaleString('tr-TR')}
                 </span>
                 {percent >= 80 && (
-                  <span className="text-[10px] text-amber-600 font-medium">⚠ {limit - used} sipariş kaldı</span>
+                  <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <AlertTriangle size={11} /> {limit - used} sipariş kaldı
+                  </span>
                 )}
               </div>
 
-              <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${percent > 95 ? 'bg-red-500' : percent > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                  style={{ width: `${percent}%` }}
-                />
+              <div className="space-y-1.5">
+                <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
+                      percent > 95 ? 'bg-gradient-to-r from-red-500 to-red-400' :
+                      percent >= 80 ? 'bg-gradient-to-r from-amber-500 to-orange-400' :
+                      'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    }`}
+                    style={{ width: `${Math.min(percent, 100)}%` }}
+                  >
+                    {percent > 0 && percent <= 100 && (
+                      <span className="absolute inset-0 bg-white/20 animate-pulse rounded-full" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className={`font-semibold ${
+                    percent > 95 ? 'text-red-500' : percent >= 80 ? 'text-amber-500' : 'text-emerald-500'
+                  }`}>%{percent} kullanıldı</span>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[11px] text-gray-400">%{percent} kullanıldı</span>
-                <span className="text-[11px] text-gray-400">{health.totalCustomers.toLocaleString('tr-TR')} müşteri · {health.totalOrders.toLocaleString('tr-TR')} sipariş</span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <Users size={14} className="text-indigo-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <strong className="text-slate-700 dark:text-slate-200">{health.totalCustomers.toLocaleString('tr-TR')}</strong> müşteri
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <ShoppingBag size={14} className="text-violet-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <strong className="text-slate-700 dark:text-slate-200">{health.totalOrders.toLocaleString('tr-TR')}</strong> sipariş
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 ml-6">
-              <a href="/saas?tab=plans" className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
+            {/* Right: Actions */}
+            <div className="flex lg:flex-col gap-2 justify-end">
+              <a href="/saas?tab=plans" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md">
                 <ArrowUpRight size={14} /> Paket Yükselt
               </a>
-              <a href="/saas?tab=addons" className="inline-flex items-center gap-1 px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+              <a href="/saas?tab=addons" className="inline-flex items-center justify-center gap-1 px-4 py-2.5 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
                 ➕ Ek Kota Al
               </a>
             </div>
-          </div>
-
-          {/* Mobile upgrade buttons */}
-          <div className="sm:hidden flex gap-2 mt-4">
-            <a href="/saas?tab=plans" className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
-              <ArrowUpRight size={14} /> Paket Yükselt
-            </a>
-            <a href="/saas?tab=addons" className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300">
-              ➕ Ek Kota Al
-            </a>
           </div>
         </div>
       </div>
