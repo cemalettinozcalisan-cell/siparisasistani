@@ -440,10 +440,17 @@ function OrdersPageContent() {
                   {/* Products readonly */}
                   {editItems.length > 0 && (
                     <div>
-                      <label className="text-[10px] text-gray-400 block mb-1">Sipariş Edilen Ürünler (düzenlenebilir)</label>
-                      <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-gray-400">Sipariş Kalemleri</label>
+                        <button
+                          onClick={() => setEditItems([...editItems, { product_name: '', quantity: 1, unit: 'KG', unit_price: 0 }])}
+                          className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium">
+                          + Ürün Ekle
+                        </button>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-1.5">
                         {editItems.map((item, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-xs">
+                          <div key={i} className="flex items-center gap-1 text-xs">
                             <input
                               value={item.product_name}
                               onChange={(e) => {
@@ -451,7 +458,8 @@ function OrdersPageContent() {
                                 next[i] = { ...next[i], product_name: e.target.value };
                                 setEditItems(next);
                               }}
-                              className="flex-1 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+                              placeholder="Ürün adı"
+                              className="flex-1 px-1.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
                             />
                             <input
                               type="number" min="1"
@@ -461,7 +469,8 @@ function OrdersPageContent() {
                                 next[i] = { ...next[i], quantity: Number(e.target.value) || 1 };
                                 setEditItems(next);
                               }}
-                              className="w-12 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              title="Miktar"
                             />
                             <input
                               value={item.unit}
@@ -470,7 +479,9 @@ function OrdersPageContent() {
                                 next[i] = { ...next[i], unit: e.target.value };
                                 setEditItems(next);
                               }}
-                              className="w-12 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              placeholder="KG"
+                              className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              title="Birim (KG, ADET, KOLI...)"
                             />
                             <input
                               type="number" min="0"
@@ -480,9 +491,18 @@ function OrdersPageContent() {
                                 next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 };
                                 setEditItems(next);
                               }}
-                              className="w-16 px-1 py-0.5 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                              title="Birim fiyat (TL)"
                             />
-                            <span className="text-gray-400">TL</span>
+                            <span className="text-gray-400 text-[10px]">TL</span>
+                            {editItems.length > 1 && (
+                              <button
+                                onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))}
+                                className="text-red-400 hover:text-red-600 ml-0.5"
+                                title="Bu ürünü sil">
+                                <X size={12} />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
