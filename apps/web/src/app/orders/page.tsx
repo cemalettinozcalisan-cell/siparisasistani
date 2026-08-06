@@ -478,7 +478,17 @@ function OrdersPageContent() {
                                 onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], quantity: Number(e.target.value) || 1 }; setEditItems(next); }}
                                 className="w-[50px] px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-[11px] bg-white dark:bg-slate-900"
                               />
-                              <span className="w-[60px] text-center text-gray-500 text-[10px]">{item.unit || 'KG'}</span>
+                              <select value={item.unit || 'KG'}
+                                onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], unit: e.target.value }; setEditItems(next); }}
+                                className="w-[60px] px-0.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-[10px] bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                                <option value="KG">KG</option>
+                                <option value="GR">GR</option>
+                                <option value="SAP">SAP</option>
+                                <option value="ADET">ADET</option>
+                                <option value="KOLI">KOLI</option>
+                                <option value="TEPSI">TEPSI</option>
+                                <option value="PALET">PALET</option>
+                              </select>
                               <input type="number" min="0" value={item.unit_price}
                                 onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 }; setEditItems(next); }}
                                 className="w-[75px] px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-[11px] bg-white dark:bg-slate-900"
