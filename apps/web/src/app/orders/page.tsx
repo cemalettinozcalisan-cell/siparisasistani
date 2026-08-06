@@ -472,17 +472,43 @@ function OrdersPageContent() {
                               className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
                               title="Miktar"
                             />
-                            <input
-                              value={item.unit}
-                              onChange={(e) => {
-                                const next = [...editItems];
-                                next[i] = { ...next[i], unit: e.target.value };
-                                setEditItems(next);
-                              }}
-                              placeholder="KG"
-                              className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
-                              title="Birim (KG, ADET, KOLI...)"
-                            />
+                            {item.unit !== '_custom' ? (
+                              <select
+                                value={item.unit}
+                                onChange={(e) => {
+                                  const next = [...editItems];
+                                  next[i] = { ...next[i], unit: e.target.value };
+                                  setEditItems(next);
+                                }}
+                                className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                                <option value="KG">KG</option>
+                                <option value="GR">GR</option>
+                                <option value="SAP">SAP</option>
+                                <option value="ADET">ADET</option>
+                                <option value="KOLİ">KOLİ</option>
+                                <option value="TEPSİ">TEPSİ</option>
+                                <option value="PALET">PALET</option>
+                                <option value="_custom">Özel...</option>
+                              </select>
+                            ) : (
+                              <input
+                                value=""
+                                placeholder="birim"
+                                onChange={(e) => {
+                                  const next = [...editItems];
+                                  next[i] = { ...next[i], unit: e.target.value || 'KG' };
+                                  setEditItems(next);
+                                }}
+                                className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
+                                onBlur={(e) => {
+                                  if (!e.target.value) {
+                                    const next = [...editItems];
+                                    next[i] = { ...next[i], unit: 'KG' };
+                                    setEditItems(next);
+                                  }
+                                }}
+                              />
+                            )}
                             <input
                               type="number" min="0"
                               value={item.unit_price}
