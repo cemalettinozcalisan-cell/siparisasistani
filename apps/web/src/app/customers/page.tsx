@@ -189,9 +189,11 @@ export default function CustomersPage() {
           {filtered.map((c) => {
             const src = (c as any).last_source || '';
             const chColors: Record<string, string> = {
-              PHONE: 'bg-blue-100 text-blue-700', WHATSAPP: 'bg-emerald-100 text-emerald-700',
-              SMS: 'bg-sky-100 text-sky-700', INSTAGRAM: 'bg-pink-100 text-pink-700',
-              WEBSITE: 'bg-indigo-100 text-indigo-700',
+              PHONE: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm',
+              WHATSAPP: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm',
+              SMS: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm',
+              INSTAGRAM: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm',
+              WEBSITE: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm',
             };
             const chLabels: Record<string, string> = {
               PHONE: '📱', WHATSAPP: '💬', SMS: '📲', INSTAGRAM: '📸', WEBSITE: '🌐',
