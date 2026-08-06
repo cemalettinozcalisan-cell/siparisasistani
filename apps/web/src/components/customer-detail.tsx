@@ -96,15 +96,15 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
             <button onClick={() => window.open(`tel:${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
               📞 Ara
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
               💬 WhatsApp
             </button>
             <button onClick={() => alert('Müşteri düzenleme özelliği bir sonraki güncellemede eklenecektir.')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
               ✏️ Düzenle
             </button>
           </div>
