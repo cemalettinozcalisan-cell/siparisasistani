@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
-import { Upload, FileSpreadsheet, Download, X, MapPin } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {
@@ -188,12 +188,12 @@ export default function CustomersPage() {
         <div className="flex-1 overflow-y-auto space-y-1">
           {filtered.map((c) => {
             const src = (c as any).last_source || '';
-            const chInfo: Record<string, { cls: string; label: string }> = {
-              PHONE: { cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm', label: 'Telefon' },
-              WHATSAPP: { cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm', label: 'WhatsApp' },
-              SMS: { cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm', label: 'SMS' },
-              INSTAGRAM: { cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm', label: 'Instagram' },
-              WEBSITE: { cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm', label: 'Web' },
+            const chInfo: Record<string, { cls: string; label: string; Icon: typeof PhoneCall }> = {
+              PHONE: { cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm', label: 'Telefon', Icon: PhoneCall },
+              WHATSAPP: { cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm', label: 'WhatsApp', Icon: MessageCircle },
+              SMS: { cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm', label: 'SMS', Icon: MessageSquare },
+              INSTAGRAM: { cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm', label: 'Instagram', Icon: Camera },
+              WEBSITE: { cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm', label: 'Web', Icon: Globe },
             };
             const phone = String(c.phone || '');
             const formatted = phone.length >= 10 ? `${phone.slice(0,4)} ${phone.slice(4,7)} ${phone.slice(7,9)} ${phone.slice(9)}` : phone;
@@ -204,9 +204,11 @@ export default function CustomersPage() {
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{c.name as string || 'İsimsiz'}</span>
                   {src && chInfo[src] && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${chInfo[src].cls}`}>
-                      {chInfo[src].label}
+                    (() => { const Icon = chInfo[src].Icon; return (
+                    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${chInfo[src].cls}`}>
+                      <Icon size={11} /> {chInfo[src].label}
                     </span>
+                    ); })()
                   )}
                 </div>
                 <span className="text-[11px] text-gray-400 shrink-0 font-mono">{formatted}</span>
