@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Res } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { Response } from 'express';
 
 @Controller('products')
 export class ProductsController {
@@ -72,5 +73,22 @@ export class ProductsController {
       .eq('id', id);
     if (error) throw new Error(error.message);
     return { success: true };
+  }
+
+  @Get('catalog/:tenantId')
+  async catalog(@Param('tenantId') tenantId: string, @Res() res: Response) {
+    const products = await this.list(tenantId) as any[];
+    const rows = products.map((p: any) =>
+      `<tr><td>${p.product_name}</td><td>${p.category || '-'}</td><td>${Number(p.price).toLocaleString('tr-TR')} TL</td><td>${(p.sale_types || []).join(', ')}</td></tr>`
+    ).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ürün Kataloğu</title>
+      <style>body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px;font-size:20px}
+      table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#4f46e5;color:#fff;padding:8px 10px;text-align:left;font-size:12px}
+      td{padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:13px}.footer{margin-top:25px;font-size:10px;color:#9ca3af;text-align:center}
+      </style></head><body><h1>📋 Ürün Kataloğu</h1><p style="color:#6b7280;font-size:12px">${new Date().toLocaleDateString('tr-TR')}</p>
+      <table><thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Satış Tipleri</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div></body></html>`;
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
   }
 }
