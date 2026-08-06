@@ -289,10 +289,10 @@ export default function HealthPage() {
 
             {/* Right: Actions */}
             <div className="flex lg:flex-col gap-2 justify-end">
-              <a href="/saas?tab=plans" className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md">
-                <ArrowUpRight size={14} /> Paket Yükselt
+              <a href="/saas?tab=plans" className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-sm hover:shadow-md self-end">
+                <ArrowUpRight size={12} /> Paket Yükselt
               </a>
-              <a href="/saas?tab=addons" className="inline-flex items-center justify-center gap-1 px-4 py-2.5 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+              <a href="/saas?tab=addons" className="inline-flex items-center justify-center gap-1 px-3 py-1.5 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all self-end">
                 ➕ Ek Kota Al
               </a>
             </div>
