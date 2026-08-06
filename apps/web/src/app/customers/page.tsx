@@ -184,25 +184,42 @@ export default function CustomersPage() {
             </button>
           </div>
         </div>
-        <div className="text-xs text-gray-400">{filtered.length} müşteri (birleştirilmiş)</div>
+        <div className="text-xs text-gray-400">{filtered.length} müşteri</div>
         <div className="flex-1 overflow-y-auto space-y-1">
-          {filtered.map((c) => (
+          {filtered.map((c) => {
+            const src = (c as any).last_source || '';
+            const chColors: Record<string, string> = {
+              PHONE: 'bg-blue-100 text-blue-700', WHATSAPP: 'bg-emerald-100 text-emerald-700',
+              SMS: 'bg-sky-100 text-sky-700', INSTAGRAM: 'bg-pink-100 text-pink-700',
+              WEBSITE: 'bg-indigo-100 text-indigo-700',
+            };
+            const chLabels: Record<string, string> = {
+              PHONE: '📱', WHATSAPP: '💬', SMS: '📲', INSTAGRAM: '📸', WEBSITE: '🌐',
+            };
+            const phone = String(c.phone || '');
+            const formatted = phone.length >= 10 ? `${phone.slice(0,4)} ${phone.slice(4,7)} ${phone.slice(7,9)} ${phone.slice(9)}` : phone;
+            return (
             <div key={c.id as string} onClick={() => selectCustomer(c)}
-              className={`p-3 rounded-lg cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md group ${selected?.id === c.id ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 ring-1 ring-blue-300' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'}`}>
-              <div className="flex items-center justify-between">
+              className={`p-3 rounded-lg cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md group ${selected?.id === c.id ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 ring-1 ring-indigo-300' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{c.name as string || 'İsimsiz'}</span>
-                  {(c as any)._merged && <span className="text-[10px] bg-violet-100 text-violet-700 px-1 py-0.5 rounded font-medium shrink-0">+{(c as any)._merge_count - 1}</span>}
+                  {src && chColors[src] && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${chColors[src]}`}>
+                      {chLabels[src]} {src === 'SMS' ? 'SMS' : src === 'WHATSAPP' ? 'WA' : src === 'INSTAGRAM' ? 'IG' : src}
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400 shrink-0 ml-2">{c.phone as string}</span>
+                <span className="text-[11px] text-gray-400 shrink-0 font-mono">{formatted}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                 <span>📦 {Number((c as any).order_count || 0)} sipariş</span>
                 {Number((c as any).balance || 0) > 0 && <span className="text-red-500 font-medium">💰 {Number((c as any).balance).toLocaleString('tr-TR')} TL</span>}
-                {(c as any)._cities && <span className="truncate">📍 {(c as any)._cities}</span>}
+                {(c as any).city && <span className="truncate">📍 {(c as any).city}</span>}
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       </div>
 
@@ -210,10 +227,17 @@ export default function CustomersPage() {
         {selected ? (
           <CustomerDetail customer={selected} orders={orders} timeline={timeline} complaints={complaints} onRefresh={() => selectCustomer(selected)} />
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <p className="text-4xl mb-2">👤</p>
-              <p className="text-sm">Detayı görmek için bir müşteri seçin</p>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900/20 dark:to-violet-900/20 flex items-center justify-center">
+                <svg className="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-base font-medium text-gray-500 dark:text-slate-400">Müşteri Seçilmedi</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Detayları görüntülemek için soldan bir müşteri seçin</p>
+              </div>
             </div>
           </div>
         )}

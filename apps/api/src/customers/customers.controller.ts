@@ -45,10 +45,32 @@ export class CustomersController {
         });
       }
 
+      // Get latest channel per customer
+      let channelInfo: Record<string, { channel: string; source: string }> = {};
+      if (customerIds.length > 0) {
+        const { data: latestOrders } = await this.supabase.db
+          .from('orders')
+          .select('customer_id, channel, source, created_at')
+          .eq('tenant_id', tenantId)
+          .in('customer_id', customerIds)
+          .order('created_at', { ascending: false });
+
+        const seen = new Set<string>();
+        (latestOrders || []).forEach((o: Record<string, unknown>) => {
+          const cid = o.customer_id as string;
+          if (!seen.has(cid)) {
+            seen.add(cid);
+            channelInfo[cid] = { channel: String(o.channel || ''), source: String(o.source || '') };
+          }
+        });
+      }
+
       return customers.map((c: Record<string, unknown>) => ({
         ...c,
         order_count: orderCounts[c.id as string] || 0,
         total_spent: 0,
+        last_channel: channelInfo[c.id as string]?.channel || '',
+        last_source: channelInfo[c.id as string]?.source || '',
       }));
     } catch (e) {
       return this.getMockCustomers();
@@ -57,12 +79,12 @@ export class CustomersController {
 
   private getMockCustomers(): Record<string, unknown>[] {
     return [
-      { id: 'cust-001', name: 'Zafer Ayyıldız', phone: '05321234567', city: 'Afyon', address: 'Afyonkarahisar, Atatürk Cad. No:42', balance: 0, credit_limit: 50000, payment_term: 30, order_count: 12, total_spent: 45000, created_at: new Date(Date.now() - 86400000 * 30).toISOString() },
-      { id: 'cust-002', name: 'Mehmet Öztürk', phone: '05339876543', city: 'Afyon', address: 'Afyonkarahisar, Zafer Mah. 123. Sok. No:5', balance: 2450, credit_limit: 25000, payment_term: 30, order_count: 8, total_spent: 28500, created_at: new Date(Date.now() - 86400000 * 20).toISOString() },
-      { id: 'cust-003', name: 'Ali Kaya', phone: '05411223344', city: 'İstanbul', address: 'İstanbul, Kadıköy, Moda Cad. No:12', balance: 0, credit_limit: 10000, payment_term: 0, order_count: 5, total_spent: 12000, created_at: new Date(Date.now() - 86400000 * 15).toISOString() },
-      { id: 'cust-004', name: 'Fatma Şahin', phone: '05449876543', city: 'Ankara', address: 'Ankara, Çankaya Mah. İş Merkezi No:15', balance: 18200, credit_limit: 75000, payment_term: 60, order_count: 25, total_spent: 98000, created_at: new Date(Date.now() - 86400000 * 60).toISOString() },
-      { id: 'cust-005', name: 'Mustafa Öztürk', phone: '05551234567', city: 'Afyon', address: 'Afyonkarahisar, Merkez, Uzun Çarşı No:3', balance: 0, credit_limit: 15000, payment_term: 0, order_count: 3, total_spent: 6500, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
-      { id: 'cust-006', name: 'Hatice Çelik', phone: '05328765432', city: 'Ankara', address: 'Ankara, Keçiören, Fatih Mah. No:8', balance: 7800, credit_limit: 30000, payment_term: 45, order_count: 18, total_spent: 52000, created_at: new Date(Date.now() - 86400000 * 45).toISOString() },
+      { id: 'cust-001', name: 'Zafer Ayyıldız', phone: '05321234567', city: 'Afyon', address: 'Afyonkarahisar, Atatürk Cad. No:42', balance: 0, credit_limit: 50000, payment_term: 30, order_count: 12, total_spent: 45000, last_channel: 'phone', last_source: 'PHONE', created_at: new Date(Date.now() - 86400000 * 30).toISOString() },
+      { id: 'cust-002', name: 'Mehmet Öztürk', phone: '05339876543', city: 'Afyon', address: 'Afyonkarahisar, Zafer Mah. 123. Sok. No:5', balance: 2450, credit_limit: 25000, payment_term: 30, order_count: 8, total_spent: 28500, last_channel: 'whatsapp', last_source: 'WHATSAPP', created_at: new Date(Date.now() - 86400000 * 20).toISOString() },
+      { id: 'cust-003', name: 'Ali Kaya', phone: '05411223344', city: 'İstanbul', address: 'İstanbul, Kadıköy, Moda Cad. No:12', balance: 0, credit_limit: 10000, payment_term: 0, order_count: 5, total_spent: 12000, last_channel: 'instagram', last_source: 'INSTAGRAM', created_at: new Date(Date.now() - 86400000 * 15).toISOString() },
+      { id: 'cust-004', name: 'Fatma Şahin', phone: '05449876543', city: 'Ankara', address: 'Ankara, Çankaya Mah. İş Merkezi No:15', balance: 18200, credit_limit: 75000, payment_term: 60, order_count: 25, total_spent: 98000, last_channel: 'phone', last_source: 'PHONE', created_at: new Date(Date.now() - 86400000 * 60).toISOString() },
+      { id: 'cust-005', name: 'Mustafa Öztürk', phone: '05551234567', city: 'Afyon', address: 'Afyonkarahisar, Merkez, Uzun Çarşı No:3', balance: 0, credit_limit: 15000, payment_term: 0, order_count: 3, total_spent: 6500, last_channel: 'sms', last_source: 'SMS', created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
+      { id: 'cust-006', name: 'Hatice Çelik', phone: '05328765432', city: 'Ankara', address: 'Ankara, Keçiören, Fatih Mah. No:8', balance: 7800, credit_limit: 30000, payment_term: 45, order_count: 18, total_spent: 52000, last_channel: 'website', last_source: 'WEBSITE', created_at: new Date(Date.now() - 86400000 * 45).toISOString() },
     ];
   }
 

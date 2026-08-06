@@ -75,19 +75,27 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <div className="flex items-start justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold shadow-md shrink-0">
               {((customer.name as string) || '?')[0].toUpperCase()}
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{customer.name as string}</h2>
-              <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone as string}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 font-mono tracking-wide">{(customer.phone as string || '').replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4')}</p>
               {Boolean((customer as any).address) && <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">📍 {(customer as any).address}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={(e) => { e.stopPropagation(); window.open(`tel:${customer.phone}`, '_blank'); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 shadow-sm transition-all">
+              📞 Ara
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customer.phone}`, '_blank'); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm transition-all">
+              💬 WhatsApp
+            </button>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${segment.color}`}>{segment.icon} {segment.label}</span>
           </div>
         </div>
@@ -115,13 +123,35 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
         </div>
 
-        {/* Cari Durum */}
-        <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-all duration-200">
+        {/* İletişim & Fatura Bilgileri */}
+        <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+              <span className="text-sm">📋</span>
+            </div>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">İletişim & Fatura</span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+            {Boolean((customer as any).address) && <div><span className="text-gray-400">Adres:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).address}</span></div>}
+            {Boolean((customer as any).city) && <div><span className="text-gray-400">Şehir:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).city}</span></div>}
+            {Boolean((customer as any).identity_number) && <div><span className="text-gray-400">TCKN/VKN:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).identity_number}</span></div>}
+            {Boolean((customer as any).company_name) && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).company_name}</span></div>}
+            {Boolean((customer as any).tax_office) && <div><span className="text-gray-400">Vergi Dairesi:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).tax_office}</span></div>}
+            {Boolean((customer as any).birth_date) && <div><span className="text-gray-400">Doğum:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{new Date((customer as any).birth_date as string).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}</span></div>}
+            {Boolean((customer as any).notes) && <div className="col-span-2"><span className="text-gray-400">Not:</span> <span className="text-gray-700 dark:text-slate-300 ml-1">{(customer as any).notes}</span></div>}
+            {!((customer as any).address) && !((customer as any).identity_number) && !((customer as any).company_name) && (
+              <div className="col-span-2 text-gray-400 italic">Henüz iletişim/fatura bilgisi girilmemiş</div>
+            )}
+          </div>
+        </div>
+
+        {/* Cari Durum */}
+        <div className="mt-4 bg-white dark:bg-slate-800 rounded-xl border border-emerald-200 dark:border-emerald-800 p-4 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
               <span className="text-sm">💰</span>
             </div>
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Cari Durum</span>
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Cari Durum</span>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2.5 text-center">
@@ -188,14 +218,14 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
         </div>
         )}
 
-        {/* AI Insights */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-violet-200 dark:border-violet-800 p-4 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
-              <span className="text-sm">🤖</span>
+          {/* AI Insights */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-violet-200 dark:border-violet-800 p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                <span className="text-sm">🤖</span>
+              </div>
+              <span className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wide">AI Müşteri Analizi</span>
             </div>
-            <span className="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wide">AI Müşteri Analizi</span>
-          </div>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{insightParts.join(' ')}</p>
         </div>
 
