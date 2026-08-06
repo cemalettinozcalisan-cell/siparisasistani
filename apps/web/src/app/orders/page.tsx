@@ -106,8 +106,18 @@ function OrdersPageContent() {
   const [showCargo, setShowCargo] = useState(false);
   const [cargoForm, setCargoForm] = useState({ company: '', tracking: '' });
   const [showChat, setShowChat] = useState(false);
+  const [products, setProducts] = useState<Array<{ productName: string; unit: string; price: number }>>([]);
+  const [productSearch, setProductSearch] = useState<Record<number, { open: boolean; query: string }>>({});
   const audioCtx = useRef<AudioContext | null>(null);
   const tid = '00000000-0000-0000-0000-000000000001';
+
+  useEffect(() => {
+    fetch(`/api/products/${tid}`).then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setProducts(d.map((p: any) => ({
+        productName: p.product_name || p.name || '', unit: p.unit || 'KG', price: Number(p.price || 0),
+      })));
+    }).catch(() => {});
+  }, []);
 
   const beep = useCallback(() => {
     if (!soundEnabled) return;
@@ -449,91 +459,50 @@ function OrdersPageContent() {
                         </button>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-1.5">
-                        {editItems.map((item, i) => (
-                          <div key={i} className="flex items-center gap-1 text-xs">
-                            <input
-                              value={item.product_name}
-                              onChange={(e) => {
-                                const next = [...editItems];
-                                next[i] = { ...next[i], product_name: e.target.value };
-                                setEditItems(next);
-                              }}
-                              placeholder="Ürün adı"
-                              className="flex-1 px-1.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
-                            />
-                            <input
-                              type="number" min="1"
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const next = [...editItems];
-                                next[i] = { ...next[i], quantity: Number(e.target.value) || 1 };
-                                setEditItems(next);
-                              }}
-                              className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
-                              title="Miktar"
-                            />
-                            {item.unit !== '_custom' ? (
-                              <select
-                                value={item.unit}
-                                onChange={(e) => {
-                                  const next = [...editItems];
-                                  next[i] = { ...next[i], unit: e.target.value };
-                                  setEditItems(next);
-                                }}
-                                className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
-                                <option value="KG">KG</option>
-                                <option value="GR">GR</option>
-                                <option value="SAP">SAP</option>
-                                <option value="ADET">ADET</option>
-                                <option value="KOLİ">KOLİ</option>
-                                <option value="TEPSİ">TEPSİ</option>
-                                <option value="PALET">PALET</option>
-                                <option value="_custom">Özel...</option>
-                              </select>
-                            ) : (
-                              <input
-                                value=""
-                                placeholder="birim"
-                                onChange={(e) => {
-                                  const next = [...editItems];
-                                  next[i] = { ...next[i], unit: e.target.value || 'KG' };
-                                  setEditItems(next);
-                                }}
-                                className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
-                                onBlur={(e) => {
-                                  if (!e.target.value) {
+                        {editItems.map((item, i) => {
+                          const subtotal = (item.quantity || 0) * (item.unit_price || 0);
+                          return (
+                            <div key={i} className="space-y-1">
+                              <div className="flex items-center gap-1 text-xs">
+                                <select
+                                  value={item.product_name}
+                                  onChange={(e) => {
+                                    const sel = products.find(p => p.productName === e.target.value);
                                     const next = [...editItems];
-                                    next[i] = { ...next[i], unit: 'KG' };
+                                    next[i] = { ...next[i], product_name: e.target.value, unit: sel?.unit || 'KG', unit_price: sel?.price || 0 };
                                     setEditItems(next);
-                                  }
-                                }}
-                              />
-                            )}
-                            <input
-                              type="number" min="0"
-                              value={item.unit_price}
-                              onChange={(e) => {
-                                const next = [...editItems];
-                                next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 };
-                                setEditItems(next);
-                              }}
-                              className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900"
-                              title="Birim fiyat (TL)"
-                            />
-                            <span className="text-gray-400 text-[10px]">TL</span>
-                            {editItems.length > 1 && (
-                              <button
-                                onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))}
-                                className="text-red-400 hover:text-red-600 ml-0.5"
-                                title="Bu ürünü sil">
-                                <X size={12} />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                                  }}
+                                  className="flex-1 px-1.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+                                  <option value="">-- Ürün Seçin --</option>
+                                  {products.map(p => (
+                                    <option key={p.productName} value={p.productName}>{p.productName} ({p.price.toLocaleString('tr-TR')} TL/{p.unit})</option>
+                                  ))}
+                                </select>
+                                <input type="number" min="1" value={item.quantity}
+                                  onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], quantity: Number(e.target.value) || 1 }; setEditItems(next); }}
+                                  className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900" title="Miktar" />
+                                <span className="text-[10px] text-gray-500 w-8 text-center">{item.unit || 'KG'}</span>
+                                <input type="number" min="0" value={item.unit_price}
+                                  onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 }; setEditItems(next); }}
+                                  className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900" title="Birim fiyat" />
+                                <span className="text-gray-400 text-[10px]">TL</span>
+                                {editItems.length > 1 && (
+                                  <button onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 ml-0.5" title="Sil"><X size={12} /></button>
+                                )}
+                              </div>
+                              <div className="flex justify-end text-[10px] text-gray-400">Ara Toplam: {(subtotal).toLocaleString('tr-TR')} TL</div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 text-center -mt-1">
+                    <div className="text-[10px] text-indigo-400 uppercase tracking-wide">Sipariş Genel Toplamı</div>
+                    <div className="text-xl font-bold text-indigo-600 dark:text-indigo-300">
+                      {editItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unit_price || 0), 0).toLocaleString('tr-TR')} TL
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/20">Kaydet</button>
                     <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-500">İptal</button>
