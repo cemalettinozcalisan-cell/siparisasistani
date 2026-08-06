@@ -88,20 +88,20 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
             <button onClick={() => window.open(`tel:${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white shadow-md hover:shadow-lg transition-all"
               style={{ background: '#3B82F6' }}>
               📞 Ara
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white shadow-md hover:shadow-lg transition-all"
               style={{ background: '#25D366' }}>
               💬 WhatsApp
             </button>
-            <button className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all"
+            <button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white shadow-md hover:shadow-lg transition-all"
               style={{ background: '#8B5CF6' }}>
               ➕ Yeni Sipariş
             </button>
-            <button className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all">
+            <button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all">
               ✏️ Düzenle
             </button>
           </div>
@@ -175,7 +175,10 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Özel Fiyat Listesi</h3>
-              <button onClick={() => setShowPriceForm(!showPriceForm)} className="text-[10px] font-medium text-indigo-500 hover:text-indigo-700">+ Ekle</button>
+              <button onClick={() => setShowPriceForm(!showPriceForm)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 shadow-sm transition-all">
+                + Özel Fiyat Ekle
+              </button>
             </div>
             {showPriceForm && (
               <div className="grid grid-cols-2 gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
