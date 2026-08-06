@@ -2,12 +2,13 @@ import { Controller, Get, Patch, Delete, Param, Query, Body, Logger, UseGuards }
 import { SupabaseService } from '../common/supabase.client';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
+import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 
 @UseGuards(TenantGuard)
 @Controller('orders-list')
 export class OrdersListController {
   private readonly logger = new Logger(OrdersListController.name);
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService, private readonly eventBus: EventBusService) {}
 
   @Roles('owner', 'manager', 'staff')
   @Get(':tenantId')
@@ -119,6 +120,20 @@ export class OrdersListController {
       .select()
       .single();
     if (error) throw new Error(error.message);
+    if (data) {
+      this.eventBus.emit(
+        SystemEvents.ORDER_UPDATED,
+        tenantId,
+        {
+          orderId: id,
+          orderNumber: (data as any).order_number,
+          customerName: (data as any).customer_name,
+          channel: (data as any).channel,
+          changedFields: Object.keys(body).filter((k) => k !== 'tenant_id' && k !== 'id'),
+        },
+        id,
+      );
+    }
     return data;
   }
 

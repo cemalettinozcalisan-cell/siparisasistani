@@ -14,10 +14,17 @@ interface FollowUpRule {
 const RULES: FollowUpRule[] = [
   {
     triggerEvent: 'STATUS_NEW',
-    delayMinutes: 30,
+    delayMinutes: 20,
     actionType: 'PAYMENT_REMINDER',
     message: '⏰ Ödeme Hatırlatması\n{name} Bey/Hanım, #{orderNumber} numaralı siparişiniz ödeme beklemektedir. Ödemenizi tamamladığınızda siparişiniz hazırlanmaya başlayacaktır.',
     channel: 'whatsapp',
+  },
+  {
+    triggerEvent: 'STATUS_NEW',
+    delayMinutes: 20,
+    actionType: 'PAYMENT_REMINDER',
+    message: '{name} Bey/Hanim, #{orderNumber} nolu siparisiniz odeme beklemektedir. Odemenizi tamamlayinca siparisiniz hazirlanacaktir. Tesekkur ederiz.',
+    channel: 'sms',
   },
   {
     triggerEvent: 'STATUS_DELIVERED',

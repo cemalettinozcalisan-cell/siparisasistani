@@ -325,6 +325,52 @@ export class SalesEngineService {
     return { total, sent, reorder, holiday, birthday, abandoned_cart };
   }
 
+  @Cron('*/15 * * * *') // every 15 minutes
+  async checkUnshippedReminders() {
+    this.logger.log('Unshipped cargo reminder check started');
+    try {
+      const { data: tenants } = await this.supabase.db
+        .from('tenant_settings')
+        .select('tenant_id, shipping_reminder_hours');
+
+      for (const t of tenants || []) {
+        const tid = (t as any).tenant_id;
+        const hours = (t as any).shipping_reminder_hours || 6;
+        const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
+
+        // Find orders stuck in non-shipped status older than cutoff
+        const { data: stuckOrders } = await this.supabase.db
+          .from('orders')
+          .select('id, order_number, customer_name, status, channel, source, customer_note, created_at')
+          .eq('tenant_id', tid)
+          .eq('status', 'PACKAGED')
+          .lt('created_at', cutoff)
+          .limit(20);
+
+        if (!stuckOrders || stuckOrders.length === 0) continue;
+
+        for (const order of stuckOrders) {
+          const exists = await this.countLogs(tid, 'cargo_reminder_sent', 'system');
+          // Log reminder to activity
+          await this.supabase.db.from('activity_logs').insert({
+            tenant_id: tid,
+            entity_type: 'order',
+            entity_id: (order as any).id,
+            event_type: 'CARGO_REMINDER',
+            description: `⏰ ${(order as any).customer_name || 'Müşteri'} — #${(order as any).order_number} kargo bilgisi ${hours} saattir girilmedi!`,
+            metadata: { hours, order_id: (order as any).id },
+            actor_type: 'SYSTEM',
+            created_at: new Date().toISOString(),
+          });
+
+          this.logger.log(`Cargo reminder for #${(order as any).order_number}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Cargo reminder error: ${(err as Error).message}`);
+    }
+  }
+
   private async countLogs(tenantId: string, status?: string, type?: string) {
     try {
       let query = this.supabase.db.from('campaign_logs').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId);
