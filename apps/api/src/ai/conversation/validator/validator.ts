@@ -22,7 +22,7 @@ const OrderSchema = z.object({
     errorMap: () => ({ message: 'Sipariş onaylanmamış' }),
   }),
   confidence: z.number().min(0).max(100),
-  channel: z.enum(['phone', 'whatsapp', 'manual']),
+  channel: z.enum(['phone', 'whatsapp', 'manual', 'sms']),
 });
 
 export type ValidationResult =

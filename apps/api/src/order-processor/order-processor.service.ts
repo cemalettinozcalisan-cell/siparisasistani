@@ -75,7 +75,7 @@ export class OrderProcessorService {
         customer_id: customerId,
         order_number: orderNumber,
         channel: input.channel || 'phone',
-        source: input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL'),
+        source: input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : input.channel === 'sms' ? 'SMS' : 'PANEL'),
         status: 'new',
         payment_method: this.mapPayment(input.payment),
         payment_status: input.payment && input.payment !== 'UNKNOWN' ? 'paid' : 'waiting',
@@ -127,7 +127,8 @@ export class OrderProcessorService {
     }
 
     // 9. Timeline events
-    const channelLabel = input.channel === 'phone' ? 'VOICE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL';
+    const sourceMap: Record<string, string> = { phone: 'PHONE', whatsapp: 'WHATSAPP', sms: 'SMS', manual: 'PANEL' };
+    const channelLabel = sourceMap[input.channel] || 'PANEL';
     const customerName = input.customer?.name || 'Bilinmiyor';
     await this.timeline.logEvent({
       tenantId: input.tenantId, entityType: 'order', entityId: order.id,

@@ -131,6 +131,7 @@ export class SalesCoachComponent {
       '- Numara NetGSM\'den geliyor, asla sorma.',
       'WHATSAPP: Kisa, net, emoji kullanilabilir. Numara biliniyor, sorma.',
       'INSTAGRAM: Kisa, net. Numara bilinmiyorsa sor.',
+      'SMS: Cok kisa ve oz. 160 karakter siniri var. Emoji kullanma. Musteriden cevap bekle.',
       '',
       '--- FATURA VE VERGI KURALLARI ---',
       `e-Fatura modulu: ${invoice?.invoice_enabled ? 'AKTIF' : 'PASIF (fatura surecine girme)'}`,

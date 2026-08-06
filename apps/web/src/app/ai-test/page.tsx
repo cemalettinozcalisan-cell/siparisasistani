@@ -21,6 +21,7 @@ const CHANNEL_OPTIONS = [
   { value: 'phone', label: 'Telefon (NetGSM)', icon: Phone },
   { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
   { value: 'instagram', label: 'Instagram DM', icon: Camera },
+  { value: 'sms', label: 'SMS', icon: MessageSquare },
 ];
 
 const STATE_LABELS: Record<string, string> = {

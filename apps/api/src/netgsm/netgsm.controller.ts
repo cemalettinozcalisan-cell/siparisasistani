@@ -4,6 +4,7 @@ import { IncomingCallWebhook } from './webhook/incoming-call';
 import { CallEventsWebhook } from './webhook/call-events';
 import { DtmfWebhook } from './webhook/dtmf';
 import { RecordingsWebhook } from './webhook/recordings';
+import { IncomingSmsWebhook } from './webhook/incoming-sms';
 import { CallFlowService } from './call-flow.service';
 import { TelephonyProviderFactory } from './providers/provider.factory';
 import { VoiceService } from '../voice/voice.service';
@@ -15,6 +16,7 @@ export class NetgsmController {
     private readonly callEvents: CallEventsWebhook,
     private readonly dtmf: DtmfWebhook,
     private readonly recordings: RecordingsWebhook,
+    private readonly incomingSms: IncomingSmsWebhook,
     private readonly callFlow: CallFlowService,
     private readonly telephony: TelephonyProviderFactory,
     private readonly voice: VoiceService,
@@ -97,5 +99,11 @@ export class NetgsmController {
   @Get('health')
   async health() {
     return this.telephony.getProvider('netgsm').healthCheck();
+  }
+
+  @Post('webhook/sms')
+  async smsWebhook(@Body() body: Record<string, unknown>) {
+    const result = await this.incomingSms.handle(body);
+    return result;
   }
 }

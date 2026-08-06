@@ -1,4 +1,4 @@
-export type OrderChannel = 'phone' | 'whatsapp' | 'manual';
+export type OrderChannel = 'phone' | 'whatsapp' | 'manual' | 'sms';
 export type OrderSource = 'PHONE' | 'WHATSAPP' | 'PANEL' | 'WEBSITE';
 export type OrderStatus = 'new' | 'approved' | 'preparing' | 'shipped' | 'completed' | 'cancelled';
 export type PaymentMethod = 'iban' | 'website' | 'paytr' | 'iyzico';

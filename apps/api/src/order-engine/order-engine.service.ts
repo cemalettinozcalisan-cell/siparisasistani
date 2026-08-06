@@ -72,7 +72,8 @@ export class OrderEngineService {
     const orderNumber = await this.generateOrderNumber(tenantId);
     const totalPrice = await this.calculateTotal(input, tenantId);
 
-    const source = input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : 'PANEL');
+    const sourceMap: Record<string, string> = { phone: 'PHONE', whatsapp: 'WHATSAPP', sms: 'SMS', manual: 'PANEL' };
+    const source = input.source || sourceMap[input.channel] || 'PANEL';
 
     const { data: order, error: orderError } = await this.supabase.db
       .from('orders')

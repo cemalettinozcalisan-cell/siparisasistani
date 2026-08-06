@@ -24,7 +24,7 @@ export class AiTestController {
   }) {
     const start = Date.now();
     const provider = this.aiFactory.getProvider();
-    const channel = (body.channel || 'phone') as 'phone' | 'whatsapp' | 'instagram';
+    const channel = (body.channel || 'phone') as 'phone' | 'whatsapp' | 'instagram' | 'sms';
 
     // Resolve tenant name from DB
     let tenantName = 'Demo İşletme';

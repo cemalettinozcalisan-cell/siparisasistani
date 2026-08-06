@@ -157,4 +157,33 @@ export class NetgsmProvider implements TelephonyProvider {
       return { healthy: false, message: (err as Error).message };
     }
   }
+
+  async sendSms(phone: string, message: string): Promise<{ success: boolean; messageId?: string }> {
+    const params = new URLSearchParams({
+      usercode: this.username,
+      password: this.password,
+      gsmno: phone.startsWith('+') ? phone.slice(1) : phone,
+      message,
+      msgheader: this.msgHeader || 'SIPARIS',
+      dil: 'TR',
+    });
+
+    this.logger.log(`NetGSM sendSms to ${phone}: ${message.substring(0, 50)}...`);
+
+    const response = await fetch(`${this.apiUrl}/sms/send/otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+
+    const text = await response.text();
+    this.logger.log(`NetGSM sendSms response: ${text}`);
+
+    if (!response.ok) {
+      this.logger.error(`NetGSM sendSms failed: ${text}`);
+      return { success: false };
+    }
+
+    return { success: true, messageId: text.trim() };
+  }
 }

@@ -127,7 +127,7 @@ export class AiParserService {
     return null;
   }
 
-  toOrderInput(parsed: ParsedResponse, channel: 'phone' | 'whatsapp'): AiOrderInput {
+  toOrderInput(parsed: ParsedResponse, channel: 'phone' | 'whatsapp' | 'sms'): AiOrderInput {
     return {
       customer: {
         name: parsed.customer?.name || '',

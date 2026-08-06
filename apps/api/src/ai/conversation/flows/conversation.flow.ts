@@ -6,7 +6,7 @@ import { ConversationState } from '@siparis/types';
 
 interface SessionContext {
   tenantId: string;
-  channel: 'phone' | 'whatsapp';
+  channel: 'phone' | 'whatsapp' | 'sms';
   customerPhone: string;
   customerName?: string;
   messages: { role: string; content: string }[];

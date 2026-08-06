@@ -6,7 +6,7 @@ export class PrintFormatService {
     const source = String(order.source || 'PHONE');
     const sourceMap: Record<string, string> = {
       PHONE: '📞 TELEFON AI', WHATSAPP: '💬 WHATSAPP', INSTAGRAM: '📸 INSTAGRAM',
-      WEBSITE: '🌐 WEB SİTESİ', MANUAL: '🏪 MANUEL', WHOLESALE: '📦 TOPLAN',
+      WEBSITE: '🌐 WEB SİTESİ', MANUAL: '🏪 MANUEL', WHOLESALE: '📦 TOPLAN', SMS: '📲 SMS',
     };
     const lines: string[] = [
       '════════════════════════════',
@@ -52,7 +52,7 @@ export class PrintFormatService {
     const source = String(order.source || 'PHONE');
     const sourceMap: Record<string, string> = {
       PHONE: '📞 TELEFON AI', WHATSAPP: '💬 WHATSAPP', INSTAGRAM: '📸 INSTAGRAM',
-      WEBSITE: '🌐 WEB SİTESİ', MANUAL: '🏪 MANUEL', WHOLESALE: '📦 TOPLAN',
+      WEBSITE: '🌐 WEB SİTESİ', MANUAL: '🏪 MANUEL', WHOLESALE: '📦 TOPLAN', SMS: '📲 SMS',
     };
     const rows = items.map((item) =>
       `<tr><td>${item.product_name}</td><td>${item.quantity} ${item.unit}</td><td>${Number(item.unit_price || 0).toLocaleString('tr-TR')} TL</td><td>${(Number(item.quantity || 0) * Number(item.unit_price || 0)).toLocaleString('tr-TR')} TL</td></tr>`
