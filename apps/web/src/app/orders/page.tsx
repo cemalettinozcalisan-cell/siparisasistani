@@ -281,8 +281,8 @@ function OrdersPageContent() {
           const isActive = filterChannel === c.key;
           return (
             <button key={c.key} onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'}`}>
-              <Icon size={12} /> {c.label}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? c.cls + ' scale-105' : c.light + ' hover:opacity-80'}`}>
+              <Icon size={15} /> {c.label}
             </button>
           );
         })}
@@ -336,7 +336,7 @@ function OrdersPageContent() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
-                  {chCfg && (<span className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={10} /></span>)}
+                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={12} /> {chCfg.label}</span>)}
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
