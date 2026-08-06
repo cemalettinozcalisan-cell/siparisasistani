@@ -340,9 +340,9 @@ function OrdersPageContent() {
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {pmLabel && <span className="text-[10px] text-gray-500 shrink-0">{pmLabel}</span>}
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
-                  <span className="font-semibold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                  {pmLabel && <span className="text-[11px] text-gray-500 shrink-0">{pmLabel}</span>}
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
+                  <span className="font-semibold text-base text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
