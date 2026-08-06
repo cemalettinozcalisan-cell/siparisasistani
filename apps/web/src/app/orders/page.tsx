@@ -462,44 +462,42 @@ function OrdersPageContent() {
                         {editItems.map((item, i) => {
                           const subtotal = (item.quantity || 0) * (item.unit_price || 0);
                           return (
-                            <div key={i} className="space-y-1">
-                              <div className="flex items-center gap-1 text-xs">
-                                <select
-                                  value={item.product_name}
-                                  onChange={(e) => {
-                                    const sel = products.find(p => p.productName === e.target.value);
-                                    const next = [...editItems];
-                                    next[i] = { ...next[i], product_name: e.target.value, unit: sel?.unit || 'KG', unit_price: sel?.price || 0 };
-                                    setEditItems(next);
-                                  }}
-                                  className="flex-1 px-1.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
-                                  <option value="">-- Ürün Seçin --</option>
-                                  {products.map(p => (
-                                    <option key={p.productName} value={p.productName}>{p.productName} ({p.price.toLocaleString('tr-TR')} TL/{p.unit})</option>
-                                  ))}
-                                </select>
-                                <input type="number" min="1" value={item.quantity}
-                                  onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], quantity: Number(e.target.value) || 1 }; setEditItems(next); }}
-                                  className="w-12 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900" title="Miktar" />
-                                <span className="text-[10px] text-gray-500 w-8 text-center">{item.unit || 'KG'}</span>
-                                <input type="number" min="0" value={item.unit_price}
-                                  onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 }; setEditItems(next); }}
-                                  className="w-16 px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-xs bg-white dark:bg-slate-900" title="Birim fiyat" />
-                                <span className="text-gray-400 text-[10px]">TL</span>
-                                {editItems.length > 1 && (
-                                  <button onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 ml-0.5" title="Sil"><X size={12} /></button>
-                                )}
-                              </div>
-                              <div className="flex justify-end text-[10px] text-gray-400">Ara Toplam: {(subtotal).toLocaleString('tr-TR')} TL</div>
+                            <div key={i} className="flex items-center gap-1 text-[11px]">
+                              <select value={item.product_name}
+                                onChange={(e) => {
+                                  const sel = products.find(p => p.productName === e.target.value);
+                                  const next = [...editItems];
+                                  next[i] = { ...next[i], product_name: e.target.value, unit: sel?.unit || 'KG', unit_price: sel?.price || 0 };
+                                  setEditItems(next);
+                                }}
+                                className="w-[45%] px-1.5 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-900 text-gray-900 dark:text-white truncate">
+                                <option value="">-- Seç --</option>
+                                {products.map(p => (<option key={p.productName} value={p.productName}>{p.productName}</option>))}
+                              </select>
+                              <input type="number" min="1" value={item.quantity}
+                                onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], quantity: Number(e.target.value) || 1 }; setEditItems(next); }}
+                                className="w-[50px] px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-[11px] bg-white dark:bg-slate-900"
+                              />
+                              <span className="w-[60px] text-center text-gray-500 text-[10px]">{item.unit || 'KG'}</span>
+                              <input type="number" min="0" value={item.unit_price}
+                                onChange={(e) => { const next = [...editItems]; next[i] = { ...next[i], unit_price: Number(e.target.value) || 0 }; setEditItems(next); }}
+                                className="w-[75px] px-1 py-1 border border-slate-200 dark:border-slate-600 rounded text-center text-[11px] bg-white dark:bg-slate-900"
+                              />
+                              <span className="text-[10px] text-gray-400 shrink-0">
+                                {subtotal.toLocaleString('tr-TR')} TL
+                              </span>
+                              {editItems.length > 1 && (
+                                <button onClick={() => setEditItems(editItems.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 shrink-0" title="Sil"><X size={13} /></button>
+                              )}
                             </div>
                           );
                         })}
                       </div>
                     </div>
                   )}
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 text-center -mt-1">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-2 text-center mb-3">
                     <div className="text-[10px] text-indigo-400 uppercase tracking-wide">Sipariş Genel Toplamı</div>
-                    <div className="text-xl font-bold text-indigo-600 dark:text-indigo-300">
+                    <div className="text-lg font-bold text-indigo-600 dark:text-indigo-300">
                       {editItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unit_price || 0), 0).toLocaleString('tr-TR')} TL
                     </div>
                   </div>
