@@ -336,7 +336,7 @@ function OrdersPageContent() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
-                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={12} /> {chCfg.label}</span>)}
+                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={14} /> {chCfg.label}</span>)}
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
