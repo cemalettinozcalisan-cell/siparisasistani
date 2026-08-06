@@ -86,21 +86,17 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
               <p className="text-sm text-gray-500 dark:text-slate-400 font-mono">{(customer.phone as string || '').replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4')}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
             <button onClick={() => window.open(`tel:${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all">
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
               📞 Ara
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-md hover:shadow-lg hover:from-emerald-500 hover:to-emerald-700 transition-all">
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
               💬 WhatsApp
             </button>
-            <button onClick={() => { window.location.href = `/orders?tab=active`; }}
-              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600 shadow-md hover:shadow-lg hover:from-violet-600 hover:to-purple-700 transition-all">
-              ➕ Yeni Sipariş
-            </button>
             <button onClick={() => alert('Müşteri düzenleme özelliği bir sonraki güncellemede eklenecektir.')}
-              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-xl text-sm font-bold border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all">
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
               ✏️ Düzenle
             </button>
           </div>
@@ -183,8 +179,16 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
               <div className="grid grid-cols-2 gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 <input placeholder="Ürün adı" value={priceForm.product_name} onChange={(e) => setPriceForm({ ...priceForm, product_name: e.target.value })}
                   className="col-span-2 px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800" />
-                <input placeholder="Birim" value={priceForm.unit} onChange={(e) => setPriceForm({ ...priceForm, unit: e.target.value })}
-                  className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800" />
+                <select value={priceForm.unit} onChange={(e) => setPriceForm({ ...priceForm, unit: e.target.value })}
+                  className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
+                  <option value="KG">KG</option>
+                  <option value="GR">GR</option>
+                  <option value="ADET">ADET</option>
+                  <option value="SAP">SAP</option>
+                  <option value="KOLİ">KOLİ</option>
+                  <option value="TEPSİ">TEPSİ</option>
+                  <option value="PALET">PALET</option>
+                </select>
                 <input placeholder="Fiyat (TL)" type="number" value={priceForm.price} onChange={(e) => setPriceForm({ ...priceForm, price: e.target.value })}
                   className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800" />
                 <button onClick={handleAddPrice} className="col-span-2 px-2 py-1 bg-indigo-500 text-white rounded text-[11px] font-medium">Kaydet</button>
