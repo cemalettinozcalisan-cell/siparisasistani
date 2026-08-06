@@ -15,11 +15,11 @@ function authHeaders(): Record<string, string> {
 // Status labels: API returns English status keys (PAYMENT_CONFIRMED, SHIPPED, etc.)
 // STATUS_BADGE maps them to Turkish display labels automatically
 const CHANNELS = [
-  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'text-white font-semibold', bg: '#3B82F6', shadow: 'rgba(59,130,246,0.4)' },
-  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'text-white font-semibold', bg: '#25D366', shadow: 'rgba(37,211,102,0.4)' },
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'text-white font-semibold', bg: '#38BDF8', shadow: 'rgba(56,189,248,0.4)' },
-  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'text-white font-semibold', bg: 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCB045 100%)', shadow: 'rgba(253,29,29,0.35)' },
-  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'text-white font-semibold', bg: '#A855F7', shadow: 'rgba(168,85,247,0.4)' },
+  { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' },
+  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md' },
+  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md' },
+  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md' },
+  { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-indigo-400 to-purple-600 text-white shadow-md' },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -281,8 +281,7 @@ function OrdersPageContent() {
           const isActive = filterChannel === c.key;
           return (
             <button key={c.key} onClick={() => setFilterChannel(isActive ? 'all' : c.key)}
-              style={{ background: c.bg, boxShadow: `0 4px 12px ${c.shadow}` }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'scale-105' : 'opacity-60'} ${c.cls}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? c.cls + ' scale-105' : c.cls + ' opacity-60'}`}>
               <Icon size={15} /> {c.label}
             </button>
           );
@@ -337,7 +336,7 @@ function OrdersPageContent() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
-                  {chCfg && (<span style={{ background: chCfg.bg, boxShadow: `0 2px 8px ${chCfg.shadow}` }} className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${chCfg.cls}`}><ChIcon size={12} /> {chCfg.label}</span>)}
+                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={12} /> {chCfg.label}</span>)}
                   <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
