@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
-import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, Plus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, Plus, UserPlus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {
@@ -196,12 +196,12 @@ export default function CustomersPage() {
             <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
               className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-40" />
             <button onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-              <FileSpreadsheet size={15} /> Excel'den Yükle
+              className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
+              <FileSpreadsheet size={14} /> Excel'den Yükle
             </button>
             <button onClick={() => setShowAddCustomer(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium shadow-sm transition-all">
-              <Plus size={15} /> Müşteri Ekle
+              className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
+              <UserPlus size={14} /> Müşteri Ekle
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import { PhoneCall, MessageCircle, Pencil } from 'lucide-react';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -96,16 +97,16 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
             <button onClick={() => window.open(`tel:${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
-              📞 Ara
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:shadow transition-all">
+              <PhoneCall size={13} /> Ara
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
-              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
-              💬 WhatsApp
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
+              <MessageCircle size={13} /> WhatsApp
             </button>
             <button onClick={() => alert('Müşteri düzenleme özelliği bir sonraki güncellemede eklenecektir.')}
-              className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
-              ✏️ Düzenle
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm transition-all">
+              <Pencil size={12} /> Düzenle
             </button>
           </div>
         </div>
