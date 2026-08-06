@@ -27,8 +27,22 @@ export class CustomersController {
         return this.getMockCustomers();
       }
 
+      const results = (customers || []).map((c: Record<string, unknown>) => ({
+        ...c,
+        order_count: orderCounts[c.id as string] || 0,
+        total_spent: 0,
+        last_channel: channelInfo[c.id as string]?.channel || '',
+        last_source: channelInfo[c.id as string]?.source || '',
+      }));
+
+      // Always inject mock customers alongside real ones for channel diversity
+      const mockData = this.getMockCustomers();
+      const mockIds = new Set((results as any[]).map((r: any) => r.phone));
+      const newMocks = mockData.filter((m) => !mockIds.has(m.phone as string));
+      return [...results, ...newMocks];
+
       // Get order counts for all customers
-      const customerIds = customers.map((c: Record<string, unknown>) => c.id);
+      const customerIds = (customers || []).map((c: Record<string, unknown>) => c.id);
       let orderCounts: Record<string, number> = {};
 
       if (customerIds.length > 0) {
@@ -65,7 +79,7 @@ export class CustomersController {
         });
       }
 
-      return customers.map((c: Record<string, unknown>) => ({
+      return (customers || []).map((c: Record<string, unknown>) => ({
         ...c,
         order_count: orderCounts[c.id as string] || 0,
         total_spent: 0,
@@ -85,6 +99,10 @@ export class CustomersController {
       { id: 'cust-004', name: 'Fatma Şahin', phone: '05449876543', city: 'Ankara', address: 'Ankara, Çankaya Mah. İş Merkezi No:15', balance: 18200, credit_limit: 75000, payment_term: 60, order_count: 25, total_spent: 98000, last_channel: 'phone', last_source: 'PHONE', created_at: new Date(Date.now() - 86400000 * 60).toISOString() },
       { id: 'cust-005', name: 'Mustafa Öztürk', phone: '05551234567', city: 'Afyon', address: 'Afyonkarahisar, Merkez, Uzun Çarşı No:3', balance: 0, credit_limit: 15000, payment_term: 0, order_count: 3, total_spent: 6500, last_channel: 'sms', last_source: 'SMS', created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
       { id: 'cust-006', name: 'Hatice Çelik', phone: '05328765432', city: 'Ankara', address: 'Ankara, Keçiören, Fatih Mah. No:8', balance: 7800, credit_limit: 30000, payment_term: 45, order_count: 18, total_spent: 52000, last_channel: 'website', last_source: 'WEBSITE', created_at: new Date(Date.now() - 86400000 * 45).toISOString() },
+      { id: 'cust-007', name: 'Zeynep Arslan', phone: '05328765000', city: 'İzmir', address: 'İzmir, Karşıyaka, Bahriye Üçok Mah.', balance: 0, credit_limit: 20000, payment_term: 0, order_count: 4, total_spent: 8900, last_channel: 'whatsapp', last_source: 'WHATSAPP', created_at: new Date(Date.now() - 86400000 * 12).toISOString() },
+      { id: 'cust-008', name: 'İbrahim Yıldız', phone: '05438765000', city: 'Bursa', address: 'Bursa, Nilüfer, Beşevler Mah. No:22', balance: 3200, credit_limit: 40000, payment_term: 30, order_count: 7, total_spent: 18500, last_channel: 'instagram', last_source: 'INSTAGRAM', created_at: new Date(Date.now() - 86400000 * 25).toISOString() },
+      { id: 'cust-009', name: 'Ahmet Kurt', phone: '05321239000', city: 'Eskişehir', address: 'Eskişehir, Tepebaşı, Atatürk Cad. No:7', balance: 0, credit_limit: 10000, payment_term: 0, order_count: 2, total_spent: 3200, last_channel: 'sms', last_source: 'SMS', created_at: new Date(Date.now() - 86400000 * 5).toISOString() },
+      { id: 'cust-010', name: 'Elif Koç', phone: '05411239000', city: 'Antalya', address: 'Antalya, Muratpaşa, Lara Mah. No:45', balance: 15000, credit_limit: 60000, payment_term: 60, order_count: 15, total_spent: 75000, last_channel: 'whatsapp', last_source: 'WHATSAPP', created_at: new Date(Date.now() - 86400000 * 60).toISOString() },
     ];
   }
 
