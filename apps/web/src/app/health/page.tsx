@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, MessageCircle } from 'lucide-react';
 
 interface ServiceInfo { name: string; status: 'ok' | 'down' | 'not_configured'; tip: string; techName?: string; }
 
@@ -19,6 +19,7 @@ const SERVICE_ICONS: Record<string, typeof Brain> = {
   aiBrain: Brain,
   netgsm: PhoneCall,
   voice: Phone,
+  sms: MessageCircle,
   whatsapp: MessageSquare,
   instagram: Camera,
   database: Database,
@@ -28,9 +29,25 @@ const SERVICE_ROUTES: Record<string, string> = {
   aiBrain: '/integrations',
   netgsm: '/integrations',
   voice: '/integrations',
+  sms: '/integrations',
   whatsapp: '/integrations',
   instagram: '/integrations',
   database: '',
+};
+
+const SERVICE_COLORS: Record<string, string> = {
+  aiBrain: 'bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/20 dark:to-indigo-900/20',
+  netgsm: 'bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/20 dark:to-cyan-900/20',
+  voice: 'bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20',
+  sms: 'bg-gradient-to-br from-sky-100 to-blue-100 dark:from-sky-900/20 dark:to-blue-900/20',
+  whatsapp: 'bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/20 dark:to-green-900/20',
+  instagram: 'bg-gradient-to-br from-pink-100 to-rose-100 dark:from-pink-900/20 dark:to-rose-900/20',
+  database: 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20',
+};
+
+const SERVICE_ICON_COLORS: Record<string, string> = {
+  aiBrain: 'text-violet-600', netgsm: 'text-blue-600', voice: 'text-purple-600',
+  sms: 'text-sky-600', whatsapp: 'text-emerald-600', instagram: 'text-pink-600', database: 'text-amber-600',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; color: string; }> = {
@@ -65,6 +82,7 @@ export default function HealthPage() {
         services: {
           aiBrain: { name: 'Sipariş Alan AI Beyin', status: 'ok', tip: 'AI', techName: 'DeepSeek / OpenAI' },
           netgsm: { name: 'Telefon Santralı (NetGSM)', status: 'not_configured', tip: 'Santral' },
+          sms: { name: 'SMS Sipariş Hattı', status: 'not_configured', tip: 'SMS' },
           voice: { name: 'Telefonla Konuşan Ses', status: 'not_configured', tip: 'Ses', techName: 'ElevenLabs' },
           whatsapp: { name: 'WhatsApp Haberleşme Hattı', status: 'not_configured', tip: 'WhatsApp' },
           instagram: { name: 'Instagram Sipariş Hattı', status: 'not_configured', tip: 'Instagram' },
@@ -120,18 +138,18 @@ export default function HealthPage() {
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
           <Zap size={15} className="text-amber-500" /> Servis Bağlantıları
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {Object.entries(health.services).map(([key, svc]) => {
             const Icon = SERVICE_ICONS[key] || Database;
             const cfg = STATUS_CONFIG[svc.status];
             const isProblem = svc.status !== 'ok';
             return (
               <div key={key}
-                className={`bg-white dark:bg-slate-800 rounded-xl border ${cfg.color} p-4 flex flex-col items-center text-center gap-1.5 transition-all hover:shadow-sm ${isProblem ? 'hover:border-red-300 dark:hover:border-red-700' : ''}`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${svc.status === 'ok' ? 'bg-emerald-50 dark:bg-emerald-900/20' : svc.status === 'down' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                  <Icon size={18} className={svc.status === 'ok' ? 'text-emerald-600' : svc.status === 'down' ? 'text-red-500' : 'text-slate-400'} />
+                className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm p-4 flex flex-col items-center text-center gap-1.5 transition-all hover:shadow-md ${isProblem ? 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-700' : 'border-slate-200 dark:border-slate-700'}`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${SERVICE_COLORS[key] || ''}`}>
+                  <Icon size={20} className={SERVICE_ICON_COLORS[key] || 'text-slate-500'} />
                 </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-slate-200 leading-tight">{svc.name}</span>
+                <span className="text-[11px] font-semibold text-gray-700 dark:text-slate-200 leading-tight">{svc.name}</span>
                 {userRole === 'owner' && svc.techName && (
                   <span className="text-[9px] text-slate-400 -mt-0.5">{svc.techName}</span>
                 )}

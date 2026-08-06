@@ -56,6 +56,7 @@ export class HealthController {
       aiBrain: { name: 'Sipariş Alan AI Beyin', status: process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY ? 'ok' as const : 'down' as const, tip: 'AI', techName: 'DeepSeek / OpenAI' },
       netgsm: { name: 'Telefon Santralı (NetGSM)', status: process.env.NETGSM_USERNAME ? 'ok' as const : 'not_configured' as const, tip: 'Santral' },
       voice: { name: 'Telefonla Konuşan Ses', status: process.env.ELEVENLABS_API_KEY ? 'ok' as const : 'not_configured' as const, tip: 'Ses', techName: 'ElevenLabs' },
+      sms: { name: 'SMS Sipariş Hattı', status: process.env.NETGSM_USERNAME ? 'ok' as const : 'not_configured' as const, tip: 'SMS' },
       whatsapp: { name: 'WhatsApp Haberleşme Hattı', status: process.env.WHATSAPP_TOKEN ? 'ok' as const : 'not_configured' as const, tip: 'WhatsApp' },
       instagram: { name: 'Instagram Sipariş Hattı', status: process.env.INSTAGRAM_ACCESS_TOKEN ? 'ok' as const : 'not_configured' as const, tip: 'Instagram' },
       database: { name: 'Müşteri ve Ürün Veritabanı', status: 'ok' as const, tip: 'Veritabanı' },
