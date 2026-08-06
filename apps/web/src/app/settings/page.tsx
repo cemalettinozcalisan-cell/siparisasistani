@@ -343,6 +343,19 @@ export default function SettingsPage() {
         <Row label="Sesli / Pop-up Web Bildirimi" desc="Panel açıkken yeni sipariş geldiğinde tarayıcı bildirimi">
           <Toggle enabled={settings.web_notifications_enabled !== false} onChange={(v) => saveAndKeep('web_notifications_enabled', v)} />
         </Row>
+
+        <div className="space-y-1">
+          <label className="text-xs text-gray-500 dark:text-slate-400">Ödeme Hatırlatma Süresi (dk)</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number" min="5" max="120"
+              value={Number(settings.payment_reminder_minutes) || 20}
+              onChange={(e) => saveAndKeep('payment_reminder_minutes', Number(e.target.value))}
+              className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-24"
+            />
+            <span className="text-xs text-gray-400">Ödeme yapılmazsa {Number(settings.payment_reminder_minutes) || 20} dk sonra müşteriye WhatsApp + SMS hatırlatması gönderilir</span>
+          </div>
+        </div>
       </div>
 
       {/* 4. Ödeme Yöntemleri */}

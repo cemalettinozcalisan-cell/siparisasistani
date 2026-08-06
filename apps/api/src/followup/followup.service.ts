@@ -60,15 +60,23 @@ export class FollowUpService implements OnModuleInit {
 
   private async processFollowUps() {
     try {
+      // Load configurable delay from settings (default 20 min)
+      const { data: settings } = await this.supabase.db
+        .from('tenant_settings')
+        .select('tenant_id, payment_reminder_minutes')
+        .single();
+      const paymentDelay = (settings as any)?.payment_reminder_minutes || 20;
+
       for (const rule of RULES) {
-        const cutoff = new Date(Date.now() - rule.delayMinutes * 60000).toISOString();
+        const delayMinutes = rule.actionType === 'PAYMENT_REMINDER' ? paymentDelay : rule.delayMinutes;
+        const cutoff = new Date(Date.now() - delayMinutes * 60000).toISOString();
 
         const { data: events } = await this.supabase.db
           .from('activity_logs')
           .select('tenant_id, entity_id, metadata, created_at, description')
           .eq('event_type', rule.triggerEvent)
           .gte('created_at', cutoff)
-          .lt('created_at', new Date(Date.now() - (rule.delayMinutes - 1) * 60000).toISOString())
+          .lt('created_at', new Date(Date.now() - (delayMinutes - 1) * 60000).toISOString())
           .limit(10);
 
         if (!events || events.length === 0) continue;
