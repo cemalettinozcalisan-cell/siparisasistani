@@ -457,7 +457,7 @@ function OrdersPageContent() {
                         <button
                           onClick={() => setEditItems([...editItems, { product_name: '', quantity: 1, unit: 'KG', unit_price: 0 }])}
                           className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium">
-                          + Ürün Ekle
+                          Ürün Ekle
                         </button>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-900 rounded p-2 space-y-1.5">

@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useRef } from 'react';
-import { Package, Plus, X, Sparkles, Upload, Check, Search } from 'lucide-react';
+import { Package, X, Sparkles, Upload, Check, Search, Download } from 'lucide-react';
 
 const SALE_TYPES = ['KG', 'SAP', 'ADET', 'KOLI', 'TEPSI', 'PALET'];
 const SALE_LABELS: Record<string, string> = { KG: 'KG', SAP: 'Sap', ADET: 'Adet', KOLI: 'Koli', TEPSI: 'Tepsi', PALET: 'Palet' };
@@ -118,20 +118,20 @@ export default function ProductsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <Upload className="w-4 h-4" /> Excel ile Yükle
+              className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+              <Upload className="w-3.5 h-3.5" /> Excel ile Yükle
             </button>
             <a href="/urun-sablonu.csv" download
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-slate-500 dark:text-slate-400 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               📄 Örnek Şablon
             </a>
             <button onClick={() => setSlideOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all shadow-sm">
-              <Plus className="w-4 h-4" /> Ürün Ekle
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-sm">
+              <Package className="w-3.5 h-3.5" /> Ürün Ekle
             </button>
-            <button onClick={() => window.open(`/api/products/catalog/demo-tenant-id`, '_blank')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-all shadow-sm">
-              📄 PDF İndir
+            <button onClick={() => window.open(`/api/products/catalog/${tid}`, '_blank')}
+              className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <Download className="w-3.5 h-3.5" /> PDF İndir
             </button>
           </div>
         </div>
@@ -139,23 +139,24 @@ export default function ProductsPage() {
 
       {/* Empty State */}
       {products.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-16 text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-4">
-            <Package className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+        <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-900/30 p-16 text-center">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 flex items-center justify-center mb-5 shadow-sm border border-indigo-100 dark:border-indigo-900/30">
+            <Package className="w-8 h-8 text-indigo-500" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Henüz ürün eklenmemiş</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">İlk ürününüzü ekleyerek AI sipariş almaya başlayın. Ürünlerinizi tek tek veya Excel ile yükleyebilirsiniz.</p>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Henüz ürün eklenmemiş</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-md mx-auto leading-relaxed">İlk ürününüzü ekleyerek AI sipariş almaya başlayın. Ürünlerinizi tek tek veya Excel ile yükleyebilirsiniz.</p>
           <div className="flex items-center justify-center gap-3 mt-6">
             <button onClick={() => setSlideOpen(true)}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/20">
-              <Plus className="w-4 h-4" /> Ürün Ekleyerek Başlayın
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold transition-all shadow-md shadow-indigo-500/20">
+              <Package className="w-4 h-4" /> Ürün Ekleyerek Başlayın
             </button>
-            <button onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-1.5 px-5 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
               <Upload className="w-4 h-4" /> Excel ile Yükle
             </button>
           </div>
-          <p className="mt-4 text-xs text-slate-400 dark:text-slate-500 text-center">
-            📄 <a href="/urun-sablonu.csv" download className="text-indigo-600 dark:text-indigo-400 hover:underline">Örnek CSV şablonunu indir</a>, Excel'de doldur, kaydet ve yükle. İlk satır başlıktır (silme).
+          <p className="mt-5 text-xs text-slate-400 dark:text-slate-500">
+            📄 <a href="/urun-sablonu.csv" download className="text-indigo-500 hover:text-indigo-600 underline underline-offset-2">Örnek CSV şablonunu indir</a>, Excel'de doldur, kaydet ve yükle. İlk satır başlıktır.
           </p>
         </div>
       ) : (

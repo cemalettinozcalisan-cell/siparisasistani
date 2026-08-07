@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, MessageCircle, Pencil } from 'lucide-react';
+import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, DollarSign, TrendingDown } from 'lucide-react';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -13,14 +13,15 @@ interface CustomerDetailProps {
   onRefresh: () => void;
 }
 
-function getSegment(customer: Record<string, unknown>, ordersCount: number, totalSpent: number): { label: string; icon: string; color: string } {
-  if (totalSpent >= 50000) return { label: 'VIP', icon: '🥇', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' };
-  if (ordersCount >= 10) return { label: 'Sadık', icon: '🥈', color: 'bg-blue-100 text-blue-800 border-blue-300' };
-  if (ordersCount <= 1) return { label: 'Yeni', icon: '🟢', color: 'bg-green-100 text-green-800 border-green-300' };
-  return { label: 'Aktif', icon: '✅', color: 'bg-gray-100 text-gray-800 border-gray-300' };
+function getSegment(customer: Record<string, unknown>, ordersCount: number, totalSpent: number): { label: string; icon: typeof Crown; gradient: string } {
+  if (totalSpent >= 50000) return { label: 'VIP', icon: Crown, gradient: 'from-amber-400 to-orange-500' };
+  if (ordersCount >= 10) return { label: 'Sadık', icon: ShieldCheck, gradient: 'from-violet-500 to-purple-600' };
+  if (ordersCount <= 1) return { label: 'Yeni', icon: Sparkles, gradient: 'from-emerald-400 to-teal-500' };
+  return { label: 'Aktif', icon: CheckCircle2, gradient: 'from-sky-400 to-blue-500' };
 }
 
 export function CustomerDetail({ customer, orders, timeline, complaints }: CustomerDetailProps) {
+  const tid = getTenantId();
   const [customerPrices, setCustomerPrices] = useState<Record<string, unknown>[]>([]);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [priceForm, setPriceForm] = useState({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
@@ -35,9 +36,6 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
       })));
     }).catch(() => {});
   }, []);
-
-  const tid = getTenantId();
-
   const loadPrices = () => {
     fetch(`/api/customer-prices/${tid}/${customer.id}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setCustomerPrices(d); }).catch(() => {});
   };
@@ -83,7 +81,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   else if (daysSinceLastOrder <= 7) insightParts.push('Son 7 günde sipariş vermiş, aktif müşteri.');
   if (complaints.length > 0) insightParts.push(`${complaints.length} şikayet kaydı var, öncelikli ilgilenilmeli.`);
 
-  const riskScore = daysSinceLastOrder > 180 ? '🔴 Yüksek Risk' : daysSinceLastOrder > 90 ? '🟡 Orta Risk' : daysSinceLastOrder <= 7 ? '🟢 Düşük Risk (Aktif)' : '🟢 Düşük Risk';
+  const riskScore = daysSinceLastOrder > 180 ? { label: 'Yüksek Risk', gradient: 'from-red-500 to-rose-600' } : daysSinceLastOrder > 90 ? { label: 'Orta Risk', gradient: 'from-amber-400 to-orange-500' } : { label: 'Düşük Risk', gradient: 'from-emerald-400 to-teal-500' };
 
   return (
     <div className="space-y-3">
@@ -115,8 +113,10 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
         </div>
         <div className="flex items-center gap-2 mt-3">
-          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${segment.color}`}>{segment.icon} {segment.label}</span>
-          {Boolean((customer as any).address) && <span className="text-xs text-gray-400 truncate">📍 {(customer as any).address}</span>}
+          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r ${segment.gradient} shadow-sm`}>
+            <segment.icon size={12} /> {segment.label}
+          </span>
+          {Boolean((customer as any).address) && <span className="text-xs text-gray-400 truncate flex items-center gap-1"><MapPin size={12} className="text-blue-500 shrink-0" /> {(customer as any).address}</span>}
         </div>
       </div>
 
@@ -180,14 +180,17 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
 
           {/* Özel Fiyat */}
           {userRole !== 'staff' && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Özel Fiyat Listesi</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm ring-1 ring-indigo-50 dark:ring-indigo-900/20">
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b-2 border-indigo-100 dark:border-indigo-900/50 rounded-t-xl">
+              <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
+                <DollarSign size={13} /> Özel Fiyat Listesi
+              </h3>
               <button onClick={() => setShowPriceForm(!showPriceForm)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white bg-indigo-500 hover:bg-indigo-600 shadow-sm transition-all">
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
                 + Özel Fiyat
               </button>
             </div>
+            <div className="p-3.5">
             {showPriceForm && (
               <div className="grid grid-cols-2 gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 <select value={priceForm.product_name} onChange={(e) => {
@@ -228,6 +231,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
               </div>
             ))}
           </div>
+          </div>
           )}
         </div>
 
@@ -235,12 +239,16 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
         <div className="space-y-3">
           {/* AI Insights */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 shadow-sm">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">🤖 AI Müşteri Analizi</h3>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <ShoppingBag size={13} className="text-violet-500" /> AI Müşteri Analizi
+            </h3>
             <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed">{insightParts.join(' ')}</p>
             <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
-              <span className="text-[10px] text-gray-400">Risk Skoru:</span>
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${riskScore.includes('Yüksek') ? 'bg-red-100 text-red-700' : riskScore.includes('Orta') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{riskScore}</span>
-              {complaints.length > 0 && <span className="text-[10px] text-red-500">⚠️ {complaints.length} şikayet</span>}
+              <span className="text-[10px] text-gray-400 flex items-center gap-1"><Shield size={12} /> Risk:</span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${riskScore.gradient} shadow-sm`}>
+                {riskScore.label}
+              </span>
+              {complaints.length > 0 && <span className="text-[10px] text-red-500 flex items-center gap-1"><TrendingDown size={11} /> {complaints.length} şikayet</span>}
             </div>
           </div>
 
