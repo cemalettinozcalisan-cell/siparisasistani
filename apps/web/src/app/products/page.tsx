@@ -122,15 +122,15 @@ export default function ProductsPage() {
               <Upload className="w-3.5 h-3.5" /> Excel ile Yükle
             </button>
             <a href="/urun-sablonu.csv" download
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-slate-500 dark:text-slate-400 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              📄 Örnek Şablon
+              className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:border-indigo-200 hover:text-indigo-600 dark:hover:border-indigo-800 dark:hover:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all">
+              <Download className="w-3.5 h-3.5" /> Örnek Şablon
             </a>
             <button onClick={() => setSlideOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-sm">
               <Package className="w-3.5 h-3.5" /> Ürün Ekle
             </button>
             <button onClick={() => window.open(`/api/products/catalog/${tid}`, '_blank')}
-              className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg text-xs font-semibold transition-all shadow-sm">
               <Download className="w-3.5 h-3.5" /> PDF İndir
             </button>
           </div>

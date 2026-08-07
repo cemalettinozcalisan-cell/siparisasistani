@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, DollarSign, TrendingDown } from 'lucide-react';
+import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, TrendingDown } from 'lucide-react';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -182,27 +182,27 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           {userRole !== 'staff' && (
           <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm ring-1 ring-indigo-50 dark:ring-indigo-900/20">
             <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b-2 border-indigo-100 dark:border-indigo-900/50 rounded-t-xl">
-              <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
-                <DollarSign size={13} /> Özel Fiyat Listesi
+              <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+                Özel Fiyat Listesi
               </h3>
               <button onClick={() => setShowPriceForm(!showPriceForm)}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
+                className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
                 + Özel Fiyat
               </button>
             </div>
             <div className="p-3.5">
             {showPriceForm && (
-              <div className="grid grid-cols-2 gap-1.5 mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <div className="grid grid-cols-2 gap-2 mb-2 p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg">
                 <select value={priceForm.product_name} onChange={(e) => {
                   const sel = products.find(p => p.product_name === e.target.value);
                   setPriceForm({ ...priceForm, product_name: e.target.value, unit: sel?.unit || 'KG', price: sel?.price ? String(sel.price) : priceForm.price });
                 }}
-                  className="col-span-2 px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
+                  className="col-span-2 px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
                   <option value="">-- Ürün Seçin --</option>
                   {products.map(p => (<option key={p.product_name} value={p.product_name}>{p.product_name} ({p.price.toLocaleString('tr-TR')} TL/{p.unit})</option>))}
                 </select>
                 <select value={priceForm.unit} onChange={(e) => setPriceForm({ ...priceForm, unit: e.target.value })}
-                  className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
+                  className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
                   <option value="KG">KG</option>
                   <option value="GR">GR</option>
                   <option value="ADET">ADET</option>
@@ -212,8 +212,8 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
                   <option value="PALET">PALET</option>
                 </select>
                 <input placeholder="Fiyat (TL)" type="number" value={priceForm.price} onChange={(e) => setPriceForm({ ...priceForm, price: e.target.value })}
-                  className="px-2 py-1 border border-slate-200 dark:border-slate-600 rounded text-[11px] bg-white dark:bg-slate-800" />
-                <button onClick={handleAddPrice} className="col-span-2 px-2 py-1 bg-indigo-500 text-white rounded text-[11px] font-medium">Kaydet</button>
+                  className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-800" />
+                <button onClick={handleAddPrice} className="col-span-2 px-2.5 py-1.5 bg-indigo-500 text-white rounded text-xs font-semibold hover:bg-indigo-600 transition-colors">Kaydet</button>
               </div>
             )}
             {(customerPrices as any[]).length === 0 && !showPriceForm ? (
