@@ -91,6 +91,10 @@ export default function SaasPage() {
   const remaining = usage ? (usage.remaining as number) : 0;
   const usagePct = usage ? (usage.usagePercent as number) : 0;
   const showWarning = remaining > 0 && remaining <= Math.round((usage?.orderLimit as number || 250) * 0.15);
+  const overflowCount = usage?.overflowCount as number || 0;
+  const overflowCost = usage?.overflowCost as number || 0;
+  const maxOverflow = usage?.maxOverflow as number || 0;
+  const showOverflow = overflowCount > 0;
 
   const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
     <button onClick={() => onChange(!enabled)}
@@ -170,7 +174,7 @@ export default function SaasPage() {
           </div>
           <div>
             <p className="font-semibold text-amber-900 dark:text-amber-300 text-sm">Sipariş kotanız dolmak üzere!</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Sadece <strong>{remaining} sipariş</strong> kaldı. Otomatik ek paket yükleyin veya paketinizi yükseltin.</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Sadece <strong>{remaining} sipariş</strong> kaldı. Kota aşımında sipariş başına <strong>80 TL + KDV</strong> ücretlendirilirsiniz. Ek paket alarak tasarruf edin.</p>
           </div>
         </div>
       )}
@@ -201,12 +205,6 @@ export default function SaasPage() {
               <span className="text-[10px] text-slate-400 uppercase tracking-wider">Bitiş</span>
               <p className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">{sub.current_period_end ? new Date(sub.current_period_end as string).toLocaleDateString('tr-TR') : '—'}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-6 pt-2 border-t border-slate-100 dark:border-slate-700">
-            <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-              <input type="checkbox" checked={!!sub.auto_renew} onChange={() => {}} className="w-3.5 h-3.5" />
-              Otomatik yenileme
-            </label>
           </div>
         </div>
       )}
@@ -274,6 +272,23 @@ export default function SaasPage() {
               </div>
             )}
           </div>
+
+          {/* Overflow Warning */}
+          {showOverflow && (
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/10 dark:to-rose-900/10 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shrink-0 shadow-sm">
+                <AlertTriangle size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-red-900 dark:text-red-300 text-sm">Kota Aşımı!</p>
+                <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                  Kotanızı <strong>{overflowCount} sipariş</strong> aştınız. Ay sonu faturanıza <strong>{overflowCost.toLocaleString('tr-TR')} TL + KDV</strong> eklenecek.
+                  {maxOverflow > 0 && <> Maksimum aşım: <strong>{maxOverflow} sipariş</strong> (paket limitinin %50'si).</>}
+                </p>
+                <p className="text-[10px] text-red-600 dark:text-red-400 mt-1">Ek paket alarak 80 TL/sipariş yerine daha düşük birim fiyattan devam edebilirsiniz.</p>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
             <Info size={12} className="shrink-0 mt-0.5 text-indigo-400" />

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
 import * as crypto from 'crypto';
 
@@ -87,6 +88,9 @@ export class SaasService {
   async getUsage(tenantId: string) {
     const sub = await this.getSubscription(tenantId);
     const usagePercent = sub.order_limit > 0 ? Math.min(100, Math.round((sub.orders_used / sub.order_limit) * 100)) : 0;
+    const overflowCount = Math.max(0, (sub.orders_used || 0) - (sub.order_limit || 0));
+    const overflowCost = overflowCount * 80; // 80 TL per overflowed order
+    const maxOverflow = Math.round((sub.order_limit || 0) * 0.5); // 50% of plan limit
 
     return {
       planName: sub.plan?.name || 'Starter',
@@ -95,11 +99,13 @@ export class SaasService {
       orderLimit: sub.order_limit,
       usagePercent,
       remaining: Math.max(0, sub.order_limit - sub.orders_used),
+      overflowCount,
+      overflowCost,
+      maxOverflow,
       status: sub.status,
       autoRenew: sub.auto_renew,
       autoTopup: sub.auto_topup,
       periodEnd: sub.current_period_end,
-      gracePeriodEnd: sub.grace_period_end,
     };
   }
 
@@ -178,5 +184,54 @@ export class SaasService {
       .eq('tenant_id', tenantId);
 
     return { invoice: invNumber, pack: pack.name, addedCredits: pack.order_credit };
+  }
+
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
+  async monthlyBilling() {
+    this.logger.log('Monthly billing cycle started');
+
+    const { data: subs } = await this.supabase.db
+      .from('subscriptions')
+      .select('*, plan:plan_id(*)')
+      .eq('status', 'active');
+
+    for (const sub of subs || []) {
+      try {
+        const ordersUsed = sub.orders_used || 0;
+        const orderLimit = sub.order_limit || 0;
+        const overflowCount = Math.max(0, ordersUsed - orderLimit);
+        const overflowCost = overflowCount * 80;
+        const planPrice = sub.plan?.price_monthly || 0;
+
+        // Invoice: plan + overflow + 20% KDV
+        const subtotal = planPrice + overflowCost;
+        const amountWithKdv = Math.round(subtotal * 1.20);
+
+        const invNumber = `INV-${Date.now()}-${sub.tenant_id?.toString().slice(0, 8)}`;
+        let description = `${sub.plan?.name || 'Plan'} Aylık Fatura`;
+        if (overflowCount > 0) {
+          description += ` + ${overflowCount} Aşım Sipariş (${overflowCost} TL)`;
+        }
+
+        await this.supabase.db.from('invoices').insert({
+          tenant_id: sub.tenant_id,
+          invoice_number: invNumber,
+          description,
+          amount: amountWithKdv,
+          status: 'pending',
+          payment_method: 'system',
+        });
+
+        // Reset orders_used for new month
+        await this.supabase.db
+          .from('subscriptions')
+          .update({ orders_used: 0 })
+          .eq('id', sub.id);
+
+        this.logger.log(`Billed tenant ${sub.tenant_id}: ${subtotal} TL + KDV = ${amountWithKdv} TL (overflow: ${overflowCount})`);
+      } catch (e) {
+        this.logger.error(`Billing failed for tenant ${sub.tenant_id}: ${e}`);
+      }
+    }
   }
 }
