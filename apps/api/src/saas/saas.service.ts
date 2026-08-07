@@ -87,7 +87,11 @@ export class SaasService {
 
   async getUsage(tenantId: string) {
     const sub = await this.getSubscription(tenantId);
-    const orderLimit = sub.plan?.order_limit || sub.order_limit || 150;
+    const planCode = sub.plan?.code || 'starter';
+    const planOrderLimit = sub.plan?.order_limit;
+    // Fallback: if plan order_limit is missing/stale, derive from plan code
+    const LIMIT_BY_CODE: Record<string, number> = { starter: 150, pro: 250, ultra: 400, mega: 600, premium: 900 };
+    const orderLimit = planOrderLimit || LIMIT_BY_CODE[planCode] || 150;
     const usagePercent = orderLimit > 0 ? Math.min(100, Math.round((sub.orders_used / orderLimit) * 100)) : 0;
     const overflowCount = Math.max(0, (sub.orders_used || 0) - orderLimit);
     const overflowCost = overflowCount * 80;
@@ -199,7 +203,9 @@ export class SaasService {
     for (const sub of subs || []) {
       try {
         const ordersUsed = sub.orders_used || 0;
-        const orderLimit = sub.plan?.order_limit || sub.order_limit || 0;
+        const planCode = sub.plan?.code || 'starter';
+        const LIMIT_BY_CODE: Record<string, number> = { starter: 150, pro: 250, ultra: 400, mega: 600, premium: 900 };
+        const orderLimit = sub.plan?.order_limit || LIMIT_BY_CODE[planCode] || 150;
         const overflowCount = Math.max(0, ordersUsed - orderLimit);
         const overflowCost = overflowCount * 80;
         const planPrice = sub.plan?.price_monthly || 0;
