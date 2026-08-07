@@ -172,7 +172,7 @@ export default function ComplaintsPage() {
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   {c.actor_type === 'AI' && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600 shadow-sm">
-                      <Bot size={11} /> AI Yakaladı
+                      <Bot size={11} /> AI Tespiti
                     </span>
                   )}
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[channel] || 'from-slate-500 to-slate-600'} shadow-sm`}>
