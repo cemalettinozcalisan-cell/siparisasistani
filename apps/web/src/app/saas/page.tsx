@@ -47,6 +47,7 @@ export default function SaasPage() {
   const [contractAccepted, setContractAccepted] = useState(false);
   const [showContract, setShowContract] = useState(false);
   const [autoTopup, setAutoTopup] = useState(false);
+  const [autoTopupPack, setAutoTopupPack] = useState('addon50');
   const tid = getTenantId();
 
   useEffect(() => {
@@ -255,11 +256,22 @@ export default function SaasPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">Otomatik Ek Paket</p>
-                  <p className="text-[11px] text-slate-400">Kota bitince +50 Sipariş (3.999 TL) otomatik yüklensin</p>
+                  <p className="text-[11px] text-slate-400">Kota bitince otomatik olarak ek sipariş yüklensin</p>
                 </div>
               </div>
               <Toggle enabled={autoTopup} onChange={setAutoTopup} />
             </div>
+            {autoTopup && (
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-[10px] text-slate-400 mb-2">Kota bittiğinde otomatik yüklenecek paket:</p>
+                <select value={autoTopupPack} onChange={(e) => setAutoTopupPack(e.target.value)}
+                  className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none">
+                  <option value="addon50">+50 Sipariş (3.999 TL)</option>
+                  <option value="addon100">+100 Sipariş (6.999 TL)</option>
+                  <option value="addon200">+200 Sipariş (11.999 TL)</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="flex items-start gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
