@@ -1,5 +1,7 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState, useCallback } from 'react';
 import { Eye, EyeOff, Save, RefreshCw } from 'lucide-react';
 
@@ -54,7 +56,7 @@ export default function ApiKeysPage() {
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, string>>({});
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   const load = useCallback(async () => {
     try {

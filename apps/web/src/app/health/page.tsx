@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState, useRef } from 'react';
 import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, MessageCircle, Users, ShoppingBag } from 'lucide-react';
 
@@ -62,7 +64,7 @@ export default function HealthPage() {
   const [now, setNow] = useState(new Date());
   const [userRole, setUserRole] = useState('owner');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {}

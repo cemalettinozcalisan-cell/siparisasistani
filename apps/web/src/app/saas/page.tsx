@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 
 const PLANS = [
@@ -29,7 +31,7 @@ export default function SaasPage() {
   const [sub, setSub] = useState<Record<string, unknown> | null>(null);
   const [usage, setUsage] = useState<Record<string, unknown> | null>(null);
   const [invoices, setInvoices] = useState<Record<string, unknown>[]>([]);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

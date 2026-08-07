@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
 import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, Plus, UserPlus } from 'lucide-react';
@@ -13,7 +15,7 @@ export default function CustomersPage() {
   const [complaints, setComplaints] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState('');
   const [allTimeline, setAllTimeline] = useState<Record<string, unknown>[]>([]);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   // Bulk import states
   const [showImport, setShowImport] = useState(false);

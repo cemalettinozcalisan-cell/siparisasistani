@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { OrderDetail } from '@/components/order-detail';
 
@@ -10,7 +12,7 @@ export default function OrdersPage() {
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [timeline, setTimeline] = useState<Record<string, unknown>[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, unknown>[]>([]);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   const statusConfig: Record<string, { label: string; icon: string; color: string }> = {
     new: { label: 'Yeni', icon: 'ğı†•', color: 'border-l-yellow-400 bg-yellow-50' },

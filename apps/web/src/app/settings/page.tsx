@@ -1,5 +1,7 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package } from 'lucide-react';
 
@@ -51,7 +53,7 @@ export default function SettingsPage() {
   const [countryInput, setCountryInput] = useState('');
   const [deliveryRules, setDeliveryRules] = useState<string[]>([]);
   const [ruleInput, setRuleInput] = useState('');
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     fetch(`/api/settings/${tid}`)

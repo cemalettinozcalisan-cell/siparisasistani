@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Truck, Package, CheckCircle2, ArrowRight, PhoneCall } from 'lucide-react';
 import { SkeletonKPI } from '@/components/skeleton';
@@ -26,7 +28,7 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState<Record<string, unknown>[]>([]);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     setMounted(true);

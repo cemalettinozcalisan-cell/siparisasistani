@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers } from 'lucide-react';
@@ -16,7 +18,7 @@ const NOTIF_CONFIG: Record<string, { label: string; icon: any; color: string; bg
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
   const [filter, setFilter] = useState('all');
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   const load = async () => {
     try {

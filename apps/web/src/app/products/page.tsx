@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState, useRef } from 'react';
 import { Package, Plus, X, Sparkles, Upload, Check, Search } from 'lucide-react';
 
@@ -24,6 +26,8 @@ export default function ProductsPage() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const tid = getTenantId();
 
   const load = () => {
     fetch('/api/products/demo-tenant-id').then(r => r.json()).then(d => setProducts(Array.isArray(d) ? d : [])).catch(() => {});
@@ -79,11 +83,11 @@ export default function ProductsPage() {
 
   const deleteProduct = async (id: string) => {
     if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
-    await fetch(`/api/products/demo-tenant-id/${id}`, { method: 'DELETE' });
+    await fetch(`/api/products/${tid}/${id}`, { method: 'DELETE' });
     load();
   };
   const toggleActive = async (id: string, active: boolean) => {
-    await fetch(`/api/products/demo-tenant-id/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !active }) });
+    await fetch(`/api/products/${tid}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !active }) });
     load();
   };
 

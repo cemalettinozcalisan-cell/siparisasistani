@@ -1,5 +1,7 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { PhoneCall, MessageCircle, MessageSquare, Camera, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2 } from 'lucide-react';
 import Link from 'next/link';
@@ -28,7 +30,7 @@ export default function IntegrationsPage() {
   const [testPrinting, setTestPrinting] = useState(false);
   const [testPrintResult, setTestPrintResult] = useState<string | null>(null);
   const [origin, setOrigin] = useState('');
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     setOrigin(window.location.origin);

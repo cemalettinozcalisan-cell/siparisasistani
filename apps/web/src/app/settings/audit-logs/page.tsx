@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getTenantId } from '@/lib/tenant';
 import { Search, Calendar, Filter } from 'lucide-react';
 
 function authHeaders(): Record<string, string> {
@@ -44,7 +45,7 @@ export default function AuditLogsPage() {
   const [filterType, setFilterType] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [search, setSearch] = useState('');
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     loadLogs();

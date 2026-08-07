@@ -1,12 +1,14 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 export default function AiAuditDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [data, setData] = useState<Record<string, unknown> | null>(null);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     fetch(`/api/ai-audit/conversations/${tid}/${id}`)

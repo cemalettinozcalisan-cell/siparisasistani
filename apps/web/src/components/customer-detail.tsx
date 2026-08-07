@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { PhoneCall, MessageCircle, Pencil } from 'lucide-react';
 
@@ -34,7 +36,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
     }).catch(() => {});
   }, []);
 
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   const loadPrices = () => {
     fetch(`/api/customer-prices/${tid}/${customer.id}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setCustomerPrices(d); }).catch(() => {});

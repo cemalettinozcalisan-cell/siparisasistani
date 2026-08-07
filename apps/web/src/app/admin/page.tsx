@@ -1,70 +1,112 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import { Shield, Building2, Package, Users, DollarSign, UserCheck, Bot, Search, Loader2 } from 'lucide-react';
+import { getUserRole } from '@/lib/tenant';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [stats, setStats] = useState<Record<string, unknown>>({});
   const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
+    const role = getUserRole();
+    if (role !== 'owner') { router.replace('/dashboard'); return; }
+    setAuthorized(true);
+    setChecking(false);
+
     fetch('/api/admin/stats').then(r => r.json()).then(d => setStats(d)).catch(() => {});
     fetch('/api/admin/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
-  }, []);
+  }, [router]);
+
+  if (checking) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 size={24} className="animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (!authorized) return null;
+
+  const filtered = tenants.filter(t =>
+    !search || (
+      (t.company_name as string || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.city as string || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.email as string || '').toLowerCase().includes(search.toLowerCase())
+    )
+  );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
       <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Geliştirici Paneli</h1>
-        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">SÜPER YÖNETİCİ</span>
+        <Shield size={20} className="text-indigo-500" />
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Geliştirici Paneli</h1>
+        <span className="px-2 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-full text-[10px] font-bold">SÜPER YÖNETİCİ</span>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 space-y-2">
-        <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-300 leading-relaxed">
-          Bu sayfa, tüm sisteme ait genel istatistikleri gösterir. <strong>Süper yönetici</strong> rolündeki kullanıcılar
-          buradan tüm firmaları (tenant) görüntüleyebilir, sistem genelindeki sipariş, müşteri, ciro ve AI konuşma
-          verilerini takip edebilir.
-        </p>
-        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-          ⚠️ <strong>Önemli:</strong> Şu an için bu sayfaya herkes erişebilir. Canlıya geçtiğinizde, sadece <strong>süper yönetici</strong> rolündeki kullanıcıların görebilmesi için backend'de rol bazlı erişim kontrolü (RBAC) eklenmelidir. Şu an demo aşamasında olduğumuz için bu kontrol aktif değil.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         {[
-          { label: 'Toplam Firma', value: String(stats.tenants || 0), icon: '🏢', color: 'from-blue-500 to-blue-600' },
-          { label: 'Toplam Sipariş', value: String(stats.orders || 0), icon: '📦', color: 'from-emerald-500 to-emerald-600' },
-          { label: 'Toplam Müşteri', value: String(stats.customers || 0), icon: '👥', color: 'from-violet-500 to-violet-600' },
-          { label: 'Toplam Ciro', value: `${Number(stats.revenue || 0).toLocaleString('tr-TR')} TL`, icon: '💰', color: 'from-amber-500 to-amber-600' },
-          { label: 'Toplam Kullanıcı', value: String(stats.users || 0), icon: '👤', color: 'from-cyan-500 to-cyan-600' },
-          { label: 'AI Konuşma', value: String(stats.aiConversations || 0), icon: '🤖', color: 'from-purple-500 to-purple-600' },
+          { label: 'Firma', value: stats.tenants, icon: Building2, color: 'from-blue-500 to-cyan-500', iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600' },
+          { label: 'Sipariş', value: stats.orders, icon: Package, color: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-600' },
+          { label: 'Müşteri', value: stats.customers, icon: Users, color: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600' },
+          { label: 'Ciro', value: `${Number(stats.revenue || 0).toLocaleString('tr-TR')} TL`, icon: DollarSign, color: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600' },
+          { label: 'Kullanıcı', value: stats.users, icon: UserCheck, color: 'from-cyan-500 to-sky-500', iconBg: 'bg-cyan-50 dark:bg-cyan-900/20', iconColor: 'text-cyan-600' },
+          { label: 'AI Konuşma', value: stats.aiConversations, icon: Bot, color: 'from-pink-500 to-rose-500', iconBg: 'bg-pink-50 dark:bg-pink-900/20', iconColor: 'text-pink-600' },
         ].map((c) => (
-          <div key={c.label} className={`rounded-xl p-4 bg-gradient-to-br ${c.color} text-white`}>
-            <div className="text-xl">{c.icon}</div>
-            <div className="text-2xl font-bold mt-1">{String(c.value)}</div>
-            <div className="text-xs opacity-90">{c.label}</div>
+          <div key={c.label} className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 ${c.color.includes('from') ? '' : ''}`}>
+            <div className={`w-8 h-8 rounded-lg ${c.iconBg} flex items-center justify-center mb-2`}>
+              <c.icon size={16} className={c.iconColor} />
+            </div>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">{String(c.value || 0)}</div>
+            <div className="text-[10px] text-gray-400">{c.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold">Kayıtlı Firmalar ({tenants.length})</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center gap-2">
+            <Building2 size={15} className="text-indigo-500" />
+            Kayıtlı Firmalar ({filtered.length})
+          </h2>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Firma ara..."
+              className="pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-700 focus:ring-1 focus:ring-indigo-200 outline-none w-48"
+            />
+          </div>
         </div>
-        <div className="divide-y">
-          {tenants.map((t) => (
-            <div key={t.id as string} className="flex items-center justify-between px-4 py-3">
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+          {filtered.map((t) => (
+            <div key={t.id as string} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
               <div>
-                <p className="text-sm font-medium">{t.company_name as string}</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 dark:text-slate-400">{t.email as string} · {t.phone as string}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-slate-200">{t.company_name as string}</p>
+                <p className="text-xs text-gray-400">{t.email as string}{t.phone ? ` · ${t.phone}` : ''}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">{t.city as string || '-'}</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs ${t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 dark:text-slate-400 dark:text-slate-400'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                  <Building2 size={10} /> {t.city as string || '-'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  t.status === 'active' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                }`}>
                   {t.status as string}
                 </span>
               </div>
             </div>
           ))}
+          {filtered.length === 0 && (
+            <div className="px-4 py-10 text-center text-xs text-gray-400">
+              {search ? 'Aramanızla eşleşen firma bulunamadı.' : 'Henüz kayıtlı firma yok.'}
+            </div>
+          )}
         </div>
       </div>
     </div>

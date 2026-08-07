@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { getTenantId } from '@/lib/tenant';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
@@ -96,7 +97,7 @@ function GlobalSearch() {
     if (query.length < 2) { setResults({}); return; }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search/00000000-0000-0000-0000-000000000001?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/search/${getTenantId()}?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         setResults(data); setOpen(true);
       } catch {}

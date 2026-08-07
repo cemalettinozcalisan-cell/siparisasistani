@@ -109,7 +109,7 @@ export class AiTestController {
   }) {
     const promptCtx = {
       tenantId: body.tenantId,
-      channel: body.channel as 'phone' | 'whatsapp',
+      channel: body.channel as 'phone' | 'whatsapp' | 'instagram' | 'sms',
       currentState: body.state,
       customerPhone: '',
     };

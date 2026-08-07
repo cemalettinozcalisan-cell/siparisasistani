@@ -1,5 +1,7 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState } from 'react';
 import { X, MessageSquare, PhoneCall, Bot, ChevronDown } from 'lucide-react';
 
@@ -27,7 +29,7 @@ export function ChatHistoryDrawer({
   useEffect(() => {
     const load = async () => {
       try {
-        const tid = '00000000-0000-0000-0000-000000000001';
+        const tid = getTenantId();
         // Load AI audit logs for this order
         const res = await fetch(`/api/replay/conversation/${orderId}`);
         const data = await res.json();

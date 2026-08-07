@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import React, { useEffect, useState } from 'react';
 import { Search, Filter, AlertTriangle, Bot, CheckCircle2, ChevronRight, MessageSquare, PhoneCall, Camera } from 'lucide-react';
 
@@ -19,7 +21,7 @@ export default function ComplaintsPage() {
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     fetch(`/api/timeline/recent/${tid}?limit=100`)

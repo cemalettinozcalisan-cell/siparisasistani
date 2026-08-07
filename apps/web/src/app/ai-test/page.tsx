@@ -1,5 +1,7 @@
 ﻿'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Cpu, ChevronDown, ChevronUp, Trash2, Copy, Activity, Zap, Clock, FileJson, MessageSquare, Phone, Camera, RefreshCw } from 'lucide-react';
 
@@ -53,7 +55,7 @@ export default function AiTestPage() {
   // Test parameters
   const [channel, setChannel] = useState('phone');
   const [customerPhone, setCustomerPhone] = useState('');
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   // State timeline
   const [stateTimeline, setStateTimeline] = useState<string[]>([]);

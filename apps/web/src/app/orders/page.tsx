@@ -1,5 +1,7 @@
 'use client';
 
+import { getTenantId } from '@/lib/tenant';
+
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin } from 'lucide-react';
@@ -109,7 +111,7 @@ function OrdersPageContent() {
   const [products, setProducts] = useState<Array<{ productName: string; unit: string; price: number }>>([]);
   const [productSearch, setProductSearch] = useState<Record<number, { open: boolean; query: string }>>({});
   const audioCtx = useRef<AudioContext | null>(null);
-  const tid = '00000000-0000-0000-0000-000000000001';
+  const tid = getTenantId();
 
   useEffect(() => {
     fetch(`/api/products/${tid}`).then(r => r.json()).then(d => {

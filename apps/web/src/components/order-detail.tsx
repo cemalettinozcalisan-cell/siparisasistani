@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MessageSquare, Printer, PhoneCall, MessageCircle, Mic, User, Smartphone, MapPin, Clock, Package } from 'lucide-react';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
+import { getTenantId } from '@/lib/tenant';
 
 const STATUS_FLOW: Record<string, { label: string; icon: string; color: string }> = {
   new: { label: 'Yeni', icon: '🆕', color: 'bg-blue-100 text-blue-800' },
@@ -97,7 +98,7 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Hızlı İşlemler</label>
         <div className="grid grid-cols-2 gap-1.5">
-          <button onClick={() => window.open(`/api/print/render/00000000-0000-0000-0000-000000000001/${order.id}`, '_blank')}
+          <button onClick={() => window.open(`/api/print/render/${getTenantId()}/${order.id}`, '_blank')}
             className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-colors col-span-2">
             <Printer className="w-4 h-4" /> 🖨️ Fiş Yazdır
           </button>
@@ -255,7 +256,7 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
           className="flex items-center justify-center gap-2 px-3 py-2.5 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-xl text-sm font-medium hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors">
           <MessageSquare className="w-4 h-4" /> Konuşmayı Göster
         </button>
-        <button onClick={() => window.open(`/api/print/render/00000000-0000-0000-0000-000000000001/${order.id}`, '_blank')}
+        <button onClick={() => window.open(`/api/print/render/${getTenantId()}/${order.id}`, '_blank')}
           className="flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors">
           <Mic className="w-4 h-4" /> Ses Kaydını Dinle
         </button>
