@@ -78,17 +78,23 @@ export class ProductsController {
   @Get('catalog/:tenantId')
   async catalog(@Param('tenantId') tenantId: string, @Res() res: Response) {
     const products = await this.list(tenantId) as any[];
-    const rows = products.map((p: any) =>
-      `<tr><td>${p.product_name}</td><td>${p.category || '-'}</td><td>${Number(p.price).toLocaleString('tr-TR')} TL</td><td>${(p.sale_types || []).join(', ')}</td></tr>`
-    ).join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ürün Kataloğu</title>
+    const rows = products.map((p: any) => {
+      const saleTypes = (p.sale_types || []).join(', ');
+      const stock = p.track_stock ? `${p.stock_qty || 0} ${p.unit || 'KG'}` : 'Sınırsız';
+      const activeStr = p.active === false ? 'Pasif' : 'Aktif';
+      const ai = p.ai_rules || '-';
+      const wholesale = p.wholesale_price > 0 ? `${Number(p.wholesale_price).toLocaleString('tr-TR')} TL` : '-';
+      return `<tr><td>${p.product_name}</td><td>${p.category || '-'}</td><td>${Number(p.price).toLocaleString('tr-TR')} TL</td><td>${wholesale}</td><td>${p.unit || 'KG'}</td><td>${saleTypes}</td><td>${stock}</td><td>${ai}</td><td>${activeStr}</td></tr>`;
+    }).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Urun Katalogu</title>
       <style>body{font-family:Arial,sans-serif;margin:30px;color:#333}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px;font-size:20px}
-      table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#4f46e5;color:#fff;padding:8px 10px;text-align:left;font-size:12px}
-      td{padding:7px 10px;border-bottom:1px solid #e5e7eb;font-size:13px}.footer{margin-top:25px;font-size:10px;color:#9ca3af;text-align:center}
-      </style></head><body><h1>📋 Ürün Kataloğu</h1><p style="color:#6b7280;font-size:12px">${new Date().toLocaleDateString('tr-TR')}</p>
-      <table><thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Satış Tipleri</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div></body></html>`;
+      table{width:100%;border-collapse:collapse;margin-top:15px}th{background:#4f46e5;color:#fff;padding:6px 8px;text-align:left;font-size:10px}
+      td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:11px}.footer{margin-top:25px;font-size:10px;color:#9ca3af;text-align:center}
+      </style></head><body><h1>Urun Katalogu</h1><p style="color:#6b7280;font-size:12px">${new Date().toLocaleDateString('tr-TR')}</p>
+      <table><thead><tr><th>Urun</th><th>Kategori</th><th>Fiyat</th><th>Toptan</th><th>Birim</th><th>Satis Tipleri</th><th>Stok</th><th>AI Kurali</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="footer">SiparisAsistani — Otomatik olusturulmustur</div></body></html>`;
     res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Content-Disposition', 'attachment; filename="urun-katalogu.html"');
     res.send(html);
   }
 }
