@@ -58,15 +58,24 @@ export default function ProductsPage() {
     if (!file) return;
     const text = await file.text();
     const lines = text.split('\n').filter(Boolean);
+    const delim = text.includes(';') ? ';' : ',';
     for (let i = 1; i < lines.length; i++) {
-      const delim = lines[i].includes(';') ? ';' : ',';
-      const cols = lines[i].split(delim);
+      const cols = lines[i].split(delim).map(c => c.trim());
       if (cols.length < 2) continue;
-      const [product_name, category, price, ...rest] = cols.map(c => c.trim());
-      const sale_types = (rest[0] || 'KG').split('/');
+      const product_name = cols[0] || `Ürün ${i}`;
+      const category = cols[1] || '';
+      const price = Number(cols[2]) || 0;
+      const unit = cols[3] || 'KG';
+      const sale_types = (cols[4] || 'KG').split('/');
+      const min_order_qty = Number(cols[5]) || 0;
+      const wholesale_price = Number(cols[6]) || null;
+      const track_stock = (cols[7] || 'Hayır').toLowerCase() === 'evet';
+      const stock_qty = track_stock ? Number(cols[8]) || 0 : 0;
+      const min_stock_qty = track_stock ? Number(cols[9]) || 5 : 5;
+      const ai_rules = cols[10] || null;
       await fetch(`/api/products/${tid}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_name: product_name || `Ürün ${i}`, category: category || '', price: Number(price) || 0, unit: 'KG', sale_types, variable_weight: false, ai_rules: rest[1] || null }),
+        body: JSON.stringify({ product_name, category, price, unit, sale_types, min_order_qty, wholesale_price: wholesale_price || 0, variable_weight: false, track_stock, stock_qty, min_stock_qty, ai_rules }),
       });
     }
     load();
