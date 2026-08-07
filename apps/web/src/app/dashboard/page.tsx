@@ -94,7 +94,7 @@ export default function DashboardPage() {
             <div>
               <div className="text-xs text-slate-400">Kalan Kota</div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{remaining} / {orderLimit}</span>
+                <span className="text-base font-bold text-slate-900 dark:text-white">{remaining} / {orderLimit}</span>
                 <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
                   <div className={`h-full rounded-full ${usagePct > 80 ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 to-indigo-600'}`} style={{ width: `${usagePct}%` }} />
                 </div>
@@ -118,10 +118,10 @@ export default function DashboardPage() {
                   {kpi.trendUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />} {kpi.trend}
                 </span>
               </div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-white">
+              <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
                 {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
               </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">{kpi.label}</p>
+              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{kpi.label}</p>
             </div>
           );
         })}
@@ -130,7 +130,7 @@ export default function DashboardPage() {
       {/* 3-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* AI Assistant — Glow card */}
-        <div className="rounded-xl bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-800 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/20 p-5 space-y-3 relative overflow-hidden">
+        <div className="rounded-xl bg-white dark:bg-slate-800 border-2 border-indigo-300 dark:border-indigo-800 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20 p-5 space-y-3 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/40 via-transparent to-violet-50/40 dark:from-indigo-900/5 dark:to-violet-900/5 -z-0" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
