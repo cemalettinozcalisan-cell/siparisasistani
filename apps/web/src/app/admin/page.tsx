@@ -42,7 +42,7 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5 w-full max-w-6xl">
       <div className="flex items-center gap-2">
         <Shield size={20} className="text-indigo-500" />
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Geliştirici Paneli</h1>
