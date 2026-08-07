@@ -106,7 +106,7 @@ export default function SaasPage() {
       </div>
 
       {/* Contract Acceptance */}
-      {!contractAccepted && (
+      {!contractAccepted ? (
         <div className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/10 dark:to-violet-900/10 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 shadow-sm p-5">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -128,6 +128,10 @@ export default function SaasPage() {
               </div>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-sm w-fit">
+          <Check size={12} /> Sözleşme Onaylandı
         </div>
       )}
 
@@ -280,7 +284,7 @@ export default function SaasPage() {
                     'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 hover:shadow-md'
                   }`}>
                   {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold rounded-full shadow-md flex items-center gap-1">
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-[10px] font-bold rounded-full shadow-md flex items-center gap-1">
                       <Sparkles size={10} /> EN POPÜLER
                     </div>
                   )}
@@ -360,7 +364,7 @@ export default function SaasPage() {
           {/* Payment Methods */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Credit Card */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-sm">
                   <CreditCard size={20} className="text-white" />
@@ -370,14 +374,14 @@ export default function SaasPage() {
                   <p className="text-[10px] text-slate-400">Otomatik aylık ödeme</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Kartınızı tanımlayın, her ay faturanız otomatik ödensin. PayTR güvenli altyapısı ile.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 flex-1">Kartınızı tanımlayın, her ay faturanız otomatik ödensin. PayTR güvenli altyapısı ile.</p>
               <button className="w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg text-xs font-semibold shadow-sm opacity-50 cursor-not-allowed">
                 Yakında Aktif
               </button>
             </div>
 
             {/* Bank Transfer */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex flex-col">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-sm">
                   <Building2 size={20} className="text-white" />
@@ -387,7 +391,7 @@ export default function SaasPage() {
                   <p className="text-[10px] text-slate-400">Manuel ödeme</p>
                 </div>
               </div>
-              <div className="space-y-2 text-xs bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3 mb-3">
+              <div className="space-y-2 text-xs bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3 mb-3 flex-1">
                 <div className="flex justify-between"><span className="text-slate-400">Banka:</span> <span className="font-medium text-slate-700 dark:text-slate-300">Türkiye İş Bankası</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Alıcı:</span> <span className="font-medium text-slate-700 dark:text-slate-300">SiparişAsistanı Yazılım A.Ş.</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">IBAN:</span> <span className="font-medium text-slate-700 dark:text-slate-300 font-mono">TR12 0001 2345 6789 0001 2345 67</span></div>
