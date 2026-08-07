@@ -148,7 +148,7 @@ export default function MarketingPage() {
                     <kpi.icon size={18} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{kpi.value}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{kpi.value}</p>
                     <p className="text-[10px] text-slate-400">{kpi.label}</p>
                   </div>
                 </div>
@@ -270,34 +270,39 @@ export default function MarketingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {campaigns.map((c) => (
               <div key={c.id} className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm transition-all overflow-hidden ${c.active ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 dark:border-slate-700/50 opacity-60'}`}>
-                <div className="h-2 bg-gradient-to-r from-amber-500 to-orange-500" />
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{c.title}</h3>
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm ${
-                      c.active ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-slate-300 dark:bg-slate-600 text-slate-500'
-                    }`}>{c.active ? 'Aktif' : 'Pasif'}</span>
+                <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-500" />
+                <div className="p-4 flex gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
+                    <Gift size={18} className="text-amber-600 dark:text-amber-400" />
                   </div>
-                  <div className="space-y-1.5 text-xs text-gray-500 dark:text-slate-400 mb-3">
-                    {c.condition && <p className="flex items-center gap-1.5">🎯 {c.condition}</p>}
-                    {c.offer && <p className="flex items-center gap-1.5">🎁 {c.offer}</p>}
-                    {c.target_product && <p className="flex items-center gap-1.5">📦 {c.target_product}</p>}
-                    {c.start_date && <p className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-400" /> {new Date(c.start_date).toLocaleDateString('tr-TR')} → {c.end_date ? new Date(c.end_date).toLocaleDateString('tr-TR') : '—'}</p>}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{c.title}</h3>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-sm shrink-0 ml-2 ${
+                        c.active ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}>{c.active ? 'Aktif' : 'Pasif'}</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-gray-500 dark:text-slate-400 mb-3">
+                      {c.condition && <p className="flex items-center gap-1.5"><Tags size={11} className="text-indigo-400" /> {c.condition}</p>}
+                      {c.offer && <p className="flex items-center gap-1.5"><Gift size={11} className="text-rose-400" /> {c.offer}</p>}
+                      {c.target_product && <p className="flex items-center gap-1.5"><ShoppingCart size={11} className="text-emerald-500" /> {c.target_product}</p>}
+                      {c.start_date && <p className="flex items-center gap-1.5"><Calendar size={11} className="text-slate-400" /> {new Date(c.start_date).toLocaleDateString('tr-TR')} → {c.end_date ? new Date(c.end_date).toLocaleDateString('tr-TR') : '—'}</p>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <button onClick={() => toggleCampaign(c)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${c.active ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'}`}>
-                      {c.active ? 'Durdur' : 'Aktif Et'}
-                    </button>
-                    <button onClick={() => openEditForm(c)}
-                      className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
-                      <Edit3 size={13} />
-                    </button>
-                    <button onClick={() => deleteCampaign(c)}
-                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-auto">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-4 pb-3">
+                  <button onClick={() => toggleCampaign(c)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${c.active ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'}`}>
+                    {c.active ? 'Durdur' : 'Aktif Et'}
+                  </button>
+                  <button onClick={() => openEditForm(c)}
+                    className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+                    <Edit3 size={13} />
+                  </button>
+                  <button onClick={() => deleteCampaign(c)}
+                    className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-auto">
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             ))}
