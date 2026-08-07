@@ -103,7 +103,7 @@ export class SaasService {
     };
   }
 
-  async upgradePlan(tenantId: string, planCode: string) {
+  async upgradePlan(tenantId: string, planCode: string, billingCycle: string = 'monthly') {
     const { data: plan } = await this.supabase.db
       .from('subscription_plans')
       .select('*')
@@ -115,12 +115,16 @@ export class SaasService {
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
 
+    const isAnnual = billingCycle === 'annual';
+    const baseAmount = isAnnual ? Math.round(plan.price_monthly * 12 * 0.9) : plan.price_monthly;
+    const amountWithKdv = Math.round(baseAmount * 1.20);
+
     const invNumber = `INV-${Date.now()}`;
     await this.supabase.db.from('invoices').insert({
       tenant_id: tenantId,
       invoice_number: invNumber,
-      description: `${plan.name} Paket Yükseltme`,
-      amount: plan.price_monthly,
+      description: `${plan.name} ${isAnnual ? 'Yıllık Peşin (%10 İndirim)' : 'Aylık'} Paket`,
+      amount: amountWithKdv,
       status: 'pending',
       payment_method: 'system',
     });
@@ -150,12 +154,14 @@ export class SaasService {
 
     if (!pack) throw new Error('Pack not found');
 
+    const amountWithKdv = Math.round(pack.price * 1.20);
+
     const invNumber = `INV-${Date.now()}`;
     await this.supabase.db.from('invoices').insert({
       tenant_id: tenantId,
       invoice_number: invNumber,
       description: `${pack.name} Ek Paket`,
-      amount: pack.price,
+      amount: amountWithKdv,
       status: 'pending',
       payment_method: 'system',
     });

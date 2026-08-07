@@ -48,6 +48,7 @@ export default function SaasPage() {
   const [showContract, setShowContract] = useState(false);
   const [autoTopup, setAutoTopup] = useState(false);
   const [autoTopupPack, setAutoTopupPack] = useState('addon50');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const tid = getTenantId();
 
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function SaasPage() {
   };
 
   const upgradePlan = async (planCode: string) => {
-    await fetch(`/api/saas/upgrade/${tid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode }) });
+    await fetch(`/api/saas/upgrade/${tid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planCode, billingCycle }) });
     loadData();
   };
 
@@ -290,13 +291,34 @@ export default function SaasPage() {
       {/* TAB: Plans */}
       {tab === 'plans' && (
         <div>
-          <div className="flex items-center gap-2 mb-4 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2.5">
-            <Info size={12} className="text-indigo-400 shrink-0" />
-            Kullanılmayan siparişler bir sonraki aya devretmez. 1 yıllık taahhüt kapsamında her ay paketinizi değiştirebilirsiniz.
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2.5 flex-1">
+              <Info size={12} className="text-indigo-400 shrink-0" />
+              Kullanılmayan siparişler bir sonraki aya devretmez. 1 yıllık taahhüt kapsamında her ay paketinizi değiştirebilirsiniz.
+            </div>
+            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shrink-0 ml-3">
+              <button onClick={() => setBillingCycle('monthly')}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+                  billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}>
+                Aylık
+              </button>
+              <button onClick={() => setBillingCycle('annual')}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+                  billingCycle === 'annual' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'
+                }`}>
+                Yıllık (%10 İndirim)
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {PLANS.map((plan) => {
               const isCurrent = plan.code === currentPlanCode;
+              const isAnnual = billingCycle === 'annual';
+              const annualTotal = Math.round(plan.price * 12 * 0.9);
+              const annualMonthly = Math.round(annualTotal / 12);
+              const displayPrice = isAnnual ? annualTotal : plan.price;
+              const displayUnit = isAnnual ? 'TL / Yıl' : 'TL / Ay';
               return (
                 <div key={plan.code}
                   className={`rounded-xl border-2 p-5 flex flex-col relative transition-all ${
@@ -314,10 +336,18 @@ export default function SaasPage() {
                   </div>
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm">{plan.name}</h3>
                   <div className="mt-2">
-                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{plan.price.toLocaleString('tr-TR')}</span>
-                    <span className="text-xs text-slate-400 ml-1">TL / Ay</span>
+                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{displayPrice.toLocaleString('tr-TR')}</span>
+                    <span className="text-xs text-slate-400 ml-1">{displayUnit}</span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5 font-semibold">{plan.orders} Sipariş</div>
+                  {isAnnual && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-sm">
+                        <Check size={9} /> %10 İndirim
+                      </span>
+                      <span className="text-[10px] text-slate-400">{annualMonthly.toLocaleString('tr-TR')} TL / ay</span>
+                    </div>
+                  )}
+                  {!isAnnual && <div className="text-xs text-slate-400 mt-0.5 font-semibold">{plan.orders} Sipariş</div>}
                   <div className="mt-3 space-y-1.5 flex-1">
                     {PLAN_FEATURES.map((f) => (
                       <div key={f} className="flex items-center gap-1.5 text-[10px]">

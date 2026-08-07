@@ -21,8 +21,8 @@ export class SaasController {
   async getInvoices(@Param('tenantId') tenantId: string) { return this.saas.getInvoices(tenantId); }
 
   @Post('upgrade/:tenantId')
-  async upgradePlan(@Param('tenantId') tenantId: string, @Body() body: { planCode: string }) {
-    return this.saas.upgradePlan(tenantId, body.planCode);
+  async upgradePlan(@Param('tenantId') tenantId: string, @Body() body: { planCode: string; billingCycle?: string }) {
+    return this.saas.upgradePlan(tenantId, body.planCode, body.billingCycle);
   }
 
   @Post('purchase-addon/:tenantId')
