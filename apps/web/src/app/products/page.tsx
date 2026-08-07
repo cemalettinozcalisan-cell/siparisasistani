@@ -208,16 +208,16 @@ export default function ProductsPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
               <button onClick={openAdd}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-indigo-500/20">
-                <Package size={18} /> İlk Ürününü Ekle
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-indigo-500/20">
+                <Package size={15} /> İlk Ürününü Ekle
               </button>
               <button onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                <Upload size={18} /> Excel ile Toplu Yükle
+                className="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                <Upload size={15} /> Excel ile Toplu Yükle
               </button>
               <a href="/urun-sablonu.csv" download
-                className="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all">
-                <Download size={18} /> Örnek Şablonu İndir
+                className="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all">
+                <Download size={15} /> Örnek Şablonu İndir
               </a>
             </div>
           </div>
