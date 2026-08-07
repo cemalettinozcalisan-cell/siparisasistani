@@ -138,14 +138,14 @@ export default function ProductsPage() {
       {products.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: 'Toplam Ürün', value: products.length, icon: ShoppingBag, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600' },
-            { label: 'Aktif Ürün', value: activeCount, icon: Check, iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-600' },
-            { label: 'Kritik Stok', value: criticalStock, icon: AlertTriangle, iconBg: criticalStock > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-orange-50 dark:bg-orange-900/20', iconColor: criticalStock > 0 ? 'text-red-600' : 'text-orange-500' },
-            { label: 'Kategori', value: categories, icon: Layers, iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600' },
+            { label: 'Toplam Ürün', value: products.length, icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500' },
+            { label: 'Aktif Ürün', value: activeCount, icon: Check, gradient: 'from-emerald-500 to-green-500' },
+            { label: 'Kritik Stok', value: criticalStock, icon: AlertTriangle, gradient: criticalStock > 0 ? 'from-red-500 to-rose-600' : 'from-amber-500 to-orange-500' },
+            { label: 'Kategori', value: categories, icon: Layers, gradient: 'from-violet-500 to-purple-500' },
           ].map((kpi) => (
-            <div key={kpi.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-3.5 flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
-                <kpi.icon size={17} className={kpi.iconColor} />
+            <div key={kpi.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-3.5 flex items-center gap-3 hover:shadow-md transition-all">
+              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                <kpi.icon size={17} className="text-white" />
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900 dark:text-white">{kpi.value}</p>
@@ -252,7 +252,7 @@ export default function ProductsPage() {
                     <td className="px-4 py-2.5">
                       <div className="flex gap-1 flex-wrap">
                         {(p.sale_types || []).map(t => (
-                          <span key={t} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{SALE_LABELS[t] || t}</span>
+                          <span key={t} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">{SALE_LABELS[t] || t}</span>
                         ))}
                         {p.variable_weight && <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">~{p.avg_weight_gr || '?'}gr</span>}
                       </div>
@@ -274,18 +274,18 @@ export default function ProductsPage() {
                     </td>
                     <td className="px-4 py-2.5 text-center">
                       <button onClick={() => toggleActive(p.id, p.active)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${p.active ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold text-white shadow-sm transition-colors ${p.active ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300'}`}>
                         {p.active ? 'Aktif' : 'Pasif'}
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => openEdit(p)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors" title="Düzenle">
+                          className="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all" title="Düzenle">
                           <Pencil size={13} />
                         </button>
                         <button onClick={() => deleteProduct(p.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Sil">
+                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" title="Sil">
                           <Trash2 size={13} />
                         </button>
                       </div>
