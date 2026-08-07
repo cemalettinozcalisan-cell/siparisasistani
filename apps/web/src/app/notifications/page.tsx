@@ -2,21 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers, Bell } from 'lucide-react';
+import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers, Bell, MessageCircle, Package, Eye } from 'lucide-react';
 
-const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gradient: string; bg: string; text: string; iconBg: string }> = {
-  new_order: { label: 'Sipariş', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', iconBg: 'bg-blue-500' },
-  payment: { label: 'Ödeme', icon: CreditCard, gradient: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-500' },
-  cargo: { label: 'Kargo', icon: Truck, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-500' },
-  human_request: { label: 'Yetkili', icon: UserCheck, gradient: 'from-violet-500 to-purple-500', bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-600 dark:text-violet-400', iconBg: 'bg-violet-500' },
-  callback: { label: 'Geri Arama', icon: PhoneCall, gradient: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-500' },
-  warning: { label: 'Uyarı', icon: AlertTriangle, gradient: 'from-red-500 to-rose-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', iconBg: 'bg-red-500' },
+const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gradient: string; }> = {
+  new_order: { label: 'Sipariş', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500' },
+  payment: { label: 'Ödeme', icon: CreditCard, gradient: 'from-emerald-500 to-green-500' },
+  cargo: { label: 'Kargo', icon: Truck, gradient: 'from-amber-500 to-orange-500' },
+  human_request: { label: 'Yetkili', icon: UserCheck, gradient: 'from-violet-500 to-purple-500' },
+  callback: { label: 'Geri Arama', icon: PhoneCall, gradient: 'from-indigo-500 to-blue-500' },
+  warning: { label: 'Uyarı', icon: AlertTriangle, gradient: 'from-red-500 to-rose-500' },
+};
+
+const ACTION_BUTTONS: Record<string, { label: string; icon: typeof ShoppingBag; action: (router: ReturnType<typeof useRouter>) => void }> = {
+  new_order: { label: 'Siparişe Git', icon: Eye, action: (r) => r.push('/orders') },
+  payment: { label: 'Görüntüle', icon: Eye, action: (r) => r.push('/orders') },
+  cargo: { label: 'Kargo Takip', icon: Truck, action: (r) => r.push('/orders') },
+  human_request: { label: 'WhatsApp', icon: MessageCircle, action: () => window.open('https://wa.me/', '_blank') },
+  callback: { label: 'Geri Ara', icon: PhoneCall, action: () => {} },
+  warning: { label: 'Ürünler', icon: Package, action: (r) => r.push('/products') },
 };
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
   const [filter, setFilter] = useState('all');
   const [tid, setTid] = useState('');
+  const router = useRouter();
 
   useEffect(() => { import('@/lib/tenant').then(m => setTid(m.getTenantId())); }, []);
 
@@ -43,22 +53,24 @@ export default function NotificationsPage() {
     await fetch(`/api/notifications-api/${tid}/read/${id}`, { method: 'PUT' }).catch(() => {});
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, status: 'read' } : n));
   };
-  const router = useRouter();
-  const NAV_MAP: Record<string, string> = { new_order: '/orders', payment: '/orders', cargo: '/orders', human_request: '/complaints', callback: '/orders', warning: '/health' };
+
   const handleClick = (n: Record<string, unknown>) => {
     if (n.status === 'unread') markRead(n.id as string);
-    router.push(NAV_MAP[n.type as string] || '/dashboard');
   };
+
   const markAllRead = async () => {
     await fetch(`/api/notifications-api/${tid}/read-all`, { method: 'PUT' }).catch(() => {});
     setNotifications((prev) => prev.map((n) => ({ ...n, status: 'read' })));
   };
+
   const filtered = filter === 'all' ? notifications : notifications.filter((n) => n.type === filter);
   const unread = notifications.filter((n) => n.status === 'unread').length;
   const filterList = ['all', ...Object.keys(NOTIF_CONFIG)];
 
+  const getCount = (key: string) => key === 'all' ? notifications.length : notifications.filter(n => n.type === key).length;
+
   return (
-    <div className="p-4 md:p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -82,6 +94,7 @@ export default function NotificationsPage() {
         {filterList.map((key) => {
           const cfg = key === 'all' ? null : NOTIF_CONFIG[key];
           const active = filter === key;
+          const count = getCount(key);
           return (
             <button key={key} onClick={() => setFilter(key)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
@@ -91,6 +104,11 @@ export default function NotificationsPage() {
               }`}>
               {key === 'all' ? <Layers size={12} /> : cfg && <cfg.icon size={12} />}
               {key === 'all' ? 'Tümü' : cfg?.label}
+              <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                active ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+              }`}>
+                {count}
+              </span>
             </button>
           );
         })}
@@ -110,15 +128,18 @@ export default function NotificationsPage() {
           const cfg = NOTIF_CONFIG[type];
           const Icon = cfg?.icon || Layers;
           const isUnread = n.status === 'unread';
+          const action = ACTION_BUTTONS[type];
 
           return (
             <div key={n.id as string}
               className={`group bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-start gap-3 p-4 ${
-                isUnread ? 'border-l-4 border-l-indigo-500 border-slate-200 dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/5' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                isUnread
+                  ? 'border-l-4 border-l-indigo-500 border-slate-200 dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/5'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
               onClick={() => handleClick(n)}>
-              <div className={`w-10 h-10 rounded-xl ${cfg?.bg || 'bg-slate-100 dark:bg-slate-700'} flex items-center justify-center shrink-0`}>
-                <Icon size={18} className={cfg?.text || 'text-slate-500'} />
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${cfg?.gradient || 'from-slate-400 to-slate-500'} flex items-center justify-center shrink-0 shadow-sm`}>
+                <Icon size={18} className="text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -134,9 +155,15 @@ export default function NotificationsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
+                {action && (
+                  <button onClick={(e) => { e.stopPropagation(); if (n.status === 'unread') markRead(n.id as string); action.action(router); }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
+                    <action.icon size={11} /> {action.label}
+                  </button>
+                )}
                 {isUnread && (
                   <button onClick={(e) => { e.stopPropagation(); markRead(n.id as string); }}
-                    className="px-2.5 py-1 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-full text-[10px] font-semibold shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all opacity-0 group-hover:opacity-100">
+                    className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-[10px] font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all opacity-0 group-hover:opacity-100">
                     Okundu
                   </button>
                 )}
