@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Eye, EyeOff, Save, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Save, RefreshCw, Brain, PhoneCall, Music, MessageCircle } from 'lucide-react';
 
 interface ProviderField {
   name: string;
@@ -35,11 +35,11 @@ const PROVIDERS: Provider[] = [
   { key: 'meta_instagram', label: 'Instagram DM', icon: '📸', desc: 'Instagram Mesajlaşma API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Page ID', placeholder: '...' }], category: 'social' },
 ];
 
-const CATEGORIES = [
-  { key: 'ai', title: 'Yapay Zeka (LLM)', icon: '🧠' },
-  { key: 'communication', title: 'Çağrı & SMS', icon: '📞' },
-  { key: 'tts', title: 'Seslendirme (TTS)', icon: '🔊' },
-  { key: 'social', title: 'Sosyal Medya API', icon: '💬' },
+const CATEGORIES: { key: string; title: string; Icon: typeof Brain }[] = [
+  { key: 'ai', title: 'Yapay Zeka (LLM)', Icon: Brain },
+  { key: 'communication', title: 'Çağrı & SMS', Icon: PhoneCall },
+  { key: 'tts', title: 'Seslendirme (TTS)', Icon: Music },
+  { key: 'social', title: 'Sosyal Medya API', Icon: MessageCircle },
 ];
 
 function maskValue(val: string): string {
@@ -169,11 +169,13 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">API Anahtarları</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Servis API anahtarlarınızı yönetin ve test edin</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Save size={22} className="text-indigo-500" /> API Anahtarları
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Servis API anahtarlarınızı yönetin ve test edin</p>
         </div>
       </div>
 
@@ -184,11 +186,14 @@ export default function ApiKeysPage() {
       {CATEGORIES.map((cat) => {
         const providers = PROVIDERS.filter((p) => p.category === cat.key);
         if (providers.length === 0) return null;
+        const CatIcon = cat.Icon;
         return (
           <div key={cat.key}>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-lg">{cat.icon}</span>
-              <h2 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">{cat.title}</h2>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+                <CatIcon size={16} className="text-white" />
+              </div>
+              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">{cat.title}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {providers.map((p) => {
@@ -197,7 +202,7 @@ export default function ApiKeysPage() {
 
                 if (p.isLinked) {
                   return (
-                    <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
+                    <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">{p.icon}</span>
@@ -218,7 +223,7 @@ export default function ApiKeysPage() {
                 }
 
                 return (
-                  <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
+                  <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <span className="text-lg">{p.icon}</span>

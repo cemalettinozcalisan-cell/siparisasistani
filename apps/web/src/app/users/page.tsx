@@ -150,21 +150,23 @@ export default function UsersPage() {
     : ROLES;
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-4 md:p-6 space-y-5 w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kullanıcı Yönetimi</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{users.length} kullanıcı</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Users2 size={22} className="text-indigo-500" /> Kullanıcı Yönetimi
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{users.length} kullanıcı</p>
         </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setShowMatrix(!showMatrix)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            <Eye className="w-4 h-4" /> {showMatrix ? 'Matrisi Gizle' : 'Yetki Matrisi'}
+            className="inline-flex items-center gap-1.5 px-3 py-2 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <Eye size={14} /> {showMatrix ? 'Matrisi Gizle' : 'Yetki Matrisi'}
           </button>
           <button onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/20">
-            <Plus className="w-4 h-4" /> Yeni Kullanıcı Ekle
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md">
+            <Plus size={14} /> Kullanıcı Ekle
           </button>
         </div>
       </div>
@@ -207,7 +209,7 @@ export default function UsersPage() {
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Ad veya e-posta ile ara..."
-            className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
+            className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none"
           />
         </div>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
@@ -242,7 +244,7 @@ export default function UsersPage() {
                   <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${u.role === 'owner' ? 'bg-amber-500' : u.role === 'manager' ? 'bg-violet-500' : 'bg-blue-500'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white ${u.role === 'owner' ? 'bg-gradient-to-br from-amber-500 to-orange-600' : u.role === 'manager' ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-cyan-600'} shadow-sm`}>
                           {u.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -252,8 +254,8 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${rc.color} ${rc.bg} border ${rc.border}`}>
-                        {rc.label}
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white shadow-sm ${u.role === 'owner' ? 'bg-gradient-to-r from-amber-500 to-orange-600' : u.role === 'manager' ? 'bg-gradient-to-r from-violet-500 to-purple-600' : 'bg-gradient-to-r from-blue-500 to-cyan-600'}`}>
+                        {ROLE_CONFIG[u.role]?.label || u.role}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -278,7 +280,7 @@ export default function UsersPage() {
                           </button>
                           <button onClick={() => toggleActive(u)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title={u.active ? 'Pasif Yap' : 'Aktif Yap'}>
-                            {u.active ? '🔴' : '🟢'}
+                            <span className={`w-2 h-2 rounded-full block ${u.active ? 'bg-emerald-500' : 'bg-gray-300'}`} />
                           </button>
                           {!isOwner && (
                             <button onClick={() => setDeletingUser(u)}
@@ -348,7 +350,7 @@ export default function UsersPage() {
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">İptal</button>
               <button onClick={save} disabled={saving}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50">
+               className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 shadow-sm">
                 {saving ? 'Kaydediliyor...' : editingUser ? 'Güncelle' : 'Ekle'}
               </button>
             </div>

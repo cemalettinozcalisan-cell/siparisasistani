@@ -137,18 +137,18 @@ export default function SettingsPage() {
   if (!settings) return <div className="p-6 text-center text-gray-400">Ayarlar yüklenemedi</div>;
 
   const SectionHeader = ({ icon: Icon, title }: { icon: typeof Brain; title: string }) => (
-    <div className="flex items-center gap-2 mb-4">
-      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-sm">
+        <Icon size={17} className="text-white" />
       </div>
-      <h2 className="font-semibold text-gray-900 dark:text-white">{title}</h2>
+      <h2 className="font-bold text-sm text-slate-900 dark:text-white">{title}</h2>
     </div>
   );
 
   const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
     <button
       onClick={() => onChange(!enabled)}
-      className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'}`}
+      className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${enabled ? 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm' : 'bg-gray-300 dark:bg-slate-600'}`}
     >
       <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
@@ -192,16 +192,18 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="p-4 md:p-6 space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">İşletme Ayarları</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">İşletme tercihlerinizi yönetin</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Brain size={22} className="text-indigo-500" /> İşletme Ayarları
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">İşletme tercihlerinizi yönetin</p>
         </div>
         <button
           onClick={save}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-50"
         >
           <Save className="w-4 h-4" /> {saving ? 'Kaydediliyor...' : 'Tümünü Kaydet'}
         </button>
@@ -530,7 +532,7 @@ export default function SettingsPage() {
       </div>
 
       {/* 7. Kargo Ayarları */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
         <SectionHeader icon={Package} title="Kargo Ayarları" />
 
         <div className="space-y-4">
@@ -657,7 +659,7 @@ export default function SettingsPage() {
       </div>
 
       {/* 8. Fatura & Vergi Ayarları */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
         <SectionHeader icon={CreditCard} title="Fatura & Vergi Ayarları" />
 
         {/* Status Card */}
@@ -793,9 +795,9 @@ export default function SettingsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg disabled:opacity-50 ${
-            saved ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'
-          } text-white`}
+          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-50 text-white ${
+            saved ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
+          }`}
         >
           {saving ? (
             <>Kaydediliyor...</>
