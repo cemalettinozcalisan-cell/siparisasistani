@@ -22,12 +22,12 @@ const EVENT_LABELS: Record<string, string> = {
   COMPLAINT_OPEN: 'Şikayet Açıldı', COMPLAINT_RESOLVED: 'Çözüldü', HUMAN_REQUIRED: 'Müdahale Gerekli',
 };
 
-const CHANNEL_COLORS: Record<string, string> = {
-  VOICE: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-  WHATSAPP: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
-  PHONE: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-  INSTAGRAM: 'border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
-  SISTEM: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+const CHANNEL_GRADIENT: Record<string, string> = {
+  VOICE: 'from-blue-500 to-blue-600',
+  WHATSAPP: 'from-emerald-400 to-emerald-600',
+  PHONE: 'from-blue-500 to-blue-600',
+  INSTAGRAM: 'from-pink-500 via-purple-500 to-purple-600',
+  SISTEM: 'from-indigo-500 to-violet-500',
 };
 
 const ACTOR_LABELS: Record<string, string> = {
@@ -175,8 +175,8 @@ export default function ComplaintsPage() {
                       <Bot size={11} /> AI Yakaladı
                     </span>
                   )}
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${CHANNEL_COLORS[channel] || 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                    <ChannelIcon size={11} /> {CHANNEL_LABELS[channel] || channel}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[channel] || 'from-slate-500 to-slate-600'} shadow-sm`}>
+                    <ChannelIcon size={12} /> {CHANNEL_LABELS[channel] || channel}
                   </span>
                   <span className="text-[10px] text-slate-400">{new Date(c.created_at as string).toLocaleString('tr-TR')}</span>
                 </div>
