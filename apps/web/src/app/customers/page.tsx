@@ -381,39 +381,67 @@ export default function CustomersPage() {
 
       {/* Add Customer Modal */}
       {showAddCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowAddCustomer(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Müşteri Ekle</h3>
-              <button onClick={() => setShowAddCustomer(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><X size={18} /></button>
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowAddCustomer(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl flex flex-col animate-slide-up">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="font-bold text-lg text-slate-900 dark:text-white">Müşteri Ekle</h2>
+              <button onClick={() => setShowAddCustomer(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><X size={20} /></button>
             </div>
-            <div className="p-5 space-y-3">
-              <input placeholder="Ad Soyad *" value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-              <input placeholder="Telefon *" value={customerForm.phone} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-              <div className="grid grid-cols-2 gap-2">
-                <input placeholder="Şehir" value={customerForm.city} onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })}
-                  className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-                <input placeholder="Adres" value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
-                  className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Ad Soyad *</label>
+                <input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
               </div>
-              <input placeholder="Firma (opsiyonel)" value={customerForm.company} onChange={(e) => setCustomerForm({ ...customerForm, company: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-              <div className="grid grid-cols-2 gap-2">
-                <input placeholder="Vergi Dairesi" value={customerForm.tax_office} onChange={(e) => setCustomerForm({ ...customerForm, tax_office: e.target.value })}
-                  className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-                <input placeholder="TCKN / VKN" value={customerForm.identity} onChange={(e) => setCustomerForm({ ...customerForm, identity: e.target.value })}
-                  className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefon *</label>
+                <input value={customerForm.phone} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
               </div>
-              <input placeholder="Doğum Günü (GG.AA.YYYY)" value={customerForm.birthday} onChange={(e) => setCustomerForm({ ...customerForm, birthday: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
-              <input placeholder="Not (opsiyonel)" value={customerForm.notes} onChange={(e) => setCustomerForm({ ...customerForm, notes: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Şehir</label>
+                  <input value={customerForm.city} onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Adres</label>
+                  <input value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Firma <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+                <input value={customerForm.company} onChange={(e) => setCustomerForm({ ...customerForm, company: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vergi Dairesi</label>
+                  <input value={customerForm.tax_office} onChange={(e) => setCustomerForm({ ...customerForm, tax_office: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">TCKN / VKN</label>
+                  <input value={customerForm.identity} onChange={(e) => setCustomerForm({ ...customerForm, identity: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Doğum Günü <span className="text-slate-400 font-normal">(GG.AA.YYYY)</span></label>
+                <input value={customerForm.birthday} onChange={(e) => setCustomerForm({ ...customerForm, birthday: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Not <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+                <input value={customerForm.notes} onChange={(e) => setCustomerForm({ ...customerForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+              </div>
             </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
-              <button onClick={() => setShowAddCustomer(false)} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300">İptal</button>
-              <button onClick={handleAddCustomer} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm">Ekle</button>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-200 dark:border-slate-700">
+              <button onClick={() => setShowAddCustomer(false)} className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">İptal</button>
+              <button onClick={handleAddCustomer} className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-all">Ekle</button>
             </div>
           </div>
         </div>

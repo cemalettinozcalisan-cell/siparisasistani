@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
-import { QuickActions } from '@/components/quick-actions';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
 import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Zap, Clock } from 'lucide-react';
@@ -304,7 +303,6 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
       <CommandPalette />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <QuickActions />
       <main className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3">
           <div className="flex items-center justify-between gap-2 lg:gap-4">

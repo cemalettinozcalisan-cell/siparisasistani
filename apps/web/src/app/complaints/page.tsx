@@ -10,8 +10,20 @@ const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
   CRITICAL: { label: 'Kritik', gradient: 'from-red-500 to-rose-600' },
 };
 
+const CHANNEL_LABELS: Record<string, string> = {
+  VOICE: 'Sesli Arama', WHATSAPP: 'WhatsApp', PHONE: 'Telefon', INSTAGRAM: 'Instagram', SISTEM: 'Sistem',
+};
+
 const CHANNEL_ICONS: Record<string, typeof PhoneCall> = {
   VOICE: PhoneCall, WHATSAPP: MessageSquare, PHONE: PhoneCall, INSTAGRAM: Camera, SISTEM: Settings,
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  COMPLAINT_OPEN: 'Şikayet Açıldı', COMPLAINT_RESOLVED: 'Çözüldü', HUMAN_REQUIRED: 'Müdahale Gerekli',
+};
+
+const ACTOR_LABELS: Record<string, string> = {
+  AI: 'Yapay Zeka', HUMAN: 'Müşteri', STAFF: 'Personel',
 };
 
 export default function ComplaintsPage() {
@@ -151,12 +163,12 @@ export default function ComplaintsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                   {c.actor_type === 'AI' && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600 shadow-sm">
                       <Bot size={11} /> AI Yakaladı
                     </span>
                   )}
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400">
-                    <ChannelIcon size={11} /> {channel}
+                    <ChannelIcon size={11} /> {CHANNEL_LABELS[channel] || channel}
                   </span>
                   <span className="text-[10px] text-slate-400">{new Date(c.created_at as string).toLocaleString('tr-TR')}</span>
                 </div>
@@ -164,7 +176,7 @@ export default function ComplaintsPage() {
                   {c.description as string}
                 </h3>
                 <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                  <span>{c.event_type as string}</span>
+                  <span>{EVENT_LABELS[c.event_type as string] || (c.event_type as string)}</span>
                   {Boolean(meta.ticket_number) && <span>· Ticket: {String(meta.ticket_number)}</span>}
                 </div>
               </div>
@@ -196,14 +208,14 @@ export default function ComplaintsPage() {
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                   <span className="text-[10px] text-slate-400 block mb-1">Oluşturan</span>
                   <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    {c.actor_type === 'AI' ? <Bot size={12} className="text-violet-500" /> : c.actor_type === 'HUMAN' ? 'Müşteri' : 'Personel'}
-                    {c.actor_type === 'AI' ? ' Yapay Zeka' : ''}
+                    {c.actor_type === 'AI' ? <Bot size={12} className="text-violet-500" /> : ''}
+                    {ACTOR_LABELS[c.actor_type as string] || (c.actor_type as string)}
                   </span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                   <span className="text-[10px] text-slate-400 block mb-1">Kanal</span>
                   <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <ChannelIcon size={12} className="text-slate-500" /> {channel}
+                    <ChannelIcon size={12} className="text-slate-500" /> {CHANNEL_LABELS[channel] || channel}
                   </span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
