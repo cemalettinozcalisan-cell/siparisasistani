@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers, Bell } from 'lucide-react';
 
-const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gradient: string; bg: string }> = {
-  new_order: { label: 'Sipariş', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-  payment: { label: 'Ödeme', icon: CreditCard, gradient: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  cargo: { label: 'Kargo', icon: Truck, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-  human_request: { label: 'Yetkili', icon: UserCheck, gradient: 'from-violet-500 to-purple-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
-  callback: { label: 'Geri Arama', icon: PhoneCall, gradient: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
-  warning: { label: 'Uyarı', icon: AlertTriangle, gradient: 'from-red-500 to-rose-500', bg: 'bg-red-50 dark:bg-red-900/20' },
+const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gradient: string; bg: string; text: string; iconBg: string }> = {
+  new_order: { label: 'Sipariş', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', iconBg: 'bg-blue-500' },
+  payment: { label: 'Ödeme', icon: CreditCard, gradient: 'from-emerald-500 to-green-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-500' },
+  cargo: { label: 'Kargo', icon: Truck, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-500' },
+  human_request: { label: 'Yetkili', icon: UserCheck, gradient: 'from-violet-500 to-purple-500', bg: 'bg-violet-50 dark:bg-violet-900/20', text: 'text-violet-600 dark:text-violet-400', iconBg: 'bg-violet-500' },
+  callback: { label: 'Geri Arama', icon: PhoneCall, gradient: 'from-indigo-500 to-blue-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400', iconBg: 'bg-indigo-500' },
+  warning: { label: 'Uyarı', icon: AlertTriangle, gradient: 'from-red-500 to-rose-500', bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', iconBg: 'bg-red-500' },
 };
 
 export default function NotificationsPage() {
@@ -118,7 +118,7 @@ export default function NotificationsPage() {
               }`}
               onClick={() => handleClick(n)}>
               <div className={`w-10 h-10 rounded-xl ${cfg?.bg || 'bg-slate-100 dark:bg-slate-700'} flex items-center justify-center shrink-0`}>
-                <Icon size={18} className={cfg ? `bg-gradient-to-r ${cfg.gradient} bg-clip-text text-transparent` : 'text-slate-500'} />
+                <Icon size={18} className={cfg?.text || 'text-slate-500'} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
