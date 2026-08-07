@@ -18,7 +18,16 @@ const ADDONS = [
   { code: 'addon200', name: '+200 Ek Sipariş', quota: 200, price: 11999, gradient: 'from-violet-500 to-purple-600' },
 ];
 
-const PLAN_FEATURES = ['AI Sipariş Alma', 'WhatsApp Entegrasyonu', 'Panel & CRM', 'Raporlar', 'Kampanyalar', '7/24 Destek'];
+const PLAN_FEATURES = [
+  'AI Sipariş Alma',
+  'Telefon WhatsApp Instagram SMS Web Entegrasyonu',
+  'AI Müşteri Tanıma & Adres Hafızası',
+  'AI Otomatik Satış & Çapraz Satış Önerileri',
+  'Panel & Gelişmiş CRM',
+  'Raporlar & AI Satış Analitiği',
+  'Pazarlama & Müşteri Sadakat Kampanyaları',
+  'KVKK Uyumlu Güvenli Altyapı',
+];
 
 const STATUS_TR: Record<string, string> = { active: 'Aktif', pending: 'Beklemede', cancelled: 'İptal', paid: 'Ödendi', unpaid: 'Ödenmedi' };
 
