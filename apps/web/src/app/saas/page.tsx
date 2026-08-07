@@ -338,7 +338,7 @@ export default function SaasPage() {
                   <span className="text-xs text-slate-400 ml-1">TL</span>
                 </div>
                 <button onClick={() => purchaseAddon(p.code)}
-                  className="mt-4 w-full py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl text-xs font-semibold transition-all shadow-sm">
+                  className="mt-4 w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-semibold transition-all shadow-sm">
                   Hemen Yükle
                 </button>
               </div>
