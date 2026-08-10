@@ -169,9 +169,9 @@ export default function HealthPage() {
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-semibold text-gray-700 dark:text-slate-200 leading-tight">{svc.name}</span>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">{svc.name}</span>
                 {userRole === 'owner' && svc.techName && (
-                  <span className="text-[9px] text-slate-400 -mt-0.5">{svc.techName}</span>
+                  <span className="text-[10px] text-slate-500 -mt-1">{svc.techName}</span>
                 )}
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>
                   {cfg.label}
