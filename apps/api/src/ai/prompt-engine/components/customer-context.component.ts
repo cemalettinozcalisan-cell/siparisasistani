@@ -11,6 +11,7 @@ export class CustomerContextComponent {
     const lines = ['[MÜŞTERİ BİLGİSİ]'];
     if (ctx.customerName) lines.push(`Adı: ${ctx.customerName}`);
     if (ctx.customerPhone) lines.push(`Telefon: ${ctx.customerPhone}`);
+    if (ctx.customerBirthday) lines.push(`Doğum Günü: ${ctx.customerBirthday}`);
     lines.push(`Kanal: ${ctx.channel}`);
 
     return lines.join('\n');

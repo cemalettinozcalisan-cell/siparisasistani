@@ -255,7 +255,7 @@ export class SalesCoachComponent {
   private async getCargoSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price')
+      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price, invoice_enabled, invoice_limit, invoice_remote_auto, invoice_default_vat, invoice_tc_policy, invoice_ai_behavior, invoice_footer_note')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     return data;

@@ -127,13 +127,66 @@ export class AiTestController {
     return this.audit.getByTenant(tenantId, 50);
   }
 
+  @Post('prompt-save')
+  async saveCustomPrompt(@Body() body: { tenantId: string; state: string; channel: string; prompt: string }) {
+    const { data: settings } = await this.supabase.db
+      .from('tenant_settings')
+      .select('custom_prompts')
+      .eq('tenant_id', body.tenantId)
+      .maybeSingle();
+
+    const customPrompts = (settings as any)?.custom_prompts || {};
+    const key = `${body.channel}_${body.state}`;
+    customPrompts[key] = body.prompt;
+
+    await this.supabase.db
+      .from('tenant_settings')
+      .update({ custom_prompts: customPrompts } as any)
+      .eq('tenant_id', body.tenantId);
+
+    return { success: true, key };
+  }
+
+  @Get('prompt-custom/:tenantId')
+  async getCustomPrompts(@Param('tenantId') tenantId: string) {
+    const { data } = await this.supabase.db
+      .from('tenant_settings')
+      .select('custom_prompts')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    return (data as any)?.custom_prompts || {};
+  }
+
+  @Post('prompt-reset')
+  async resetCustomPrompt(@Body() body: { tenantId: string; state: string; channel: string }) {
+    const { data: settings } = await this.supabase.db
+      .from('tenant_settings')
+      .select('custom_prompts')
+      .eq('tenant_id', body.tenantId)
+      .maybeSingle();
+
+    const customPrompts = (settings as any)?.custom_prompts || {};
+    const key = `${body.channel}_${body.state}`;
+    delete customPrompts[key];
+
+    await this.supabase.db
+      .from('tenant_settings')
+      .update({ custom_prompts: customPrompts } as any)
+      .eq('tenant_id', body.tenantId);
+
+    return { success: true, key };
+  }
+
   private detectState(messages: { role: string; content: string }[]): string {
     const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
-    if (!lastAssistantMsg) return 'welcome';
-    if (/onay|doğru mu|teyit|olustur/i.test(lastAssistantMsg)) return 'customer_confirmation';
-    if (/adres|teslimat|şehir|ilçe|semt|sokak|cadde|mahalle|neresinde|gönderiyoruz/i.test(lastAssistantMsg)) return 'address';
-    if (/ödeme|kart|iban|havale/i.test(lastAssistantMsg)) return 'payment';
-    if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'asking_phone';
-    return 'ordering';
+    if (!lastAssistantMsg) return 'GREETING';
+    if (/kabul ediyorum|onaylıyorum|teyit|olustur|devam/i.test(lastAssistantMsg)) return 'FINAL_CONFIRMATION';
+    if (/ödeme|kart|iban|havale|kapıda|nakit/i.test(lastAssistantMsg)) return 'ASKING_PAYMENT';
+    if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'ASKING_PHONE';
+    if (/adres|teslimat|şehir|ilçe|semt|sokak|cadde|mahalle|neresinde|gönderiyoruz/i.test(lastAssistantMsg)) return 'ASKING_ADDRESS';
+    if (/ad.*soyad|isminiz|tanış|memnun/i.test(lastAssistantMsg)) return 'ISIM';
+    if (/özet|toplam|tutar|yaklaşık|onay/i.test(lastAssistantMsg)) return 'SUMMARIZING';
+    if (/kampanya|fırsat|indirim|hediye/i.test(lastAssistantMsg)) return 'CAMPAIGN';
+    return 'ORDERING';
   }
 }

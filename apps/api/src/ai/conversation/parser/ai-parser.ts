@@ -4,7 +4,7 @@ import { AiOrderInput } from '@siparis/types';
 export interface ParsedResponse {
   reply?: string;
   intent?: string;
-  customer?: { name?: string; phone?: string };
+  customer?: { name?: string; phone?: string; birthday?: string; companyName?: string; identityNumber?: string };
   products?: { product_name?: string; quantity?: number; unit?: string }[];
   address?: string;
   payment?: string;
@@ -148,8 +148,8 @@ export class AiParserService {
 
   private mapPayment(payment?: string): AiOrderInput['payment'] {
     const map: Record<string, AiOrderInput['payment']> = {
-      IBAN: 'iban', CASH: 'iban', CARD: 'website', PAYTR: 'paytr',
-      iban: 'iban', website: 'website', paytr: 'paytr', iyzico: 'iyzico',
+      IBAN: 'iban', CASH_ON_DELIVERY: 'cash_on_delivery', CARD: 'website', PAYTR: 'paytr',
+      iban: 'iban', website: 'website', paytr: 'paytr', iyzico: 'iyzico', cash_on_delivery: 'cash_on_delivery',
     };
     return map[payment || ''] || 'iban';
   }

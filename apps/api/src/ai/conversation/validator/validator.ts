@@ -7,6 +7,8 @@ const OrderSchema = z.object({
     name: z.string().min(2, 'Müşteri adı en az 2 karakter olmalı'),
     phone: z.string().min(10, 'Geçersiz telefon numarası'),
     address: z.string().optional(),
+    identity_number: z.string().optional()
+      .refine(v => !v || /^\d{10,11}$/.test(v), 'TCKN 11 haneli, VKN 10 haneli olmalıdır'),
   }),
   products: z
     .array(
@@ -17,12 +19,12 @@ const OrderSchema = z.object({
       }),
     )
     .min(1, 'En az bir ürün gerekli'),
-  payment: z.enum(['iban', 'website', 'paytr', 'iyzico']),
+  payment: z.enum(['iban', 'website', 'paytr', 'iyzico', 'cash_on_delivery']),
   confirmed: z.literal(true, {
     errorMap: () => ({ message: 'Sipariş onaylanmamış' }),
   }),
   confidence: z.number().min(0).max(100),
-  channel: z.enum(['phone', 'whatsapp', 'manual', 'sms']),
+  channel: z.enum(['phone', 'whatsapp', 'sms', 'instagram', 'web']),
 });
 
 export type ValidationResult =
