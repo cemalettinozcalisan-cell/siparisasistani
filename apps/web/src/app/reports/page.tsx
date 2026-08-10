@@ -237,15 +237,15 @@ export default function ReportsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Toplam Sipariş', value: totalOrders, icon: ShoppingBag, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600', trend: '+12', trendUp: true },
+          { label: 'Toplam Sipariş', value: totalOrders, icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-600', trend: '+12', trendUp: true },
           { label: 'Toplam Ciro', value: `${totalRevenue.toLocaleString('tr-TR')} TL`, icon: Banknote, gradient: 'from-amber-500 to-orange-600', trend: '+8', trendUp: true },
-          { label: 'Ortalama Sepet', value: `${avgBasket.toLocaleString('tr-TR')} TL`, icon: ShoppingCart, iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600', trend: '+5', trendUp: true },
-          { label: 'Teslimat Oranı', value: `%${deliveryRate}`, icon: Truck, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600', trend: deliveryRate >= 80 ? '+3' : '-2', trendUp: deliveryRate >= 80 },
+          { label: 'Ortalama Sepet', value: `${avgBasket.toLocaleString('tr-TR')} TL`, icon: ShoppingCart, gradient: 'from-violet-500 to-purple-600', trend: '+5', trendUp: true },
+          { label: 'Teslimat Oranı', value: `%${deliveryRate}`, icon: Truck, gradient: deliveryRate >= 80 ? 'from-emerald-500 to-green-600' : 'from-red-500 to-rose-600', trend: deliveryRate >= 80 ? '+3' : '-2', trendUp: deliveryRate >= 80 },
         ].map((card) => (
           <div key={card.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${(card as any).gradient ? `bg-gradient-to-br ${(card as any).gradient}` : card.iconBg}`}>
-                <card.icon size={17} className={(card as any).gradient ? 'text-white' : card.iconColor} />
+              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-sm`}>
+                <card.icon size={17} className="text-white" />
               </div>
               <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${card.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
                 {card.trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {card.trend}%
