@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Delete, Param, Query, Body, Logger, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TimelineService } from '../timeline/timeline.service';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
@@ -8,7 +9,11 @@ import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 @Controller('orders-list')
 export class OrdersListController {
   private readonly logger = new Logger(OrdersListController.name);
-  constructor(private readonly supabase: SupabaseService, private readonly eventBus: EventBusService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly eventBus: EventBusService,
+    private readonly timeline: TimelineService,
+  ) {}
 
   @Roles('owner', 'manager', 'staff')
   @Get(':tenantId')
@@ -174,6 +179,14 @@ export class OrdersListController {
         },
         id,
       );
+
+      const orderNum = (data as any).order_number ? `#${(data as any).order_number}` : '';
+      await this.timeline.logEvent({
+        tenantId, entityType: 'order', entityId: id,
+        eventType: 'ORDER_UPDATED',
+        description: `${orderNum} siparişi düzenlendi`,
+        actorType: 'STAFF',
+      });
     }
     return data;
   }
@@ -187,6 +200,14 @@ export class OrdersListController {
       .eq('tenant_id', tenantId)
       .eq('id', id);
     if (error) throw new Error(error.message);
+
+    await this.timeline.logEvent({
+      tenantId, entityType: 'order', entityId: id,
+      eventType: 'ORDER_CANCELLED',
+      description: 'Sipariş silindi',
+      actorType: 'STAFF',
+    });
+
     return { deleted: true };
   }
 }

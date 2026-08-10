@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Put, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Query, Delete } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TimelineService } from '../timeline/timeline.service';
 
 @Controller('customers')
 export class CustomersController {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly timeline: TimelineService,
+  ) {}
 
   @Get(':tenantId')
   async list(@Param('tenantId') tenantId: string, @Query('q') q?: string) {
@@ -134,6 +138,15 @@ export class CustomersController {
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const name = (data as any)?.name || (body as any).name || 'Müşteri';
+    await this.timeline.logEvent({
+      tenantId, entityType: 'customer', entityId: (data as any)?.id,
+      eventType: 'CUSTOMER_CREATED',
+      description: `${name} müşterisi eklendi`,
+      actorType: 'STAFF',
+    });
+
     return data;
   }
 

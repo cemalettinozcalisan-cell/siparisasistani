@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit, Plus, Trash2, Package, TrendingUp, Bot, User, Settings } from 'lucide-react';
+import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit, Plus, Trash2, Package, TrendingUp, Bot, User, Settings, Users, Tag } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -22,6 +22,12 @@ const EVENT_LABELS: Record<string, string> = {
   USER_DELETED: 'Kullanıcı Silindi', PRODUCT_CREATED: 'Ürün Eklendi',
   PRODUCT_DELETED: 'Ürün Silindi', PLAN_CHANGED: 'Paket Değiştirildi',
   ADDON_PURCHASED: 'Ek Paket Alındı',
+  CUSTOMER_CREATED: 'Müşteri Eklendi',
+  PRICE_ADDED: 'Özel Fiyat Eklendi',
+  PRICE_DELETED: 'Özel Fiyat Silindi',
+  CAMPAIGN_CREATED: 'Kampanya Oluşturuldu',
+  CAMPAIGN_UPDATED: 'Kampanya Güncellendi',
+  CAMPAIGN_DELETED: 'Kampanya Silindi',
 };
 
 const EVENT_ICONS: Record<string, typeof ShoppingBag> = {
@@ -32,6 +38,12 @@ const EVENT_ICONS: Record<string, typeof ShoppingBag> = {
   SETTINGS_UPDATED: FileEdit, USER_CREATED: Plus, USER_DELETED: Trash2,
   PRODUCT_CREATED: Package, PRODUCT_DELETED: Trash2, PLAN_CHANGED: TrendingUp,
   ADDON_PURCHASED: Plus,
+  CUSTOMER_CREATED: Users,
+  PRICE_ADDED: Tag,
+  PRICE_DELETED: Trash2,
+  CAMPAIGN_CREATED: Tag,
+  CAMPAIGN_UPDATED: FileEdit,
+  CAMPAIGN_DELETED: Trash2,
 };
 
 const EVENT_GRADIENT: Record<string, string> = {
@@ -45,6 +57,12 @@ const EVENT_GRADIENT: Record<string, string> = {
   USER_DELETED: 'from-red-500 to-rose-600', PRODUCT_CREATED: 'from-blue-500 to-cyan-600',
   PRODUCT_DELETED: 'from-red-500 to-rose-600', PLAN_CHANGED: 'from-violet-500 to-purple-600',
   ADDON_PURCHASED: 'from-amber-500 to-orange-600',
+  CUSTOMER_CREATED: 'from-emerald-500 to-green-600',
+  PRICE_ADDED: 'from-amber-500 to-orange-600',
+  PRICE_DELETED: 'from-red-500 to-rose-600',
+  CAMPAIGN_CREATED: 'from-emerald-500 to-green-600',
+  CAMPAIGN_UPDATED: 'from-indigo-500 to-violet-600',
+  CAMPAIGN_DELETED: 'from-red-500 to-rose-600',
 };
 
 const ACTOR_LABELS: Record<string, string> = { AI: 'AI Asistan', STAFF: 'Personel', SYSTEM: 'Sistem', HUMAN: 'Müşteri', CUSTOMER: 'Müşteri' };

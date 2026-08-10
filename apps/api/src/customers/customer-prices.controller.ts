@@ -1,10 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TimelineService } from '../timeline/timeline.service';
 
 @Controller('customer-prices')
 export class CustomerPricesController {
   private readonly logger = new Logger(CustomerPricesController.name);
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly timeline: TimelineService,
+  ) {}
 
   @Get(':tenantId/:customerId')
   async list(@Param('tenantId') tenantId: string, @Param('customerId') customerId: string) {
@@ -44,6 +48,14 @@ export class CustomerPricesController {
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    await this.timeline.logEvent({
+      tenantId, entityType: 'customer', entityId: customerId,
+      eventType: 'PRICE_ADDED',
+      description: `Özel fiyat tanımlandı: ${body.product_name || 'Ürün'} (${Number(body.price).toLocaleString('tr-TR')} TL)`,
+      actorType: 'STAFF',
+    });
+
     return data;
   }
 
@@ -60,8 +72,16 @@ export class CustomerPricesController {
   }
 
   @Delete(':tenantId/:customerId/:id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('tenantId') tenantId: string, @Param('customerId') customerId: string, @Param('id') id: string) {
     await this.supabase.db.from('customer_prices').delete().eq('id', id);
+
+    await this.timeline.logEvent({
+      tenantId, entityType: 'customer', entityId: customerId,
+      eventType: 'PRICE_DELETED',
+      description: 'Özel fiyat silindi',
+      actorType: 'STAFF',
+    });
+
     return { success: true };
   }
 }
