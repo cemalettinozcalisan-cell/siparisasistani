@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -42,5 +42,43 @@ export class AdminController {
       .order('created_at', { ascending: false })
       .limit(100);
     return data || [];
+  }
+
+  @Roles('owner')
+  @Put('tenants/:id')
+  async updateTenant(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    const { data, error } = await this.supabase.db
+      .from('tenants')
+      .update(body)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  @Roles('owner')
+  @Put('tenants/:id/status')
+  async toggleStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    const { data, error } = await this.supabase.db
+      .from('tenants')
+      .update({ status: body.status })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  @Roles('owner')
+  @Put('tenants/:id/quota')
+  async adjustQuota(@Param('id') id: string, @Body() body: { order_limit: number }) {
+    // Update subscription order_limit
+    const { error } = await this.supabase.db
+      .from('subscriptions')
+      .update({ order_limit: body.order_limit })
+      .eq('tenant_id', id);
+    if (error) throw new Error(error.message);
+    return { success: true, order_limit: body.order_limit };
   }
 }

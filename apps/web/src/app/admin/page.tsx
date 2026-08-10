@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap } from 'lucide-react';
-import { getUserRole } from '@/lib/tenant';
+import { getUserRole, setTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
@@ -13,14 +13,53 @@ export default function AdminPage() {
   const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState('');
 
+  const headers = { 'Content-Type': 'application/json' };
+
+  const reload = () => {
+    fetch('/api/admin/stats').then(r => r.json()).then(d => setStats(d)).catch(() => {});
+    fetch('/api/admin/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
+  };
+
   useEffect(() => {
     const role = getUserRole();
     if (role !== 'owner') { router.replace('/dashboard'); return; }
     setAuthorized(true);
     setChecking(false);
-    fetch('/api/admin/stats').then(r => r.json()).then(d => setStats(d)).catch(() => {});
-    fetch('/api/admin/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
+    reload();
   }, [router]);
+
+  const handlePanel = (t: Record<string, unknown>) => {
+    setTenantId(t.id as string);
+    router.push('/dashboard');
+  };
+
+  const handleQuota = async (t: Record<string, unknown>) => {
+    const val = prompt(`Yeni sipariş limiti (mevcut: ${t.order_limit || '-'}):`);
+    if (!val) return;
+    await fetch(`/api/admin/tenants/${t.id}/quota`, {
+      method: 'PUT', headers, body: JSON.stringify({ order_limit: Number(val) }),
+    });
+    reload();
+  };
+
+  const handleEdit = async (t: Record<string, unknown>) => {
+    const name = prompt('Firma adı:', t.company_name as string);
+    if (name === null) return;
+    const email = prompt('E-posta:', t.email as string);
+    if (email === null) return;
+    await fetch(`/api/admin/tenants/${t.id}`, {
+      method: 'PUT', headers, body: JSON.stringify({ company_name: name, email }),
+    });
+    reload();
+  };
+
+  const handleToggleStatus = async (t: Record<string, unknown>) => {
+    const newStatus = t.status === 'active' ? 'suspended' : 'active';
+    await fetch(`/api/admin/tenants/${t.id}/status`, {
+      method: 'PUT', headers, body: JSON.stringify({ status: newStatus }),
+    });
+    reload();
+  };
 
   if (checking) {
     return (
@@ -52,7 +91,8 @@ export default function AdminPage() {
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">Geliştirici Paneli</h1>
           <span className="px-2.5 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-full text-[10px] font-bold shadow-sm">SÜPER YÖNETİCİ</span>
         </div>
-        <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md">
+        <button onClick={() => router.push('/onboarding')}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md">
           <Plus size={14} /> Yeni Firma Ekle
         </button>
       </div>
@@ -131,16 +171,16 @@ export default function AdminPage() {
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button title="Firma paneline geç" className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
+                        <button onClick={() => handlePanel(t)} title="Firma paneline geç" className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
                           <Eye size={15} />
                         </button>
-                        <button title="Kota / Paket düzenle" className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
+                        <button onClick={() => handleQuota(t)} title="Kota / Paket düzenle" className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
                           <CreditCard size={15} />
                         </button>
-                        <button title="Firma detaylarını düzenle" className="p-2 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
+                        <button onClick={() => handleEdit(t)} title="Firma detaylarını düzenle" className="p-2 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
                           <Settings size={15} />
                         </button>
-                        <button title="Firmayı pasife al" className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                        <button onClick={() => handleToggleStatus(t)} title="Firmayı pasife al" className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
                           <Ban size={15} />
                         </button>
                       </div>
