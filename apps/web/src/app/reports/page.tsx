@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Download, FileText, Package as PackageIcon, PhoneCall, Search, ChevronDown, ShoppingBag, DollarSign, ShoppingCart, Truck, Calendar, MessageCircle, Camera, Globe, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, FileText, Package as PackageIcon, PhoneCall, Search, ChevronDown, ShoppingBag, Banknote, ShoppingCart, Truck, Calendar, MessageCircle, Camera, Globe, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -15,6 +15,7 @@ const CHANNEL_CONFIG = [
   { key: 'phone', label: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600' },
   { key: 'instagram', label: 'Instagram', icon: Camera, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
+  { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
   { key: 'website', label: 'Web', icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
   { key: 'manual', label: 'Toptan', icon: PackageIcon, gradient: 'from-amber-400 to-orange-500' },
 ];
@@ -89,7 +90,7 @@ export default function ReportsPage() {
 
   const { totalOrders, totalRevenue, channels, statusCounts, avgBasket, topProducts, deliveredCount } = useMemo(() => {
     let rev = 0;
-    const ch: Record<string, number> = { phone: 0, whatsapp: 0, instagram: 0, website: 0, manual: 0 };
+    const ch: Record<string, number> = { phone: 0, whatsapp: 0, instagram: 0, sms: 0, website: 0, manual: 0 };
     const st: Record<string, number> = {};
     const productMap: Record<string, { name: string; qty: number; revenue: number }> = {};
     let delivered = 0;
@@ -237,7 +238,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Toplam Sipariş', value: totalOrders, icon: ShoppingBag, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600', trend: '+12', trendUp: true },
-          { label: 'Toplam Ciro', value: `${totalRevenue.toLocaleString('tr-TR')} TL`, icon: DollarSign, iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-600', trend: '+8', trendUp: true },
+          { label: 'Toplam Ciro', value: `${totalRevenue.toLocaleString('tr-TR')} TL`, icon: Banknote, iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-600', trend: '+8', trendUp: true },
           { label: 'Ortalama Sepet', value: `${avgBasket.toLocaleString('tr-TR')} TL`, icon: ShoppingCart, iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600', trend: '+5', trendUp: true },
           { label: 'Teslimat Oranı', value: `%${deliveryRate}`, icon: Truck, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600', trend: deliveryRate >= 80 ? '+3' : '-2', trendUp: deliveryRate >= 80 },
         ].map((card) => (
@@ -251,7 +252,7 @@ export default function ReportsPage() {
               </span>
             </div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">{card.value}</div>
-            <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{card.label}</div>
+            <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 mt-0.5">{card.label}</div>
           </div>
         ))}
       </div>
