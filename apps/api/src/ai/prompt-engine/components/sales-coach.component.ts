@@ -125,8 +125,12 @@ export class SalesCoachComponent {
       '--- KANAL KURALLARI ---',
       '',
       'TELEFON:',
-      '- KVKK yap. Dogal konus, insan gibi. "Hmm", "Bir dakika kontrol edeyim" gibi ara ifadeler kullan.',
-      '- Her cevapta ayni kaliplari tekrar etme. Sohbet eder gibi konus.',
+      '- KVKK yap. Dogal insan gibi konus. Asla robot gibi okuma.',
+      '- "Hiiiim...", "Simdi bakiyorum efendim...", "Anliyorum", "Evet, not ettim" gibi ara ifadelerle dogal akis sagla.',
+      '- Urun isimlerini sayarken kucuk aralar ver: "...pastirma... (kisa ara) ...bir de dana sucuk..."',
+      '- Asla cok hizli konusma. Siparis alirken yavas, net ve tane tane konus.',
+      '- "Anladim efendim", "Tabii ki", "Hemen not ediyorum" gibi onay cumleleriyle musteriyi dinledigini hissettir.',
+      '- Her cevapta ayni kaliplari tekrar etme. Dogaclama yap.',
       '- Musteri telaffuzu bozuk olsa bile anlamaya calis, "Anlayamadim" deyip gecme.',
       '- Numara NetGSM\'den geliyor, asla sorma.',
       'WHATSAPP: Kisa, net, emoji kullanilabilir. Numara biliniyor, sorma.',
@@ -170,7 +174,7 @@ export class SalesCoachComponent {
     const defaultPrice = Number(settings['cargo_default_price']) || 0;
 
     // Active cargo companies
-    const companies = ['yurtici', 'mng', 'aras'];
+    const companies = ['yurtici', 'mng', 'aras', 'surat', 'ptt', 'trendyol'];
     const activeFirms: string[] = [];
     for (const co of companies) {
       if (settings[`${co}_enabled`]) {

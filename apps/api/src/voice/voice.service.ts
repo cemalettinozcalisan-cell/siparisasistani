@@ -50,23 +50,27 @@ export class VoiceService {
     };
 
     const normalized = this.normalizer.normalize(text);
-    const hashKey = this.cache.hashKey(normalized, persona);
+
+    // SSML wrapping for natural speech (adds pauses and prosody)
+    const withSSML = settings?.voice_gender ? this.wrapSSML(normalized) : normalized;
+
+    const hashKey = this.cache.hashKey(withSSML, persona);
 
     const cached = await this.cache.get(hashKey);
     if (cached) {
       this.logger.debug(`Voice cache hit: ${hashKey}`);
-      await this.logVoice(tenantId, providerName, persona, normalized.length, 0, true, 0, cached.length);
-      return { audio: cached, provider: providerName, persona, durationMs: 0, cached: true, text: normalized };
+      await this.logVoice(tenantId, providerName, persona, withSSML.length, 0, true, 0, cached.length);
+      return { audio: cached, provider: providerName, persona, durationMs: 0, cached: true, text: withSSML };
     }
 
     const start = Date.now();
-    const result = await this.factory.generateWithFailover(normalized, config, providerName);
+    const result = await this.factory.generateWithFailover(withSSML, config, providerName);
     const durationMs = Date.now() - start;
 
     await this.cache.set(hashKey, result.audio, tenantId, persona);
 
     if (tenantId) {
-      this.cache.storeFile(hashKey, result.audio, tenantId, normalized, persona, result.provider, durationMs)
+      this.cache.storeFile(hashKey, result.audio, tenantId, withSSML, persona, result.provider, durationMs)
         .catch((err) => this.logger.debug(`Cache store skipped: ${(err as Error).message}`));
     }
 
@@ -79,7 +83,7 @@ export class VoiceService {
       persona,
       durationMs,
       cached: false,
-      text: normalized,
+      text: withSSML,
     };
   }
 
@@ -115,7 +119,7 @@ export class VoiceService {
   private async getVoiceSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('voice_provider, voice_persona, voice_speed, voice_stability, voice_style, voice_similarity, voice_pitch, voice_cache_enabled, voice_fallback_enabled')
+      .select('voice_provider, voice_persona, voice_speed, voice_stability, voice_style, voice_similarity, voice_pitch, voice_cache_enabled, voice_fallback_enabled, voice_gender')
       .eq('tenant_id', tenantId)
       .single();
     return data ? {
@@ -128,6 +132,7 @@ export class VoiceService {
       pitch: Number(data.voice_pitch) ?? 1.0,
       cacheEnabled: data.voice_cache_enabled ?? true,
       fallbackEnabled: data.voice_fallback_enabled ?? true,
+      voice_gender: data.voice_gender || null,
     } : null;
   }
 
@@ -148,6 +153,21 @@ export class VoiceService {
         audio_size: audioSize,
         success: true,
       });
-    } catch {}
+      } catch {}
+  }
+
+  private wrapSSML(text: string): string {
+    // Add natural speech pauses and prosody for voice generation
+    // Adds <break> tags at commas, periods, and question marks
+    let wrapped = text
+      .replace(/\. /g, '. <break time="400ms"/> ')
+      .replace(/, /g, ', <break time="200ms"/> ')
+      .replace(/\? /g, '? <break time="500ms"/> ')
+      .replace(/\.\.\./g, '<break time="600ms"/>')
+      .replace(/!/g, '! <break time="300ms"/>');
+
+    // Slow down the overall speech rate slightly for natural flow
+    wrapped = `<speak><prosody rate="0.95">${wrapped}</prosody></speak>`;
+    return wrapped;
   }
 }

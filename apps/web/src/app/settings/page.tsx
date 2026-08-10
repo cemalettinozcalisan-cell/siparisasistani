@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info } from 'lucide-react';
 
 const DAYS = [
   { key: 'monday', label: 'Pazartesi' },
@@ -667,23 +667,28 @@ export default function SettingsPage() {
 
           {/* Kargo Firmaları */}
           <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg space-y-3">
+            <div className="flex items-start gap-2 mb-2 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+              <Info size={14} className="text-indigo-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300">Aktif ettiğiniz kargo firmaları ve ücretler AI tarafından müşteriye iletilir. Sipariş detayında manuel takip kodu girmenizi sağlar.</p>
+            </div>
             <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Kargo Firmaları</label>
-            {['yurtici', 'mng', 'aras'].map((firm) => (
-              <div key={firm} className={`flex items-center gap-3 ${settings?.[`${firm}_enabled`] ? '' : 'opacity-50'}`}>
-                <span className="text-sm text-gray-600 dark:text-slate-300 w-32 capitalize">{firm === 'yurtici' ? 'Yurtiçi Kargo' : firm === 'mng' ? 'MNG Kargo' : 'Aras Kargo'}</span>
-                <Toggle enabled={!!settings?.[`${firm}_enabled`]} onChange={(v) => saveAndKeep(`${firm}_enabled`, v)} />
-                {!!settings?.[`${firm}_enabled`] && (
-                  <>
-                    <input
-                      type="number"
-                      value={Number(settings?.[`${firm}_price`]) || 0}
-                      onChange={(e) => saveAndKeep(`${firm}_price`, Number(e.target.value))}
-                      className="px-2 py-1 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-24"
-                      placeholder="Ücret"
-                    />
-                    <span className="text-xs text-gray-400">TL</span>
-                  </>
-                )}
+            {[
+              { key: 'yurtici', label: 'Yurtiçi Kargo' },
+              { key: 'mng', label: 'MNG Kargo' },
+              { key: 'aras', label: 'Aras Kargo' },
+              { key: 'surat', label: 'Sürat Kargo' },
+              { key: 'ptt', label: 'PTT Kargo' },
+              { key: 'trendyol', label: 'Trendyol Express' },
+            ].map((firm) => (
+              <div key={firm.key} className={`flex items-center gap-3 ${settings?.[`${firm.key}_enabled`] ? '' : 'opacity-50'}`}>
+                <span className="text-sm text-gray-600 dark:text-slate-300 w-32">{firm.label}</span>
+                <Toggle enabled={!!settings?.[`${firm.key}_enabled`]} onChange={(v) => saveAndKeep(`${firm.key}_enabled`, v)} />
+                {!!settings?.[`${firm.key}_enabled`] && (<>
+                  <input type="number" value={Number(settings?.[`${firm.key}_price`]) || 0}
+                    onChange={(e) => saveAndKeep(`${firm.key}_price`, Number(e.target.value))}
+                    className="px-2 py-1 border border-gray-200 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white w-24" placeholder="Ücret" />
+                  <span className="text-xs text-gray-400">TL</span>
+                </>)}
               </div>
             ))}
           </div>
