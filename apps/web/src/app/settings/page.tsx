@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, FileText, Banknote } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package } from 'lucide-react';
 
 const DAYS = [
   { key: 'monday', label: 'Pazartesi' },
@@ -46,7 +46,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('ai');
+  const [activeTab, setActiveTab] = useState('all');
   const [days, setDays] = useState<Record<string, { open: boolean; start: string; end: string }>>({});
   const [excludedRegions, setExcludedRegions] = useState<string[]>([]);
   const [regionInput, setRegionInput] = useState('');
@@ -217,69 +217,145 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab Navigation */}
       <div className="flex gap-1.5 flex-wrap">
         {[
+          { key: 'all', label: 'Tümü', icon: Package },
           { key: 'ai', label: 'AI & Davranış', icon: Brain },
           { key: 'hours', label: 'Çalışma Saatleri', icon: Clock },
-          { key: 'payment', label: 'Ödeme & Kargo', icon: Banknote },
-          { key: 'invoice', label: 'Fatura & Vergi', icon: FileText },
+          { key: 'payment', label: 'Ödeme & Kargo', icon: Truck },
+          { key: 'invoice', label: 'Fatura & Vergi', icon: Clock },
         ].map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.key;
           return (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
-                active ? 'text-white shadow-sm bg-gradient-to-r from-indigo-600 to-violet-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${active ? 'text-white shadow-sm bg-gradient-to-r from-indigo-600 to-violet-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
               <Icon size={13} /> {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* TAB: AI */}
-      {activeTab === 'ai' && (<>
-      {/* 1. AI Ayarları */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+      {/* 1. AI Ayarları — DOKUNULMAZ */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
         <SectionHeader icon={Brain} title="AI Ayarları" />
         <div>
           <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Konuşma Tarzı</label>
           <div className="grid grid-cols-3 gap-2">
-            {[{ value: 'samimi', label: 'Samimi', desc: 'Günlük, sıcak' }, { value: 'resmi', label: 'Resmi', desc: 'Profesyonel' }, { value: 'yoresel', label: 'Yöresel', desc: 'Esnaf ağzı' }].map(o => { const active = String(settings.ai_style || 'yoresel') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('ai_style', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${active ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
-                <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span>
-                <span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>);
-            })}
+            {[{ value: 'samimi', label: 'Samimi', desc: 'Günlük, sıcak' }, { value: 'resmi', label: 'Resmi', desc: 'Profesyonel' }, { value: 'yoresel', label: 'Yöresel', desc: 'Esnaf ağzı' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.ai_style || 'yoresel') === o.value; return (
+              <button key={o.value} onClick={() => saveAndKeep('ai_style', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
+                <span className={`text-xs font-bold ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
+              </button>); })}
           </div>
         </div>
         <div>
           <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Marka Sesi</label>
           <div className="grid grid-cols-3 gap-2">
-            {[{ value: 'geleneksel', label: 'Geleneksel', desc: 'Usta-çırak' }, { value: 'samimi', label: 'Samimi', desc: 'Sıcak kanlı' }, { value: 'premium', label: 'Premium', desc: 'Butik/lüks' }, { value: 'kurumsal', label: 'Kurumsal', desc: 'Resmi' }, { value: 'yoresel', label: 'Yöresel', desc: 'Yerel ağız' }].map(o => { const active = String(settings.brand_voice || 'yoresel') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('brand_voice', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${active ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
-                <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span>
-                <span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>);
-            })}
+            {[{ value: 'geleneksel', label: 'Geleneksel', desc: 'Usta-çırak' }, { value: 'samimi', label: 'Samimi', desc: 'Sıcak kanlı' }, { value: 'premium', label: 'Premium', desc: 'Butik/lüks' }, { value: 'kurumsal', label: 'Kurumsal', desc: 'Resmi' }, { value: 'yoresel', label: 'Yöresel', desc: 'Yerel ağız' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.brand_voice || 'yoresel') === o.value; return (
+              <button key={o.value} onClick={() => saveAndKeep('brand_voice', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
+                <span className={`text-xs font-bold ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
+              </button>); })}
           </div>
         </div>
         <div>
           <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Karşılama Stili</label>
           <div className="grid grid-cols-2 gap-2">
-            {[{ value: 'firma_ad', label: 'Firma Adı ile', desc: '"Ahmet İpek Sucuklarına hoş geldiniz"' }, { value: 'musteri_hizmetleri', label: 'Müşteri Hizmetleri', desc: '"Müşteri hizmetleri, buyurun"' }, { value: 'sade', label: 'Sade', desc: '"Merhaba, buyurun"' }, { value: 'ai_asistani', label: 'AI Asistanı', desc: '"Ben sipariş asistanınız"' }].map(o => { const active = String(settings.greeting_style || 'firma_ad') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('greeting_style', o.value)} className={`flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
-                <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span>
-                <span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>);
-            })}
+            {[{ value: 'firma_ad', label: 'Firma Adı ile', desc: 'Firma ismiyle karşılar' }, { value: 'musteri_hizmetleri', label: 'Müşteri Hizmetleri', desc: 'Kurumsal karşılama' }, { value: 'sade', label: 'Sade', desc: 'Kısa ve net' }, { value: 'ai_asistani', label: 'AI Asistanı', desc: 'Yapay zeka vurgusu' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.greeting_style || 'firma_ad') === o.value; return (
+              <button key={o.value} onClick={() => saveAndKeep('greeting_style', o.value)} className={`flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
+                <span className={`text-xs font-bold ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
+              </button>); })}
           </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">AI Ses Cinsiyeti</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[{ value: 'female', label: 'Kadın', desc: 'Yumuşak, sıcak' }, { value: 'male', label: 'Erkek', desc: 'Güvenilir, tok' }, { value: 'custom', label: 'Özel', desc: 'Manuel ses ID' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.voice_gender || 'male') === o.value; return (
+              <button key={o.value} onClick={() => saveAndKeep('voice_gender', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>
+                <span className={`text-xs font-bold ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
+              </button>); })}
+          </div>
+          {String(settings.voice_gender || 'male') === 'custom' && (
+            <div className="mt-2"><input value={String(settings.custom_voice_id || '')} onChange={(e) => saveAndKeep('custom_voice_id', e.target.value)} placeholder="ElevenLabs Voice ID veya OpenAI ses adı" className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" /></div>
+          )}
         </div>
       </div>
 
+      {/* 2. Çalışma Saatleri */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+        <SectionHeader icon={Clock} title="Çalışma Saatleri" />
+
+        <Row label="Çalışma Saati Kontrolü" desc="Kapalıyken AI 7/24 sipariş alır, çalışma saatleri sadece bilgi amaçlıdır">
+          <Toggle enabled={!!settings.business_hours_enabled} onChange={(v) => saveAndKeep('business_hours_enabled', v)} />
+        </Row>
+
+        {!!settings.business_hours_enabled && (
+          <>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+              <div className="grid grid-cols-[1fr_60px_70px_80px] gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900 text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+                <span>Gün</span>
+                <span className="text-center">Açık</span>
+                <span>Açılış</span>
+                <span>Kapanış</span>
+              </div>
+              {DAYS.map((day) => {
+                const d = days[day.key] || { ...defaultDay };
+                return (
+                  <div key={day.key} className="grid grid-cols-[1fr_60px_70px_80px] gap-2 px-4 py-2.5 border-t border-slate-100 dark:border-slate-700/50 items-center hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{day.label}</span>
+                    <div className="flex justify-center">
+                      <Toggle
+                        enabled={d.open}
+                        onChange={(v) => {
+                          const next = { ...days, [day.key]: { ...d, open: v } };
+                          setDays(next);
+                          update('business_hours_data', next);
+                        }}
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={d.start}
+                      onChange={(e) => {
+                        const next = { ...days, [day.key]: { ...d, start: e.target.value } };
+                        setDays(next);
+                        update('business_hours_data', next);
+                      }}
+                      disabled={!d.open}
+                      className="px-2 py-1 border border-gray-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white disabled:opacity-40"
+                    />
+                    <input
+                      type="time"
+                      value={d.end}
+                      onChange={(e) => {
+                        const next = { ...days, [day.key]: { ...d, end: e.target.value } };
+                        setDays(next);
+                        update('business_hours_data', next);
+                      }}
+                      disabled={!d.open}
+                      className="px-2 py-1 border border-gray-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white disabled:opacity-40"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1.5">Mesai Dışı AI Davranışı</label>
+              <select
+                value={String(settings.after_hours_behavior || 'hold_order')}
+                onChange={(e) => saveAndKeep('after_hours_behavior', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+              >
+                <option value="hold_order">Siparişi al, mesai başlangıcında işleneceğini belirt</option>
+                <option value="reject_order">Şu an kapalı olduğumuzu belirt ve sipariş alma</option>
+              </select>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* 3. Bildirim Ayarları */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
         <SectionHeader icon={Bell} title="Bildirimler" />
 
         <Row label="WhatsApp Grubu" desc="Yeni siparişleri WhatsApp grubuna bildir">
@@ -318,7 +394,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      </>)} {/* TAB: payment */} {activeTab === 'payment' && (<>{/* 4. Ödeme Yöntemleri */}
+      {/* 4. Ödeme Yöntemleri */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
         <SectionHeader icon={CreditCard} title="Ödeme Yöntemleri" />
 
@@ -614,7 +690,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      </>)} {/* TAB: invoice */} {activeTab === 'invoice' && (<>{/* 8. Fatura & Vergi Ayarları */}
+      {/* 8. Fatura & Vergi Ayarları */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
         <SectionHeader icon={CreditCard} title="Fatura & Vergi Ayarları" />
 
@@ -746,7 +822,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      </>)} {/* Bottom save */}
+      {/* Bottom save */}
       <div className="flex justify-end">
         <button
           onClick={save}
