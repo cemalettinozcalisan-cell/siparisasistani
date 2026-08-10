@@ -92,9 +92,9 @@ export default function DashboardPage() {
               <BarChart3 size={14} className="text-indigo-500" />
             </div>
             <div>
-              <div className="text-xs text-slate-400">Kalan Kota</div>
+              <div className="text-[11px] text-slate-400 font-medium">Kalan Kota</div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-slate-900 dark:text-white">{remaining} / {orderLimit}</span>
+                <span className="text-xl font-bold text-slate-900 dark:text-white">{remaining} / {orderLimit}</span>
                 <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
                   <div className={`h-full rounded-full ${usagePct > 80 ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 to-indigo-600'}`} style={{ width: `${usagePct}%` }} />
                 </div>
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shadow-sm`}>
                   <Icon size={17} className="text-white" />
                 </div>
-                <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold ${kpi.trendUp ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400' : 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400'} px-1.5 py-0.5 rounded-full`}>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${kpi.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
                   {kpi.trendUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />} {kpi.trend}
                 </span>
               </div>
