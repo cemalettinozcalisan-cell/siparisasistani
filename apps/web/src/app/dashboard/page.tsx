@@ -114,7 +114,7 @@ export default function DashboardPage() {
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shadow-sm`}>
                   <Icon size={17} className="text-white" />
                 </div>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg ${kpi.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
+                <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${kpi.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
                   {kpi.trendUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />} {kpi.trend}
                 </span>
               </div>
