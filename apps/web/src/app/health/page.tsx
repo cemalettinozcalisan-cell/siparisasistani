@@ -61,6 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; color: strin
 export default function HealthPage() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [license, setLicense] = useState<LicenseInfo | null>(null);
+  const [usage, setUsageState] = useState<{ ordersUsed: number; orderLimit: number; usagePercent: number; remaining: number; planName?: string } | null>(null);
   const [now, setNow] = useState(new Date());
   const [userRole, setUserRole] = useState('owner');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,10 +72,15 @@ export default function HealthPage() {
   }, []);
 
   const load = async () => {
-    const [h, l] = await Promise.all([
+    const [h, l, u] = await Promise.all([
       fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => null),
       fetch(`/api/license/${tid}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/saas/usage/${tid}`).then(r => r.json()).catch(() => null),
     ]);
+
+    if (u && typeof u.ordersUsed === 'number') {
+      setUsageState(u);
+    }
 
     // fallback data if API fails
     if (h && h.services) {
@@ -112,9 +118,9 @@ export default function HealthPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
-  const used = license?.used || 0;
-  const limit = license?.limit || 500;
-  const percent = Math.min(100, Math.round((used / (limit || 1)) * 100));
+  const used = usage?.ordersUsed || 0;
+  const limit = usage?.orderLimit || 500;
+  const percent = usage?.usagePercent || 0;
 
   const handleRefresh = () => { load(); setNow(new Date()); };
 
@@ -247,10 +253,10 @@ export default function HealthPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm font-bold text-gray-900 dark:text-white">Plan:</span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-xs font-bold rounded-full shadow-sm">
-                  <Zap size={12} /> {license?.plan || 'Pro'}
+                  <Zap size={12} /> {license?.plan || (usage?.planName) || 'Pro'}
                 </span>
-                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm`}>
-                  {used.toLocaleString('tr-TR')} / {limit.toLocaleString('tr-TR')}
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-sm">
+                  {used.toLocaleString('tr-TR')} / {limit.toLocaleString('tr-TR')} Sipariş
                 </span>
                 {percent >= 80 && (
                   <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -286,6 +292,12 @@ export default function HealthPage() {
                   <ShoppingBag size={14} className="text-violet-500" />
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     <strong className="text-slate-700 dark:text-slate-200">{health.totalOrders.toLocaleString('tr-TR')}</strong> sipariş
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <ShoppingBag size={14} className="text-emerald-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <strong className="text-slate-700 dark:text-slate-200">{limit - used}</strong> kalan kota
                   </span>
                 </div>
               </div>
