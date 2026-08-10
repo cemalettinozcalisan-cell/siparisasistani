@@ -246,7 +246,7 @@ export default function ReportsPage() {
               <div className={`w-9 h-9 rounded-xl ${card.iconBg} flex items-center justify-center`}>
                 <card.icon size={17} className={card.iconColor} />
               </div>
-              <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold ${card.trendUp ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-red-600 bg-red-50 dark:bg-red-900/20'} px-1.5 py-0.5 rounded-full`}>
+              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${card.trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
                 {card.trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {card.trend}%
               </span>
             </div>
