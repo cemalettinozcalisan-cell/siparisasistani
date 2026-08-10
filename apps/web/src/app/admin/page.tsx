@@ -130,18 +130,18 @@ export default function AdminPage() {
                       }`}>{t.status === 'active' ? 'Aktif' : 'Pasif'}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button title="Paneline Geç" className="p-1.5 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
-                          <Eye size={13} />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button title="Paneline Geç" className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
+                          <Eye size={15} />
                         </button>
-                        <button title="Kota Düzenle" className="p-1.5 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
-                          <CreditCard size={13} />
+                        <button title="Kota Düzenle" className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
+                          <CreditCard size={15} />
                         </button>
-                        <button title="Düzenle" className="p-1.5 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
-                          <Settings size={13} />
+                        <button title="Düzenle" className="p-2 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
+                          <Settings size={15} />
                         </button>
-                        <button title="Pasife Al" className="p-1.5 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                          <Ban size={13} />
+                        <button title="Pasife Al" className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                          <Ban size={15} />
                         </button>
                       </div>
                     </td>
