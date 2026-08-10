@@ -125,8 +125,8 @@ export default function ComplaintsPage() {
         ].map((kpi) => (
           <div key={kpi.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${kpi.iconBg} flex items-center justify-center shrink-0`}>
-                <kpi.icon size={18} className={kpi.iconColor} />
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${kpi.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                <kpi.icon size={18} className="text-white" />
               </div>
               <div>
                 <p className="text-xl font-bold text-slate-900 dark:text-white">{kpi.value}</p>
