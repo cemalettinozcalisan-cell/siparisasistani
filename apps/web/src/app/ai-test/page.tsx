@@ -186,7 +186,7 @@ export default function AiTestPage() {
                     <Bot size={12} className="text-white" />
                   </div>
                 )}
-                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm break-words ${
+                <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm ${
                   msg.role === 'user'
                     ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-br-sm shadow-sm'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-bl-sm'
