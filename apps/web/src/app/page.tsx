@@ -1,12 +1,13 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, Shield, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, Shield, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
   { icon: MessageSquare, label: 'WhatsApp', desc: 'Mesajlaşma', color: 'from-emerald-500 to-emerald-600' },
   { icon: Camera, label: 'Instagram', desc: 'DM mesajı', color: 'from-pink-500 to-pink-600' },
+  { icon: MessageSquare, label: 'SMS', desc: 'Kısa mesaj', color: 'from-sky-400 to-blue-500' },
   { icon: Globe, label: 'Web Sitesi', desc: 'Online sipariş', color: 'from-sky-500 to-sky-600' },
   { icon: Bot, label: 'AI Asistan', desc: 'Siparişi alır', color: 'from-violet-500 to-violet-600' },
   { icon: BarChart3, label: 'CRM', desc: 'Kayıt düşer', color: 'from-rose-500 to-rose-600' },
@@ -16,13 +17,13 @@ const OMNICHANNEL_FLOW = [
 ];
 
 const FAQ = [
-  { q: 'SiparişAsistanı nedir?', a: 'SiparişAsistanı, gıda ve yöresel ürün üreticileri için geliştirilmiş yapay zekâ destekli bütünleşik bir sipariş, satış ve işletme yönetim platformudur. Telefon aramaları, WhatsApp mesajları ve Instagram DM üzerinden gelen tüm sipariş taleplerini yapay zekâ asistanı ile 7/24 otomatik olarak karşılar; sipariş detaylarını anında CRM panelinize işler. Müşterilerinize bilgilendirme ve kargo takip mesajlarını otomatik olarak iletir. Size sadece siparişleri paketleyip göndermek kalır.' },
-  { q: 'SiparişAsistanı nasıl çalışır?', a: 'Telefon, WhatsApp ve Instagram\'dan gelen tüm müşteri çağrılarını ve mesajlarını yapay zekâ ajanlarımız karşılar. Müşterinizin talebini anlayıp siparişi alır; adres ve sipariş detaylarını doğrulayarak yönetim panelinize, WhatsApp grubunuza ve fiş yazıcınıza anında iletir. Size sadece siparişi paketleyip göndermek kalır.' },
+  { q: 'SiparişAsistanı nedir?', a: 'SiparişAsistanı, gıda ve yöresel ürün üreticileri için geliştirilmiş yapay zekâ destekli bütünleşik bir sipariş, satış ve işletme yönetim platformudur. Telefon aramaları, WhatsApp mesajları, Instagram DM ve SMS üzerinden gelen tüm sipariş taleplerini yapay zekâ asistanı ile 7/24 otomatik olarak karşılar; sipariş detaylarını anında CRM panelinize işler. Müşterilerinize bilgilendirme ve kargo takip mesajlarını otomatik olarak iletir. Size sadece siparişleri paketleyip göndermek kalır.' },
+  { q: 'SiparişAsistanı nasıl çalışır?', a: 'Telefon, WhatsApp, Instagram ve SMSden gelen tüm müşteri çağrılarını ve mesajlarını yapay zekâ ajanlarımız karşılar. Müşterinizin talebini anlayıp siparişi alır; adres ve sipariş detaylarını doğrulayarak yönetim panelinize, WhatsApp grubunuza ve fiş yazıcınıza anında iletir. Size sadece siparişi paketleyip göndermek kalır.' },
   { q: 'Sistemi kurmak ne kadar sürer? Teknik bilgiye ihtiyacım var mı?', a: 'Hiçbir teknik bilgiye veya yazılımcıya ihtiyacınız yoktur. Ekibimiz tüm entegrasyon süreçlerini sizin adınıza tamamlar ve sisteminizi aynı gün içinde (veya 24 saat içinde) kullanıma hazır hale getirir.' },
   { q: 'SiparişAsistanı hangi sektörler için uygundur?', a: 'SiparişAsistanı; başta sucuk, lokum, şarküteri, bükme, yumurta ve yerel lezzet üreticileri olmak üzere, tüm yöresel gıda üreticileri ve işletmeler için özel olarak tasarlanmıştır. Telefon ve sosyal medya üzerinden yoğun sipariş trafiği yöneten her ölçekteki üretici için %100 uyumludur.' },
   { q: 'Kargo takibi nasıl çalışır?', a: 'Siparişiniz kargoya verildiğinde, aldığınız takip kodunu panele girmeniz yeterlidir. Yapay zekâ asistanınız; kargo firması, takip numarası ve sorgulama bağlantısını içeren kişiselleştirilmiş bilgilendirme mesajını müşterinizin WhatsApp hesabına anında ve otomatik olarak iletir. Böylece "Kargom nerede?" sorularıyla vakit kaybetmezsiniz.' },
   { q: 'Telefon hattıma bağlanabiliyor mu?', a: 'Evet. Mevcut sabit veya kurumsal telefon hattınızla %100 uyumlu şekilde çalışır. Yeni bir hat satın almanıza veya numaranızı değiştirmenize gerek kalmadan, mevcut numaranızı yapay zekâ asistanımıza saniyeler içinde entegre edebilirsiniz.' },
-  { q: 'WhatsApp ve Instagram üzerinden sipariş alabilir miyim?', a: 'Evet. Sistemimiz WhatsApp Business API ve Instagram DM altyapılarıyla %100 entegre çalışır. Yapay zekâ asistanınız, müşterilerinizden gelen mesajları 7/24 anında yanıtlar, siparişleri otomatik olarak alır ve kargo takip bilgilendirmelerini müşterilerinize kesintisiz olarak iletir.' },
+  { q: 'WhatsApp, Instagram ve SMS üzerinden sipariş alabilir miyim?', a: 'Evet. Sistemimiz WhatsApp Business API, Instagram DM ve SMS altyapılarıyla %100 entegre çalışır. Yapay zekâ asistanınız, müşterilerinizden gelen mesajları 7/24 anında yanıtlar, siparişleri otomatik olarak alır ve kargo takip bilgilendirmelerini müşterilerinize kesintisiz olarak iletir.' },
   { q: 'Müşteri ve sipariş verilerimiz güvende mi?', a: 'Evet, %100 güvendedir. Platformumuz tam izole veri mimarisiyle çalışır. İşletmenize ve müşterilerinize ait tüm veriler yüksek güvenlikli sunucularda, uçtan uca şifrelenerek saklanır. Verilerinize sizden başka hiçbir işletme veya üçüncü taraf kesinlikle erişemez.' },
   { q: 'Yapay zekânın aldığı siparişlere müdahale edebilir miyim?', a: 'Dilediğiniz zaman. Yönetim paneliniz üzerinden tüm canlı görüşmeleri ve mesajlaşmaları anlık görebilir, gerektiğinde yapay zekâyı devreden çıkarıp konuşmaya veya sipariş detayına tek tıkla müdahale edebilirsiniz.' },
   { q: 'Mesai saatleri dışında veya hafta sonu sistem çalışmaya devam eder mi?', a: 'Evet, 7 gün 24 saat kesintisiz çalışır. İşletmeniz kapalı olsa bile yapay zekâ asistanınız gelen tüm aramaları ve mesajları yanıtlar, siparişleri toplar ve ertesi güne hazır hale getirir.' },
@@ -98,9 +99,9 @@ export default function LandingPage() {
           <Sparkles className="w-3.5 h-3.5" /> AI Destekli Sipariş Sistemi
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-          Telefon, WhatsApp, Instagram
+          Telefon, WhatsApp, Instagram,
           <br />
-          ve Web sitenizden gelen siparişleri
+          SMS ve Web sitenizden gelen siparişleri
           <br />
           <span className="animate-gradient-text">tek panelden yönetin</span>
         </h1>
@@ -126,16 +127,18 @@ export default function LandingPage() {
             <div className="p-6">
               <div className="grid grid-cols-4 gap-3 mb-4">
                 {[
-                  { val: '12', label: 'Bugün Sipariş', icon: '📦' },
-                  { val: '8.450 TL', label: 'Bugün Ciro', icon: '💰' },
-                  { val: '%98', label: 'AI Başarı', icon: '🤖' },
-                  { val: '3', label: 'Bekleyen', icon: '⏳' },
-                ].map((item, i) => (
+                  { val: '12', label: 'Bugün Sipariş', icon: ShoppingBag },
+                  { val: '8.450 TL', label: 'Bugün Ciro', icon: TrendingUp },
+                  { val: '%98', label: 'AI Başarı', icon: Bot },
+                  { val: '3', label: 'Bekleyen', icon: AlertCircle },
+                ].map((item, i) => {
+                  const MIcon = item.icon;
+                  return (
                   <div key={i} className="bg-slate-800/50 rounded-lg p-3 text-left border border-slate-700/50">
-                    <div className="text-xs text-slate-500">{item.icon} {item.label}</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1"><MIcon size={13} className="text-slate-400" /> {item.label}</div>
                     <div className="text-xl font-bold text-white mt-0.5">{item.val}</div>
                   </div>
-                ))}
+                )})}
               </div>
               <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
                 <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
@@ -163,7 +166,7 @@ export default function LandingPage() {
           <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
             Tüm satış kanallarınızı <span className="animate-gradient-text">tek bir platformda</span> birleştirin
           </h2>
-          <div className="grid grid-cols-3 md:grid-cols-9 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-10 gap-3">
             {OMNICHANNEL_FLOW.map((step, i) => {
               const Icon = step.icon;
               const isActive = i === activeStep;
@@ -190,16 +193,20 @@ export default function LandingPage() {
       {/* Referanslar */}
       <section className="pb-20 -mt-8">
         <div className="max-w-5xl mx-auto px-6">
-          <p className="text-center text-lg font-bold animate-gradient-text mb-2 tracking-wider">GELECEĞİN TİCARETİNE GÜVENEN İŞLETMELER</p>
+          <p className="text-center text-lg font-bold text-slate-700 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
           <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-6">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
           <div className="grid grid-cols-4 gap-3">
-            {REFERENCES.map((name, i) => (
+            {REFERENCES.map((name, i) => {
+              const icons = [Package, ShoppingBag, ShoppingBag, Package, ShoppingBag, Building2, Building2, Building2];
+              const GradIcon = icons[i] || Building2;
+              const grad = i < 5 ? 'from-amber-500 to-orange-600' : 'from-blue-500 to-indigo-600';
+              return (
               <div key={i} className="bg-slate-50 rounded-xl px-4 py-3 text-center border border-slate-100 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold mx-auto mb-1.5">{name[0]}</div>
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white text-xs font-bold mx-auto mb-1.5 shadow-sm`}><GradIcon size={14} /></div>
                 <p className="text-xs font-medium text-slate-700">{name}</p>
                 <p className="text-[10px] text-slate-400">Afyon</p>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>
@@ -211,7 +218,7 @@ export default function LandingPage() {
           <p className="mt-2 text-center text-sm animate-gradient-text font-semibold">Akıllı Sipariş. Hızlı Operasyon.</p>
           <div className="grid grid-cols-3 gap-6 mt-10">
             {[
-              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, Instagram ve WhatsApp üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.' },
+              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, WhatsApp, Instagram ve SMS üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.' },
               { icon: Users, title: 'Müşteri Takibi', desc: 'Müşteri geçmişi, şikayetleri, siparişleri ve AI analizi tek ekranda.' },
               { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.' },
               { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik WhatsApp\'tan takip numarasını müşterinize iletir.' },
@@ -236,7 +243,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">Çoklu Kanal Entegrasyonları</h2>
           <p className="mt-2 text-center text-slate-500">Mevcut altyapınız ve iş süreçlerinizle %100 uyumlu, kesintisiz çalışma deneyimi.</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-10">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mt-10">
             {[
               {
                 icon: PhoneCall, shadow: 'shadow-blue-500/20',
@@ -258,6 +265,13 @@ export default function LandingPage() {
                 desc: 'Sosyal Medya Sipariş Yönetimi',
                 sub: 'Yapay zekâ sayesinde Instagram DM mesajlarını kaçırmayın; gelen tüm soruları anında yanıtlayarak otomatik olarak siparişe dönüştürün.',
                 color: 'from-fuchsia-500 to-rose-500',
+              },
+              {
+                icon: MessageSquare, shadow: 'shadow-sky-500/20',
+                title: 'SMS Sipariş',
+                desc: 'Kısa Mesaj ile Sipariş Alma',
+                sub: 'Müşterileriniz SMS ile sipariş versin; yapay zekâ asistanınız gelen mesajları anında okuyup yanıtlasın, sipariş olarak kaydetsin.',
+                color: 'from-sky-400 to-blue-500',
               },
               {
                 icon: Truck, shadow: 'shadow-orange-500/20',
