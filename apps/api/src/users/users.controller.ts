@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TimelineService } from '../timeline/timeline.service';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
 import * as crypto from 'crypto';
@@ -7,7 +8,10 @@ import * as crypto from 'crypto';
 @UseGuards(TenantGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly timeline: TimelineService,
+  ) {}
 
   @Roles('owner', 'manager')
   @Get(':tenantId')
@@ -45,6 +49,16 @@ export class UsersController {
       .select('id, name, email, role, active, created_at')
       .single();
     if (error) throw new BadRequestException(error.message);
+
+    await this.timeline.logEvent({
+      tenantId,
+      entityType: 'user',
+      entityId: data.id,
+      eventType: 'USER_CREATED',
+      description: `${body.name} (${body.role || 'staff'}) kullanıcısı oluşturuldu`,
+      actorType: 'STAFF',
+    });
+
     return data;
   }
 
@@ -157,6 +171,16 @@ export class UsersController {
       .eq('tenant_id', tenantId)
       .eq('id', id);
     if (error) throw new BadRequestException(error.message);
+
+    await this.timeline.logEvent({
+      tenantId,
+      entityType: 'user',
+      entityId: id,
+      eventType: 'USER_DELETED',
+      description: `Kullanıcı silindi`,
+      actorType: 'STAFF',
+    });
+
     return { success: true };
   }
 }

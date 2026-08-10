@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit } from 'lucide-react';
+import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit, Plus, Trash2, Package, TrendingUp } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -24,6 +24,13 @@ const EVENT_LABELS: Record<string, string> = {
   COMPLAINT_OPEN: 'Şikayet Açıldı',
   PRINT_REQUESTED: 'Yazdırma İsteği',
   STATUS_UPDATED: 'Durum Güncellendi',
+  SETTINGS_UPDATED: 'Ayarlar Güncellendi',
+  USER_CREATED: 'Kullanıcı Eklendi',
+  USER_DELETED: 'Kullanıcı Silindi',
+  PRODUCT_CREATED: 'Ürün Eklendi',
+  PRODUCT_DELETED: 'Ürün Silindi',
+  PLAN_CHANGED: 'Paket Değiştirildi',
+  ADDON_PURCHASED: 'Ek Paket Alındı',
 };
 
 const EVENT_ICONS: Record<string, typeof ShoppingBag> = {
@@ -39,6 +46,13 @@ const EVENT_ICONS: Record<string, typeof ShoppingBag> = {
   COMPLAINT_OPEN: AlertTriangle,
   PRINT_REQUESTED: Printer,
   STATUS_UPDATED: CheckCircle,
+  SETTINGS_UPDATED: FileEdit,
+  USER_CREATED: Plus,
+  USER_DELETED: Trash2,
+  PRODUCT_CREATED: Package,
+  PRODUCT_DELETED: Trash2,
+  PLAN_CHANGED: TrendingUp,
+  ADDON_PURCHASED: Plus,
 };
 
 const EVENT_GRADIENT: Record<string, string> = {
@@ -54,6 +68,13 @@ const EVENT_GRADIENT: Record<string, string> = {
   COMPLAINT_OPEN: 'from-red-500 to-rose-600',
   PRINT_REQUESTED: 'from-slate-500 to-slate-700',
   STATUS_UPDATED: 'from-emerald-500 to-green-600',
+  SETTINGS_UPDATED: 'from-indigo-500 to-violet-600',
+  USER_CREATED: 'from-emerald-500 to-green-600',
+  USER_DELETED: 'from-red-500 to-rose-600',
+  PRODUCT_CREATED: 'from-blue-500 to-cyan-600',
+  PRODUCT_DELETED: 'from-red-500 to-rose-600',
+  PLAN_CHANGED: 'from-violet-500 to-purple-600',
+  ADDON_PURCHASED: 'from-amber-500 to-orange-600',
 };
 
 interface LogEntry {

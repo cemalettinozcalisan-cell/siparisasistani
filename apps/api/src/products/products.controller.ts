@@ -1,10 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Res } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { TimelineService } from '../timeline/timeline.service';
 import { Response } from 'express';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly timeline: TimelineService,
+  ) {}
 
   @Get(':tenantId')
   async list(@Param('tenantId') tenantId: string) {
@@ -40,6 +44,17 @@ export class ProductsController {
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const name = (data as any)?.product_name || body.product_name || 'Ürün';
+    await this.timeline.logEvent({
+      tenantId,
+      entityType: 'product',
+      entityId: (data as any)?.id,
+      eventType: 'PRODUCT_CREATED',
+      description: `${name} ürünü eklendi`,
+      actorType: 'STAFF',
+    });
+
     return data;
   }
 
@@ -66,12 +81,29 @@ export class ProductsController {
 
   @Delete(':tenantId/:id')
   async remove(@Param('tenantId') tenantId: string, @Param('id') id: string) {
+    // Get product name before soft-deleting
+    const { data: product } = await this.supabase.db
+      .from('products')
+      .select('product_name')
+      .eq('id', id)
+      .single();
+
     const { error } = await this.supabase.db
       .from('products')
       .update({ deleted_at: new Date().toISOString() })
       .eq('tenant_id', tenantId)
       .eq('id', id);
     if (error) throw new Error(error.message);
+
+    await this.timeline.logEvent({
+      tenantId,
+      entityType: 'product',
+      entityId: id,
+      eventType: 'PRODUCT_DELETED',
+      description: `${(product as any)?.product_name || 'Ürün'} silindi`,
+      actorType: 'STAFF',
+    });
+
     return { success: true };
   }
 
