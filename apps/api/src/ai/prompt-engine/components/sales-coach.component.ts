@@ -174,7 +174,7 @@ export class SalesCoachComponent {
     const defaultPrice = Number(settings['cargo_default_price']) || 0;
 
     // Active cargo companies
-    const companies = ['yurtici', 'mng', 'aras', 'surat', 'ptt', 'trendyol'];
+    const companies = ['yurtici', 'mng', 'aras', 'surat', 'ptt', 'trendyol', 'dhl'];
     const activeFirms: string[] = [];
     for (const co of companies) {
       if (settings[`${co}_enabled`]) {
