@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { Shield, Building2, Package, Users, DollarSign, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap } from 'lucide-react';
+import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap } from 'lucide-react';
 import { getUserRole } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -63,7 +63,7 @@ export default function AdminPage() {
           { label: 'Firma', value: stats.tenants, icon: Building2, gradient: 'from-blue-500 to-cyan-600' },
           { label: 'Sipariş', value: stats.orders, icon: Package, gradient: 'from-emerald-500 to-green-600' },
           { label: 'Müşteri', value: stats.customers, icon: Users, gradient: 'from-violet-500 to-purple-600' },
-          { label: 'Ciro', value: `${Number(stats.revenue || 0).toLocaleString('tr-TR')} TL`, icon: DollarSign, gradient: 'from-amber-500 to-orange-600' },
+          { label: 'Ciro', value: `${Number(stats.revenue || 0).toLocaleString('tr-TR')} TL`, icon: Banknote, gradient: 'from-amber-500 to-orange-600' },
           { label: 'Kullanıcı', value: stats.users, icon: UserCheck, gradient: 'from-cyan-500 to-sky-600' },
           { label: 'AI Konuşma', value: stats.aiConversations, icon: Bot, gradient: 'from-pink-500 to-rose-600' },
         ].map((c) => (
@@ -72,7 +72,7 @@ export default function AdminPage() {
               <c.icon size={17} className="text-white" />
             </div>
             <div className="text-xl font-bold text-slate-900 dark:text-white">{String(c.value || 0)}</div>
-            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{c.label}</div>
+            <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{c.label}</div>
           </div>
         ))}
       </div>
@@ -131,16 +131,16 @@ export default function AdminPage() {
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button title="Paneline Geç" className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
+                        <button title="Firma paneline geç" className="p-2 text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all">
                           <Eye size={15} />
                         </button>
-                        <button title="Kota Düzenle" className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
+                        <button title="Kota / Paket düzenle" className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all">
                           <CreditCard size={15} />
                         </button>
-                        <button title="Düzenle" className="p-2 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
+                        <button title="Firma detaylarını düzenle" className="p-2 text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-all">
                           <Settings size={15} />
                         </button>
-                        <button title="Pasife Al" className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                        <button title="Firmayı pasife al" className="p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
                           <Ban size={15} />
                         </button>
                       </div>
