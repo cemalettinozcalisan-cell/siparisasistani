@@ -229,8 +229,8 @@ export default function SettingsPage() {
           const active = activeTab === t.key;
           return (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${active ? 'text-white shadow-sm bg-gradient-to-r from-indigo-600 to-violet-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
-              <Icon size={13} /> {t.label}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${active ? 'text-white shadow-sm bg-gradient-to-r from-indigo-600 to-violet-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+              <Icon size={14} /> {t.label}
             </button>
           );
         })}
@@ -287,7 +287,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "hours" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-        <SectionHeader icon={Clock} gradient="from-blue-500 to-cyan-600" title="Çalışma Saatleri" />
+        <SectionHeader icon={Clock} gradient="from-sky-500 to-blue-600" title="Çalışma Saatleri" />
 
         <Row label="Çalışma Saati Kontrolü" desc="Kapalıyken AI 7/24 sipariş alır, çalışma saatleri sadece bilgi amaçlıdır">
           <Toggle enabled={!!settings.business_hours_enabled} onChange={(v) => saveAndKeep('business_hours_enabled', v)} />
@@ -364,7 +364,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "ai" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-        <SectionHeader icon={Bell} gradient="from-violet-500 to-purple-600" title="Bildirimler" />
+        <SectionHeader icon={Bell} gradient="from-amber-400 to-orange-500" title="Bildirimler" />
 
         <Row label="WhatsApp Grubu" desc="Yeni siparişleri WhatsApp grubuna bildir">
           <Toggle enabled={!!settings.whatsapp_group_enabled} onChange={(v) => saveAndKeep('whatsapp_group_enabled', v)} />
@@ -462,7 +462,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "hours" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-        <SectionHeader icon={MapPin} gradient="from-blue-500 to-cyan-600" title="Teslimat Bölgeleri & Ülke Yönetimi" />
+        <SectionHeader icon={MapPin} gradient="from-teal-500 to-cyan-600" title="Teslimat Bölgeleri & Ülke Yönetimi" />
 
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-300 block mb-2">Gönderim Yapılmayan Bölgeler</label>
@@ -503,7 +503,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "hours" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-        <SectionHeader icon={Truck} gradient="from-blue-500 to-cyan-600" title="Sipariş & Kargo Süreçleri" />
+        <SectionHeader icon={Truck} gradient="from-indigo-500 to-blue-600" title="Sipariş & Kargo Süreçleri" />
 
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-300 block mb-1.5">Şehir İçi Teslimat Süresi</label>
@@ -585,7 +585,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "payment" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
-        <SectionHeader icon={Package} gradient="from-emerald-500 to-green-600" title="Kargo Ayarları" />
+        <SectionHeader icon={Package} gradient="from-amber-500 to-orange-600" title="Kargo Ayarları" />
 
         <div className="space-y-4">
           {/* Ücretsiz Kargo */}
@@ -721,7 +721,7 @@ export default function SettingsPage() {
       {activeTab === "all" || activeTab === "invoice" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
-        <SectionHeader icon={CreditCard} gradient="from-amber-500 to-orange-600" title="Fatura & Vergi Ayarları" />
+        <SectionHeader icon={CreditCard} gradient="from-rose-500 to-pink-600" title="Fatura & Vergi Ayarları" />
 
         {/* Status Card */}
         <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg grid grid-cols-3 gap-3 text-center text-xs">
