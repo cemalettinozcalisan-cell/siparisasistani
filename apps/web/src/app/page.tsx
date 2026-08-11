@@ -375,8 +375,8 @@ export default function LandingPage() {
       {/* Hakkımızda */}
       <section id="hakkimizda" className="py-20">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6">
-            <Building2 className="w-7 h-7 text-white" />
+          <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white p-4 rounded-2xl shadow-lg shadow-indigo-200 inline-flex items-center justify-center mb-6">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-slate-900">Dijital Dönüşüm Hikâyemiz</h2>
           <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
@@ -384,7 +384,7 @@ export default function LandingPage() {
             <span className="animate-gradient-text font-semibold"> yapay zekâ teknolojisiyle dijitalleştiren</span> yenilikçi bir sipariş & satış yönetim platformudur.
           </p>
           <p className="mt-4 text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            <span className="animate-gradient-text font-semibold">Sesli çağrıları, WhatsApp mesajlarını ve Instagram DM'lerini akıllı yapay zekâ asistanımızla anında yanıtlayan</span> ve doğrudan siparişe dönüştüren altyapımız,
+            <span className="animate-gradient-text font-semibold">Sesli çağrıları, WhatsApp mesajlarını, SMS'leri, Instagram DM'lerini ve Web Sitenizdeki siparişleri akıllı yapay zekâ asistanımızla anında yanıtlayan</span> ve doğrudan siparişe dönüştüren altyapımız,
             geleneksel yöntemlerle satış yapan işletmelerin operasyonel yükünü hafifletmek
             için tasarlandı. Yöresel lezzetleri üreten esnafımızın <span className="animate-gradient-text font-semibold">dijital dönüşümüne öncülük ederek, verimliliği ve müşteri memnuniyetini en üst seviyeye çıkarıyoruz</span>.
           </p>
