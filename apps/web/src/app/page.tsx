@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, Shield, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, Shield, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -188,21 +188,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Referanslar */}
+      {/* Sektör Kartları */}
       <section className="pb-20 -mt-8">
-        <div className="max-w-5xl mx-auto px-6">
-          <p className="text-center text-3xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
-          <p className="text-center text-sm animate-gradient-text font-semibold mb-6">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
-          <div className="grid grid-cols-4 gap-3">
-            {REFERENCES.map((name, i) => {
-              const icons = [Package, ShoppingBag, ShoppingBag, Package, ShoppingBag, Building2, Building2, Building2];
-              const GradIcon = icons[i] || Building2;
-              const grad = i < 5 ? 'from-amber-500 to-orange-600' : 'from-blue-500 to-indigo-600';
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-center text-3xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</h2>
+          <p className="text-center text-sm animate-gradient-text font-semibold mb-1">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
+          <p className="text-center text-xs text-slate-400 mb-8">İster toptan, ister perakende; SiparişAsistanı iş modelinize anında uyum sağlar.</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { icon: Building2, title: 'Toptan & Perakende', desc: 'Tüm toptan, perakende ve hizmet işletmeleri için müşteri mesajlarını siparişe dönüştürür.', gradient: 'from-blue-500 to-indigo-600' },
+              { icon: Globe, title: 'Yöresel Ürün & E-Ticaret', desc: 'Gastronomi Şehri Afyonkarahisar\'ın lezzetlerini tüm Türkiye\'ye gönderen işletmeler için siparişleri tek panele toplar.', gradient: 'from-emerald-500 to-green-600' },
+              { icon: Package, title: 'Sucuk Üreticileri', desc: 'Farklı kilo, kangal ve vakumlu sucuk sipariş taleplerini yapay zekâ ile anında ve hatasız kaydeder.', gradient: 'from-red-500 to-rose-600' },
+              { icon: ShoppingBag, title: 'Lokum & Şekerleme', desc: 'Özel kutu ve hediyelik lokum sipariş taleplerini anında algılar.', gradient: 'from-amber-500 to-orange-600' },
+              { icon: Truck, title: 'Bükme & Ağzıaçık Fırınları', desc: 'Günlük taze üretim bükme ve ağzıaçık siparişlerini eksiksiz ve tam vaktinde yönetir.', gradient: 'from-violet-500 to-purple-600' },
+              { icon: ShoppingBag, title: 'Yumurta Üreticileri', desc: 'Toptan ve koli bazlı siparişlerde cari müşteri taleplerini düzenler.', gradient: 'from-sky-500 to-blue-600' },
+            ].map((card, i) => {
+              const CardIcon = card.icon;
               return (
-              <div key={i} className="bg-slate-50 rounded-xl px-5 py-4 text-center border border-slate-100 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white mx-auto mb-2 shadow-sm`}><GradIcon size={17} /></div>
-                <p className="text-sm font-semibold text-slate-700">{name}</p>
-                <p className="text-[10px] text-slate-400">Afyon</p>
+              <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white mb-3 shadow-sm`}><CardIcon size={18} /></div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
             )})}
           </div>
@@ -315,34 +321,28 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Başarı Hikayeleri */}
+      {/* Değer Kartları */}
       <section id="basari-hikayeleri" className="bg-slate-50 py-20">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center animate-gradient-text">Başarı Hikayeleri</h2>
-          <p className="mt-2 text-center text-base font-semibold"><span className="animate-gradient-text">SiparişAsistanı</span><span className="text-slate-700 dark:text-slate-300"> ile işletmesini dönüştürenler</span></p>
-          <div className="grid grid-cols-3 gap-6 mt-10">
+          <h2 className="text-3xl font-bold text-center animate-gradient-text">İşletmenizde Neleri Değiştiriyoruz?</h2>
+          <p className="mt-2 text-center text-sm text-slate-500 mb-10">SiparişAsistanı ile operasyonel yükü sıfırlayın, satışlarınızı katlayın.</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { quote: 'Telefon susmuyordu artık AI bakıyor. Ben de işime odaklanıyorum.', name: 'Zafer Ayyıldız', title: 'Zafer Sucukları', city: 'Afyon' },
-              { quote: 'WhatsApp\'tan gelen siparişler otomatik sisteme düşüyor. Hata neredeyse sıfır.', name: 'Mehmet Öztürk', title: 'Öztürk Lokum', city: 'Afyon' },
-              { quote: 'Günde 40-50 sipariş alıyorduk. AI geldikten sonra hiçbirini kaçırmıyoruz.', name: 'Ali Kaya', title: 'Kaya Bükmeleri', city: 'Afyon' },
-              { quote: 'Müşteri memnuniyeti çok arttı. AI her arayana kibarca cevap veriyor.', name: 'İbrahim Yıldız', title: 'Yıldız Sucuk', city: 'İstanbul' },
-              { quote: 'Siparişleri elle yazmayı unuttuk. AI alıyor, biz gönderiyoruz.', name: 'Hatice Çelik', title: 'Çelik Lokumları', city: 'Ankara' },
-              { quote: 'Kargo takibini AI yapıyor. Müşteriye WhatsApp\'tan bilgi gidiyor.', name: 'Mustafa Şahin', title: 'Şahin Et Ürünleri', city: 'Afyon' },
-            ].map((story, i) => (
-              <div key={i} className="card group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                <div className="flex gap-1 mb-3">
-                  {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 text-amber-400 fill-current" />)}
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed">"{story.quote}"</p>
-                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-ai-gradient flex items-center justify-center text-white text-sm font-bold">{story.name[0]}</div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{story.name}</p>
-                    <p className="text-xs text-slate-500">{story.title} · {story.city}</p>
-                  </div>
-                </div>
+              { icon: Bot, title: '%98+ Yapay Zekâ Doğruluğu', desc: 'Yoğun zamanlarda manuel not alırken yapılan hatalı adres, ürün ve telaffuz kayıtlarına son verin.', gradient: 'from-violet-500 to-purple-600' },
+              { icon: Clock, title: '7/24 Kesintisiz Asistan', desc: 'Mesai saatleri dışında ve gece gelen hiçbir siparişi veya müşteri talebini kaçırmayın.', gradient: 'from-indigo-500 to-blue-600' },
+              { icon: Truck, title: 'Otomatik Kargo & Takip', desc: 'Müşterilerinize kargo durum güncellemelerini ve takip kodlarını otomatik iletin.', gradient: 'from-amber-500 to-orange-600' },
+              { icon: Globe, title: 'Tüm Kanallar Tek Panelde', desc: 'WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri tek ekrandan yönetin.', gradient: 'from-cyan-500 to-teal-600' },
+              { icon: Users, title: 'Müşteri Sadakati & CRM', desc: 'Müşterilerinizin geçmiş siparişlerini, özel isteklerini ve alışkanlıklarını hafızada tutun.', gradient: 'from-emerald-500 to-green-600' },
+              { icon: TrendingUp, title: 'Zaman & Maliyet Tasarrufu', desc: 'Telefona bakma yükünü azaltın; hem personelden hem zamandan tasarruf ederek bütçenizi koruyun.', gradient: 'from-rose-500 to-pink-600' },
+            ].map((card, i) => {
+              const CardIcon = card.icon;
+              return (
+              <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white mb-3 shadow-sm`}><CardIcon size={18} /></div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>
