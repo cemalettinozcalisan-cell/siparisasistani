@@ -213,17 +213,17 @@ export default function LandingPage() {
           <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1 mb-8">İster toptan, ister perakende; SiparişAsistanı iş modelinize anında uyum sağlar.</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { icon: Store, title: 'Toptan & Perakende', desc: 'Tüm toptan, perakende ve hizmet işletmeleri için müşteri mesajlarını siparişe dönüştürür.', gradient: 'from-blue-500 to-indigo-600' },
-              { icon: Globe, title: 'Yöresel Ürün & E-Ticaret', desc: 'Gastronomi Şehri Afyonkarahisar\'ın lezzetlerini tüm Türkiye\'ye gönderen işletmeler için siparişleri tek panele toplar.', gradient: 'from-blue-500 to-indigo-600' },
-              { icon: Flame, title: 'Sucuk Üreticileri', desc: 'Farklı kilo, kangal ve vakumlu sucuk sipariş taleplerini yapay zekâ ile anında ve hatasız kaydeder.', gradient: 'from-blue-500 to-indigo-600' },
-              { icon: Gift, title: 'Lokum & Şekerleme', desc: 'Özel kutu ve hediyelik lokum sipariş taleplerini anında algılar.', gradient: 'from-blue-500 to-indigo-600' },
-              { icon: ChefHat, title: 'Bükme & Ağzıaçık Fırınları', desc: 'Günlük taze üretim bükme ve ağzıaçık siparişlerini eksiksiz ve tam vaktinde yönetir.', gradient: 'from-blue-500 to-indigo-600' },
-              { icon: Layers, title: 'Yumurta Üreticileri', desc: 'Toptan ve koli bazlı siparişlerde cari müşteri taleplerini düzenler.', gradient: 'from-blue-500 to-indigo-600' },
+              { icon: Store, title: 'Toptan & Perakende', desc: 'Tüm toptan, perakende ve hizmet işletmeleri için müşteri mesajlarını siparişe dönüştürür.', color: 'from-blue-600 to-indigo-600 shadow-blue-200' },
+              { icon: Globe, title: 'Yöresel Ürün & E-Ticaret', desc: 'Gastronomi Şehri Afyonkarahisar\'ın lezzetlerini tüm Türkiye\'ye gönderen işletmeler için siparişleri tek panele toplar.', color: 'from-emerald-500 to-teal-600 shadow-emerald-200' },
+              { icon: Flame, title: 'Sucuk Üreticileri', desc: 'Farklı kilo, kangal ve vakumlu sucuk sipariş taleplerini yapay zekâ ile anında ve hatasız kaydeder.', color: 'from-red-500 to-rose-600 shadow-red-200' },
+              { icon: Gift, title: 'Lokum & Şekerleme', desc: 'Özel kutu ve hediyelik lokum sipariş taleplerini anında algılar.', color: 'from-purple-500 to-pink-500 shadow-purple-200' },
+              { icon: ChefHat, title: 'Bükme & Ağzıaçık Fırınları', desc: 'Günlük taze üretim bükme ve ağzıaçık siparişlerini eksiksiz ve tam vaktinde yönetir.', color: 'from-amber-500 to-orange-600 shadow-orange-200' },
+              { icon: Layers, title: 'Yumurta Üreticileri', desc: 'Toptan ve koli bazlı siparişlerde cari müşteri taleplerini düzenler.', color: 'from-amber-400 to-yellow-500 shadow-amber-200' },
             ].map((card, i) => {
               const CardIcon = card.icon;
               return (
               <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-3 rounded-xl shadow-md shadow-indigo-200 inline-flex items-center justify-center mb-3"><CardIcon size={22} className="text-white" /></div>
+                <div className={`bg-gradient-to-br ${card.color} text-white p-3 rounded-xl shadow-md inline-flex items-center justify-center mb-3`}><CardIcon size={22} className="text-white" /></div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
@@ -239,17 +239,17 @@ export default function LandingPage() {
           <p className="mt-2 text-center text-sm animate-gradient-text font-semibold">Akıllı Sipariş. Hızlı Operasyon.</p>
           <div className="grid grid-cols-3 gap-6 mt-10">
             {[
-              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, WhatsApp, Instagram, SMS ve Web Siteniz üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.' },
-              { icon: Users, title: 'Müşteri Takibi', desc: 'Müşteri geçmişi, özel istekler, sipariş alışkanlıkları ve AI analizi tek ekranda.' },
-              { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.' },
-              { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.' },
-              { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.' },
-              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri, sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.' },
+              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, WhatsApp, Instagram, SMS ve Web Siteniz üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.', color: 'from-violet-600 to-indigo-600 shadow-indigo-200' },
+              { icon: Users, title: 'Müşteri Takibi', desc: 'Müşteri geçmişi, özel istekler, sipariş alışkanlıklları ve AI analizi tek ekranda.', color: 'from-sky-500 to-blue-600 shadow-sky-200' },
+              { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.', color: 'from-orange-500 to-amber-500 shadow-orange-200' },
+              { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.', color: 'from-teal-500 to-emerald-600 shadow-teal-200' },
+              { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.', color: 'from-amber-500 to-yellow-500 shadow-amber-200' },
+              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri, sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.', color: 'from-cyan-600 to-blue-700 shadow-cyan-200' },
             ].map((f) => {
               const Icon = f.icon;
               return (
                 <div key={f.title} className="card group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-                  <div className="w-10 h-10 rounded-lg bg-ai-gradient flex items-center justify-center"><Icon className="w-5 h-5 text-white" /></div>
+                  <div className={`bg-gradient-to-br ${f.color} w-10 h-10 rounded-lg flex items-center justify-center p-2.5 shadow-md`}><Icon className="w-5 h-5 text-white" /></div>
                   <h3 className="font-semibold text-slate-900 mt-4">{f.title}</h3>
                   <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{f.desc}</p>
                 </div>
