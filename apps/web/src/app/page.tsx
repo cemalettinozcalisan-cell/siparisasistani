@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -121,12 +121,14 @@ export default function LandingPage() {
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [legalTitle, setLegalTitle] = useState('');
   const [legalBody, setLegalBody] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     const interval = setInterval(() => setActiveStep((prev) => (prev + 1) % OMNICHANNEL_FLOW.length), 2500);
     return () => clearInterval(interval);
   }, []);
   useEffect(() => { try { setCookieAccepted(localStorage.getItem('cookie_accepted') === 'true'); } catch {} }, []);
+  useEffect(() => { try { const saved = localStorage.getItem('theme') as 'light' | 'dark' | null; if (saved === 'dark') { setTheme('dark'); document.documentElement.classList.add('dark'); } } catch {} }, []);
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +159,10 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); document.documentElement.classList.toggle('dark', next === 'dark'); try { localStorage.setItem('theme', next); } catch {} }}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200/60 dark:border-slate-700">
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
             <a href="/login" className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors">Giriş</a>
             <a href="#demo" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-md shadow-indigo-200 text-white font-medium rounded-xl px-4 py-2 text-xs transition-all">Ücretsiz Dene</a>
           </div>
