@@ -11,6 +11,7 @@ const OMNICHANNEL_FLOW = [
   { icon: Globe, label: 'Web Sitesi', desc: 'Online sipariş', color: 'from-sky-500 to-sky-600' },
   { icon: Bot, label: 'AI Asistan', desc: 'Siparişi alır', color: 'from-violet-500 to-violet-600' },
   { icon: BarChart3, label: 'CRM', desc: 'Kayıt düşer', color: 'from-rose-500 to-rose-600' },
+  { icon: MessageCircle, label: 'WhatsApp', desc: 'Gruba iletir', color: 'from-emerald-500 to-emerald-600' },
   { icon: Printer, label: 'Yazıcı', desc: 'Fiş çıkar', color: 'from-amber-500 to-amber-600' },
   { icon: Truck, label: 'Kargo', desc: 'Kargo kodu iletilir', color: 'from-cyan-500 to-cyan-600' },
   { icon: ShoppingBag, label: 'Raporlar', desc: 'Analiz', color: 'from-indigo-500 to-indigo-600' },
@@ -179,9 +180,9 @@ export default function LandingPage() {
               );
             })}
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-6 mt-12 text-center">Nasıl Çalışır?</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {OMNICHANNEL_FLOW.slice(5, 10).map((step, i) => {
+          <h3 className="text-xl font-bold text-slate-900 mb-6 mt-16 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {OMNICHANNEL_FLOW.slice(5, 11).map((step, i) => {
               const Icon = step.icon;
               const isActive = (i + 5) === activeStep;
               return (
@@ -222,7 +223,7 @@ export default function LandingPage() {
               const CardIcon = card.icon;
               return (
               <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-                <div className="bg-indigo-50 border border-indigo-100 p-3 rounded-xl w-fit mb-3"><CardIcon size={22} className="text-indigo-600" /></div>
+                <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-3 rounded-xl shadow-md shadow-indigo-200 inline-flex items-center justify-center mb-3"><CardIcon size={22} className="text-white" /></div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
@@ -262,7 +263,7 @@ export default function LandingPage() {
       <section id="entegrasyonlar" className="py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">Çoklu Kanal Entegrasyonları</h2>
-          <p className="mt-2 text-center text-slate-500">Mevcut altyapınız ve iş süreçlerinizle %100 uyumlu, kesintisiz çalışma deneyimi.</p>
+          <p className="mt-2 text-center text-sm font-semibold text-slate-600">Mevcut altyapınız ve iş süreçlerinizle %100 uyumlu, kesintisiz çalışma deneyimi.</p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mt-10">
             {[
               {
@@ -341,10 +342,10 @@ export default function LandingPage() {
       <section id="basari-hikayeleri" className="bg-slate-50 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">İşletmenizde Neleri Değiştiriyoruz?</h2>
-          <p className="mt-2 text-center text-sm text-slate-500 mb-10">SiparişAsistanı ile operasyonel yükü sıfırlayın, satışlarınızı katlayın.</p>
+          <p className="mt-2 text-center text-sm font-semibold text-slate-600 mb-10">SiparişAsistanı ile operasyonel yükü sıfırlayın, satışlarınızı katlayın.</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { icon: Bot, title: '%98+ Yapay Zekâ Doğruluğu', desc: 'Yoğun zamanlarda manuel not alırken yapılan hatalı adres, ürün ve telaffuz kayıtlarına son verin.', gradient: 'from-violet-500 to-purple-600' },
+              { icon: Bot, title: '%98 Yapay Zekâ Başarısı', desc: 'Yoğun zamanlarda manuel not alırken yapılan hatalı adres, ürün ve telaffuz kayıtlarına son verin.', gradient: 'from-violet-500 to-purple-600' },
               { icon: Clock, title: '7/24 Kesintisiz Asistan', desc: 'Mesai saatleri dışında ve gece gelen hiçbir siparişi veya müşteri talebini kaçırmayın.', gradient: 'from-indigo-500 to-blue-600' },
               { icon: Truck, title: 'Otomatik Kargo & Takip', desc: 'Müşterilerinize kargo durum güncellemelerini ve takip kodlarını otomatik iletin.', gradient: 'from-amber-500 to-orange-600' },
               { icon: Globe, title: 'Tüm Kanallar Tek Panelde', desc: 'WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri tek ekrandan yönetin.', gradient: 'from-cyan-500 to-teal-600' },
