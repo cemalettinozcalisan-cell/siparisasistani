@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -45,6 +45,52 @@ const REFERENCES = [
   'Ayyıldız Gıda', 'Doğal Lezzetler',
 ];
 
+const LEGAL_TEXTS = {
+  aydinlatma: `SiparişAsistanı Yazılım A.Ş. ("Şirket") olarak, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla hareket etmekteyiz.
+
+İşlenen Kişisel Veriler: Ad soyad, telefon numarası, e-posta adresi, şirket bilgileri, müşteri sipariş geçmişi ve tercihleri.
+
+Amaç: Platform hizmetlerinin sunulması, sipariş yönetimi, müşteri ilişkileri, yasal yükümlülüklerin yerine getirilmesi.
+
+Saklama Süresi: İşlenme amacının gerektirdiği süre boyunca saklanır.
+
+Haklarınız: KVKK Madde 11 kapsamında verilerinize erişme, düzeltme, silme ve işlemenin durdurulmasını talep etme hakkına sahipsiniz.
+
+Başvuru: asistan@siparisasistani.com adresinden taleplerinizi iletebilirsiniz.`,
+
+  gizlilik: `SiparişAsistanı olarak müşterilerimizin gizliliğine büyük önem veriyoruz.
+
+Veri Güvenliği: Tüm veriler uçtan uca şifreleme ile korunur. Verileriniz KVKK AI altyapısı tarafından denetlenir.
+
+Üçüncü Taraflarla Paylaşım: Verileriniz, yasal zorunluluklar haricinde hiçbir üçüncü tarafla paylaşılmaz.
+
+Çalışan Erişimi: Verilere yalnızca yetkili personel erişebilir. Tüm erişimler audit log ile kayıt altına alınır.
+
+Veri İhlali: Olası bir veri ihlali durumunda 72 saat içinde KVKK'ya bildirim yapılır ve etkilenen kullanıcılar bilgilendirilir.`,
+
+  cerez: `SiparişAsistanı olarak web sitemizde çerez (cookie) kullanmaktayız.
+
+Zorunlu Çerezler: Platformun çalışması için gereklidir. Oturum yönetimi, güvenlik ve KVKK uyumluluğu için kullanılır. Devre dışı bırakılamaz.
+
+Performans Çerezleri: Sayfa kullanım istatistikleri ve performans ölçümleri için kullanılır. İsteğe bağlıdır, tercihlerinize göre yönetebilirsiniz.
+
+Çerezleri Nasıl Yönetirim? Tarayıcı ayarlarınızdan çerezleri silebilir veya "Çerez Tercihleri" butonundan performans çerezlerini kapatabilirsiniz.
+
+KVKK Uyumu: Çerez altyapımız KVKK AI standartları ile uçtan uca denetlenmektedir.`,
+
+  kullanim: `SiparişAsistanı platformunu kullanarak aşağıdaki koşulları kabul etmiş sayılırsınız.
+
+Hizmet Kapsamı: Platform, AI destekli sipariş yönetimi, müşteri ilişkileri ve işletme yönetimi hizmetleri sunar.
+
+Kullanıcı Yükümlülükleri: Platforma doğru ve güncel bilgiler sağlamak, başkalarının hesaplarına erişmeye çalışmamak, platformu yasa dışı amaçlarla kullanmamak.
+
+Fikri Mülkiyet: Platformun tüm içeriği, tasarımı ve yazılımı SiparişAsistanı Yazılım A.Ş.'ye aittir. İzinsiz kopyalanamaz veya dağıtılamaz.
+
+Hizmet Kesintisi: Mücbir sebepler dışında %99 uptime taahhüt edilir. Planlı bakımlar önceden bildirilir.
+
+Sorumluluk Sınırı: Platform üzerinden alınan siparişlerin içeriğinden kullanıcı sorumludur. Şirket, dolaylı zararlardan sorumlu tutulamaz.`,
+};
+
 export default function LandingPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -53,6 +99,10 @@ export default function LandingPage() {
   const [sending, setSending] = useState(false);
 
   const [cookieAccepted, setCookieAccepted] = useState(false);
+  const [showCookieModal, setShowCookieModal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [legalTitle, setLegalTitle] = useState('');
+  const [legalBody, setLegalBody] = useState('');
 
   useEffect(() => {
     const interval = setInterval(() => setActiveStep((prev) => (prev + 1) % OMNICHANNEL_FLOW.length), 2500);
@@ -461,11 +511,11 @@ export default function LandingPage() {
               <span>2026 SiparişAsistanı</span>
             </div>
             <div className="flex flex-wrap gap-4 items-center text-xs text-slate-500">
-              <a href="#" className="hover:text-indigo-600 transition-colors">Platform Aydınlatma Metni</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Gizlilik Sözleşmesi</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Çerez Politikası</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Kullanım Koşulları</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</a>
+              <button onClick={() => { setLegalTitle('Platform Aydınlatma Metni'); setLegalBody(LEGAL_TEXTS.aydinlatma); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Platform Aydınlatma Metni</button>
+              <button onClick={() => { setLegalTitle('Gizlilik Sözleşmesi'); setLegalBody(LEGAL_TEXTS.gizlilik); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Gizlilik Sözleşmesi</button>
+              <button onClick={() => { setLegalTitle('Çerez Politikası'); setLegalBody(LEGAL_TEXTS.cerez); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Çerez Politikası</button>
+              <button onClick={() => { setLegalTitle('Kullanım Koşulları'); setLegalBody(LEGAL_TEXTS.kullanim); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Kullanım Koşulları</button>
+              <a href="/login" className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</a>
             </div>
           </div>
           <div className="text-center text-xs text-slate-400">
@@ -483,9 +533,58 @@ export default function LandingPage() {
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); } catch {} setCookieAccepted(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-200">Kabul Et</button>
-            <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition-all">Çerez Tercihleri</button>
+            <button onClick={() => setShowCookieModal(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition-all">Çerez Tercihleri</button>
           </div>
           <p className="text-[10px] text-slate-400 mt-3">Çerez altyapısı KVKK AI standartları ile korunmaktadır.</p>
+        </div>
+      )}
+
+      {/* Cookie Preferences Modal */}
+      {showCookieModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCookieModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900">Çerez Tercihleri</h3>
+              <button onClick={() => setShowCookieModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-slate-800">Zorunlu Çerezler</span>
+                  <span className="text-[10px] bg-slate-300 text-slate-600 px-2 py-0.5 rounded-full">Her Zaman Aktif</span>
+                </div>
+                <p className="text-xs text-slate-500">Oturum yönetimi, güvenlik ve platformun çalışması için gereklidir.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-slate-800">Performans Çerezleri</span>
+                  <button onClick={() => { try { const prefs = JSON.parse(localStorage.getItem('cookie_prefs') || '{"perf":true}'); prefs.perf = !prefs.perf; localStorage.setItem('cookie_prefs', JSON.stringify(prefs)); } catch {} setCookieAccepted(false); }}
+                    className={`relative w-10 h-5 rounded-full transition-all ${(() => { try { return JSON.parse(localStorage.getItem('cookie_prefs') || '{"perf":true}').perf !== false; } catch { return true; } })() ? 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm' : 'bg-gray-300'}`}>
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${(() => { try { return JSON.parse(localStorage.getItem('cookie_prefs') || '{"perf":true}').perf !== false; } catch { return true; } })() ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">Sayfa kullanım istatistikleri ve performans ölçümleri için kullanılır.</p>
+              </div>
+              <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); localStorage.setItem('cookie_prefs', JSON.stringify({perf: true})); } catch {} setCookieAccepted(true); setShowCookieModal(false); }}
+                className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-semibold shadow-md">Tümünü Kabul Et ve Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legal Text Modal */}
+      {showLegalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowLegalModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">{legalTitle}</h3>
+              <button onClick={() => setShowLegalModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto p-5 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{legalBody}</div>
+            <div className="px-5 py-4 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setShowLegalModal(false)} className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg text-xs font-semibold shadow-sm">Anladım</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
