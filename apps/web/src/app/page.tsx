@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, Shield, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -252,7 +252,7 @@ export default function LandingPage() {
               { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.', color: 'from-orange-500 to-amber-500 shadow-orange-200' },
               { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.', color: 'from-teal-500 to-emerald-600 shadow-teal-200' },
               { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.', color: 'from-amber-500 to-yellow-500 shadow-amber-200' },
-              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri, sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.', color: 'from-cyan-600 to-blue-700 shadow-cyan-200' },
+              { icon: Zap, title: 'Akıllı Satış Otomasyonu', desc: 'Tekrar sipariş hatırlatma, sepeti terk eden müşteriyi yakalama ve özel gün kampanyalarını yapay zekâ ile otomatik yürütün.', color: 'from-indigo-500 to-purple-600 shadow-indigo-200' },
             ].map((f) => {
               const Icon = f.icon;
               return (
@@ -410,6 +410,17 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* KVKK AI Banner */}
+      <div className="bg-slate-900 text-white rounded-2xl p-8 my-16 border border-slate-800 max-w-5xl mx-auto shadow-lg">
+        <div className="text-center max-w-2xl mx-auto">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">%100 KVKK & Veri Güvenliği Uyumlu Altyapı</span>
+          <h3 className="text-2xl font-bold text-white mb-3">Verileriniz Yüksek Güvenlikle Korunuyor</h3>
+          <p className="text-slate-300 text-base leading-relaxed">
+            SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformumuz <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4 font-medium transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile uçtan uca denetlenmekte ve güvence altında tutulmaktadır.
+          </p>
+        </div>
+      </div>
 
       {/* Demo Form */}
       <section id="demo" className="py-20">
