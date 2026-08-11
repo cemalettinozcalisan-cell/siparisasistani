@@ -49,9 +49,9 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(124,58,237,0.15),transparent_50%)]" />
         <div className="relative z-10 text-center space-y-8 max-w-md">
           <div className="text-4xl font-bold text-white mb-2">
-            <span className="bg-ai-gradient bg-clip-text text-transparent">SiparisAsistani</span>
+            <span className="font-bold">Sipariş</span><span className="bg-ai-gradient bg-clip-text text-transparent">Asistanı</span>
           </div>
-          <p className="text-slate-400 text-sm">AI destekli siparis ve isletme yonetim sistemi</p>
+          <p className="text-slate-400 text-sm">AI destekli sipariş ve işletme yönetim sistemi</p>
 
           {/* Flow Animation */}
           <div className="relative py-12">
@@ -80,7 +80,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center lg:text-left">
-            <div className="w-10 h-10 rounded-xl bg-ai-gradient flex items-center justify-center text-white font-bold mx-auto lg:mx-0 mb-4">S</div>
+            <img src="/logo2.png" alt="SiparişAsistanı" className="w-12 h-12 object-contain mx-auto lg:mx-0 mb-4" />
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Hoş Geldiniz</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">SiparişAsistanı paneline giriş yapın</p>
           </div>
