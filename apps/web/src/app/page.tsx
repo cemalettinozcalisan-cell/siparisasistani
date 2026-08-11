@@ -155,15 +155,15 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((item) => (
               <a key={item.label} href={item.href}
-                className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition-colors">{item.label}</a>
+                className="text-sm font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400 dark:text-slate-500 hover:text-indigo-600 transition-colors">{item.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); document.documentElement.classList.toggle('dark', next === 'dark'); try { localStorage.setItem('theme', next); } catch {} }}
-              className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-800 transition-all">
               {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-            <a href="/login" className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors">Giriş</a>
+            <a href="/login" className="text-sm font-semibold text-slate-700 dark:text-slate-200 dark:text-slate-300 hover:text-indigo-600 transition-colors">Giriş</a>
             <a href="#demo" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-md shadow-indigo-200 text-white font-medium rounded-xl px-4 py-2 text-xs transition-all">Ücretsiz Dene</a>
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function LandingPage() {
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 rounded-full text-xs font-medium text-violet-700 mb-6 animate-fade-in">
           <Sparkles className="w-3.5 h-3.5" /> AI Destekli Sipariş Sistemi
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
+        <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white leading-tight">
           Telefon, WhatsApp, Instagram,
           <br />
           SMS ve Web sitenizden gelen siparişleri
@@ -183,7 +183,7 @@ export default function LandingPage() {
         </h1>
         <p className="mt-4 text-lg max-w-2xl mx-auto leading-relaxed font-semibold">
           <span className="animate-gradient-text">Yapay Zekâ Siparişlerinizi Yönetsin,</span>
-          <span className="text-slate-900"> Siz Satışlarınızı Büyütün.</span>
+          <span className="text-slate-900 dark:text-white"> Siz Satışlarınızı Büyütün.</span>
         </p>
         <p className="mt-3 text-sm text-violet-600 font-medium bg-violet-50 inline-block px-4 py-1 rounded-full">SiparişAsistanı Ai — Yapay Zeka Ticari İşletim Sistemi</p>
         <div className="mt-8 flex items-center justify-center gap-3">
@@ -198,7 +198,7 @@ export default function LandingPage() {
               <div className="w-3 h-3 rounded-full bg-red-500" />
               <div className="w-3 h-3 rounded-full bg-yellow-500" />
               <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-xs text-slate-400 ml-2">SiparişAsistanı - Kontrol Paneli</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">SiparişAsistanı - Kontrol Paneli</span>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-4 gap-3 mb-4">
@@ -211,13 +211,13 @@ export default function LandingPage() {
                   const MIcon = item.icon;
                   return (
                   <div key={i} className="bg-slate-800/50 rounded-lg p-3 text-left border border-slate-700/50">
-                    <div className="text-xs text-slate-500 flex items-center gap-1"><MIcon size={13} className="text-slate-400" /> {item.label}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-1"><MIcon size={13} className="text-slate-400 dark:text-slate-500" /> {item.label}</div>
                     <div className="text-xl font-bold text-white mt-0.5">{item.val}</div>
                   </div>
                 )})}
               </div>
               <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
+                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-2">
                   <span className="text-emerald-400 font-medium">🟢 AI Çalışıyor</span>
                   <span>•</span>
                   <span>Son Sipariş: 2 dk önce</span>
@@ -239,9 +239,9 @@ export default function LandingPage() {
       </section>
 
       {/* Omnichannel Flow */}
-      <section className="bg-white py-20">
+      <section className="bg-white dark:bg-slate-900 py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8 text-center">
             Tüm satış kanallarınızı <span className="animate-gradient-text">tek bir platformda</span> birleştirin
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -253,8 +253,8 @@ export default function LandingPage() {
                   <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg transition-all duration-500 ${isActive ? 'scale-110 shadow-xl ring-4 ring-white/30' : ''}`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <p className="text-xs font-semibold text-slate-700 mt-2">{step.label}</p>
-                  <p className="text-[11px] font-medium text-slate-500">{step.desc}</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-2">{step.label}</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500">{step.desc}</p>
                 </div>
               );
             })}
@@ -263,9 +263,9 @@ export default function LandingPage() {
       </section>
 
       {/* Nasıl Çalışır */}
-      <section id="nasil-calisir" className="bg-slate-50/70 border-y border-slate-100 py-20">
+      <section id="nasil-calisir" className="bg-slate-50 dark:bg-slate-800/70 border-y border-slate-100 dark:border-slate-700 py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h3 className="text-3xl font-bold text-slate-900 mb-8 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
+          <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-8 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {OMNICHANNEL_FLOW.slice(5, 11).map((step, i) => {
               const Icon = step.icon;
@@ -275,13 +275,13 @@ export default function LandingPage() {
                   <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg transition-all duration-500 ${isActive ? 'scale-110 shadow-xl ring-4 ring-white/30' : ''}`}>
                     <Icon className="w-7 h-7 text-white" />
                   </div>
-                  <p className="text-xs font-semibold text-slate-700 mt-2">{step.label}</p>
-                  <p className="text-[11px] font-medium text-slate-500">{step.desc}</p>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-2">{step.label}</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 dark:text-slate-500">{step.desc}</p>
                 </div>
               );
             })}
           </div>
-          <div className="mt-6 flex items-center justify-center gap-1 text-xs text-slate-400">
+          <div className="mt-6 flex items-center justify-center gap-1 text-xs text-slate-400 dark:text-slate-500">
             {OMNICHANNEL_FLOW.map((_, i) => (
               <button key={i} onClick={() => setActiveStep(i)}
                 className={`w-2 h-2 rounded-full transition-all ${i === activeStep ? 'bg-violet-500 w-4' : 'bg-slate-300'}`} />
@@ -291,11 +291,11 @@ export default function LandingPage() {
       </section>
 
       {/* Sektör Kartları */}
-      <section className="bg-white py-20">
+      <section className="bg-white dark:bg-slate-900 py-20">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-center text-3xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</h2>
+          <h2 className="text-center text-3xl font-bold text-slate-900 dark:text-white mb-2">Geleceğin Ticaretine Güvenen İşletmeler</h2>
           <p className="text-center text-sm animate-gradient-text font-semibold mb-1">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
-          <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1 mb-8">İster toptan, ister perakende; SiparişAsistanı iş modelinize anında uyum sağlar.</p>
+          <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-200 dark:text-slate-300 mt-1 mb-8">İster toptan, ister perakende; SiparişAsistanı iş modelinize anında uyum sağlar.</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { icon: Store, title: 'Toptan & Perakende', desc: 'Tüm toptan, perakende ve hizmet işletmeleri için müşteri mesajlarını siparişe dönüştürür.', color: 'from-blue-600 to-indigo-600 shadow-blue-200' },
@@ -307,10 +307,10 @@ export default function LandingPage() {
             ].map((card, i) => {
               const CardIcon = card.icon;
               return (
-              <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
                 <div className={`bg-gradient-to-br ${card.color} text-white p-3 rounded-xl shadow-md inline-flex items-center justify-center mb-3`}><CardIcon size={22} className="text-white" /></div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">{card.title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
             )})}
           </div>
@@ -318,9 +318,9 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="crm" className="bg-slate-50 py-20">
+      <section id="crm" className="bg-slate-50 dark:bg-slate-800 py-20">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-slate-900">Her Şey Tek Panelde</h2>
+          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-white">Her Şey Tek Panelde</h2>
           <p className="mt-2 text-center text-sm animate-gradient-text font-semibold">Akıllı Sipariş. Hızlı Operasyon.</p>
           <div className="grid grid-cols-3 gap-6 mt-10">
             {[
@@ -335,8 +335,8 @@ export default function LandingPage() {
               return (
                 <div key={f.title} className="card group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
                   <div className={`bg-gradient-to-br ${f.color} w-10 h-10 rounded-lg flex items-center justify-center p-2.5 shadow-md`}><Icon className="w-5 h-5 text-white" /></div>
-                  <h3 className="font-semibold text-slate-900 mt-4">{f.title}</h3>
-                  <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{f.desc}</p>
+                  <h3 className="font-semibold text-slate-900 dark:text-white mt-4">{f.title}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">{f.desc}</p>
                 </div>
               );
             })}
@@ -348,7 +348,7 @@ export default function LandingPage() {
       <section id="entegrasyonlar" className="py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">Çoklu Kanal Entegrasyonları</h2>
-          <p className="mt-2 text-center text-sm font-semibold text-slate-600">Mevcut altyapınız ve iş süreçlerinizle %100 uyumlu, kesintisiz çalışma deneyimi.</p>
+          <p className="mt-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-300">Mevcut altyapınız ve iş süreçlerinizle %100 uyumlu, kesintisiz çalışma deneyimi.</p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mt-10">
             {[
               {
@@ -394,8 +394,8 @@ export default function LandingPage() {
                     <Icon className="w-7 h-7 text-white" />
                   </div>
                   <h4 className="font-bold text-slate-900 dark:text-white mt-4 text-sm">{f.title}</h4>
-                  <p className="font-semibold text-slate-500 dark:text-slate-400 text-xs mt-1">{f.desc}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{f.sub}</p>
+                  <p className="font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs mt-1">{f.desc}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-2 leading-relaxed">{f.sub}</p>
                 </div>
               );
             })}
@@ -416,7 +416,7 @@ export default function LandingPage() {
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-3xl font-bold bg-ai-gradient bg-clip-text text-transparent">{stat.value}</div>
-                <div className="text-sm text-slate-500 mt-1">{stat.label}</div>
+                <div className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -424,10 +424,10 @@ export default function LandingPage() {
       </section>
 
       {/* Değer Kartları */}
-      <section id="basari-hikayeleri" className="bg-slate-50 py-20">
+      <section id="basari-hikayeleri" className="bg-slate-50 dark:bg-slate-800 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">İşletmenizde Neleri Değiştiriyoruz?</h2>
-          <p className="mt-2 text-center text-sm font-semibold text-slate-600 mb-10">SiparişAsistanı ile operasyonel yükü sıfırlayın, satışlarınızı katlayın.</p>
+          <p className="mt-2 text-center text-sm font-semibold text-slate-600 dark:text-slate-300 mb-10">SiparişAsistanı ile operasyonel yükü sıfırlayın, satışlarınızı katlayın.</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { icon: Bot, title: '%98 Yapay Zekâ Başarısı', desc: 'Yoğun zamanlarda manuel not alırken yapılan hatalı adres, ürün ve telaffuz kayıtlarına son verin.', gradient: 'from-violet-500 to-purple-600' },
@@ -439,10 +439,10 @@ export default function LandingPage() {
             ].map((card, i) => {
               const CardIcon = card.icon;
               return (
-              <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-5 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center text-white mb-3 shadow-sm`}><CardIcon size={18} /></div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">{card.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">{card.title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed">{card.desc}</p>
               </div>
             )})}
           </div>
@@ -455,12 +455,12 @@ export default function LandingPage() {
           <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white p-4 rounded-2xl shadow-lg shadow-indigo-200 inline-flex items-center justify-center mb-6">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-slate-900">Dijital Dönüşüm Hikâyemiz</h2>
-          <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Dijital Dönüşüm Hikâyemiz</h2>
+          <p className="mt-6 text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
             <span className="animate-gradient-text font-semibold">SiparişAsistanı</span>, yerel üreticilerin satış süreçlerini
             <span className="animate-gradient-text font-semibold"> yapay zekâ teknolojisiyle dijitalleştiren</span> yenilikçi bir sipariş & satış yönetim platformudur.
           </p>
-          <p className="mt-4 text-slate-500 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-4 text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed max-w-2xl mx-auto">
             <span className="animate-gradient-text font-semibold">Sesli çağrıları, WhatsApp mesajlarını, SMS'leri, Instagram DM'lerini ve Web Sitenizdeki siparişleri akıllı yapay zekâ asistanımızla anında yanıtlayan</span> ve doğrudan siparişe dönüştüren altyapımız,
             geleneksel yöntemlerle satış yapan işletmelerin operasyonel yükünü hafifletmek
             için tasarlandı. Yöresel lezzetleri üreten esnafımızın <span className="animate-gradient-text font-semibold">dijital dönüşümüne öncülük ederek, verimliliği ve müşteri memnuniyetini en üst seviyeye çıkarıyoruz</span>.
@@ -470,18 +470,18 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="sss" className="bg-slate-50 py-20">
+      <section id="sss" className="bg-slate-50 dark:bg-slate-800 py-20">
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center animate-gradient-text">Sıkça Sorulan Sorular</h2>
           <div className="mt-10 space-y-3">
             {FAQ.map((item, i) => (
               <div key={i} className="card !p-0 overflow-hidden">
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-sm font-medium text-slate-900 hover:bg-slate-50 transition-colors">
+                  className="w-full flex items-center justify-between px-5 py-4 text-sm font-medium text-slate-900 dark:text-white hover:bg-slate-50 transition-colors">
                   {item.q}
                   <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`} />
                 </button>
-                {openFaq === i && <div className="px-5 pb-4 text-sm text-slate-500 leading-relaxed animate-slide-up">{item.a}</div>}
+                {openFaq === i && <div className="px-5 pb-4 text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed animate-slide-up">{item.a}</div>}
               </div>
             ))}
           </div>
@@ -494,7 +494,7 @@ export default function LandingPage() {
           <ShieldCheck className="w-7 h-7 text-white" />
         </div>
         <h3 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-4 tracking-tight">%100 KVKK & Veri Güvenliği Standardı</h3>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed font-normal">
+        <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed font-normal">
           SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformu <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI</a> altyapısı ile oluşturulmuş, uçtan uca denetlenerek güvence altına alınmıştır.
         </p>
       </section>
@@ -503,13 +503,13 @@ export default function LandingPage() {
       <section id="demo" className="py-20">
         <div className="max-w-xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold animate-gradient-text">Ücretsiz Demo Talep Edin</h2>
-          <p className="mt-2 text-slate-500">Size özel canlı demo için bilgilerinizi bırakın, sizi arayalım.</p>
+          <p className="mt-2 text-slate-500 dark:text-slate-400 dark:text-slate-500">Size özel canlı demo için bilgilerinizi bırakın, sizi arayalım.</p>
 
           {demoSent ? (
             <div className="mt-8 card text-center space-y-2 animate-fade-in">
               <Send className="w-8 h-8 text-emerald-500 mx-auto" />
-              <p className="font-semibold text-slate-900">Teşekkür Ederiz!</p>
-              <p className="text-sm text-slate-500">Demo talebiniz alındı. En kısa sürede sizinle iletişime geçeceğiz.</p>
+              <p className="font-semibold text-slate-900 dark:text-white">Teşekkür Ederiz!</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">Demo talebiniz alındı. En kısa sürede sizinle iletişime geçeceğiz.</p>
             </div>
           ) : (
             <form className="mt-8 space-y-3 text-left" onSubmit={handleDemoSubmit}>
@@ -520,21 +520,21 @@ export default function LandingPage() {
               <button type="submit" className="btn-primary w-full group" disabled={sending}>
                 <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /> {sending ? 'Gönderiliyor...' : 'Gönder'}
               </button>
-              <p className="text-xs text-slate-400 text-center mt-2">Demo talebiniz alındıktan sonra tarafınıza özel canlı demo planlanacaktır.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-2">Demo talebiniz alındıktan sonra tarafınıza özel canlı demo planlanacaktır.</p>
             </form>
           )}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 py-8">
+      <footer className="border-t border-slate-100 dark:border-slate-700 py-8">
         <div className="max-w-6xl mx-auto px-6 space-y-4">
-          <div className="flex items-center justify-between text-sm text-slate-400 flex-wrap gap-4">
+          <div className="flex items-center justify-between text-sm text-slate-400 dark:text-slate-500 flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <img src="/logo2.png" alt="" className="w-5 h-5 object-contain" />
               <span>2026 SiparişAsistanı</span>
             </div>
-            <div className="flex flex-wrap gap-4 items-center text-xs text-slate-500">
+            <div className="flex flex-wrap gap-4 items-center text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">
               <button onClick={() => { setLegalTitle('Platform Aydınlatma Metni'); setLegalBody(LEGAL_TEXTS.aydinlatma); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Platform Aydınlatma Metni</button>
               <button onClick={() => { setLegalTitle('Gizlilik Sözleşmesi'); setLegalBody(LEGAL_TEXTS.gizlilik); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Gizlilik Sözleşmesi</button>
               <button onClick={() => { setLegalTitle('Çerez Politikası'); setLegalBody(LEGAL_TEXTS.cerez); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Çerez Politikası</button>
@@ -542,7 +542,7 @@ export default function LandingPage() {
               <button onClick={() => { setLegalTitle('Hizmet Sözleşmesi'); setLegalBody(LEGAL_TEXTS.hizmet); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</button>
             </div>
           </div>
-          <div className="text-center text-xs text-slate-400">
+          <div className="text-center text-xs text-slate-400 dark:text-slate-500">
             SiparişAsistanı Ai — Yapay Zeka Ticari İşletim Sistemi
           </div>
         </div>
@@ -551,33 +551,33 @@ export default function LandingPage() {
       {/* Cookie Banner */}
       {!cookieAccepted && (
         <div className="fixed bottom-4 left-4 z-50 max-w-md bg-white/95 backdrop-blur-md p-5 rounded-2xl border border-indigo-100 shadow-2xl text-slate-800 animate-slide-up">
-          <h4 className="text-sm font-bold text-slate-900 mb-2">Çerez Aydınlatması</h4>
-          <p className="text-xs text-slate-600 leading-relaxed mb-4">
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">Çerez Aydınlatması</h4>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
             Sitemizde deneyiminizi iyileştirmek, analiz yapmak ve sipariş süreçlerini kesintisiz yürütmek amacıyla zorunlu ve performans çerezleri kullanıyoruz. Detaylar için <a href="#" className="text-indigo-600 underline">Çerez Politikası</a> ve <a href="#" className="text-indigo-600 underline">Aydınlatma Metni</a>ni inceleyebilirsiniz.
           </p>
           <div className="flex items-center gap-2">
             <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); } catch {} setCookieAccepted(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-200">Kabul Et</button>
-            <button onClick={() => setShowCookieModal(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition-all">Çerez Tercihleri</button>
+            <button onClick={() => setShowCookieModal(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-medium px-3 py-2 rounded-xl transition-all">Çerez Tercihleri</button>
           </div>
-          <p className="text-[10px] text-slate-400 mt-3">Çerez altyapısı KVKK AI standartları ile korunmaktadır.</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3">Çerez altyapısı KVKK AI standartları ile korunmaktadır.</p>
         </div>
       )}
 
       {/* Cookie Preferences Modal */}
       {showCookieModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCookieModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Çerez Tercihleri</h3>
-              <button onClick={() => setShowCookieModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Çerez Tercihleri</h3>
+              <button onClick={() => setShowCookieModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><X size={18} /></button>
             </div>
             <div className="space-y-4">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold text-slate-800">Zorunlu Çerezler</span>
-                  <span className="text-[10px] bg-slate-300 text-slate-600 px-2 py-0.5 rounded-full">Her Zaman Aktif</span>
+                  <span className="text-[10px] bg-slate-300 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">Her Zaman Aktif</span>
                 </div>
-                <p className="text-xs text-slate-500">Oturum yönetimi, güvenlik ve platformun çalışması için gereklidir.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Oturum yönetimi, güvenlik ve platformun çalışması için gereklidir.</p>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <div className="flex items-center justify-between mb-1">
@@ -587,7 +587,7 @@ export default function LandingPage() {
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${(() => { try { return JSON.parse(localStorage.getItem('cookie_prefs') || '{"perf":true}').perf !== false; } catch { return true; } })() ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">Sayfa kullanım istatistikleri ve performans ölçümleri için kullanılır.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Sayfa kullanım istatistikleri ve performans ölçümleri için kullanılır.</p>
               </div>
               <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); localStorage.setItem('cookie_prefs', JSON.stringify({perf: true})); } catch {} setCookieAccepted(true); setShowCookieModal(false); }}
                 className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-semibold shadow-md">Tümünü Kabul Et ve Kaydet</button>
@@ -599,13 +599,13 @@ export default function LandingPage() {
       {/* Legal Text Modal */}
       {showLegalModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowLegalModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">{legalTitle}</h3>
-              <button onClick={() => setShowLegalModal(false)} className="p-1 hover:bg-slate-100 rounded-lg"><X size={18} /></button>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{legalTitle}</h3>
+              <button onClick={() => setShowLegalModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><X size={18} /></button>
             </div>
-            <div className="overflow-y-auto p-5 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{legalBody}</div>
-            <div className="px-5 py-4 border-t border-slate-100 flex justify-end">
+            <div className="overflow-y-auto p-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{legalBody}</div>
+            <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
               <button onClick={() => setShowLegalModal(false)} className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg text-xs font-semibold shadow-sm">Anladım</button>
             </div>
           </div>
