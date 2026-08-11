@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -415,12 +415,15 @@ export default function LandingPage() {
       </section>
 
       {/* KVKK AI Banner */}
-      <div className="bg-gradient-to-r from-violet-50/60 via-slate-50 to-indigo-50/60 text-slate-800 rounded-3xl p-8 my-14 border border-indigo-100/80 shadow-xs max-w-4xl mx-auto text-center">
-        <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-2 inline-block">%100 KVKK & Veri Güvenliği Standardı</h3>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto mt-3">
-          SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformu <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile oluşturulmuş, uçtan uca denetlenerek güvence altına alınmıştır.
+      <section className="max-w-3xl mx-auto text-center py-12 px-4">
+        <div className="inline-flex items-center justify-center p-3.5 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 text-white rounded-2xl shadow-lg shadow-indigo-200 mb-4">
+          <ShieldCheck className="w-7 h-7 text-white" />
+        </div>
+        <h3 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-4 tracking-tight">%100 KVKK & Veri Güvenliği Standardı</h3>
+        <p className="text-slate-600 text-sm md:text-base leading-relaxed font-normal">
+          SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformu <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI</a> altyapısı ile oluşturulmuş, uçtan uca denetlenerek güvence altına alınmıştır.
         </p>
-      </div>
+      </section>
 
       {/* Demo Form */}
       <section id="demo" className="py-20">
