@@ -193,7 +193,7 @@ export default function LandingPage() {
       {/* Referanslar */}
       <section className="pb-20 -mt-8">
         <div className="max-w-5xl mx-auto px-6">
-          <p className="text-center text-xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
+          <p className="text-center text-3xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
           <p className="text-center text-sm animate-gradient-text font-semibold mb-6">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
           <div className="grid grid-cols-4 gap-3">
             {REFERENCES.map((name, i) => {
@@ -223,7 +223,7 @@ export default function LandingPage() {
               { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.' },
               { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.' },
               { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.' },
-              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri ve sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.' },
+              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri, sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.' },
             ].map((f) => {
               const Icon = f.icon;
               return (
