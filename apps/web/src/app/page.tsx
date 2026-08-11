@@ -89,6 +89,24 @@ Fikri Mülkiyet: Platformun tüm içeriği, tasarımı ve yazılımı SiparişAs
 Hizmet Kesintisi: Mücbir sebepler dışında %99 uptime taahhüt edilir. Planlı bakımlar önceden bildirilir.
 
 Sorumluluk Sınırı: Platform üzerinden alınan siparişlerin içeriğinden kullanıcı sorumludur. Şirket, dolaylı zararlardan sorumlu tutulamaz.`,
+
+  hizmet: `İşbu Hizmet Sözleşmesi, SiparişAsistanı Yazılım A.Ş. ("Hizmet Sağlayıcı") ile platformu kullanan gerçek/tüzel kişi ("Abone") arasında akdedilmiştir.
+
+Madde 1 — Konu: Bu sözleşme, Abone'nin SiparişAsistanı platformunu kullanım koşullarını belirler.
+
+Madde 2 — Süre: Sözleşme, Abone'nin dijital onayı ile yürürlüğe girer ve seçilen paket süresince geçerlidir.
+
+Madde 3 — Paket ve Kota: Abone, fatura dönemi içinde paketini değiştirebilir. Kullanılmayan sipariş hakkı sonraki aya devretmez.
+
+Madde 4 — Ödeme: Faturalar aylık düzenlenir. Ödeme kredi kartı veya havale/EFT ile yapılır. Vadesinde ödenmeyen fatura için 7 gün ek süre tanınır.
+
+Madde 5 — Cayma Hakkı: Abone ilk 14 gün içinde gerekçesiz cayma hakkına sahiptir.
+
+Madde 6 — KVKK ve Gizlilik: Abone verileri KVKK kapsamında işlenir, üçüncü taraflarla paylaşılmaz.
+
+Madde 7 — Hizmet Seviyesi: %99 uptime taahhüt edilir. Planlı bakımlar önceden bildirilir.
+
+Madde 8 — Yürürlük: Dijital onay ile yürürlüğe girer.`,
 };
 
 export default function LandingPage() {
@@ -515,7 +533,7 @@ export default function LandingPage() {
               <button onClick={() => { setLegalTitle('Gizlilik Sözleşmesi'); setLegalBody(LEGAL_TEXTS.gizlilik); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Gizlilik Sözleşmesi</button>
               <button onClick={() => { setLegalTitle('Çerez Politikası'); setLegalBody(LEGAL_TEXTS.cerez); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Çerez Politikası</button>
               <button onClick={() => { setLegalTitle('Kullanım Koşulları'); setLegalBody(LEGAL_TEXTS.kullanim); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Kullanım Koşulları</button>
-              <a href="/login" className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</a>
+              <button onClick={() => { setLegalTitle('Hizmet Sözleşmesi'); setLegalBody(LEGAL_TEXTS.hizmet); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</button>
             </div>
           </div>
           <div className="text-center text-xs text-slate-400">
