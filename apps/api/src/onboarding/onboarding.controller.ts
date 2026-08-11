@@ -17,6 +17,9 @@ export class OnboardingController {
     address?: string;
     city?: string;
     taxNumber?: string;
+    sector?: string;
+    identityNumber?: string;
+    taxOffice?: string;
     logoUrl?: string;
     products: { product_name: string; category?: string; price: number; unit: string; sale_types?: string[] }[];
     cargoCompanies?: string[];
@@ -65,6 +68,9 @@ export class OnboardingController {
       callback_enabled: true,
       record_calls: true,
       record_whatsapp: true,
+      sector: body.sector || 'genel',
+      identity_number: body.identityNumber || null,
+      tax_office: body.taxOffice || null,
     });
 
     // 3. Cargo settings

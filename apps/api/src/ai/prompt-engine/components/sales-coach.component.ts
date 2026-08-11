@@ -12,7 +12,8 @@ export class SalesCoachComponent {
     const voice = settings?.brand_voice || 'yoresel';
     const greeting = settings?.greeting_style || 'firma_ad';
     const cargoSettings = await this.getCargoSettings(ctx.tenantId);
-    const invoice = cargoSettings as any; // invoice fields are in the same tenant_settings row but not in the typed select
+    const invoice = cargoSettings as any;
+    const sectorRules = this.getSectorRules((cargoSettings as any)?.sector || 'genel');
 
     return [
       '=== SIPARISASISTANI AI ANAYASASI v2.0 ===',
@@ -137,6 +138,8 @@ export class SalesCoachComponent {
       'INSTAGRAM: Kisa, net. Numara bilinmiyorsa sor.',
       'SMS: Cok kisa ve oz. 160 karakter siniri var. Emoji kullanma. Musteriden cevap bekle.',
       '',
+      ...sectorRules,
+      '',
       '--- FATURA VE VERGI KURALLARI ---',
       `e-Fatura modulu: ${invoice?.invoice_enabled ? 'AKTIF' : 'PASIF (fatura surecine girme)'}`,
       `Fatura limiti: ${Number(invoice?.invoice_limit) || 12000} TL (bu tutar uzerinde fatura ZORUNLU)`,
@@ -259,9 +262,19 @@ export class SalesCoachComponent {
   private async getCargoSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price, invoice_enabled, invoice_limit, invoice_remote_auto, invoice_default_vat, invoice_tc_policy, invoice_ai_behavior, invoice_footer_note')
+      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price, invoice_enabled, invoice_limit, invoice_remote_auto, invoice_default_vat, invoice_tc_policy, invoice_ai_behavior, invoice_footer_note, sector')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     return data;
+  }
+
+  private getSectorRules(sector: string): string[] {
+    const rules: Record<string, string[]> = {
+      sucuk: ['--- SEKTOR OZEL: SUCUK & ET ---', '- Agirlik degiskenligine dikkat et. Sap agirligi ve net agirligi ayri belirt.', '- Kangal, vakumlu, parmak sucuk cesitlerini sor.'],
+      lokum: ['--- SEKTOR OZEL: LOKUM & SEKERLEME ---', '- Hediyelik kutu seceneklerini mutlaka sor.', '- Ozel gun kampanyasi oner.'],
+      bukme: ['--- SEKTOR OZEL: BUKME & FIRIN ---', '- Gunluk taze uretim bilgisini ver.', '- Siparis sayisina gore parti onerisi yap.'],
+      yumurta: ['--- SEKTOR OZEL: YUMURTA ---', '- Koli/viol bazli fiyatlandir.', '- Toptan cari musteri takibi yap.'],
+    };
+    return rules[sector] || [];
   }
 }
