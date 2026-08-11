@@ -159,9 +159,11 @@ export default function LandingPage() {
           <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl -z-10" />
           <div className="absolute -top-4 -left-4 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl -z-10" />
         </div>
+      </section>
 
-        {/* Omnichannel Flow */}
-        <div className="mt-20 max-w-6xl mx-auto">
+      {/* Omnichannel Flow */}
+      <section className="bg-white py-20">
+        <div className="max-w-6xl mx-auto px-6 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
             Tüm satış kanallarınızı <span className="animate-gradient-text">tek bir platformda</span> birleştirin
           </h2>
@@ -180,7 +182,13 @@ export default function LandingPage() {
               );
             })}
           </div>
-          <h3 id="nasil-calisir" className="text-3xl font-bold text-slate-900 mb-6 mt-24 py-12 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
+        </div>
+      </section>
+
+      {/* Nasıl Çalışır */}
+      <section id="nasil-calisir" className="bg-slate-50/70 border-y border-slate-100 py-20">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <h3 className="text-3xl font-bold text-slate-900 mb-8 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {OMNICHANNEL_FLOW.slice(5, 11).map((step, i) => {
               const Icon = step.icon;
@@ -206,7 +214,7 @@ export default function LandingPage() {
       </section>
 
       {/* Sektör Kartları */}
-      <section className="pb-20 -mt-8">
+      <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-center text-3xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</h2>
           <p className="text-center text-sm animate-gradient-text font-semibold mb-1">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
