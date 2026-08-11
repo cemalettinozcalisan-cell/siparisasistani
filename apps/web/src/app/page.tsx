@@ -52,10 +52,13 @@ export default function LandingPage() {
   const [demoSent, setDemoSent] = useState(false);
   const [sending, setSending] = useState(false);
 
+  const [cookieAccepted, setCookieAccepted] = useState(false);
+
   useEffect(() => {
     const interval = setInterval(() => setActiveStep((prev) => (prev + 1) % OMNICHANNEL_FLOW.length), 2500);
     return () => clearInterval(interval);
   }, []);
+  useEffect(() => { try { setCookieAccepted(localStorage.getItem('cookie_accepted') === 'true'); } catch {} }, []);
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -413,9 +416,8 @@ export default function LandingPage() {
 
       {/* KVKK AI Banner */}
       <div className="bg-gradient-to-r from-violet-50/60 via-slate-50 to-indigo-50/60 text-slate-800 rounded-3xl p-8 my-14 border border-indigo-100/80 shadow-xs max-w-4xl mx-auto text-center">
-        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 mb-3">%100 KVKK & Veri Güvenliği Standardı</span>
-        <h3 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Verileriniz Yüksek Güvenlikle Korunuyor</h3>
-        <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+        <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-2 inline-block">%100 KVKK & Veri Güvenliği Standardı</h3>
+        <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto mt-3">
           SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformu <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile oluşturulmuş, uçtan uca denetlenerek güvence altına alınmıştır.
         </p>
       </div>
@@ -449,16 +451,40 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-100 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between text-sm text-slate-400">
-          <div className="flex items-center gap-2">
-            <img src="/logo2.png" alt="" className="w-5 h-5 object-contain" />
-            <span>2026 SiparişAsistanı</span>
+        <div className="max-w-6xl mx-auto px-6 space-y-4">
+          <div className="flex items-center justify-between text-sm text-slate-400 flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/logo2.png" alt="" className="w-5 h-5 object-contain" />
+              <span>2026 SiparişAsistanı</span>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center text-xs text-slate-500">
+              <a href="#" className="hover:text-indigo-600 transition-colors">Platform Aydınlatma Metni</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">Gizlilik Sözleşmesi</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">Çerez Politikası</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">Kullanım Koşulları</a>
+              <a href="#" className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</a>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs">SiparişAsistanı Ai — Yapay Zeka Ticari İşletim Sistemi</span>
+          <div className="text-center text-xs text-slate-400">
+            SiparişAsistanı Ai — Yapay Zeka Ticari İşletim Sistemi
           </div>
         </div>
       </footer>
+
+      {/* Cookie Banner */}
+      {!cookieAccepted && (
+        <div className="fixed bottom-4 left-4 z-50 max-w-md bg-white/95 backdrop-blur-md p-5 rounded-2xl border border-indigo-100 shadow-2xl text-slate-800 animate-slide-up">
+          <h4 className="text-sm font-bold text-slate-900 mb-2">Çerez Aydınlatması</h4>
+          <p className="text-xs text-slate-600 leading-relaxed mb-4">
+            Sitemizde deneyiminizi iyileştirmek, analiz yapmak ve sipariş süreçlerini kesintisiz yürütmek amacıyla zorunlu ve performans çerezleri kullanıyoruz. Detaylar için <a href="#" className="text-indigo-600 underline">Çerez Politikası</a> ve <a href="#" className="text-indigo-600 underline">Aydınlatma Metni</a>ni inceleyebilirsiniz.
+          </p>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); } catch {} setCookieAccepted(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-200">Kabul Et</button>
+            <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-xl transition-all">Çerez Tercihleri</button>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-3">Çerez altyapısı KVKK AI standartları ile korunmaktadır.</p>
+        </div>
+      )}
     </div>
   );
 }
