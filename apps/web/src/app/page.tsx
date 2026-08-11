@@ -145,25 +145,25 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <div className="min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300">
+      <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain" />
-            <span className="text-sm"><span className="font-bold text-slate-900">Sipariş</span><span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Asistanı</span></span>
+            <span className="text-sm"><span className="font-bold text-slate-900 dark:text-white">Sipariş</span><span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Asistanı</span></span>
           </div>
           <div className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((item) => (
               <a key={item.label} href={item.href}
-                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">{item.label}</a>
+                className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition-colors">{item.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); document.documentElement.classList.toggle('dark', next === 'dark'); try { localStorage.setItem('theme', next); } catch {} }}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200/60 dark:border-slate-700">
+              className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
               {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-            <a href="/login" className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors">Giriş</a>
+            <a href="/login" className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors">Giriş</a>
             <a href="#demo" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-md shadow-indigo-200 text-white font-medium rounded-xl px-4 py-2 text-xs transition-all">Ücretsiz Dene</a>
           </div>
         </div>
