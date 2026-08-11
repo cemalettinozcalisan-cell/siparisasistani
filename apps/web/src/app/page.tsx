@@ -24,7 +24,7 @@ const FAQ = [
   { q: 'SiparişAsistanı hangi sektörler için uygundur?', a: 'SiparişAsistanı; başta sucuk, lokum, şarküteri, bükme, yumurta ve yerel lezzet üreticileri olmak üzere, tüm yöresel gıda üreticileri ve işletmeler için özel olarak tasarlanmıştır. Telefon ve sosyal medya üzerinden yoğun sipariş trafiği yöneten her ölçekteki üretici için %100 uyumludur.' },
   { q: 'Kargo takibi nasıl çalışır?', a: 'Siparişiniz kargoya verildiğinde, aldığınız takip kodunu panele girmeniz yeterlidir. Yapay zekâ asistanınız; kargo firması, takip numarası ve sorgulama bağlantısını içeren kişiselleştirilmiş bilgilendirme mesajını müşterinize anında ve otomatik olarak iletir.' },
   { q: 'Telefon hattıma bağlanabiliyor mu?', a: 'Evet. Mevcut sabit veya kurumsal telefon hattınızla %100 uyumlu şekilde çalışır. Yeni bir hat satın almanıza veya numaranızı değiştirmenize gerek kalmadan, mevcut numaranızı yapay zekâ asistanımıza saniyeler içinde entegre edebilirsiniz.' },
-  { q: 'WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri sisteminizde görüntüleyebilir miyim?', a: 'Evet. Sistemimiz WhatsApp Business API, Instagram DM, SMS ve Web Sitenizin altyapılarıyla %100 entegre çalışır. Yapay zekâ asistanınız, müşterilerinizden gelen mesajları 7/24 anında yanıtlar, siparişleri otomatik olarak alır ve kargo takip bilgilendirmelerini müşterilerinize kesintisiz olarak iletir.' },
+  { q: 'WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri görebilir miyim?', a: 'Evet. Sistemimiz WhatsApp Business API, Instagram DM, SMS ve Web Sitenizin altyapılarıyla %100 entegre çalışır. Mesajları 7/24 yanıtlar, siparişleri otomatik alır ve kargo takibini müşterilerinize iletir.' },
   { q: 'Müşteri ve sipariş verilerimiz güvende mi?', a: 'Evet, %100 güvendedir. Platformumuz tam izole veri mimarisiyle çalışır. İşletmenize ve müşterilerinize ait tüm veriler yüksek güvenlikli sunucularda, uçtan uca şifrelenerek saklanır. Verilerinize sizden başka hiçbir işletme veya üçüncü taraf kesinlikle erişemez.' },
   { q: 'Yapay zekânın aldığı siparişlere müdahale edebilir miyim?', a: 'Dilediğiniz zaman. Yönetim paneliniz üzerinden tüm canlı görüşmeleri ve mesajlaşmaları anlık görebilir, gerektiğinde yapay zekâyı devreden çıkarıp konuşmaya veya sipariş detayına tek tıkla müdahale edebilirsiniz.' },
   { q: 'Mesai saatleri dışında veya hafta sonu sistem çalışmaya devam eder mi?', a: 'Evet, 7 gün 24 saat kesintisiz çalışır. İşletmeniz kapalı olsa bile yapay zekâ asistanınız gelen tüm aramaları ve mesajları yanıtlar, siparişleri toplar ve ertesi güne hazır hale getirir.' },
@@ -164,7 +164,7 @@ export default function LandingPage() {
       {/* Omnichannel Flow */}
       <section className="bg-white py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-8 text-center">
             Tüm satış kanallarınızı <span className="animate-gradient-text">tek bir platformda</span> birleştirin
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -378,7 +378,7 @@ export default function LandingPage() {
           <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6">
             <Building2 className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-slate-900">Hakkımızda</h2>
+          <h2 className="text-3xl font-bold text-slate-900">Dijital Dönüşüm Hikâyemiz</h2>
           <p className="mt-6 text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
             <span className="animate-gradient-text font-semibold">SiparişAsistanı</span>, yerel üreticilerin satış süreçlerini
             <span className="animate-gradient-text font-semibold"> yapay zekâ teknolojisiyle dijitalleştiren</span> yenilikçi bir sipariş & satış yönetim platformudur.
