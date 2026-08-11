@@ -31,11 +31,9 @@ const FAQ = [
 ];
 
 const NAV_LINKS = [
-  { label: 'Anasayfa', href: '#anasayfa' },
   { label: 'CRM', href: '#crm' },
   { label: 'Entegrasyonlar', href: '#entegrasyonlar' },
   { label: 'Başarı Hikayeleri', href: '#basari-hikayeleri' },
-  { label: 'Hakkımızda', href: '#hakkimizda' },
   { label: 'SSS', href: '#sss' },
   { label: 'İletişim', href: '#demo' },
 ];
@@ -76,19 +74,21 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo2.png" alt="SiparişAsistanı" className="w-7 h-7 object-contain" />
-            <span className="font-semibold text-sm text-slate-900">SiparişAsistanı</span>
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100/50">
+              <img src="/logo2.png" alt="SiparişAsistanı" className="w-5 h-5 object-contain" />
+            </div>
+            <span className="text-sm"><span className="font-bold text-slate-900">Sipariş</span><span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Asistanı</span></span>
           </div>
           <div className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((item) => (
               <a key={item.label} href={item.href}
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{item.label}</a>
+                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">{item.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <a href="/login" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Giriş</a>
-            <a href="#demo" className="btn-primary text-xs">Ücretsiz Dene</a>
+            <a href="/login" className="text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors">Giriş</a>
+            <a href="#demo" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 shadow-md shadow-indigo-200 text-white font-medium rounded-xl px-4 py-2 text-xs transition-all">Ücretsiz Dene</a>
           </div>
         </div>
       </nav>
