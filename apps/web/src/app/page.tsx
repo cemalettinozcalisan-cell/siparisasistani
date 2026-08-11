@@ -180,7 +180,7 @@ export default function LandingPage() {
               );
             })}
           </div>
-          <h3 id="nasil-calisir" className="text-xl font-bold text-slate-900 mb-6 mt-24 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
+          <h3 id="nasil-calisir" className="text-3xl font-bold text-slate-900 mb-6 mt-24 py-12 text-center">Sipariş <span className="animate-gradient-text">Asistanı </span>Nasıl Çalışır?</h3>
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {OMNICHANNEL_FLOW.slice(5, 11).map((step, i) => {
               const Icon = step.icon;
