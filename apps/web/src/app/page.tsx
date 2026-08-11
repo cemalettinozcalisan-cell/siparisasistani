@@ -193,8 +193,8 @@ export default function LandingPage() {
       {/* Referanslar */}
       <section className="pb-20 -mt-8">
         <div className="max-w-5xl mx-auto px-6">
-          <p className="text-center text-lg font-bold text-slate-700 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mb-6">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
+          <p className="text-center text-xl font-bold text-slate-900 mb-2">Geleceğin Ticaretine Güvenen İşletmeler</p>
+          <p className="text-center text-sm animate-gradient-text font-semibold mb-6">Geleneksel lezzetleri, yapay zekâ asistanı ile geleceğe taşıyanlar.</p>
           <div className="grid grid-cols-4 gap-3">
             {REFERENCES.map((name, i) => {
               const icons = [Package, ShoppingBag, ShoppingBag, Package, ShoppingBag, Building2, Building2, Building2];
@@ -218,12 +218,12 @@ export default function LandingPage() {
           <p className="mt-2 text-center text-sm animate-gradient-text font-semibold">Akıllı Sipariş. Hızlı Operasyon.</p>
           <div className="grid grid-cols-3 gap-6 mt-10">
             {[
-              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, WhatsApp, Instagram ve SMS üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.' },
-              { icon: Users, title: 'Müşteri Takibi', desc: 'Müşteri geçmişi, şikayetleri, siparişleri ve AI analizi tek ekranda.' },
+              { icon: Bot, title: 'AI Sipariş Alma', desc: 'Telefon, WhatsApp, Instagram, SMS ve Web Siteniz üzerinden gelen siparişleri AI otomatik alır, siz sadece onaylarsınız.' },
+              { icon: Users, title: 'Müşteri Takibi', desc: 'Müşteri geçmişi, özel istekler, sipariş alışkanlıkları ve AI analizi tek ekranda.' },
               { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.' },
-              { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik WhatsApp\'tan takip numarasını müşterinize iletir.' },
-              { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, şikayet ve kargo bildirimleri anlık olarak gelir.' },
-              { icon: Shield, title: 'Güvenli', desc: 'Multi-tenant altyapı ile verileriniz sadece sizin erişiminize özeldir.' },
+              { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.' },
+              { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.' },
+              { icon: Shield, title: 'Verileriniz Güvende', desc: 'Müşteri ve sipariş verileriniz KVKK standartlarına tam uyumlu ve yüksek güvenlikli altyapımızla koruma altında.' },
             ].map((f) => {
               const Icon = f.icon;
               return (
@@ -372,7 +372,7 @@ export default function LandingPage() {
       {/* FAQ */}
       <section id="sss" className="bg-slate-50 py-20">
         <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-slate-900">Sıkça Sorulan Sorular</h2>
+          <h2 className="text-3xl font-bold text-center animate-gradient-text">Sıkça Sorulan Sorular</h2>
           <div className="mt-10 space-y-3">
             {FAQ.map((item, i) => (
               <div key={i} className="card !p-0 overflow-hidden">

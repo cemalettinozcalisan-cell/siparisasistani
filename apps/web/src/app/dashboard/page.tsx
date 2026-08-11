@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, ArrowRight, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3 } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, ArrowRight, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -29,6 +29,7 @@ const CHANNEL_COLORS: Record<string, { icon: typeof PhoneCall; gradient: string 
   website: { icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
   sms: { icon: MessageCircle, gradient: 'from-sky-400 to-blue-500' },
   voice: { icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
+  system: { icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
 };
 
 export default function DashboardPage() {
