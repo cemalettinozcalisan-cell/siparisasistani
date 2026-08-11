@@ -201,9 +201,9 @@ export default function LandingPage() {
               const GradIcon = icons[i] || Building2;
               const grad = i < 5 ? 'from-amber-500 to-orange-600' : 'from-blue-500 to-indigo-600';
               return (
-              <div key={i} className="bg-slate-50 rounded-xl px-4 py-3 text-center border border-slate-100 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white text-xs font-bold mx-auto mb-1.5 shadow-sm`}><GradIcon size={14} /></div>
-                <p className="text-xs font-medium text-slate-700">{name}</p>
+              <div key={i} className="bg-slate-50 rounded-xl px-5 py-4 text-center border border-slate-100 group hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center text-white mx-auto mb-2 shadow-sm`}><GradIcon size={17} /></div>
+                <p className="text-sm font-semibold text-slate-700">{name}</p>
                 <p className="text-[10px] text-slate-400">Afyon</p>
               </div>
             )})}
