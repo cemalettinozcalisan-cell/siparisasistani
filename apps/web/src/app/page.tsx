@@ -412,11 +412,11 @@ export default function LandingPage() {
       </section>
 
       {/* KVKK AI Banner */}
-      <div className="bg-gradient-to-r from-emerald-50/80 via-slate-50 to-indigo-50/80 text-slate-800 rounded-3xl p-8 my-14 border border-indigo-100 shadow-sm max-w-4xl mx-auto text-center">
-        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 mb-3">%100 KVKK & Veri Güvenliği Standardı</span>
+      <div className="bg-gradient-to-r from-violet-50/60 via-slate-50 to-indigo-50/60 text-slate-800 rounded-3xl p-8 my-14 border border-indigo-100/80 shadow-xs max-w-4xl mx-auto text-center">
+        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70 mb-3">%100 KVKK & Veri Güvenliği Standardı</span>
         <h3 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Verileriniz Yüksek Güvenlikle Korunuyor</h3>
         <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-          SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformumuz <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile uçtan uca denetlenmekte ve güvence altında tutulmaktadır.
+          SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformu <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile oluşturulmuş, uçtan uca denetlenerek güvence altına alınmıştır.
         </p>
       </div>
 
