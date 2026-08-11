@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Check } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Check, Shield } from 'lucide-react';
 
 const DAYS = [
   { key: 'monday', label: 'Pazartesi' },
@@ -224,6 +224,7 @@ export default function SettingsPage() {
           { key: 'hours', label: 'Çalışma Saatleri', icon: Clock },
           { key: 'payment', label: 'Ödeme & Kargo', icon: Truck },
           { key: 'invoice', label: 'Fatura & Vergi', icon: Clock },
+          { key: 'identity', label: 'İşletme Kimliği', icon: Shield },
         ].map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.key;
@@ -851,6 +852,37 @@ export default function SettingsPage() {
         </div>
       </div>
       </>):null}
+
+      {/* TAB: İşletme Kimliği */}
+      {activeTab === 'identity' && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+          <SectionHeader icon={Shield} gradient="from-indigo-500 to-violet-600" title="İşletme Kimliği" />
+          <p className="text-[11px] text-slate-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2.5 flex items-start gap-2">
+            <Info size={13} className="shrink-0 mt-0.5 text-indigo-500" />
+            Bu bilgiler kurulum sırasında kaydedilmiştir. Değişiklik yapmak için destek ekibiyle iletişime geçin.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Firma Adı', value: String(settings?.company_name || '-') },
+              { label: 'Sektör', value: String(settings?.sector === 'sucuk' ? 'Sucuk & Et' : settings?.sector === 'lokum' ? 'Lokum & Şekerleme' : settings?.sector === 'bukme' ? 'Bükme & Fırın' : settings?.sector === 'yumurta' ? 'Yumurta' : settings?.sector ? 'Genel Ticaret' : '-') },
+              { label: 'Şehir', value: String(settings?.city || '-') },
+              { label: 'Vergi Dairesi', value: String(settings?.tax_office || '-') },
+              { label: 'TCKN / VKN', value: String(settings?.identity_number || '-') },
+              { label: 'Telefon', value: String(settings?.phone || '-') },
+              { label: 'E-posta', value: String(settings?.email || '-') },
+              { label: 'Durum', value: 'Aktif' },
+            ].map((f) => (
+              <div key={f.label} className="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-0.5">{f.label}</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{f.value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end pt-2">
+            <span className="text-[10px] text-slate-400">Kurulum tarihi: —</span>
+          </div>
+        </div>
+      )}
 
       {/* Bottom save */}
       <div className="flex justify-end">
