@@ -252,7 +252,7 @@ export default function LandingPage() {
               { icon: ShoppingBag, title: 'Sipariş Yönetimi', desc: 'Sipariş süreçlerinizi anlık olarak takip edin, durum güncellemelerini ve kargo bilgilerini saniyeler içinde ekleyin; yapay zekâ asistanınız tüm değişiklikleri müşterilerinize otomatik olarak bildirsin.', color: 'from-orange-500 to-amber-500 shadow-orange-200' },
               { icon: Truck, title: 'Kargo Takibi', desc: 'Kargo bilgisi girildiğinde AI otomatik takip numarasını müşterinize iletir.', color: 'from-teal-500 to-emerald-600 shadow-teal-200' },
               { icon: BellRing, title: 'Bildirimler', desc: 'Yeni sipariş, ödeme, müşteri talepleri ve kargo bildirimleri anlık olarak gelir.', color: 'from-amber-500 to-yellow-500 shadow-amber-200' },
-              { icon: Zap, title: 'Akıllı Satış Otomasyonu', desc: 'Tekrar sipariş hatırlatma, sepeti terk eden müşteriyi yakalama ve özel gün kampanyalarını yapay zekâ ile otomatik yürütün.', color: 'from-indigo-500 to-purple-600 shadow-indigo-200' },
+              { icon: Zap, title: 'Akıllı Satış Otomasyonu', desc: 'Tekrar sipariş hatırlatma, sepeti terk eden müşteriyi yakalama ve özel gün kampanyalarını yapay zekâ ile otomatik yürütün.', color: 'from-pink-500 to-fuchsia-600 shadow-pink-200' },
             ].map((f) => {
               const Icon = f.icon;
               return (
@@ -412,14 +412,12 @@ export default function LandingPage() {
       </section>
 
       {/* KVKK AI Banner */}
-      <div className="bg-slate-900 text-white rounded-2xl p-8 my-16 border border-slate-800 max-w-5xl mx-auto shadow-lg">
-        <div className="text-center max-w-2xl mx-auto">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-4">%100 KVKK & Veri Güvenliği Uyumlu Altyapı</span>
-          <h3 className="text-2xl font-bold text-white mb-3">Verileriniz Yüksek Güvenlikle Korunuyor</h3>
-          <p className="text-slate-300 text-base leading-relaxed">
-            SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformumuz <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4 font-medium transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile uçtan uca denetlenmekte ve güvence altında tutulmaktadır.
-          </p>
-        </div>
+      <div className="bg-gradient-to-r from-emerald-50/80 via-slate-50 to-indigo-50/80 text-slate-800 rounded-3xl p-8 my-14 border border-indigo-100 shadow-sm max-w-4xl mx-auto text-center">
+        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 mb-3">%100 KVKK & Veri Güvenliği Standardı</span>
+        <h3 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Verileriniz Yüksek Güvenlikle Korunuyor</h3>
+        <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+          SiparişAsistanı altyapısındaki tüm kişisel veri işleme ve güvenlik süreçleri, yapay zekâ destekli veri uyum platformumuz <a href="https://www.kvkkai.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-4 decoration-indigo-300 transition-colors">KVKK AI (kvkkai.com)</a> altyapısı ile uçtan uca denetlenmekte ve güvence altında tutulmaktadır.
+        </p>
       </div>
 
       {/* Demo Form */}
