@@ -75,9 +75,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-gradient-to-tr from-indigo-50 to-purple-50 border border-indigo-100/50">
-              <img src="/logo2.png" alt="SiparişAsistanı" className="w-5 h-5 object-contain" />
-            </div>
+            <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain" />
             <span className="text-sm"><span className="font-bold text-slate-900">Sipariş</span><span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Asistanı</span></span>
           </div>
           <div className="hidden md:flex items-center gap-6">
