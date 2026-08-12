@@ -288,9 +288,7 @@ export default function CallsPage() {
     setExpandedId(conv.id);
     setExpandedChannel(conv.channel);
     setActiveTab('list');
-    if (conv.type === 'call' || conv.type === 'sms') {
-      await fetchDetail(conv.id);
-    }
+    await fetchDetail(conv.id);
   };
 
   const filtered = conversations.filter(c => {
