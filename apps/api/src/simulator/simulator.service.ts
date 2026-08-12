@@ -86,6 +86,27 @@ export class SimulatorService {
     let error: string | undefined;
     const maxTurns = 10;
 
+    // Map channel for DB compatibility (instagram not yet in constraint)
+    const dbChannel = persona.channel === 'instagram' ? 'whatsapp' : persona.channel;
+    const sessionId = `sim-${persona.id}-${Date.now()}`;
+
+    // Pre-create session to avoid label conflicts
+    try {
+      await this.supabase.db.from('conversation_sessions').insert({
+        id: sessionId,
+        tenant_id: tenantId,
+        channel: dbChannel,
+        channel_source: 'simulator',
+        phone: persona.phone,
+        messages: [],
+        status: 'active',
+        session_label: `SIM-${persona.id.toUpperCase()}`,
+        created_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      this.logger.warn(`Session pre-create failed: ${(e as Error).message}`);
+    }
+
     // Initial message from customer
     const initialMsg = await this.generateCustomerMessage(persona, history, 'START');
     history.push({ role: 'user', content: initialMsg });
@@ -94,12 +115,14 @@ export class SimulatorService {
 
     for (let turn = 0; turn < maxTurns; turn++) {
       try {
-        // Process through AI Brain
+        // Process through AI Brain — use pre-created session
+        const channelForBrain = persona.channel as 'phone' | 'whatsapp' | 'sms' | 'instagram';
         const result = await this.brain.process({
           tenantId,
-          channel: persona.channel,
+          channel: channelForBrain,
           phone: persona.phone,
           messages: history.map(m => ({ role: m.role, content: m.content })),
+          sessionId,
         });
 
         const aiReply = result.reply || '';
@@ -136,13 +159,9 @@ export class SimulatorService {
 
     const duration = Date.now() - start;
 
-    // Save to conversation_sessions
+    // Update session with final state
     try {
-      await this.supabase.db.from('conversation_sessions').insert({
-        tenant_id: tenantId,
-        channel: persona.channel,
-        channel_source: 'simulator',
-        phone: persona.phone,
+      await this.supabase.db.from('conversation_sessions').update({
         messages: history,
         status: orderCreated ? 'completed' : 'failed',
         call_status: orderCreated ? 'COMPLETED' : 'FAILED',
@@ -154,11 +173,10 @@ export class SimulatorService {
           order_created: orderCreated,
           order_number: orderNumber,
         }),
-        created_at: new Date().toISOString(),
         ended_at: new Date().toISOString(),
-      });
+      }).eq('id', sessionId);
     } catch (e) {
-      this.logger.warn(`Simulation session save failed: ${(e as Error).message}`);
+      this.logger.warn(`Session update failed: ${(e as Error).message}`);
     }
 
     return {
