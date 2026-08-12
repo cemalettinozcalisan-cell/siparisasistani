@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, MessageCircle, User, Bot, AlertTriangle, Frown, Smile, Meh, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare } from 'lucide-react';
+import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, MessageCircle, User, Bot, AlertTriangle, Frown, Smile, Meh, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare, Sparkles, Mic } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 
 interface Conversation {
@@ -26,10 +26,17 @@ function parseSummary(raw: unknown) {
 }
 
 const SENTIMENT_MAP: Record<string, { icon: typeof Smile; label: string; color: string }> = {
-  HAPPY: { icon: Heart, label: 'Memnun', color: 'text-emerald-600 bg-emerald-50' },
-  NEUTRAL: { icon: Meh, label: 'Nötr', color: 'text-slate-600 bg-slate-50' },
-  UNHAPPY: { icon: Frown, label: 'Memnuniyetsiz', color: 'text-amber-600 bg-amber-50' },
-  ANGRY: { icon: AlertTriangle, label: 'Riskli', color: 'text-red-600 bg-red-50' },
+  HAPPY: { icon: Heart, label: 'Memnun', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' },
+  NEUTRAL: { icon: Meh, label: 'Nötr', color: 'bg-slate-100 text-slate-600 border border-slate-200/80' },
+  UNHAPPY: { icon: Frown, label: 'Memnuniyetsiz', color: 'bg-amber-50 text-amber-700 border border-amber-200/80' },
+  ANGRY: { icon: AlertTriangle, label: 'Riskli', color: 'bg-rose-50 text-rose-700 border border-rose-200/80' },
+};
+
+const CHANNEL_BADGES: Record<string, { label: string; icon: typeof PhoneCall; bg: string }> = {
+  VOICE: { label: 'Telefon', icon: PhoneCall, bg: 'bg-indigo-50 text-indigo-600 border border-indigo-100' },
+  WHATSAPP: { label: 'WhatsApp', icon: MessageCircle, bg: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
+  SMS: { label: 'SMS', icon: MessageSquare, bg: 'bg-amber-50 text-amber-600 border border-amber-100' },
+  INSTAGRAM: { label: 'Instagram', icon: Instagram, bg: 'bg-pink-50 text-pink-600 border border-pink-100' },
 };
 
 const STATUS_BADGES: Record<string, string> = {
@@ -170,19 +177,20 @@ export default function CallsPage() {
           const summary = parseSummary(conv.summary);
           const sentiment = SENTIMENT_MAP[summary?.sentiment] || SENTIMENT_MAP.NEUTRAL;
           const SentIcon = sentiment.icon;
+          const channelBadge = CHANNEL_BADGES[conv.channel];
           const isExpanded = expandedId === conv.id;
 
           return (
-            <div key={conv.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-all">
+            <div key={conv.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-200/80 transition-all duration-200 overflow-hidden">
               {/* Row */}
               <button onClick={() => toggleExpand(conv)}
                 className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                 {/* Icon */}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  conv.type === 'call' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' :
-                  conv.type === 'whatsapp' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                  conv.type === 'sms' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-                  'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
+                  conv.type === 'call' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20' :
+                  conv.type === 'whatsapp' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' :
+                  conv.type === 'sms' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20' :
+                  'bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-100 dark:border-pink-500/20'
                 }`}>
                   {conv.type === 'call' ? <PhoneCall size={18} /> :
                    conv.type === 'whatsapp' ? <MessageCircle size={18} /> :
@@ -194,16 +202,21 @@ export default function CallsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                      {summary?.customer_name || conv.phone}
+                      {summary?.customer_name || (conv as any).username || conv.phone}
                     </span>
+                    {channelBadge && (
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${channelBadge.bg}`}>
+                        {(() => { const CIcon = channelBadge.icon; return <CIcon size={10} />; })()} {channelBadge.label}
+                      </span>
+                    )}
                     {summary?.sentiment && (
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${sentiment.color}`}>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${sentiment.color}`}>
                         <SentIcon size={10} /> {sentiment.label}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    <span>{(conv as any).username || conv.phone}</span>
+                    <span>{conv.phone}</span>
                     {conv.type === 'call' && conv.duration && (
                       <span className="flex items-center gap-1"><Clock size={10} /> {formatDuration(conv.duration)}</span>
                     )}
@@ -225,16 +238,16 @@ export default function CallsPage() {
 
               {/* Expanded Detail */}
               {isExpanded && (
-                <div className="border-t border-slate-100 dark:border-slate-700">
+                <div className="border-t border-slate-100 dark:border-slate-700 my-3 pt-3">
                   {detailLoading ? (
                     <div className="p-6 text-center text-sm text-slate-400">Yükleniyor...</div>
                   ) : detail ? (
                     <div>
                       {/* Tab bar */}
-                      <div className="flex gap-0 px-4 pt-3">
+                      <div className="flex gap-0 px-4">
                         {[
                           { key: 'list' as const, label: 'Özet & Analiz' },
-                          { key: 'transcript' as const, label: 'Transkript' },
+                          { key: 'transcript' as const, label: 'Konuşma Metni' },
                         ].map(t => (
                           <button key={t.key} onClick={(e) => { e.stopPropagation(); setActiveTab(t.key); }}
                             className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${activeTab === t.key ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
@@ -249,8 +262,10 @@ export default function CallsPage() {
                             {/* Summary Icon Cards */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {summary?.products && summary.products.length > 0 && (
-                                <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                  <ShoppingBag size={14} className="text-indigo-500 shrink-0" />
+                                <div className="flex items-center gap-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3">
+                                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
+                                    <ShoppingBag size={14} />
+                                  </div>
                                   <div className="min-w-0">
                                     <p className="text-[10px] text-slate-400">Ürünler</p>
                                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{summary.products.join(', ')}</p>
@@ -258,8 +273,10 @@ export default function CallsPage() {
                                 </div>
                               )}
                               {summary?.payment_method && summary.payment_method !== 'BELIRSIZ' && (
-                                <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                  <CreditCard size={14} className="text-emerald-500 shrink-0" />
+                                <div className="flex items-center gap-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3">
+                                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                    <CreditCard size={14} />
+                                  </div>
                                   <div className="min-w-0">
                                     <p className="text-[10px] text-slate-400">Ödeme</p>
                                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{summary.payment_method}</p>
@@ -267,8 +284,10 @@ export default function CallsPage() {
                                 </div>
                               )}
                               {summary?.address && (
-                                <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                  <MapPin size={14} className="text-rose-500 shrink-0" />
+                                <div className="flex items-center gap-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3">
+                                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0">
+                                    <MapPin size={14} />
+                                  </div>
                                   <div className="min-w-0">
                                     <p className="text-[10px] text-slate-400">Adres</p>
                                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{summary.address}</p>
@@ -276,9 +295,9 @@ export default function CallsPage() {
                                 </div>
                               )}
                               {summary?.sentiment_score && (
-                                <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${summary.sentiment === 'HAPPY' ? 'bg-emerald-100 text-emerald-600' : summary.sentiment === 'UNHAPPY' || summary.sentiment === 'ANGRY' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                                    {summary.sentiment_score}%
+                                <div className="flex items-center gap-2.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3">
+                                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                                    <span className="text-xs font-bold">{summary.sentiment_score}%</span>
                                   </div>
                                   <div className="min-w-0">
                                     <p className="text-[10px] text-slate-400">Memnuniyet</p>
@@ -287,24 +306,26 @@ export default function CallsPage() {
                                 </div>
                               )}
                               {summary?.needs_human && (
-                                <div className="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/10 rounded-lg col-span-2">
+                                <div className="flex items-center gap-2.5 bg-red-50 dark:bg-red-900/10 border border-red-200/60 dark:border-red-800/40 rounded-xl p-3 col-span-2">
                                   <AlertTriangle size={14} className="text-red-500 shrink-0" />
-                                  <p className="text-xs text-red-600 dark:text-red-400">İnsan müdahalesi gerekli</p>
+                                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">İnsan müdahalesi gerekli</p>
                                 </div>
                               )}
                             </div>
 
                             {/* Short Summary */}
                             {summary?.shortSummary && (
-                              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                                <p className="text-xs text-indigo-800 dark:text-indigo-200 font-medium">AI Özeti</p>
-                                <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">{summary.shortSummary}</p>
+                              <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 dark:from-indigo-950/30 dark:via-purple-950/20 dark:to-blue-950/30 border border-indigo-100/80 dark:border-indigo-800/40 rounded-xl p-3.5">
+                                <p className="text-xs text-indigo-900 dark:text-indigo-200 font-bold flex items-center gap-1.5">
+                                  <Sparkles size={12} /> AI Özeti
+                                </p>
+                                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">{summary.shortSummary}</p>
                               </div>
                             )}
 
                             {/* AI Errors */}
                             {summary?.ai_errors && summary.ai_errors.length > 0 && (
-                              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 rounded-xl">
                                 <p className="text-xs text-amber-800 dark:text-amber-200 font-medium flex items-center gap-1"><AlertTriangle size={12} /> AI Hataları</p>
                                 <ul className="mt-1 space-y-0.5">
                                   {summary.ai_errors.map((e: string, i: number) => (
@@ -316,9 +337,9 @@ export default function CallsPage() {
 
                             {/* Audio Player */}
                             {detail.recording?.recording_url && (
-                              <div className="p-3 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-2">
-                                  <Play size={12} /> Ses Kaydı
+                              <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3">
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1.5 mb-2">
+                                  <Mic size={12} className="text-indigo-500" /> Ses Kaydı
                                 </p>
                                 <audio controls className="w-full h-8" src={detail.recording.recording_url}>
                                   Tarayıcınız ses kaydını desteklemiyor.
@@ -351,7 +372,7 @@ export default function CallsPage() {
                                 </div>
                               ))
                             ) : (
-                              <p className="text-xs text-slate-400 text-center py-4">Transkript bulunamadı</p>
+                              <p className="text-xs text-slate-400 text-center py-4">Konuşma metni bulunamadı</p>
                             )}
                           </div>
                         )}
