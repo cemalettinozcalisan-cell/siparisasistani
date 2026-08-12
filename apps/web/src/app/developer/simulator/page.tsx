@@ -59,8 +59,20 @@ export default function SimulatorPage() {
   const [liveTranscript, setLiveTranscript] = useState<{ role: string; content: string }[]>([]);
   const [results, setResults] = useState<SimResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [tenants, setTenants] = useState<{ name: string; tenantId: string; sector: string }[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState('');
 
   useEffect(() => { setTid(getTenantId()); }, []);
+  useEffect(() => {
+    // Seed demo tenants + get their IDs
+    fetch('/api/seed/demo-tenants', { method: 'POST' })
+      .then(r => r.json()).then(d => {
+        if (d.tenants) {
+          setTenants(d.tenants.map((t: any) => ({ name: t.name, tenantId: t.tenantId, sector: t.sector })));
+          if (d.tenants[0]) setSelectedTenantId(d.tenants[0].tenantId);
+        }
+      }).catch(() => {});
+  }, []);
   useEffect(() => {
     if (!tid) return;
     fetch(`/api/simulator/personas`)
@@ -71,13 +83,14 @@ export default function SimulatorPage() {
   }, [tid]);
 
   const selected = personas.find(p => p.id === selectedId);
+  const testTenantId = selectedTenantId || tid;
 
   const runSingle = async () => {
-    if (!selected || !tid) return;
+    if (!selected || !testTenantId) return;
     setRunning(true);
     setLiveTranscript([]);
     try {
-      const res = await fetch(`/api/simulator/run/${tid}`, {
+      const res = await fetch(`/api/simulator/run/${testTenantId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personaId: selected.id }),
       });
@@ -89,11 +102,11 @@ export default function SimulatorPage() {
   };
 
   const runAll = async () => {
-    if (!tid) return;
+    if (!testTenantId) return;
     setRunningAll(true);
     setResults([]);
     try {
-      const res = await fetch(`/api/simulator/run-all/${tid}`, { method: 'POST' });
+      const res = await fetch(`/api/simulator/run-all/${testTenantId}`, { method: 'POST' });
       const data: SimResult[] = await res.json();
       setResults(data);
     } catch (e) { console.error(e); }
@@ -125,6 +138,19 @@ export default function SimulatorPage() {
 
       {/* Controls */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+        {/* Tenant selector */}
+        {tenants.length > 0 && (
+          <div>
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">Test Edilecek İşletme</label>
+            <select value={selectedTenantId} onChange={e => setSelectedTenantId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none">
+              {tenants.map(t => (
+                <option key={t.tenantId} value={t.tenantId}>{t.name} — {t.sector} (ID: {t.tenantId?.substring(0, 8)}...)</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Persona selector */}
           <div>

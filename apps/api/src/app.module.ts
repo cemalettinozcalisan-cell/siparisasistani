@@ -63,6 +63,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { QueueMonitorModule } from './queue-monitor/queue-monitor.module';
 import { SalesEngineModule } from './sales-engine/sales-engine.module';
 import { SimulatorModule } from './simulator/simulator.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -123,6 +124,7 @@ import { SimulatorModule } from './simulator/simulator.module';
     QueueMonitorModule,
     SalesEngineModule,
     SimulatorModule,
+    SeedModule,
   ],
   controllers: [
     DashboardController,
