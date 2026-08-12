@@ -454,12 +454,19 @@ export default function SettingsPage() {
         </Row>
         {!!settings.whatsapp_group_enabled && (
           <div className="pl-2 border-l-2 border-indigo-200 dark:border-indigo-800">
-            <input
-              value={String(settings.whatsapp_group_id || '')}
-              onChange={(e) => update('whatsapp_group_id', e.target.value)}
-              placeholder="WhatsApp Grup ID / Davet Linki"
-              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                value={String(settings.whatsapp_group_id || '')}
+                onChange={(e) => saveAndKeep('whatsapp_group_id', e.target.value)}
+                placeholder="WhatsApp Grup ID / Davet Linki"
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
+              />
+              {String(settings.whatsapp_group_id || '') && (
+                <button onClick={() => saveAndKeep('whatsapp_group_id', '')} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Temizle">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
