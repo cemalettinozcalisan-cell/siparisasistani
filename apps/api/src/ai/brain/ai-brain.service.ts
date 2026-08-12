@@ -9,7 +9,7 @@ import { SupabaseService } from '../../common/supabase.client';
 
 export interface BrainInput {
   tenantId: string;
-  channel: 'phone' | 'whatsapp' | 'sms';
+  channel: 'phone' | 'whatsapp' | 'sms' | 'instagram';
   channelSource?: string;
   phone: string;
   messages: { role: string; content: string }[];
