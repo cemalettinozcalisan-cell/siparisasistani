@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { login } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { Bot, PhoneCall, ShoppingBag, Users, Package, Truck, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, Package, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const FLOW_STEPS = [
   { icon: PhoneCall, label: 'Telefon', color: 'bg-blue-500' },

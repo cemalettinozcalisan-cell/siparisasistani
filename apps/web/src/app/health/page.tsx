@@ -68,7 +68,7 @@ export default function HealthPage() {
   const tid = getTenantId();
 
   useEffect(() => {
-    try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {}
+    try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner');     } catch (e) { console.error(e); }
   }, []);
 
   const load = async () => {

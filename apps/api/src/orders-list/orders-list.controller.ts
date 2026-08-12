@@ -154,7 +154,7 @@ export class OrdersListController {
             .eq('id', orderData.customer_id)
             .eq('tenant_id', tenantId);
         }
-      } catch {}
+      } catch (e) { this.logger.error('Failed to update customer fields during order edit', e); }
     }
 
     // Update order record

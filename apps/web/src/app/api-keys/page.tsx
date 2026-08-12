@@ -69,7 +69,7 @@ export default function ApiKeysPage() {
         });
         setKeys(map);
       }
-    } catch {}
+    } catch (e) { console.error(e); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -122,7 +122,7 @@ export default function ApiKeysPage() {
         return next;
       });
       load();
-    } catch {}
+    } catch (e) { console.error(e); }
     setSaving(null);
   };
 

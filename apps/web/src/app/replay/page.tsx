@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Bot, User, Search, Loader2, ChevronDown, Clock, Zap,
-  Brain, TrendingUp, CheckCircle, Truck, Package, XCircle,
+  Brain, CheckCircle, Truck, Package, XCircle,
   ShoppingBag, MapPin, CreditCard, Phone, Hash, Calendar, Play
 } from 'lucide-react';
 

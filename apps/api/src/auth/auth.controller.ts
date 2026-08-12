@@ -21,4 +21,13 @@ export class AuthController {
     if (!auth || !auth.startsWith('Bearer ')) throw new UnauthorizedException();
     return this.auth.logout(auth.slice(7));
   }
+
+  @Post('change-password')
+  async changePassword(
+    @Headers('authorization') auth: string,
+    @Body() body: { oldPassword: string; newPassword: string },
+  ) {
+    if (!auth || !auth.startsWith('Bearer ')) throw new UnauthorizedException();
+    return this.auth.changePassword(auth.slice(7), body.oldPassword, body.newPassword);
+  }
 }

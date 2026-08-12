@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
-import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, Plus, UserPlus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, UserPlus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {

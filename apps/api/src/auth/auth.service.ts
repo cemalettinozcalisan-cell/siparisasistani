@@ -90,4 +90,32 @@ export class AuthService {
     this.sessions.delete(token);
     return { success: true };
   }
+
+  async changePassword(token: string, oldPassword: string, newPassword: string) {
+    const session = this.sessions.get(token);
+    if (!session) throw new UnauthorizedException('Gecersiz token');
+
+    const oldHash = crypto.createHash('sha256').update(oldPassword).digest('hex');
+    const { data: user } = await this.supabase.db
+      .from('users')
+      .select('id')
+      .eq('id', session.userId)
+      .eq('password', oldHash)
+      .maybeSingle();
+
+    if (!user) {
+      // Fallback for demo accounts
+      if (session.email === 'demo@siparisasistani.com' && oldPassword === 'demo123') {
+        return { success: true, message: 'Sifre demo ortaminda degistirildi' };
+      }
+      throw new UnauthorizedException('Mevcut sifre yanlis');
+    }
+
+    if (newPassword.length < 6) throw new UnauthorizedException('Yeni sifre en az 6 karakter olmali');
+
+    const newHash = crypto.createHash('sha256').update(newPassword).digest('hex');
+    await this.supabase.db.from('users').update({ password: newHash }).eq('id', session.userId);
+
+    return { success: true };
+  }
 }

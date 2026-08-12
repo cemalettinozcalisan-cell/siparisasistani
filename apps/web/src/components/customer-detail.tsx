@@ -79,7 +79,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   if (topProducts.length > 0) insightParts.push(`En çok ${topProducts[0][0]} alıyor.`);
   if (daysSinceLastOrder > 60) insightParts.push(`${daysSinceLastOrder} gündür sipariş vermemiş. Yeniden kazanılabilir.`);
   else if (daysSinceLastOrder <= 7) insightParts.push('Son 7 günde sipariş vermiş, aktif müşteri.');
-  if (complaints.length > 0) insightParts.push(`${complaints.length} şikayet kaydı var, öncelikli ilgilenilmeli.`);
+  if (complaints.length > 0) insightParts.push(`${complaints.length} talep kaydı var, öncelikli ilgilenilmeli.`);
 
   const riskScore = daysSinceLastOrder > 180 ? { label: 'Yüksek Risk', gradient: 'from-red-500 to-rose-600' } : daysSinceLastOrder > 90 ? { label: 'Orta Risk', gradient: 'from-amber-400 to-orange-500' } : { label: 'Düşük Risk', gradient: 'from-emerald-400 to-teal-500' };
 
@@ -127,7 +127,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           { v: `${totalSpent.toLocaleString('tr-TR')} TL`, l: 'Harcama', cls: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
           { v: `${avgBasket.toLocaleString('tr-TR')} TL`, l: 'Ort. Sepet', cls: 'bg-violet-50 border-violet-200 text-violet-700' },
           { v: daysSinceLastOrder > 999 ? '-' : `${daysSinceLastOrder} gün`, l: 'Son Sip.', cls: 'bg-amber-50 border-amber-200 text-amber-700' },
-          { v: complaints.length, l: 'Şikayet', cls: 'bg-red-50 border-red-200 text-red-700' },
+          { v: complaints.length, l: 'Talep', cls: 'bg-red-50 border-red-200 text-red-700' },
         ].map((s, i) => (
           <div key={i} className={`rounded-lg border p-2.5 text-center ${s.cls}`}>
             <div className="text-lg font-bold">{s.v}</div>
@@ -248,7 +248,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${riskScore.gradient} shadow-sm`}>
                 {riskScore.label}
               </span>
-              {complaints.length > 0 && <span className="text-[10px] text-red-500 flex items-center gap-1"><TrendingDown size={11} /> {complaints.length} şikayet</span>}
+              {complaints.length > 0 && <span className="text-[10px] text-red-500 flex items-center gap-1"><TrendingDown size={11} /> {complaints.length} talep</span>}
             </div>
           </div>
 

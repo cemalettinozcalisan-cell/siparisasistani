@@ -48,7 +48,7 @@ export class OrderProcessorService {
           .update({ birth_date: `2000-${input.customer.birthday}` })
           .eq('id', customerId)
           .is('birth_date', null);
-      } catch {}
+      } catch (e) { this.logger.error('Failed to update customer birthday', e); }
     }
 
     // 1.6 Save company/identity info if provided
@@ -58,7 +58,7 @@ export class OrderProcessorService {
     if (Object.keys(updateFields).length > 0) {
       try {
         await this.supabase.db.from('customers').update(updateFields).eq('id', customerId);
-      } catch {}
+      } catch (e) { this.logger.error('Failed to update customer company/identity', e); }
     }
 
     // 2. Generate order number

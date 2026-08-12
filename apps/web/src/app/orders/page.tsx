@@ -27,16 +27,16 @@ const CHANNELS = [
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   new: { label: '🆕 Yeni', cls: 'bg-blue-100 text-blue-700' },
   PAYMENT_WAITING: { label: '💳 Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
-  PAYMENT_CONFIRMED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PACKAGING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PACKAGED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  SHIPPED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  DELIVERED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  COMPLETED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  CANCELLED: { label: '❌ İptal', cls: 'bg-red-100 text-red-700' },
+  PAYMENT_CONFIRMED: { label: '💰 Ödeme Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
   APPROVED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PROCESSING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PREPARING: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
+  PREPARING: { label: '📦 Hazırlanıyor', cls: 'bg-sky-100 text-sky-700' },
+  PACKAGING: { label: '📦 Paketleniyor', cls: 'bg-indigo-100 text-indigo-700' },
+  PACKAGED: { label: '📦 Paketlendi', cls: 'bg-violet-100 text-violet-700' },
+  PROCESSING: { label: '⚙️ İşleniyor', cls: 'bg-orange-100 text-orange-700' },
+  SHIPPED: { label: '🚚 Kargoya Verildi', cls: 'bg-cyan-100 text-cyan-700' },
+  DELIVERED: { label: '🏠 Teslim Edildi', cls: 'bg-green-100 text-green-700' },
+  COMPLETED: { label: '✓ Tamamlandı', cls: 'bg-gray-100 text-gray-700' },
+  CANCELLED: { label: '❌ İptal', cls: 'bg-red-100 text-red-700' },
 };
 
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING'];
@@ -130,7 +130,7 @@ function OrdersPageContent() {
       osc.connect(gain); gain.connect(audioCtx.current.destination);
       osc.frequency.value = 880; gain.gain.value = 0.1;
       osc.start(); osc.stop(audioCtx.current.currentTime + 0.15);
-    } catch {}
+    } catch (e) { console.error(e); }
   }, [soundEnabled]);
 
   const loadOrders = useCallback(async () => {
@@ -156,7 +156,7 @@ function OrdersPageContent() {
         setPrevIds(newIds);
         setOrders(newOrders);
       }
-    } catch {}
+    } catch (e) { console.error(e); }
   }, [filterChannel, prevIds, beep]);
 
   useEffect(() => {

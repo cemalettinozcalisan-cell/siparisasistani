@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, ChevronRight, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, Star, CreditCard, BarChart3, Camera, Globe, Printer, MessageCircle, Building2, Crosshair, Rocket, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Camera, Globe, Printer, MessageCircle, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
@@ -121,6 +121,10 @@ export default function LandingPage() {
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [legalTitle, setLegalTitle] = useState('');
   const [legalBody, setLegalBody] = useState('');
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [contactSent, setContactSent] = useState(false);
+  const [contactSending, setContactSending] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -139,9 +143,19 @@ export default function LandingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyName: demoForm.company, ownerName: demoForm.name, ownerEmail: demoForm.email, phone: demoForm.phone }),
       });
-    } catch {}
+    } catch (e) { console.error(e); }
     setDemoSent(true);
     setSending(false);
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactSending(true);
+    try {
+      const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(contactForm) });
+      if (res.ok) setContactSent(true);
+    } catch (e) { console.error(e); }
+    setContactSending(false);
   };
 
   return (
@@ -540,6 +554,7 @@ export default function LandingPage() {
               <button onClick={() => { setLegalTitle('Çerez Politikası'); setLegalBody(LEGAL_TEXTS.cerez); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Çerez Politikası</button>
               <button onClick={() => { setLegalTitle('Kullanım Koşulları'); setLegalBody(LEGAL_TEXTS.kullanim); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Kullanım Koşulları</button>
               <button onClick={() => { setLegalTitle('Hizmet Sözleşmesi'); setLegalBody(LEGAL_TEXTS.hizmet); setShowLegalModal(true); }} className="hover:text-indigo-600 transition-colors">Hizmet Sözleşmesi</button>
+              <button onClick={() => setShowContactModal(true)} className="hover:text-indigo-600 transition-colors font-semibold">İletişim</button>
             </div>
           </div>
           <div className="text-center text-xs text-slate-400 dark:text-slate-500">
@@ -592,6 +607,35 @@ export default function LandingPage() {
               <button onClick={() => { try { localStorage.setItem('cookie_accepted', 'true'); localStorage.setItem('cookie_prefs', JSON.stringify({perf: true})); } catch {} setCookieAccepted(true); setShowCookieModal(false); }}
                 className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-semibold shadow-md">Tümünü Kabul Et ve Kaydet</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowContactModal(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bizimle İletişime Geçin</h3>
+              <button onClick={() => { setShowContactModal(false); setContactSent(false); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><X size={18} /></button>
+            </div>
+            {contactSent ? (
+              <div className="text-center py-6 space-y-3">
+                <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center"><CheckCircle2 size={24} className="text-white" /></div>
+                <p className="font-semibold text-slate-900 dark:text-white">Mesajınız Alındı</p>
+                <p className="text-sm text-slate-500">En kısa sürede size dönüş yapacağız.</p>
+              </div>
+            ) : (
+              <form className="space-y-3" onSubmit={handleContactSubmit}>
+                <input placeholder="Adınız Soyadınız" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" required />
+                <input placeholder="E-posta Adresiniz" type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" required />
+                <input placeholder="Telefon Numaranız" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" required />
+                <textarea placeholder="Mesajınız" value={contactForm.message} onChange={e => setContactForm({ ...contactForm, message: e.target.value })} rows={3} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none" required />
+                <button type="submit" disabled={contactSending} className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-sm font-semibold shadow-md disabled:opacity-50 transition-all">
+                  {contactSending ? 'Gönderiliyor...' : 'Gönder'}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}

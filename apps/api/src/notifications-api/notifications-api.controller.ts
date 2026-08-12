@@ -44,7 +44,7 @@ export class NotificationsApiController {
         .update({ status: 'read' })
         .eq('tenant_id', tenantId)
         .eq('id', id);
-    } catch (e) {}
+    } catch (e) { this.logger.error('Failed to mark notification as read', e); }
     return { success: true };
   }
 
@@ -56,7 +56,7 @@ export class NotificationsApiController {
         .update({ status: 'read' })
         .eq('tenant_id', tenantId)
         .eq('status', 'unread');
-    } catch (e) {}
+    } catch (e) { this.logger.error('Failed to mark notification as read', e); }
     return { success: true };
   }
 }

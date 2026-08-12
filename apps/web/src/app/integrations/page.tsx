@@ -74,7 +74,7 @@ export default function IntegrationsPage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 

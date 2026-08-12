@@ -58,6 +58,7 @@ import { InstagramModule } from './instagram/instagram.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { KvkkModule } from './kvkk/kvkk.module';
 import { BackupModule } from './backup/backup.module';
+import { ContactModule } from './contact/contact.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { QueueMonitorModule } from './queue-monitor/queue-monitor.module';
 import { SalesEngineModule } from './sales-engine/sales-engine.module';
@@ -116,6 +117,7 @@ import { SalesEngineModule } from './sales-engine/sales-engine.module';
     WebhookModule,
     KvkkModule,
     BackupModule,
+    ContactModule,
     ApiKeysModule,
     QueueMonitorModule,
     SalesEngineModule,

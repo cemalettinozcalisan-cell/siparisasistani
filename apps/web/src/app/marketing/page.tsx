@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save, Zap, Send, TrendingUp, Cake, PhoneCall, Sparkles } from 'lucide-react';
+import { X, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save, Zap, Send, TrendingUp, Cake, Sparkles } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 interface Campaign {
@@ -51,7 +52,7 @@ export default function MarketingPage() {
       setSettings(sRes);
       if (Array.isArray(cRes)) setCampaigns(cRes);
       setStats(stRes);
-    } catch {}
+    } catch (e) { console.error(e); }
   }, [tid]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -91,13 +92,6 @@ export default function MarketingPage() {
     try { await fetch(`/api/campaigns/${tid}/${c.id}`, { method: 'DELETE' }); loadAll(); }
     catch { setError('Kampanya silinemedi.'); setTimeout(() => setError(''), 3000); }
   };
-
-  const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
-    <button onClick={() => onChange(!enabled)}
-      className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${enabled ? 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm' : 'bg-gray-300 dark:bg-slate-600'}`}>
-      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
-  );
 
   return (
     <div className="p-4 md:p-6 space-y-5 w-full">

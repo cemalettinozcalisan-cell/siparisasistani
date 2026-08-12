@@ -15,14 +15,14 @@ export default function OrdersPage() {
   const tid = getTenantId();
 
   const statusConfig: Record<string, { label: string; icon: string; color: string }> = {
-    new: { label: 'Yeni', icon: 'ğı†•', color: 'border-l-yellow-400 bg-yellow-50' },
-    PAYMENT_WAITING: { label: 'Ödeme Bekliyor', icon: '³', color: 'border-l-orange-400 bg-orange-50' },
-    PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', icon: 'œ…', color: 'border-l-green-400 bg-green-50' },
-    PACKAGING: { label: 'Paketleniyor', icon: 'ğı“¦', color: 'border-l-indigo-400 bg-indigo-50' },
-    PACKAGED: { label: 'Paketlendi', icon: 'ğı“¦', color: 'border-l-indigo-400 bg-indigo-50' },
-    SHIPPED: { label: 'Kargoda', icon: 'ğıšš', color: 'border-l-purple-400 bg-purple-50' },
-    DELIVERED: { label: 'Teslim Edildi', icon: 'œ…', color: 'border-l-green-400 bg-green-50' },
-    CANCELLED: { label: 'İptal', icon: 'Œ', color: 'border-l-red-400 bg-red-50' },
+    new: { label: 'Yeni', icon: '🆕', color: 'border-l-yellow-400 bg-yellow-50' },
+    PAYMENT_WAITING: { label: 'Ödeme Bekliyor', icon: '💳', color: 'border-l-orange-400 bg-orange-50' },
+    PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', icon: '✅', color: 'border-l-green-400 bg-green-50' },
+    PACKAGING: { label: 'Paketleniyor', icon: '📦', color: 'border-l-indigo-400 bg-indigo-50' },
+    PACKAGED: { label: 'Paketlendi', icon: '📦', color: 'border-l-indigo-400 bg-indigo-50' },
+    SHIPPED: { label: 'Kargoda', icon: '🚚', color: 'border-l-purple-400 bg-purple-50' },
+    DELIVERED: { label: 'Teslim Edildi', icon: '✅', color: 'border-l-green-400 bg-green-50' },
+    CANCELLED: { label: 'İptal', icon: '❌', color: 'border-l-red-400 bg-red-50' },
   };
 
   const statusList = ['all', 'new', 'PAYMENT_CONFIRMED', 'PACKAGING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];

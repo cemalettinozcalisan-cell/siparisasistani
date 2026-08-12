@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CreditCard, BarChart3, Package, PlusCircle, FileText, Check, ChevronRight, AlertTriangle, Shield, Download, Info, Sparkles, TrendingUp, Clock, Calendar, Building2, Zap, Gift, X } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
+import { Toggle } from '@/components/ui/toggle';
 
 const PLANS = [
   { code: 'starter', name: 'Başlangıç Esnaf', price: 6999, orders: 150, gradient: 'from-slate-500 to-slate-700', popular: false },
@@ -55,7 +56,7 @@ export default function SaasPage() {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('tab');
     if (t) setTab(t);
-    try { setContractAccepted(localStorage.getItem('contract_accepted') === 'true'); } catch {}
+    try { setContractAccepted(localStorage.getItem('contract_accepted') === 'true');     } catch (e) { console.error(e); }
     loadData();
   }, []);
 
@@ -73,7 +74,7 @@ export default function SaasPage() {
 
   const acceptContract = () => {
     setContractAccepted(true);
-    try { localStorage.setItem('contract_accepted', 'true'); } catch {}
+    try { localStorage.setItem('contract_accepted', 'true');     } catch (e) { console.error(e); }
   };
 
   const upgradePlan = async (planCode: string) => {
@@ -95,13 +96,6 @@ export default function SaasPage() {
   const overflowCost = usage?.overflowCost as number || 0;
   const maxOverflow = usage?.maxOverflow as number || 0;
   const showOverflow = overflowCount > 0;
-
-  const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
-    <button onClick={() => onChange(!enabled)}
-      className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${enabled ? 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm' : 'bg-gray-300 dark:bg-slate-600'}`}>
-      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
-  );
 
   return (
     <div className="p-4 md:p-6 space-y-5 w-full">

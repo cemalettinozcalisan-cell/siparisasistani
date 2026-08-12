@@ -56,7 +56,7 @@ const navItems = [
   { href: '/orders?tab=history', label: 'Geçmiş Siparişler', icon: Clock, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/complaints', label: 'Şikayet & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/complaints', label: 'Talep & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
   // Pazarlama

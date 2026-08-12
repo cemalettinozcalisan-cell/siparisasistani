@@ -8,7 +8,7 @@ const PAGES = [
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, keywords: 'dashboard kontrol panel ana sayfa' },
   { href: '/orders?tab=active', label: 'Aktif Siparisler', icon: ShoppingBag, keywords: 'siparis order aktif' },
   { href: '/customers', label: 'Musteriler', icon: Users, keywords: 'musteri customer cari' },
-  { href: '/complaints', label: 'Sikayetler', icon: AlertTriangle, keywords: 'sikayet complaint ticket' },
+  { href: '/complaints', label: 'Talepler', icon: AlertTriangle, keywords: 'talep ticket complaint' },
   { href: '/products', label: 'Urunler', icon: Package, keywords: 'urun product stok' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, keywords: 'rapor report analiz' },
   { href: '/notifications', label: 'Bildirimler', icon: BellRing, keywords: 'bildirim notification' },

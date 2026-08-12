@@ -27,7 +27,7 @@ const CHANNEL_GRADIENT: Record<string, string> = {
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  COMPLAINT_OPEN: 'Şikayet Açıldı', COMPLAINT_RESOLVED: 'Çözüldü', HUMAN_REQUIRED: 'Müdahale Gerekli',
+  COMPLAINT_OPEN: 'Talep Açıldı', COMPLAINT_RESOLVED: 'Çözüldü', HUMAN_REQUIRED: 'Müdahale Gerekli',
 };
 
 const ACTOR_LABELS: Record<string, string> = {
@@ -66,10 +66,10 @@ export default function ComplaintsPage() {
   }, [tid]);
 
   const getMockComplaints = (): Record<string, unknown>[] => [
-    { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'AI, Test Müşteri için yüksek seviyede şikayet kaydı oluşturdu: Geç teslimat', actor_type: 'AI', channel: 'VOICE', customer_name: 'Test Müşteri', customer_phone: '05321234567', created_at: new Date(Date.now() - 3600000).toISOString(), metadata: { severity: 'HIGH', ticket_number: 'TKT-0001' } },
+    { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'AI, Test Müşteri için yüksek seviyede talep kaydı oluşturdu: Geç teslimat', actor_type: 'AI', channel: 'VOICE', customer_name: 'Test Müşteri', customer_phone: '05321234567', created_at: new Date(Date.now() - 3600000).toISOString(), metadata: { severity: 'HIGH', ticket_number: 'TKT-0001' } },
     { id: 'c2', event_type: 'COMPLAINT_OPEN', description: 'Müşteri: Ürünlerin son kullanma tarihi geçmiş', actor_type: 'HUMAN', channel: 'WHATSAPP', customer_name: 'Ali Kaya', customer_phone: '05329876543', created_at: new Date(Date.now() - 7200000).toISOString(), metadata: { severity: 'CRITICAL', ticket_number: 'TKT-0002' } },
     { id: 'c3', event_type: 'HUMAN_REQUIRED', description: 'Müşteri iade talebinde bulundu, insan müdahalesi gerekiyor', actor_type: 'AI', channel: 'WHATSAPP', customer_name: 'Mehmet Öztürk', customer_phone: '05431112233', created_at: new Date(Date.now() - 14400000).toISOString(), metadata: { severity: 'NORMAL', ticket_number: 'TKT-0003' } },
-    { id: 'c4', event_type: 'COMPLAINT_RESOLVED', description: 'Şikayet çözüldü: Eksik ürün teslim edildi', actor_type: 'STAFF', channel: 'SYSTEM', customer_name: 'Zafer Ayyıldız', customer_phone: '05331114455', created_at: new Date(Date.now() - 28800000).toISOString(), metadata: { severity: 'LOW', ticket_number: 'TKT-0004' } },
+    { id: 'c4', event_type: 'COMPLAINT_RESOLVED', description: 'Talep çözüldü: Eksik ürün teslim edildi', actor_type: 'STAFF', channel: 'SYSTEM', customer_name: 'Zafer Ayyıldız', customer_phone: '05331114455', created_at: new Date(Date.now() - 28800000).toISOString(), metadata: { severity: 'LOW', ticket_number: 'TKT-0004' } },
   ];
 
   const openComplaints = complaints.filter(c => c.event_type !== 'COMPLAINT_RESOLVED');
@@ -110,7 +110,7 @@ export default function ComplaintsPage() {
           <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ShieldAlert size={22} className="text-rose-500" /> Destek & Talep Yönetimi
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Müşteri şikayet ve talepleri</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Müşteri talep ve istekleri</p>
         </div>
         <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-xs font-semibold text-indigo-600 dark:text-indigo-400">{complaints.length} kayıt</span>
       </div>
@@ -176,7 +176,7 @@ export default function ComplaintsPage() {
             <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
               <CheckCircle2 size={28} className="text-emerald-500" />
             </div>
-            <p className="text-slate-700 dark:text-slate-300 font-semibold">Şikayet veya istek bulunmuyor</p>
+            <p className="text-slate-700 dark:text-slate-300 font-semibold">Talep veya istek bulunmuyor</p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Tüm talepler çözülmüş görünüyor</p>
           </div>
         ) : filtered.map((c, i) => {

@@ -159,7 +159,7 @@ export default function AiAuditPage() {
       ]);
       setStats(sRes);
       if (Array.isArray(cRes)) setLogs(cRes);
-    } catch {}
+    } catch (e) { console.error(e); }
     setLoading(false);
   }, [filters]);
 
@@ -170,7 +170,7 @@ export default function AiAuditPage() {
       const res = await fetch(`/api/ai-audit/conversations/${tid}/${id}`);
       const data = await res.json();
       setDetail(data as DetailData);
-    } catch {}
+    } catch (e) { console.error(e); }
   };
 
   // Sparkline mini bar

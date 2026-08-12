@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, ArrowRight, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -172,7 +172,7 @@ export default function DashboardPage() {
             {[
               { href: '/orders', label: 'Siparişler', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-600' },
               { href: '/customers', label: 'Müşteriler', icon: Users, gradient: 'from-emerald-500 to-green-600' },
-              { href: '/complaints', label: 'Şikayetler', icon: AlertTriangle, gradient: 'from-red-500 to-rose-600' },
+              { href: '/complaints', label: 'Talepler', icon: AlertTriangle, gradient: 'from-red-500 to-rose-600' },
               { href: '/reports', label: 'Raporlar', icon: TrendingUp, gradient: 'from-violet-500 to-purple-600' },
             ].map((item) => {
               const QaIcon = item.icon;

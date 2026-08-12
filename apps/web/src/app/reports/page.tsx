@@ -167,7 +167,7 @@ export default function ReportsPage() {
       link.href = URL.createObjectURL(blob); link.download = 'siparis_raporu.csv';
       link.click(); URL.revokeObjectURL(link.href);
       setDownloadMsg('Excel rapor indiriliyor...'); setTimeout(() => setDownloadMsg(''), 3000);
-    } catch {}
+    } catch (e) { console.error(e); }
   };
 
   const statusEntries = Object.entries(statusCounts).sort(([, a], [, b]) => b - a);

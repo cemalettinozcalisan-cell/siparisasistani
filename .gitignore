@@ -7,3 +7,4 @@ dist/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+apps/api/backups/

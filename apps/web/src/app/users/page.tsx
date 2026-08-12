@@ -35,7 +35,7 @@ const ROLE_MATRIX: { module: string; manager: boolean; staff: boolean; desc: str
   { module: 'Tüm Siparişler', manager: true, staff: true, desc: 'Sipariş listesini görme ve yönetme' },
   { module: 'Canlı Siparişler', manager: true, staff: true, desc: 'Kanban board ve sipariş durum güncelleme' },
   { module: 'Görüşmeler', manager: true, staff: true, desc: 'Müşteri konuşma geçmişi' },
-  { module: 'Şikayet & İstek', manager: true, staff: true, desc: 'Yardım masası ve şikayet takibi' },
+  { module: 'Talep & İstek', manager: true, staff: true, desc: 'Yardım masası ve talep takibi' },
   { module: 'Müşteriler', manager: true, staff: true, desc: 'Müşteri listesi ve detay görüntüleme' },
   { module: 'Ürünler', manager: true, staff: true, desc: 'Ürün ekleme ve düzenleme' },
   { module: 'Raporlar', manager: true, staff: true, desc: 'Satış ve performans raporları' },
@@ -74,7 +74,7 @@ export default function UsersPage() {
       const res = await fetch(`/api/users/${tid}`, { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) setUsers(data as User[]);
-    } catch {}
+    } catch (e) { console.error(e); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -109,7 +109,7 @@ export default function UsersPage() {
       }
       setShowModal(false);
       load();
-    } catch {}
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 

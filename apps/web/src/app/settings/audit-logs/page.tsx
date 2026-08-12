@@ -16,7 +16,7 @@ const EVENT_LABELS: Record<string, string> = {
   ORDER_SHIPPED: 'Kargoya Verildi', ORDER_CANCELLED: 'Sipariş İptal Edildi',
   STATUS_NEW: 'Yeni Sipariş', PAYMENT_CONFIRMED: 'Ödeme Onaylandı',
   PAYMENT_WAITING: 'Ödeme Bekliyor', CARGO_REMINDER: 'Kargo Hatırlatması',
-  HUMAN_REQUIRED: 'Müdahale Gerekli', COMPLAINT_OPEN: 'Şikayet Açıldı',
+  HUMAN_REQUIRED: 'Müdahale Gerekli', COMPLAINT_OPEN: 'Talep Açıldı',
   PRINT_REQUESTED: 'Yazdırma İsteği', STATUS_UPDATED: 'Durum Güncellendi',
   SETTINGS_UPDATED: 'Ayarlar Güncellendi', USER_CREATED: 'Kullanıcı Eklendi',
   USER_DELETED: 'Kullanıcı Silindi', PRODUCT_CREATED: 'Ürün Eklendi',
@@ -74,7 +74,7 @@ const CATEGORY_FILTERS = [
   { value: 'products', label: 'Ürün & Stok', events: ['PRODUCT_CREATED', 'PRODUCT_DELETED'] },
   { value: 'subscription', label: 'Abonelik & Ödeme', events: ['PLAN_CHANGED', 'ADDON_PURCHASED'] },
   { value: 'settings', label: 'Sistem Ayarları', events: ['SETTINGS_UPDATED'] },
-  { value: 'issues', label: 'Şikayet & Müdahale', events: ['HUMAN_REQUIRED', 'COMPLAINT_OPEN'] },
+  { value: 'issues', label: 'Talep & Müdahale', events: ['HUMAN_REQUIRED', 'COMPLAINT_OPEN'] },
 ];
 
 interface LogEntry {

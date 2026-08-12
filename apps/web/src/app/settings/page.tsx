@@ -1,9 +1,11 @@
 'use client';
 
 import { getTenantId } from '@/lib/tenant';
+import { getToken } from '@/lib/auth';
 
-import { useEffect, useState } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Check, Shield } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 
 const DAYS = [
   { key: 'monday', label: 'Pazartesi' },
@@ -41,12 +43,92 @@ function parseStrList(raw: unknown): string[] {
   return [];
 }
 
+// ---- AI Seçenek Kartları ----
+
+const TONE_OPTIONS = [
+  { value: 'samimi', label: 'Samimi', desc: 'Günlük, sıcak', icon: Smile },
+  { value: 'resmi', label: 'Resmi', desc: 'Profesyonel', icon: Briefcase },
+  { value: 'yoresel', label: 'Yöresel', desc: 'Esnaf ağzı', icon: MapPin },
+];
+
+const BRAND_VOICE_OPTIONS = [
+  { value: 'geleneksel', label: 'Geleneksel', desc: 'Usta-çırak', icon: Store },
+  { value: 'samimi', label: 'Samimi', desc: 'Sıcak kanlı', icon: Heart },
+  { value: 'premium', label: 'Premium', desc: 'Butik/lüks', icon: Gem },
+  { value: 'kurumsal', label: 'Kurumsal', desc: 'Resmi', icon: Building2 },
+  { value: 'yoresel', label: 'Yöresel', desc: 'Yerel ağız', icon: MapPin },
+];
+
+const GREETING_OPTIONS = [
+  { value: 'firma_ad', label: 'Firma Adı ile', desc: 'Firma ismiyle karşılar', icon: BadgeCheck },
+  { value: 'musteri_hizmetleri', label: 'Müşteri Hizmetleri', desc: 'Kurumsal karşılama', icon: Headset },
+  { value: 'sade', label: 'Sade', desc: 'Kısa ve net', icon: CircleDot },
+  { value: 'ai_asistani', label: 'AI Asistanı', desc: 'Yapay zeka vurgusu', icon: Bot },
+];
+
+const VOICE_GENDER_OPTIONS = [
+  { value: 'female', label: 'Kadın', desc: 'Yumuşak, sıcak', icon: User },
+  { value: 'male', label: 'Erkek', desc: 'Güvenilir, tok', icon: Mic },
+  { value: 'custom', label: 'Özel', desc: 'Manuel ses ID', icon: Sparkles },
+];
+
+function OptionGroup({ label, options, selectedKey, onSelect, color }: {
+  label: string;
+  options: { value: string; label: string; desc: string; icon: React.ElementType }[];
+  selectedKey: string;
+  onSelect: (value: string) => void;
+  color: 'violet' | 'blue' | 'emerald' | 'rose';
+}) {
+  const c = {
+    violet:  { bg: 'bg-violet-50 dark:bg-violet-500/10', text: 'text-violet-600 dark:text-violet-300', border: 'border-violet-600', ring: 'ring-violet-600/30', cardBg: 'bg-violet-50/60 dark:bg-violet-950/30', title: 'text-violet-950 dark:text-violet-100', hover: 'hover:border-violet-300', gradient: 'from-violet-500 to-purple-600' },
+    blue:    { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-300', border: 'border-blue-600', ring: 'ring-blue-600/30', cardBg: 'bg-blue-50/60 dark:bg-blue-950/30', title: 'text-blue-950 dark:text-blue-100', hover: 'hover:border-blue-300', gradient: 'from-blue-500 to-cyan-500' },
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-300', border: 'border-emerald-600', ring: 'ring-emerald-600/30', cardBg: 'bg-emerald-50/60 dark:bg-emerald-950/30', title: 'text-emerald-950 dark:text-emerald-100', hover: 'hover:border-emerald-300', gradient: 'from-emerald-500 to-green-500' },
+    rose:    { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-300', border: 'border-rose-600', ring: 'ring-rose-600/30', cardBg: 'bg-rose-50/60 dark:bg-rose-950/30', title: 'text-rose-950 dark:text-rose-100', hover: 'hover:border-rose-300', gradient: 'from-rose-500 to-pink-500' },
+  }[color];
+  return (
+    <div>
+      <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2.5 block">{label}</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {options.map((o) => {
+          const isActive = selectedKey === o.value;
+          const Icon = o.icon;
+          return (
+            <button
+              key={o.value}
+              onClick={() => onSelect(o.value)}
+              className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${isActive ? `${c.border} ring-1 ${c.ring} ${c.cardBg} shadow-sm` : `border-slate-200 dark:border-slate-700 ${c.hover} dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-800/50`}`}
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${isActive ? `bg-gradient-to-br ${c.gradient} text-white shadow-sm` : `${c.bg} ${c.text}`}`}>
+                <Icon size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-sm font-semibold truncate ${isActive ? c.title : 'text-slate-800 dark:text-slate-200'}`}>{o.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{o.desc}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [pwOld, setPwOld] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwNew2, setPwNew2] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoSuccess, setLogoSuccess] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [days, setDays] = useState<Record<string, { open: boolean; start: string; end: string }>>({});
   const [excludedRegions, setExcludedRegions] = useState<string[]>([]);
   const [regionInput, setRegionInput] = useState('');
@@ -68,11 +150,50 @@ export default function SettingsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    fetch(`/api/settings/${tid}/logo`)
+      .then(r => r.json())
+      .then(d => { if (d.logoUrl) setLogoPreview(d.logoUrl); })
+      .catch(() => {});
   }, []);
 
   const update = (key: string, value: unknown) => {
     if (!settings) return;
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const changePassword = async () => {
+    setPwError(''); setPwSuccess(false);
+    if (!pwOld || !pwNew || !pwNew2) { setPwError('Tüm alanları doldurun'); return; }
+    if (pwNew !== pwNew2) { setPwError('Yeni şifreler eşleşmiyor'); return; }
+    if (pwNew.length < 6) { setPwError('Yeni şifre en az 6 karakter olmalı'); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ oldPassword: pwOld, newPassword: pwNew }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setPwError((d as Record<string, string>).message || 'Hata oluştu'); } else { setPwSuccess(true); setPwOld(''); setPwNew(''); setPwNew2(''); setTimeout(() => setPwSuccess(false), 3000); }
+    } catch { setPwError('Bağlantı hatası'); }
+    setPwSaving(false);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Dosya 2MBdan kucuk olmali'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    setLogoUploading(true);
+    const fd = new FormData();
+    fd.append('logo', file);
+    try {
+      await fetch(`/api/settings/${tid}/logo`, { method: 'POST', body: fd });
+      setLogoSuccess(true);
+      setTimeout(() => setLogoSuccess(false), 3000);
+    } catch (e) { console.error(e); }
+    setLogoUploading(false);
   };
 
   const save = async () => {
@@ -93,7 +214,7 @@ export default function SettingsPage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {}
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -115,7 +236,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-    } catch {}
+    } catch (e) { console.error(e); }
     setSaving(false);
   };
 
@@ -144,15 +265,6 @@ export default function SettingsPage() {
       </div>
       <h2 className="font-bold text-sm text-slate-900 dark:text-white">{title}</h2>
     </div>
-  );
-
-  const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) => (
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative w-10 h-5 rounded-full transition-all shrink-0 ${enabled ? 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm' : 'bg-gray-300 dark:bg-slate-600'}`}
-    >
-      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
   );
 
   const CrudList = ({ items, inputValue, onInputChange, onAdd, onRemove, placeholder, addLabel }: {
@@ -237,48 +349,18 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {/* 1. AI Ayarları — DOKUNULMAZ */}
+      {/* 1. AI Ayarları */}
       {activeTab === "all" || activeTab === "ai" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
         <SectionHeader icon={Brain} gradient="from-violet-500 to-purple-600" title="AI Ayarları" />
+        <OptionGroup label="Konuşma Tarzı" color="violet" options={TONE_OPTIONS} selectedKey={String(settings.ai_style || 'yoresel')} onSelect={(v) => saveAndKeep('ai_style', v)} />
+        <OptionGroup label="Marka Sesi" color="blue" options={BRAND_VOICE_OPTIONS} selectedKey={String(settings.brand_voice || 'yoresel')} onSelect={(v) => saveAndKeep('brand_voice', v)} />
+        <OptionGroup label="Karşılama Stili" color="emerald" options={GREETING_OPTIONS} selectedKey={String(settings.greeting_style || 'firma_ad')} onSelect={(v) => saveAndKeep('greeting_style', v)} />
         <div>
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Konuşma Tarzı</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[{ value: 'samimi', label: 'Samimi', desc: 'Günlük, sıcak' }, { value: 'resmi', label: 'Resmi', desc: 'Profesyonel' }, { value: 'yoresel', label: 'Yöresel', desc: 'Esnaf ağzı' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.ai_style || 'yoresel') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('ai_style', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-2 border-indigo-600 bg-white dark:bg-slate-800 shadow-sm shadow-indigo-100 dark:shadow-indigo-900/20 relative' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>{isActive && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-sm"><Check size={10} className="text-white" /></span>}
-                <span className={`text-xs font-bold ${isActive ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-900 dark:text-slate-200 font-semibold'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>); })}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Marka Sesi</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[{ value: 'geleneksel', label: 'Geleneksel', desc: 'Usta-çırak' }, { value: 'samimi', label: 'Samimi', desc: 'Sıcak kanlı' }, { value: 'premium', label: 'Premium', desc: 'Butik/lüks' }, { value: 'kurumsal', label: 'Kurumsal', desc: 'Resmi' }, { value: 'yoresel', label: 'Yöresel', desc: 'Yerel ağız' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.brand_voice || 'yoresel') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('brand_voice', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-2 border-indigo-600 bg-white dark:bg-slate-800 shadow-sm shadow-indigo-100 dark:shadow-indigo-900/20 relative' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>{isActive && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-sm"><Check size={10} className="text-white" /></span>}
-                <span className={`text-xs font-bold ${isActive ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-900 dark:text-slate-200 font-semibold'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>); })}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">Karşılama Stili</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[{ value: 'firma_ad', label: 'Firma Adı ile', desc: 'Firma ismiyle karşılar' }, { value: 'musteri_hizmetleri', label: 'Müşteri Hizmetleri', desc: 'Kurumsal karşılama' }, { value: 'sade', label: 'Sade', desc: 'Kısa ve net' }, { value: 'ai_asistani', label: 'AI Asistanı', desc: 'Yapay zeka vurgusu' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.greeting_style || 'firma_ad') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('greeting_style', o.value)} className={`flex flex-col items-start gap-1 p-3 rounded-xl border-2 transition-all ${isActive ? 'border-2 border-indigo-600 bg-white dark:bg-slate-800 shadow-sm shadow-indigo-100 dark:shadow-indigo-900/20 relative' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>{isActive && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-sm"><Check size={10} className="text-white" /></span>}
-                <span className={`text-xs font-bold ${isActive ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-900 dark:text-slate-200 font-semibold'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>); })}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block">AI Ses Cinsiyeti</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[{ value: 'female', label: 'Kadın', desc: 'Yumuşak, sıcak' }, { value: 'male', label: 'Erkek', desc: 'Güvenilir, tok' }, { value: 'custom', label: 'Özel', desc: 'Manuel ses ID' }].map((o: {value: string; label: string; desc: string}) => { const isActive = String(settings.voice_gender || 'male') === o.value; return (
-              <button key={o.value} onClick={() => saveAndKeep('voice_gender', o.value)} className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${isActive ? 'border-2 border-indigo-600 bg-white dark:bg-slate-800 shadow-sm shadow-indigo-100 dark:shadow-indigo-900/20 relative' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200'}`}>{isActive && <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center shadow-sm"><Check size={10} className="text-white" /></span>}
-                <span className={`text-xs font-bold ${isActive ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-900 dark:text-slate-200 font-semibold'}`}>{o.label}</span><span className="text-[10px] text-slate-400">{o.desc}</span>
-              </button>); })}
-          </div>
+          <OptionGroup label="AI Ses Cinsiyeti" color="rose" options={VOICE_GENDER_OPTIONS} selectedKey={String(settings.voice_gender || 'male')} onSelect={(v) => saveAndKeep('voice_gender', v)} />
           {String(settings.voice_gender || 'male') === 'custom' && (
-            <div className="mt-2"><input value={String(settings.custom_voice_id || '')} onChange={(e) => saveAndKeep('custom_voice_id', e.target.value)} placeholder="ElevenLabs Voice ID veya OpenAI ses adı" className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" /></div>
+            <div className="mt-3"><input value={String(settings.custom_voice_id || '')} onChange={(e) => saveAndKeep('custom_voice_id', e.target.value)} placeholder="ElevenLabs Voice ID veya OpenAI ses adı" className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" /></div>
           )}
         </div>
       </div>
@@ -855,31 +937,111 @@ export default function SettingsPage() {
 
       {/* TAB: İşletme Kimliği */}
       {activeTab === 'identity' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-5">
           <SectionHeader icon={Shield} gradient="from-indigo-500 to-violet-600" title="İşletme Kimliği" />
-          <p className="text-[11px] text-slate-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2.5 flex items-start gap-2">
-            <Info size={13} className="shrink-0 mt-0.5 text-indigo-500" />
-            Bu bilgiler kurulum sırasında kaydedilmiştir. Değişiklik yapmak için destek ekibiyle iletişime geçin.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Firma Adı', value: String(settings?.company_name || '-') },
-              { label: 'Sektör', value: String(settings?.sector === 'sucuk' ? 'Sucuk & Et' : settings?.sector === 'lokum' ? 'Lokum & Şekerleme' : settings?.sector === 'bukme' ? 'Bükme & Fırın' : settings?.sector === 'yumurta' ? 'Yumurta' : settings?.sector ? 'Genel Ticaret' : '-') },
-              { label: 'Şehir', value: String(settings?.city || '-') },
-              { label: 'Vergi Dairesi', value: String(settings?.tax_office || '-') },
-              { label: 'TCKN / VKN', value: String(settings?.identity_number || '-') },
-              { label: 'Telefon', value: String(settings?.phone || '-') },
-              { label: 'E-posta', value: String(settings?.email || '-') },
-              { label: 'Durum', value: 'Aktif' },
-            ].map((f) => (
-              <div key={f.label} className="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-0.5">{f.label}</p>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{f.value}</p>
-              </div>
-            ))}
+
+          {/* Alert Banner */}
+          <div className="flex items-start gap-2.5 bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3.5">
+            <ShieldCheck size={16} className="shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">Bu bilgiler kurulum sırasında kaydedilmiştir. Değişiklik yapmak için destek ekibiyle iletişime geçin.</p>
           </div>
-          <div className="flex justify-end pt-2">
-            <span className="text-[10px] text-slate-400">Kurulum tarihi: —</span>
+
+          {/* Profile Header Card */}
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-slate-50 to-indigo-50/50 dark:from-slate-800 dark:to-indigo-950/30 rounded-xl border border-slate-100 dark:border-slate-700">
+            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-white dark:bg-slate-900 overflow-hidden shrink-0">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <div className="text-center text-slate-400"><Building2 size={24} className="mx-auto mb-0.5" /><span className="text-[9px]">Logo</span></div>
+              )}
+            </div>
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">{String(settings?.company_name || 'İşletme')}</h3>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 text-xs font-medium rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Aktif İşletme
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Kurulum Rehberinden Aktarıldı</p>
+              <div className="flex items-center gap-2">
+                <input ref={logoInputRef} type="file" accept="image/png,image/jpeg" onChange={handleLogoUpload} className="hidden" />
+                <button onClick={() => logoInputRef.current?.click()} disabled={logoUploading} className="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50">
+                  <Upload size={12} /> {logoUploading ? 'Yükleniyor...' : 'Logo Yükle'}
+                </button>
+                {logoSuccess && <p className="text-[10px] text-emerald-500">Yüklendi</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Info Grid — Icon Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'Firma Adı', value: String(settings?.company_name || '-'), icon: Building2, gradient: 'from-blue-500 to-cyan-500' },
+              { label: 'Yetkili Ad Soyad', value: String(settings?.owner_name || '-'), icon: User, gradient: 'from-indigo-500 to-blue-500' },
+              { label: 'Sektör', value: String(settings?.sector === 'sucuk' ? 'Sucuk & Et' : settings?.sector === 'lokum' ? 'Lokum & Şekerleme' : settings?.sector === 'bukme' ? 'Bükme & Fırın' : settings?.sector === 'yumurta' ? 'Yumurta' : settings?.sector ? 'Genel Ticaret' : '-'), icon: Briefcase, gradient: 'from-amber-500 to-orange-500' },
+              { label: 'Şehir', value: String(settings?.city || '-'), icon: MapPin, gradient: 'from-rose-500 to-pink-500' },
+              { label: `Vergi Dairesi / ${String(settings?.identity_number || '').replace(/\D/g, '').length === 10 ? 'VKN' : String(settings?.identity_number || '').replace(/\D/g, '').length === 11 ? 'TCKN' : 'No'}`, value: `${String(settings?.tax_office || '-')} / ${String(settings?.identity_number || '-')}`, icon: Landmark, gradient: 'from-violet-500 to-purple-500' },
+              { label: 'Telefon', value: String(settings?.phone || '-'), icon: Phone, gradient: 'from-emerald-500 to-green-500' },
+              { label: 'E-posta', value: String(settings?.email || '-'), icon: Mail, gradient: 'from-cyan-500 to-teal-500' },
+            ].map((f) => {
+              const Ic = f.icon;
+              return (
+                <div key={f.label} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <Ic size={18} className="text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">{f.label}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 truncate">{f.value}</p>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Adres — full width */}
+            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50 col-span-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shrink-0 shadow-sm">
+                <MapPin size={18} className="text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Adres</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">{String(settings?.address || '-')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <span className="text-[10px] text-slate-400">Kurulum tarihi: {settings?.created_at ? new Date(settings.created_at as string).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
+          </div>
+
+          {/* Security Section */}
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shrink-0 shadow-sm">
+                <Shield size={18} className="text-white" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Güvenlik & Şifre Değiştirme</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 block">Mevcut Şifre</label>
+                <input type="password" value={pwOld} onChange={e => setPwOld(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 block">Yeni Şifre</label>
+                <input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 block">Yeni Şifre Tekrar</label>
+                <input type="password" value={pwNew2} onChange={e => setPwNew2(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+              </div>
+            </div>
+            {pwError && <p className="text-xs text-red-500 mt-2">{pwError}</p>}
+            {pwSuccess && <p className="text-xs text-emerald-500 mt-2">Şifre başarıyla değiştirildi</p>}
+            <div className="flex justify-end mt-3">
+              <button onClick={changePassword} disabled={pwSaving} className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm disabled:opacity-50">
+                <Shield size={13} /> {pwSaving ? 'Değiştiriliyor...' : 'Şifreyi Güncelle'}
+              </button>
+            </div>
           </div>
         </div>
       )}
