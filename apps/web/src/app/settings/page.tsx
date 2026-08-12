@@ -461,11 +461,9 @@ export default function SettingsPage() {
                 placeholder="WhatsApp Grup ID / Davet Linki"
                 className="flex-1 px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-indigo-400 outline-none"
               />
-              {String(settings.whatsapp_group_id || '') && (
-                <button onClick={() => saveAndKeep('whatsapp_group_id', '')} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Temizle">
-                  <X size={14} />
-                </button>
-              )}
+              <button onClick={() => saveAndKeep('whatsapp_group_id', '')} disabled={!String(settings.whatsapp_group_id || '')} className={`p-1.5 rounded-lg transition-colors ${String(settings.whatsapp_group_id || '') ? 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}`} title="Temizle">
+                <X size={14} />
+              </button>
             </div>
           </div>
         )}
