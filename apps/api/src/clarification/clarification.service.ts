@@ -52,7 +52,9 @@ export class ClarificationService {
           .eq('product_name', resolved.productName)
           .maybeSingle();
 
-        if (productData?.sale_types?.includes('KG') && productData?.sale_types?.includes('SAP')) {
+        const rawTypes = productData?.sale_types;
+        const saleTypes: string[] = typeof rawTypes === 'string' ? JSON.parse(rawTypes) : (Array.isArray(rawTypes) ? rawTypes : []);
+        if (saleTypes.includes('KG') && saleTypes.includes('SAP')) {
           issues.push({
             type: 'ambiguous_unit',
             field: 'unit',

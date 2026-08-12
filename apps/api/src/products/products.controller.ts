@@ -111,7 +111,9 @@ export class ProductsController {
   async catalog(@Param('tenantId') tenantId: string, @Res() res: Response) {
     const products = await this.list(tenantId) as any[];
     const rows = products.map((p: any) => {
-      const saleTypes = (p.sale_types || []).join(', ');
+      const raw = p.sale_types;
+      const arr: string[] = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
+      const saleTypes = arr.join(', ');
       const stock = p.track_stock ? `${p.stock_qty || 0} ${p.unit || 'KG'}` : 'Sınırsız';
       const activeStr = p.active === false ? 'Pasif' : 'Aktif';
       const ai = p.ai_rules || '-';

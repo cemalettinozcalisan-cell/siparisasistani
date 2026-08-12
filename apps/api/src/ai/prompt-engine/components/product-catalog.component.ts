@@ -22,7 +22,8 @@ export class ProductCatalogComponent {
       const price = Number(p['price'] || 0).toLocaleString('tr-TR');
       const wholesalePrice = p['wholesale_price'] ? Number(p['wholesale_price']).toLocaleString('tr-TR') : null;
       const minOrder = Number(p['min_order_qty'] || 0);
-      const saleTypes = (p['sale_types'] as string[]) || ['KG'];
+      const raw = p['sale_types'];
+      const saleTypes: string[] = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : ['KG']);
       const unit = p['unit'] || 'KG';
       const category = p['category'] || '';
       const variableWeight = p['variable_weight'];
