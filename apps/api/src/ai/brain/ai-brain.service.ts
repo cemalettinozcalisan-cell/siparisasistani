@@ -36,6 +36,8 @@ export interface BrainOutput {
   escalationLevel?: number;
   escalationReason?: string;
   recommendedAction?: string;
+  sendWhatsapp?: boolean;
+  whatsappMessage?: string;
 }
 
 export interface CallSummary {
@@ -215,6 +217,8 @@ export class AiBrainService {
       escalationLevel: parsed.escalationLevel,
       escalationReason: parsed.escalationReason,
       recommendedAction: parsed.recommendedAction,
+      sendWhatsapp: this.detectWhatsappRequest(parsed.reply || ''),
+      whatsappMessage: parsed.reply || '',
     };
 
     // Step 11: Order Engine (only if validated + confirmed)
@@ -415,6 +419,10 @@ export class AiBrainService {
 
   private detectHumanRequest(reply: string): boolean {
     return /yetkili|patron|müdür|insan|aktar/i.test(reply);
+  }
+
+  private detectWhatsappRequest(reply: string): boolean {
+    return /whatsapp|WhatsApp|belge|fotoğraf|resim|liste|katalog|fiyat listesi|göndereyim/i.test(reply);
   }
 
   // ---- Faz 1: Görüşme Özeti & Duygu Analizi ----

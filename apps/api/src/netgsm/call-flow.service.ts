@@ -111,6 +111,19 @@ export class CallFlowService {
     }
     // ---- /Faz 3 routing ----
 
+    // Faz 4: Görüşme içi WhatsApp/Belge gönderimi
+    if (result.sendWhatsapp && session.phone) {
+      try {
+        const telephony = this.telephony.getProvider('netgsm');
+        await (telephony as any).sendSms(session.phone,
+          `SiparisAsistani - Istediginiz bilgi:\n\n${result.whatsappMessage || result.reply}`
+        );
+        this.logger.log(`In-call document sent to customer ${session.phone} via SMS`);
+      } catch (e) {
+        this.logger.warn(`In-call document send failed: ${(e as Error).message}`);
+      }
+    }
+
     if (result.orderCreated) {
       const responseAudio = await this.voice.generateSpeech(
         `Siparişiniz oluşturuldu. Sipariş numaranız ${result.orderNumber}. Teşekkür ederiz.`, session.tenant_id,
