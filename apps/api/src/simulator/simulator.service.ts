@@ -84,7 +84,7 @@ export class SimulatorService {
     let orderCreated = false;
     let orderNumber: string | undefined;
     let error: string | undefined;
-    const maxTurns = 10;
+    const maxTurns = 5;
 
     // Map channel for DB compatibility (instagram not yet in constraint)
     const dbChannel = persona.channel === 'instagram' ? 'whatsapp' : persona.channel;

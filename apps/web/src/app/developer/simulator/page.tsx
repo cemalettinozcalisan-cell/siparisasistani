@@ -93,11 +93,15 @@ export default function SimulatorPage() {
       const res = await fetch(`/api/simulator/run/${testTenantId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personaId: selected.id }),
+        signal: AbortSignal.timeout(60000),
       });
       const data: SimResult = await res.json();
       setResults(prev => [data, ...prev].slice(0, 50));
       setLiveTranscript(data.transcript);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setLiveTranscript([{ role: 'system', content: 'Test zaman aşımına uğradı veya hata oluştu' }]);
+    }
     setRunning(false);
   };
 
