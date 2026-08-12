@@ -137,8 +137,7 @@ export class SimulatorService {
         }
 
         if (result.needsHuman) {
-          transcript.push({ role: 'system', content: 'İnsan müdahalesi gerekli' });
-          break;
+          transcript.push({ role: 'system', content: '⚠️ İnsan müdahalesi önerildi (test devam ediyor)' });
         }
 
         if (result.afterHours || result.maintenanceMode) {
