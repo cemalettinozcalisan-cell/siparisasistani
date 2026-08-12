@@ -30,6 +30,27 @@ export interface BrainOutput {
   afterHours: boolean;
   duplicateWarning?: string;
   providerUsed?: string;
+  intent?: string;
+  complaintType?: string;
+  complaintSeverity?: string;
+  escalationLevel?: number;
+  escalationReason?: string;
+  recommendedAction?: string;
+}
+
+export interface CallSummary {
+  success: boolean;
+  productCount: number;
+  products: string[];
+  paymentMethod: string;
+  address: string;
+  customerName: string;
+  durationSeconds: number;
+  sentiment: 'HAPPY' | 'NEUTRAL' | 'UNHAPPY' | 'ANGRY';
+  sentimentScore: number;
+  aiErrors: string[];
+  needsHuman: boolean;
+  shortSummary: string;
 }
 
 @Injectable()
@@ -187,6 +208,15 @@ export class AiBrainService {
     // Step 10: Session Update
     await this.updateSession(sessionId, input.messages, response.content, effectiveProvider, parsed.confidence);
 
+    const routingFields = {
+      intent: parsed.intent,
+      complaintType: parsed.complaintType,
+      complaintSeverity: parsed.complaintSeverity,
+      escalationLevel: parsed.escalationLevel,
+      escalationReason: parsed.escalationReason,
+      recommendedAction: parsed.recommendedAction,
+    };
+
     // Step 11: Order Engine (only if validated + confirmed)
     if (validation.valid && parsed.confirmed) {
       try {
@@ -208,6 +238,7 @@ export class AiBrainService {
           afterHours: false,
           duplicateWarning,
           providerUsed,
+          ...routingFields,
         };
       } catch (err) {
         this.logger.error(`Order creation failed: ${(err as Error).message}`);
@@ -217,6 +248,7 @@ export class AiBrainService {
           orderCreated: false, sessionId,
           needsHuman: true, maintenanceMode: false, afterHours: false,
           duplicateWarning, providerUsed,
+          ...routingFields,
         };
       }
     }
@@ -229,6 +261,7 @@ export class AiBrainService {
       orderCreated: false, sessionId,
       needsHuman, maintenanceMode: false, afterHours: false,
       duplicateWarning, providerUsed,
+      ...routingFields,
     };
   }
 
@@ -382,5 +415,106 @@ export class AiBrainService {
 
   private detectHumanRequest(reply: string): boolean {
     return /yetkili|patron|müdür|insan|aktar/i.test(reply);
+  }
+
+  // ---- Faz 1: Görüşme Özeti & Duygu Analizi ----
+
+  async generateCallSummary(sessionId: string): Promise<CallSummary | null> {
+    try {
+      const { data: session } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('tenant_id, phone, messages, created_at, ended_at, status, call_recording_url')
+        .eq('id', sessionId)
+        .single();
+
+      if (!session || !session.messages) return null;
+
+      const messages: { role: string; content: string }[] =
+        typeof session.messages === 'string' ? JSON.parse(session.messages) : session.messages;
+      if (!Array.isArray(messages) || messages.length === 0) return null;
+
+      const startMs = new Date(session.created_at).getTime();
+      const endMs = session.ended_at ? new Date(session.ended_at).getTime() : Date.now();
+      const durationSeconds = Math.round((endMs - startMs) / 1000);
+
+      const conversationText = messages
+        .map((m) => `${m.role === 'user' ? 'Müşteri' : 'AI'}: ${m.content}`)
+        .join('\n');
+
+      const summaryPrompt = [
+        'Aşağıdaki telefon görüşmesini analiz et ve JSON formatında özetle.',
+        '',
+        conversationText,
+        '',
+        'JSON ÇIKTI (sadece JSON, başka metin yok):',
+        '{',
+        '  "shortSummary": "1-2 cümlelik Türkçe özet",',
+        '  "products": ["ürün1 - miktar", "ürün2 - miktar"],',
+        '  "productCount": 2,',
+        '  "paymentMethod": "IBAN|KAPIDA_NAKIT|KAPIDA_KART|BELIRSIZ",',
+        '  "address": "teslimat adresi veya null",',
+        '  "customerName": "müşteri adı veya null",',
+        '  "sentiment": "HAPPY|NEUTRAL|UNHAPPY|ANGRY",',
+        '  "sentimentScore": 85,',
+        '  "aiErrors": ["hata1", "hata2"],',
+        '  "needsHuman": false,',
+        '  "success": true',
+        '}',
+      ].join('\n');
+
+      const provider = this.aiFactory.getProvider(undefined);
+      const result = await provider.complete({
+        messages: [{ role: 'user', content: summaryPrompt }],
+        temperature: 0.2, maxTokens: 500,
+      });
+
+      let parsed: Record<string, unknown>;
+      try {
+        const cleaned = result.content.replace(/```json\s*|```\s*/g, '').trim();
+        parsed = JSON.parse(cleaned);
+      } catch {
+        return null;
+      }
+
+      const summary: CallSummary = {
+        success: !!parsed.success,
+        productCount: Number(parsed.productCount) || 0,
+        products: Array.isArray(parsed.products) ? parsed.products.map(String) : [],
+        paymentMethod: String(parsed.paymentMethod || 'BELIRSIZ'),
+        address: String(parsed.address || ''),
+        customerName: String(parsed.customerName || ''),
+        durationSeconds,
+        sentiment: (['HAPPY', 'NEUTRAL', 'UNHAPPY', 'ANGRY'].includes(String(parsed.sentiment))
+          ? String(parsed.sentiment) : 'NEUTRAL') as CallSummary['sentiment'],
+        sentimentScore: Math.min(100, Math.max(0, Number(parsed.sentimentScore) || 50)),
+        aiErrors: Array.isArray(parsed.aiErrors) ? parsed.aiErrors.map(String) : [],
+        needsHuman: !!parsed.needsHuman,
+        shortSummary: String(parsed.shortSummary || ''),
+      };
+
+      await this.supabase.db
+        .from('conversation_sessions')
+        .update({
+          session_data: JSON.stringify({
+            summary: summary.shortSummary,
+            sentiment: summary.sentiment,
+            sentiment_score: summary.sentimentScore,
+            products: summary.products,
+            payment_method: summary.paymentMethod,
+            address: summary.address,
+            customer_name: summary.customerName,
+            ai_errors: summary.aiErrors,
+            duration_seconds: summary.durationSeconds,
+            needs_human: summary.needsHuman,
+          }),
+        })
+        .eq('id', sessionId);
+
+      this.logger.log(`Call summary generated for session ${sessionId}: ${summary.shortSummary}`);
+      return summary;
+    } catch (e) {
+      this.logger.error(`Call summary failed for session ${sessionId}: ${(e as Error).message}`);
+      return null;
+    }
   }
 }

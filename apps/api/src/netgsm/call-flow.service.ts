@@ -70,6 +70,47 @@ export class CallFlowService {
 
     const result = await this.brain.process(brainInput);
 
+    // ---- Faz 3: Akıllı Yönlendirme (Intent-based) ----
+    if (result.intent === 'COMPLAINT' && !result.orderCreated) {
+      try {
+        await this.supabase.db.from('complaints').insert({
+          tenant_id: session.tenant_id,
+          phone: session.phone,
+          source: 'phone',
+          category: result.complaintType || 'general',
+          severity: result.complaintSeverity || 'medium',
+          description: `Telefon görüşmesi sırasında şikayet tespit edildi. Müşteri: "${userMessage}"`,
+          priority: result.escalationLevel && result.escalationLevel >= 3 ? 'high' : 'medium',
+          status: 'open',
+        });
+        this.logger.log(`Complaint auto-created for session ${sessionId} - severity: ${result.complaintSeverity}`);
+      } catch (e) {
+        this.logger.error(`Complaint creation failed: ${(e as Error).message}`);
+      }
+
+      const complaintAudio = await this.voice.generateSpeech(
+        'Talebinizi not aldık. En kısa sürede size dönüş yapacağız.', session.tenant_id,
+      );
+      const url = await this.storeAudio(session.tenant_id, complaintAudio.audio);
+      await this.updateCallStatus(sessionId, 'COMPLAINT_CREATED');
+      return this.xml.buildPlayAudio(url);
+    }
+
+    if (result.intent === 'WHOLESALE') {
+      await this.updateCallStatus(sessionId, 'WHOLESALE_LEAD');
+      this.logger.log(`Wholesale lead detected for session ${sessionId} from ${session.phone}`);
+    }
+
+    if (result.intent === 'LEGAL' || (result.escalationLevel && result.escalationLevel >= 4)) {
+      const legalAudio = await this.voice.generateSpeech(
+        'Bu konuda sizi yetkiliyle görüştürmem gerekiyor. Kısa süre sonra sizi arayacağız.', session.tenant_id,
+      );
+      const url = await this.storeAudio(session.tenant_id, legalAudio.audio);
+      await this.updateCallStatus(sessionId, 'LEGAL_ESCALATION');
+      return this.xml.buildPlayAudio(url);
+    }
+    // ---- /Faz 3 routing ----
+
     if (result.orderCreated) {
       const responseAudio = await this.voice.generateSpeech(
         `Siparişiniz oluşturuldu. Sipariş numaranız ${result.orderNumber}. Teşekkür ederiz.`, session.tenant_id,

@@ -1,15 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { AiBrainService } from '../ai/brain/ai-brain.service';
 
 @Injectable()
 export class InstagramService {
   private readonly logger = new Logger(InstagramService.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly brain: AiBrainService,
+  ) {}
 
   async handleWebhook(tenantId: string, body: Record<string, unknown>) {
     this.logger.log(`Instagram webhook received for tenant ${tenantId}`);
-    // Meta Webhook'undan gelen DM mesajlarını işler
     const entries = body.entry as Record<string, unknown>[] || [];
     for (const entry of entries) {
       const messaging = entry.messaging as Record<string, unknown>[] || [];
@@ -20,16 +23,88 @@ export class InstagramService {
 
         const igUserId = String(sender.id);
         const text = String(message.text || '');
+        const username = String((sender as any).name || igUserId);
 
         // Find or create conversation
-        const conv = await this.findOrCreateConversation(tenantId, igUserId, String((sender as any).name || ''));
+        const conv = await this.findOrCreateConversation(tenantId, igUserId, username);
 
         // Save incoming message
         await this.saveMessage(conv.id, tenantId, 'incoming', text);
 
-        // TODO: Route to AI conversation engine for response
-        // For now, just log
-        this.logger.log(`Instagram DM from ${igUserId}: ${text}`);
+        // Faz 3.3: Route to AI Brain for response
+        try {
+          // Get existing conversation session for context
+          const { data: session } = await this.supabase.db
+            .from('conversation_sessions')
+            .select('id, messages')
+            .eq('tenant_id', tenantId)
+            .eq('phone', igUserId)
+            .eq('channel', 'instagram')
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          let sessionId: string;
+          let history: { role: string; content: string }[] = [];
+
+          if (session && session.length > 0) {
+            sessionId = session[0].id as string;
+            history = typeof session[0].messages === 'string'
+              ? JSON.parse(session[0].messages)
+              : (session[0].messages as { role: string; content: string }[]) || [];
+          } else {
+            const { data: newSession } = await this.supabase.db
+              .from('conversation_sessions')
+              .insert({
+                tenant_id: tenantId,
+                channel: 'instagram',
+                channel_source: 'instagram',
+                phone: igUserId,
+                status: 'active',
+                messages: [],
+                created_at: new Date().toISOString(),
+              })
+              .select('id')
+              .single();
+
+            sessionId = (newSession?.id as string) || '';
+          }
+
+          history.push({ role: 'customer', content: text });
+
+          const result = await this.brain.process({
+            tenantId,
+            phone: igUserId,
+            sessionId,
+            messages: history.map((m) => ({
+              role: m.role === 'customer' ? 'user' : 'assistant',
+              content: m.content,
+            })),
+            channel: 'instagram' as any,
+            channelSource: 'instagram',
+          });
+
+          const aiReply = result.reply || '';
+          if (aiReply) {
+            history.push({ role: 'assistant', content: aiReply });
+
+            await this.supabase.db
+              .from('conversation_sessions')
+              .update({
+                messages: history,
+                updated_at: new Date().toISOString(),
+                status: result.orderCreated ? 'completed' : 'active',
+              })
+              .eq('id', sessionId);
+
+            await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
+            await this.sendMessage(conv.id, tenantId, aiReply);
+
+            this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
+          }
+        } catch (e) {
+          this.logger.error(`Instagram DM brain processing failed: ${(e as Error).message}`);
+        }
       }
     }
     return { status: 'ok' };
@@ -66,6 +141,7 @@ export class InstagramService {
 
   async sendMessage(conversationId: string, tenantId: string, text: string) {
     await this.saveMessage(conversationId, tenantId, 'outgoing', text);
-    // TODO: Send via Meta Graph API to Instagram
+    // Not: Meta Graph API entegrasyonu canlı ortamda yapılandırılmalı
+    this.logger.log(`Instagram DM out: conv=${conversationId}, text=${text.substring(0, 80)}`);
   }
 }

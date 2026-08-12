@@ -9,7 +9,7 @@ export class ConversationsService {
 
   async getConversations(tenantId: string, limit = 50) {
     try {
-      const [sessions, calls, whatsapp, orders] = await Promise.all([
+      const [sessions, calls, whatsapp, whatsappConvs, instagramConvs, orders] = await Promise.all([
         this.supabase.db
           .from('conversation_sessions')
           .select('id, channel, phone, status, call_status, session_label, messages, session_data, created_at, ended_at, call_duration, ai_model')
@@ -32,6 +32,21 @@ export class ConversationsService {
           .limit(limit),
 
         this.supabase.db
+          .from('whatsapp_conversations')
+          .select('id, phone, status, message_count, created_at')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        this.supabase.db
+          .from('instagram_conversations')
+          .select('id, instagram_user_id, username, status, created_at')
+          .eq('tenant_id', tenantId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(limit),
+
+        this.supabase.db
           .from('activity_logs')
           .select('entity_id, event_type, description, metadata, created_at')
           .eq('tenant_id', tenantId)
@@ -48,10 +63,14 @@ export class ConversationsService {
       const results: Record<string, unknown>[] = [];
       const seen = new Set<string>();
 
-      // Merge sessions and calls
+      const channelTypeMap: Record<string, string> = {
+        phone: 'VOICE', sms: 'SMS', whatsapp: 'WHATSAPP', instagram: 'INSTAGRAM',
+      };
+
+      // Merge sessions (phone + sms)
       for (const s of sessions.data || []) {
-        const phone = (s as Record<string, unknown>).phone as string;
-        const key = `${s.id}-${s.created_at}`;
+        const sessionChannel = (s as any).channel || 'phone';
+        const key = `${s.id}-${(s as any).created_at}`;
         if (seen.has(key)) continue;
         seen.add(key);
 
@@ -60,21 +79,22 @@ export class ConversationsService {
 
         results.push({
           id: s.id,
-          type: 'call',
-          channel: 'VOICE',
-          phone,
-          sessionLabel: s.session_label,
-          status: s.call_status || s.status,
-          duration: s.call_duration || recording?.duration_seconds || null,
+          type: sessionChannel === 'phone' ? 'call' : 'sms',
+          channel: channelTypeMap[sessionChannel] || 'VOICE',
+          phone: (s as any).phone,
+          sessionLabel: (s as any).session_label,
+          status: (s as any).call_status || (s as any).status,
+          duration: (s as any).call_duration || recording?.duration_seconds || null,
           recordingUrl: recording?.recording_url || null,
-          aiModel: s.ai_model,
+          aiModel: (s as any).ai_model,
           hasOrder: !!relatedOrder,
           orderInfo: relatedOrder ? {
             description: relatedOrder.description,
             metadata: relatedOrder.metadata,
           } : null,
-          createdAt: s.created_at,
-          endedAt: s.ended_at,
+          summary: (s as any).session_data || null,
+          createdAt: (s as any).created_at,
+          endedAt: (s as any).ended_at,
         });
       }
 
@@ -101,6 +121,25 @@ export class ConversationsService {
           messageCount: msgs.length,
           lastMessage: msgs[msgs.length - 1]?.body || '',
           createdAt: first.created_at,
+        });
+      }
+
+      // Instagram conversations
+      for (const ig of instagramConvs.data || []) {
+        const key = `ig-${ig.id}-${ig.created_at}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        results.push({
+          id: `ig-${ig.id}`,
+          type: 'instagram',
+          channel: 'INSTAGRAM',
+          phone: (ig as any).instagram_user_id,
+          username: (ig as any).username || 'Instagram Kullanıcısı',
+          status: 'active',
+          messageCount: 0,
+          lastMessage: '',
+          createdAt: (ig as any).created_at,
         });
       }
 
