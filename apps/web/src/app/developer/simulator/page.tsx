@@ -197,11 +197,11 @@ export default function SimulatorPage() {
       </div>
 
       {/* Live Stream */}
-      {liveTranscript.length > 0 && running && (
+      {liveTranscript.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="px-4 py-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">CANLI TEST</span>
+            <div className={`w-2 h-2 rounded-full ${running ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{running ? 'CANLI TEST' : 'TEST TAMAMLANDI'}</span>
             <span className="text-[10px] text-slate-400 ml-auto">{selected?.name} — {selected?.channel}</span>
           </div>
           <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
