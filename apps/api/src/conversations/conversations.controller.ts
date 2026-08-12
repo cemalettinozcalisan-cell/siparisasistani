@@ -110,22 +110,29 @@ export class ConversationsController {
 
   private getMockDetail(sessionId: string) {
     const isWhatsapp = sessionId.startsWith('wa-');
+    const isInstagram = sessionId.startsWith('ig-');
+
+    const MOCK_INSTAGRAM = [
+      { user_message: 'Merhaba, kangal sucuk fiyatı nedir?', raw_response: '{"intent":"PRICE_INFO","reply":"Merhaba Can Bey! Kangal sucuğumuzun kilosu 300 TL. 2 kg ve üzeri alımlarda kargo ücretsiz."}', confidence: 95, created_at: new Date(Date.now() - 120000).toISOString() },
+      { user_message: 'Teşekkürler, düşüneyim', raw_response: '{"intent":"GENERAL","reply":"Rica ederim, istediğiniz zaman buradayım. Afiyet olsun!"}', confidence: 90, created_at: new Date(Date.now() - 60000).toISOString() },
+    ];
+
     return {
       session: {
         id: sessionId,
-        channel: isWhatsapp ? 'whatsapp' : 'phone',
-        phone: isWhatsapp ? '05431234567' : '05321234567',
+        channel: isInstagram ? 'instagram' : isWhatsapp ? 'whatsapp' : 'phone',
+        phone: isInstagram ? '05559876543' : isWhatsapp ? '05431234567' : '05321234567',
         status: 'completed',
         call_status: 'COMPLETED',
-        call_duration: 150,
-        session_label: isWhatsapp ? null : sessionId === '44444444-4444-4444-4444-444444444444' ? null : 'SESSION-20260722-0001',
+        call_duration: isInstagram ? null : 150,
+        session_label: isInstagram ? null : isWhatsapp ? null : sessionId === '44444444-4444-4444-4444-444444444444' ? null : 'SESSION-20260722-0001',
         call_recording_url: sessionId === '33333333-3333-3333-3333-333333333333' ? 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' : null,
         created_at: new Date(Date.now() - 3600000).toISOString(),
         ended_at: new Date(Date.now() - 3400000).toISOString(),
       },
-      recording: { recording_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-      transcript: MOCK_AUDIT,
-      whatsappMessages: MOCK_WHATSAPP,
+      recording: isInstagram ? null : { recording_url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+      transcript: isInstagram ? MOCK_INSTAGRAM : MOCK_AUDIT,
+      whatsappMessages: isInstagram ? [] : MOCK_WHATSAPP,
     };
   }
 
