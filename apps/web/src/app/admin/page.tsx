@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap } from 'lucide-react';

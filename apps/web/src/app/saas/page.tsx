@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { CreditCard, BarChart3, Package, PlusCircle, FileText, Check, ChevronRight, AlertTriangle, Shield, Download, Info, Sparkles, TrendingUp, Clock, Calendar, Building2, Zap, Gift, X } from 'lucide-react';

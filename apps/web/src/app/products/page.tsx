@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { Package, X, Sparkles, Upload, Check, Search, Download, PackageOpen, Pencil, Trash2, ShoppingBag, Layers, Infinity, AlertTriangle } from 'lucide-react';

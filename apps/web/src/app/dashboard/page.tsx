@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings } from 'lucide-react';

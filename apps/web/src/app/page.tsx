@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Camera, Globe, Printer, MessageCircle, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { Download, FileText, Package as PackageIcon, PhoneCall, Search, ChevronDown, ShoppingBag, Banknote, ShoppingCart, Truck, Calendar, MessageCircle, Camera, Globe, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react';

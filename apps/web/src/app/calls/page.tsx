@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, MessageCircle, User, Bot, AlertTriangle, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare, Sparkles, Mic, CheckCheck } from 'lucide-react';

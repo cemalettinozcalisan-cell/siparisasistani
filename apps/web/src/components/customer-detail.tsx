@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, TrendingDown } from 'lucide-react';
+import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, TrendingDown, X, Save } from 'lucide-react';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -20,13 +20,20 @@ function getSegment(customer: Record<string, unknown>, ordersCount: number, tota
   return { label: 'Aktif', icon: CheckCircle2, gradient: 'from-sky-400 to-blue-500' };
 }
 
-export function CustomerDetail({ customer, orders, timeline, complaints }: CustomerDetailProps) {
+export function CustomerDetail({ customer, orders, timeline, complaints, onRefresh }: CustomerDetailProps) {
   const tid = getTenantId();
   const [customerPrices, setCustomerPrices] = useState<Record<string, unknown>[]>([]);
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [priceForm, setPriceForm] = useState({ product_name: '', unit: 'KG', price: '', min_quantity: '' });
   const [products, setProducts] = useState<Array<{ product_name: string; unit: string; price: number }>>([]);
   const [userRole, setUserRole] = useState('owner');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '', phone: '', city: '', address: '', identity_number: '',
+    company_name: '', tax_office: '', birth_date: '', notes: '',
+    credit_limit: '', payment_term: '',
+  });
 
   useEffect(() => { try { setUserRole(JSON.parse(localStorage.getItem('auth_user') || '{}').role || 'owner'); } catch {} }, []);
   useEffect(() => {
@@ -54,6 +61,46 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
   const handleDeletePrice = async (id: string) => {
     await fetch(`/api/customer-prices/${tid}/${customer.id}/${id}`, { method: 'DELETE' });
     loadPrices();
+  };
+
+  const openEdit = () => {
+    setEditForm({
+      name: String(customer.name || ''),
+      phone: String(customer.phone || ''),
+      city: String((customer as any).city || ''),
+      address: String((customer as any).address || ''),
+      identity_number: String((customer as any).identity_number || ''),
+      company_name: String((customer as any).company_name || ''),
+      tax_office: String((customer as any).tax_office || ''),
+      birth_date: String((customer as any).birth_date || ''),
+      notes: String((customer as any).notes || ''),
+      credit_limit: String((customer as any).credit_limit || '0'),
+      payment_term: String((customer as any).payment_term || '0'),
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const body: Record<string, unknown> = {
+      name: editForm.name,
+      phone: editForm.phone,
+      city: editForm.city || null,
+      address: editForm.address || null,
+      identity_number: editForm.identity_number || null,
+      company_name: editForm.company_name || null,
+      tax_office: editForm.tax_office || null,
+      birth_date: editForm.birth_date || null,
+      notes: editForm.notes || null,
+      credit_limit: Number(editForm.credit_limit) || 0,
+      payment_term: Number(editForm.payment_term) || 0,
+    };
+    await fetch(`/api/customers/${tid}/${customer.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    setSaving(false);
+    setShowEditModal(false);
+    onRefresh();
   };
 
   const totalSpent = orders.reduce((s, o) => s + Number(o.total_price || 0), 0);
@@ -106,7 +153,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
               className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
               <MessageCircle size={13} /> WhatsApp
             </button>
-            <button onClick={() => alert('Müşteri düzenleme özelliği bir sonraki güncellemede eklenecektir.')}
+            <button onClick={openEdit}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm transition-all">
               <Pencil size={12} /> Düzenle
             </button>
@@ -305,6 +352,67 @@ export function CustomerDetail({ customer, orders, timeline, complaints }: Custo
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowEditModal(false)} />
+          <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Müşteri Düzenle</h3>
+              <button onClick={() => setShowEditModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Ad Soyad', key: 'name', type: 'text' },
+                  { label: 'Telefon', key: 'phone', type: 'text' },
+                  { label: 'Şehir', key: 'city', type: 'text' },
+                  { label: 'Adres', key: 'address', type: 'text' },
+                  { label: 'Firma', key: 'company_name', type: 'text' },
+                  { label: 'Vergi Dairesi', key: 'tax_office', type: 'text' },
+                  { label: 'TCKN / VKN', key: 'identity_number', type: 'text' },
+                  { label: 'Doğum Tarihi', key: 'birth_date', type: 'date' },
+                ].map(f => (
+                  <div key={f.key} className={f.key === 'address' ? 'col-span-2' : ''}>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{f.label}</label>
+                    <input type={f.type} value={(editForm as any)[f.key]} onChange={e => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Kredi Limiti (TL)</label>
+                  <input type="number" value={editForm.credit_limit} onChange={e => setEditForm({ ...editForm, credit_limit: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Vade (Gün)</label>
+                  <input type="number" value={editForm.payment_term} onChange={e => setEditForm({ ...editForm, payment_term: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Not</label>
+                <textarea value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={2} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-700">
+              <button onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                İptal
+              </button>
+              <button onClick={handleSave} disabled={saving}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-sm font-semibold transition-all shadow-md disabled:opacity-50">
+                <Save size={14} /> {saving ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

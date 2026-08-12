@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, ShieldAlert, PhoneCall, MessageSquare, Camera, Settings, Clock, User, Hash, Phone, MessageCircle } from 'lucide-react';

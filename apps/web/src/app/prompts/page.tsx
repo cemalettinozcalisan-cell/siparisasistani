@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Brain, Copy, Loader2, Phone, MessageCircle, Camera, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown } from 'lucide-react';
