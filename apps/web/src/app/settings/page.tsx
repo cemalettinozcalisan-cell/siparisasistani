@@ -471,6 +471,10 @@ export default function SettingsPage() {
           <Toggle enabled={settings.web_notifications_enabled !== false} onChange={(v) => saveAndKeep('web_notifications_enabled', v)} />
         </Row>
 
+        <Row label="Görüşme Özeti SMS" desc="Telefon görüşmesi bittiğinde özeti esnafa SMS olarak gönder">
+          <Toggle enabled={settings.call_summary_sms_enabled !== false} onChange={(v) => saveAndKeep('call_summary_sms_enabled', v)} />
+        </Row>
+
         <div className="space-y-1">
           <label className="text-xs text-gray-500 dark:text-slate-400">Ödeme Hatırlatma Süresi (dk)</label>
           <div className="flex items-center gap-2">
@@ -642,7 +646,7 @@ export default function SettingsPage() {
               </button>
             </div>
             {deliveryRules.length > 0 && (
-              <div className="space-y-1">
+        <div className="space-y-1">
                 {deliveryRules.map((item, i) => (
                   <div key={i} className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm text-gray-700 dark:text-slate-300 group">
                     <span>{item}</span>

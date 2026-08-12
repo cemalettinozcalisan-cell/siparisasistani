@@ -57,23 +57,31 @@ export class CallEventsWebhook {
                   .single();
 
                 if (session) {
+                  // Check if call summary SMS is enabled for this tenant
+                  const { data: settings } = await this.supabase.db
+                    .from('tenant_settings')
+                    .select('call_summary_sms_enabled')
+                    .eq('tenant_id', session.tenant_id)
+                    .single();
+
+                  const smsEnabled = settings?.call_summary_sms_enabled !== false;
+
                   const { data: tenant } = await this.supabase.db
                     .from('tenants')
                     .select('phone')
                     .eq('id', session.tenant_id)
                     .single();
 
-                  const sentimentEmoji = summary.sentiment === 'HAPPY' ? '😊' : summary.sentiment === 'UNHAPPY' ? '😟' : summary.sentiment === 'ANGRY' ? '😡' : '😐';
-                  const sms = [
-                    `SiparisAsistani - Gorusme Ozeti ${sentimentEmoji}`,
-                    `Mus: ${summary.customerName || session.phone}`,
-                    `Sure: ${Math.round(summary.durationSeconds / 60)}dk`,
-                    summary.productCount > 0 ? `Urun: ${summary.products.join(', ')}` : '',
-                    `Odeme: ${summary.paymentMethod}`,
-                    summary.shortSummary,
-                  ].filter(Boolean).join('\n');
-
-                  if (tenant?.phone) {
+                  if (smsEnabled && tenant?.phone) {
+                    const sentimentEmoji = summary.sentiment === 'HAPPY' ? '😊' : summary.sentiment === 'UNHAPPY' ? '😟' : summary.sentiment === 'ANGRY' ? '😡' : '😐';
+                    const sms = [
+                      `SiparisAsistani - Gorusme Ozeti ${sentimentEmoji}`,
+                      `Mus: ${summary.customerName || session.phone}`,
+                      `Sure: ${Math.round(summary.durationSeconds / 60)}dk`,
+                      summary.productCount > 0 ? `Urun: ${summary.products.join(', ')}` : '',
+                      `Odeme: ${summary.paymentMethod}`,
+                      summary.shortSummary,
+                    ].filter(Boolean).join('\n');
                     await this.netgsm.sendSms(tenant.phone, sms);
                     this.logger.log(`Summary SMS sent to tenant ${session.tenant_id} at ${tenant.phone}`);
                   }
