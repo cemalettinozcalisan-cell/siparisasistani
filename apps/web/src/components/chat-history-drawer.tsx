@@ -3,6 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, MessageSquare, PhoneCall, Bot, ExternalLink } from 'lucide-react';
 
 interface ChatMessage {
@@ -27,6 +28,7 @@ export function ChatHistoryDrawer({
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const load = async () => {
@@ -136,7 +138,7 @@ export function ChatHistoryDrawer({
             <button
               onClick={() => {
                 onClose();
-                window.open(`/calls?search=${encodeURIComponent(orderNumber)}`, '_blank');
+                router.push(`/calls?search=${encodeURIComponent(orderNumber)}`);
               }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
             >
