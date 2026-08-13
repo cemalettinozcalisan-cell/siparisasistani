@@ -1,5 +1,5 @@
 export type OrderChannel = 'phone' | 'whatsapp' | 'manual' | 'sms' | 'instagram';
-export type OrderSource = 'PHONE' | 'WHATSAPP' | 'PANEL' | 'WEBSITE';
+export type OrderSource = 'PHONE' | 'WHATSAPP' | 'PANEL' | 'WEBSITE' | 'SIMULATOR';
 export type OrderStatus = 'new' | 'approved' | 'preparing' | 'shipped' | 'completed' | 'cancelled';
 export type PaymentMethod = 'iban' | 'website' | 'paytr' | 'iyzico' | 'cash_on_delivery';
 export type PaymentStatus = 'waiting' | 'paid' | 'failed';

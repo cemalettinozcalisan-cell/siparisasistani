@@ -225,6 +225,11 @@ export class AiBrainService {
     if (validation.valid && parsed.confirmed) {
       try {
         const orderInput = this.parser.toOrderInput(parsed, input.channel);
+        orderInput.customer.phone = orderInput.customer.phone || input.phone;
+        if (input.channelSource === 'simulator') {
+          orderInput.source = 'SIMULATOR';
+          orderInput.notes = '[SİMÜLASYON TESTİ]';
+        }
         const order = await this.orderEngine.process(orderInput, input.tenantId);
 
         await this.endSession(sessionId, 'completed');

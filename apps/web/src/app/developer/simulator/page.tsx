@@ -59,20 +59,7 @@ export default function SimulatorPage() {
   const [liveTranscript, setLiveTranscript] = useState<{ role: string; content: string }[]>([]);
   const [results, setResults] = useState<SimResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [tenants, setTenants] = useState<{ name: string; tenantId: string; sector: string }[]>([]);
-  const [selectedTenantId, setSelectedTenantId] = useState('');
-
   useEffect(() => { setTid(getTenantId()); }, []);
-  useEffect(() => {
-    // Seed demo tenants + get their IDs
-    fetch('/api/seed/demo-tenants', { method: 'POST' })
-      .then(r => r.json()).then(d => {
-        if (d.tenants) {
-          setTenants(d.tenants.map((t: any) => ({ name: t.name, tenantId: t.tenantId, sector: t.sector })));
-          if (d.tenants[0]) setSelectedTenantId(d.tenants[0].tenantId);
-        }
-      }).catch(() => {});
-  }, []);
   useEffect(() => {
     if (!tid) return;
     fetch(`/api/simulator/personas`)
@@ -83,7 +70,7 @@ export default function SimulatorPage() {
   }, [tid]);
 
   const selected = personas.find(p => p.id === selectedId);
-  const testTenantId = selectedTenantId || tid;
+  const testTenantId = tid;
 
   const runSingle = async () => {
     if (!selected || !testTenantId) return;
@@ -93,7 +80,7 @@ export default function SimulatorPage() {
       const res = await fetch(`/api/simulator/run/${testTenantId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personaId: selected.id }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(120000),
       });
       const data: SimResult = await res.json();
       setResults(prev => [data, ...prev].slice(0, 50));
@@ -125,7 +112,6 @@ export default function SimulatorPage() {
     errors: results.filter(r => !!r.error).length,
     avgTurns: results.length > 0 ? Math.round(results.reduce((s, r) => s + r.turns, 0) / results.length) : 0,
     avgDuration: results.length > 0 ? Math.round(results.reduce((s, r) => s + r.duration, 0) / results.length / 1000) : 0,
-    humanNeeded: results.filter(r => r.transcript.some(t => t.content === 'İnsan müdahalesi gerekli')).length,
   };
 
   return (
@@ -136,25 +122,12 @@ export default function SimulatorPage() {
           <Zap size={22} className="text-amber-500" /> Sistem Test & Simülasyon Paneli
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          30 farklı AI müşteri ile sistem testi — canlı API gerekmez
+          8 farklı AI müşteri ile sistem testi — canlı API gerekmez
         </p>
       </div>
 
       {/* Controls */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
-        {/* Tenant selector */}
-        {tenants.length > 0 && (
-          <div>
-            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">Test Edilecek İşletme</label>
-            <select value={selectedTenantId} onChange={e => setSelectedTenantId(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/30 outline-none">
-              {tenants.map(t => (
-                <option key={t.tenantId} value={t.tenantId}>{t.name} — {t.sector} (ID: {t.tenantId?.substring(0, 8)}...)</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Persona selector */}
           <div>
@@ -190,11 +163,11 @@ export default function SimulatorPage() {
           </button>
           <button onClick={runAll} disabled={running || runningAll}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-50">
-            <Zap size={16} /> {runningAll ? '30 Persona Çalışıyor...' : '30 Personayı Çalıştır'}
+            <Zap size={16} /> {runningAll ? '8 Persona Çalışıyor...' : '8 Personayı Çalıştır'}
           </button>
           {runningAll && (
             <span className="text-xs text-slate-500 flex items-center gap-1">
-              <span className="animate-pulse w-2 h-2 rounded-full bg-amber-500" /> Çalışıyor — 30 test tamamlanana kadar bekleyin...
+              <span className="animate-pulse w-2 h-2 rounded-full bg-amber-500" />               Çalışıyor — 8 test tamamlanana kadar bekleyin...
             </span>
           )}
         </div>
@@ -249,12 +222,11 @@ export default function SimulatorPage() {
           {showResults && (
             <div className="border-t border-slate-100 dark:border-slate-700 p-5 space-y-4">
               {/* Summary stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {[
                   { v: summary.success, l: 'Başarılı Sipariş', cls: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: CheckCircle2 },
                   { v: summary.failed, l: 'Sipariş Yok', cls: 'bg-slate-50 border-slate-200 text-slate-700', icon: XCircle },
                   { v: summary.errors, l: 'Hata', cls: 'bg-red-50 border-red-200 text-red-700', icon: AlertTriangle },
-                  { v: summary.humanNeeded, l: 'İnsan Gerekli', cls: 'bg-amber-50 border-amber-200 text-amber-700', icon: AlertTriangle },
                 ].map((s, i) => { const Ic = s.icon; return (
                   <div key={i} className={`rounded-xl border p-3 text-center ${s.cls}`}>
                     <Ic size={16} className="mx-auto mb-1" />
