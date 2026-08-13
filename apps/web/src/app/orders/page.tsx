@@ -571,7 +571,7 @@ function OrdersPageContent() {
 
       {/* Chat Drawer */}
       {showChat && selected && (
-        <ChatHistoryDrawer orderId={selected.id} customerPhone={selected.customer_phone || ''} onClose={() => setShowChat(false)} />
+        <ChatHistoryDrawer orderId={selected.id} orderNumber={selected.order_number} customerPhone={selected.customer_phone || ''} onClose={() => setShowChat(false)} />
       )}
     </div>
   );

@@ -8,7 +8,8 @@ interface Conversation {
   id: string; type: string; channel: string; phone: string;
   username?: string; sessionLabel?: string; status: string; duration?: number;
   recordingUrl?: string; aiModel?: string; hasOrder: boolean;
-  orderInfo?: { description?: string; metadata?: Record<string, unknown> };
+  orderNumber?: string; orderTotal?: number;
+  orderInfo?: { description?: string; metadata?: Record<string, unknown>; orderNumber?: string; total?: number };
   summary?: string | Record<string, unknown>;
   createdAt: string; endedAt?: string;
 }
@@ -299,9 +300,11 @@ export default function CallsPage() {
     if (search) {
       const q = search.toLowerCase();
       const s = parseSummary(c.summary);
+      const orderNo = (c as any).orderNumber as string | undefined;
       return (
         c.phone.includes(q) || (c.sessionLabel || '').toLowerCase().includes(q) ||
-        (s?.shortSummary || '').toLowerCase().includes(q) || (s?.customer_name || '').toLowerCase().includes(q)
+        (s?.shortSummary || '').toLowerCase().includes(q) || (s?.customer_name || '').toLowerCase().includes(q) ||
+        (orderNo && String(orderNo).toLowerCase().includes(q))
       );
     }
     return true;
@@ -313,7 +316,7 @@ export default function CallsPage() {
         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Phone size={22} className="text-indigo-500" /> Görüşmeler
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tüm telefon görüşmeleri ve mesajlaşma kanalları</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tüm telefon görüşmeleri ve mesajlaşma kanalları — Kayıtlar 6 ay süreyle saklanır</p>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-800 rounded-full p-1 shadow-sm">
@@ -334,7 +337,7 @@ export default function CallsPage() {
         <div className="relative flex-1 min-w-[140px] ml-auto">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Numara, isim veya içerik ara..."
+            placeholder="Numara, isim, sipariş no veya içerik ara..."
             className="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none" />
         </div>
       </div>

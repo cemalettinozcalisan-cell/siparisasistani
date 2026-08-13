@@ -385,7 +385,11 @@ export class AiBrainService {
       ai_model: aiModel, duration_seconds: 0,
     };
     if (confidence !== undefined) {
-      update.session_data = JSON.stringify({ confidence });
+      const { data: current } = await this.supabase.db
+        .from('conversation_sessions').select('session_data').eq('id', sessionId).maybeSingle();
+      const existing = typeof current?.session_data === 'string'
+        ? JSON.parse(current.session_data) : (current?.session_data || {});
+      update.session_data = JSON.stringify({ ...existing, confidence });
     }
     await this.supabase.db.from('conversation_sessions').update(update).eq('id', sessionId);
   }
@@ -393,7 +397,7 @@ export class AiBrainService {
   private async updateSessionOrder(sessionId: string, orderId: string, orderNumber: string) {
     await this.supabase.db
       .from('conversation_sessions')
-      .update({ session_data: JSON.stringify({ order_id: orderId, order_number: orderNumber }) })
+      .update({ order_id: orderId })
       .eq('id', sessionId);
   }
 
@@ -501,10 +505,16 @@ export class AiBrainService {
         shortSummary: String(parsed.shortSummary || ''),
       };
 
+      const { data: current } = await this.supabase.db
+        .from('conversation_sessions').select('session_data').eq('id', sessionId).maybeSingle();
+      const existing = typeof current?.session_data === 'string'
+        ? JSON.parse(current.session_data) : (current?.session_data || {});
+
       await this.supabase.db
         .from('conversation_sessions')
         .update({
           session_data: JSON.stringify({
+            ...existing,
             summary: summary.shortSummary,
             sentiment: summary.sentiment,
             sentiment_score: summary.sentimentScore,

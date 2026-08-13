@@ -12,7 +12,7 @@ export class ConversationsService {
       const [sessions, calls, whatsapp, whatsappConvs, instagramConvs, orders] = await Promise.all([
         this.supabase.db
           .from('conversation_sessions')
-          .select('id, channel, phone, status, call_status, session_label, messages, session_data, created_at, ended_at, call_duration, ai_model')
+          .select('id, channel, phone, status, call_status, session_label, messages, session_data, order_id, created_at, ended_at, call_duration, ai_model')
           .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false })
           .limit(limit),
@@ -59,6 +59,19 @@ export class ConversationsService {
       (orders.data || []).forEach((o: Record<string, unknown>) => {
         orderMap.set(o.entity_id as string, o);
       });
+      // Also fetch orders table for direct order_id lookup
+      const orderIds = (sessions.data || [])
+        .map((s: any) => s.order_id).filter(Boolean) as string[];
+      let ordersById = new Map<string, Record<string, unknown>>();
+      if (orderIds.length > 0) {
+        const { data: orderRows } = await this.supabase.db
+          .from('orders')
+          .select('id, order_number, total_price')
+          .in('id', orderIds).limit(orderIds.length);
+        (orderRows || []).forEach((o: Record<string, unknown>) => {
+          ordersById.set(o.id as string, o);
+        });
+      }
 
       const results: Record<string, unknown>[] = [];
       const seen = new Set<string>();
@@ -75,26 +88,33 @@ export class ConversationsService {
         seen.add(key);
 
         const recording = (calls.data || []).find((c: Record<string, unknown>) => c.session_id === s.id);
-        const relatedOrder = orderMap.get(s.id as string);
+        const sessionData = s as any;
+        const hasOrder = !!sessionData.order_id;
+        const orderRow = hasOrder ? ordersById.get(sessionData.order_id) : null;
+        const activityOrder = orderMap.get(sessionData.order_id as string);
 
         results.push({
           id: s.id,
           type: sessionChannel === 'phone' ? 'call' : 'sms',
           channel: channelTypeMap[sessionChannel] || 'VOICE',
-          phone: (s as any).phone,
-          sessionLabel: (s as any).session_label,
-          status: (s as any).call_status || (s as any).status,
-          duration: (s as any).call_duration || recording?.duration_seconds || null,
+          phone: sessionData.phone,
+          sessionLabel: sessionData.session_label,
+          status: sessionData.call_status || sessionData.status,
+          duration: sessionData.call_duration || recording?.duration_seconds || null,
           recordingUrl: recording?.recording_url || null,
-          aiModel: (s as any).ai_model,
-          hasOrder: !!relatedOrder,
-          orderInfo: relatedOrder ? {
-            description: relatedOrder.description,
-            metadata: relatedOrder.metadata,
+          aiModel: sessionData.ai_model,
+          hasOrder,
+          orderNumber: orderRow?.order_number || null,
+          orderTotal: orderRow?.total_price || null,
+          orderInfo: orderRow ? {
+            description: (activityOrder?.description as string) || '',
+            orderNumber: orderRow.order_number,
+            total: orderRow.total_price,
+            metadata: activityOrder?.metadata,
           } : null,
-          summary: (s as any).session_data || null,
-          createdAt: (s as any).created_at,
-          endedAt: (s as any).ended_at,
+          summary: sessionData.session_data || null,
+          createdAt: sessionData.created_at,
+          endedAt: sessionData.ended_at,
         });
       }
 

@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { X, MessageSquare, PhoneCall, Bot, ChevronDown } from 'lucide-react';
+import { X, MessageSquare, PhoneCall, Bot, ExternalLink } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -16,10 +16,12 @@ interface ChatMessage {
 
 export function ChatHistoryDrawer({
   orderId,
+  orderNumber,
   customerPhone,
   onClose,
 }: {
   orderId: string;
+  orderNumber?: string;
   customerPhone: string;
   onClose: () => void;
 }) {
@@ -129,8 +131,22 @@ export function ChatHistoryDrawer({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center">
-          AI tarafından kaydedilen konuşma geçmişi
+        <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 space-y-2">
+          {orderNumber && (
+            <button
+              onClick={() => {
+                onClose();
+                window.open(`/calls?search=${encodeURIComponent(orderNumber)}`, '_blank');
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md"
+            >
+              <ExternalLink size={14} />
+              Görüşme Ayrıntıları
+            </button>
+          )}
+          <p className="text-[11px] text-slate-400 text-center">
+            Kayıtlar 6 ay süreyle saklanır, süresi dolan kayıtlar otomatik silinir.
+          </p>
         </div>
       </div>
     </div>
