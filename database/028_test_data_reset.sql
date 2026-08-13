@@ -135,14 +135,14 @@ begin
       v_session_id, v_tid, case when j % 3 = 0 then 'whatsapp' else 'phone' end,
       '05321234567', 'completed', 'COMPLETED',
       'SESSION-20260813-' || lpad(j::text, 4, '0'),
-      ('[
-        {"role":"user","content":"Merhaba, ' || (select product_name from order_items where order_id = v_order_id limit 1) || ' almak istiyorum."},
-        {"role":"assistant","content":"Merhaba, Demo İsletme\'ye hos geldiniz. Adinizi ogrenebilir miyim?"},
-        {"role":"user","content":"' || (select name from customers where id = v_customer_id) || '"},
-        {"role":"assistant","content":"Memnun oldum. ' || (select product_name from order_items where order_id = v_order_id limit 1) || ' not ettim. Baska bir urun var mi?"},
-        {"role":"user","content":"Hayir tesekkurler. Adresim Ankara Cankaya. IBAN ile odeyecegim."},
-        {"role":"assistant","content":"Anladim, siparisiniz olusturuldu. Tesekkur ederim."}
-      ]')::jsonb,
+      jsonb_build_array(
+        jsonb_build_object('role', 'user', 'content', 'Merhaba, ' || (select product_name from order_items where order_id = v_order_id limit 1) || ' almak istiyorum.'),
+        jsonb_build_object('role', 'assistant', 'content', 'Merhaba, Demo Isletmeye hos geldiniz. Adinizi ogrenebilir miyim?'),
+        jsonb_build_object('role', 'user', 'content', (select name from customers where id = v_customer_id)),
+        jsonb_build_object('role', 'assistant', 'content', 'Memnun oldum. ' || (select product_name from order_items where order_id = v_order_id limit 1) || ' not ettim. Baska bir urun var mi?'),
+        jsonb_build_object('role', 'user', 'content', 'Hayir tesekkurler. Adresim Ankara Cankaya. IBAN ile odeyecegim.'),
+        jsonb_build_object('role', 'assistant', 'content', 'Anladim, siparisiniz olusturuldu. Tesekkur ederim.')
+      ),
       jsonb_build_object(
         'summary', (select name from customers where id = v_customer_id) || ' test görüşmesi - sipariş tamamlandı',
         'sentiment', case when j % 3 = 0 then 'NEUTRAL' else 'HAPPY' end,
@@ -175,13 +175,13 @@ begin
       case when i = 1 then 'completed' when i = 2 then 'failed' else 'completed' end,
       case when i = 1 then 'COMPLETED' when i = 2 then 'FAILED' else 'COMPLETED' end,
       'SESSION-20260813-NO' || i,
-      ('[
-        {"role":"user","content":"Merhaba fiyat alabilir miyim?"},
-        {"role":"assistant","content":"Tabii, hangi urunle ilgileniyorsunuz?"},
-        {"role":"user","content":"Sucuk fiyati nedir?"},
-        {"role":"assistant","content":"Kangal Sucuk 750 TL/kg, Dana Parmak Sucuk 890 TL/kg."},
-        {"role":"user","content":"Tesekkurler dusuneyim."}
-      ]')::jsonb,
+      jsonb_build_array(
+        jsonb_build_object('role', 'user', 'content', 'Merhaba fiyat alabilir miyim?'),
+        jsonb_build_object('role', 'assistant', 'content', 'Tabii, hangi urunle ilgileniyorsunuz?'),
+        jsonb_build_object('role', 'user', 'content', 'Sucuk fiyati nedir?'),
+        jsonb_build_object('role', 'assistant', 'content', 'Kangal Sucuk 750 TL/kg, Dana Parmak Sucuk 890 TL/kg.'),
+        jsonb_build_object('role', 'user', 'content', 'Tesekkurler dusuneyim.')
+      ),
       jsonb_build_object(
         'summary', 'Test görüşmesi #' || i || ' - sadece fiyat sormuş, siparişe dönüşmemiş',
         'sentiment', 'NEUTRAL',
