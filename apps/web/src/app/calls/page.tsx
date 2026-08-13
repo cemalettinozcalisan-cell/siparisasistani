@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, MessageCircle, User, Bot, AlertTriangle, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare, Sparkles, Mic, CheckCheck } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { getTenantId } from '@/lib/tenant';
 
 interface Conversation {
@@ -249,8 +250,17 @@ function TranscriptView({ transcript, channel, whatsappMessages }: { transcript?
 }
 
 export default function CallsPage() {
+  return (
+    <Suspense fallback={null}>
+      <CallsContent />
+    </Suspense>
+  );
+}
+
+function CallsContent() {
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [filter, setFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedChannel, setExpandedChannel] = useState<string>('');
