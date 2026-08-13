@@ -99,7 +99,7 @@ begin
       values (v_tid, 'order', v_order_id, 'ORDER_CREATED',
         'AI, ' || case when v_channel = 'whatsapp' then 'WhatsApp' else 'Telefon' end ||
         ' üzerinden ' || v_customer_names[1 + (i % 10)] || ' adına sipariş oluşturdu.',
-        v_channel, '🛒', 'AI', v_date);
+        case when v_channel = 'whatsapp' then 'WHATSAPP' else 'VOICE' end, '🛒', 'AI', v_date);
     end loop;
   end loop;
 
