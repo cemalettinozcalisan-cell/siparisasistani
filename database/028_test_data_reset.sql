@@ -33,6 +33,7 @@ begin
   delete from orders where tenant_id = v_tid;
   delete from customers where tenant_id = v_tid;
   delete from products where tenant_id = v_tid;
+  delete from users where tenant_id = v_tid;
 
   -- Tenant yoksa oluştur
   insert into tenants (id, company_name, domain, phone, email, iban, address, city, tax_number)
@@ -51,8 +52,7 @@ begin
   -- Demo kullanıcı
   insert into users (tenant_id, name, email, phone, password, role, active)
   values (v_tid, 'Demo Owner', 'demo@siparisasistani.com', '05320000000',
-    'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'owner', true)
-  on conflict (email) do nothing;
+    'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'owner', true);
 
   -- Ürünler
   for i in 1..array_length(v_product_names, 1) loop
@@ -83,7 +83,7 @@ begin
         payment_method, payment_status, total_price, created_at, updated_at)
       values (v_order_id, v_tid, v_customer_id,
         '25-' || lpad(seq::text, 5, '0'),
-        v_channel, v_source, v_status, 'iban',
+        v_channel::order_channel, v_source, v_status, 'iban',
         case when v_status in ('DELIVERED','shipped') then 'paid' else 'waiting' end,
         v_product_prices[1 + (j % 7)] * (1 + (j % 3)),
         v_date, v_date);
