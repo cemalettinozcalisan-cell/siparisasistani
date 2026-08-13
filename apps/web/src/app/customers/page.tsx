@@ -199,20 +199,20 @@ export default function CustomersPage() {
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Müşteriler</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-40" />
-            <button onClick={() => setShowImport(true)}
-              className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
-              <FileSpreadsheet size={14} /> Excel'den Yükle
-            </button>
-            <button onClick={() => setShowAddCustomer(true)}
-              className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
-              <UserPlus size={14} /> Müşteri Ekle
-            </button>
-          </div>
+          <div className="text-xs text-gray-400">{filtered.length} müşteri</div>
         </div>
-        <div className="text-xs text-gray-400">{filtered.length} müşteri</div>
+        <div className="flex items-center gap-2">
+          <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-0 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
+          <button onClick={() => setShowImport(true)}
+            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all">
+            <FileSpreadsheet size={14} /> Excel'den Yükle
+          </button>
+          <button onClick={() => setShowAddCustomer(true)}
+            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
+            <UserPlus size={14} /> Müşteri Ekle
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto space-y-1">
           {filtered.map((c) => {
             const src = (c as any).last_source || '';
