@@ -179,8 +179,8 @@ export class SalesCoachComponent {
     const freeThreshold = Number(settings['cargo_free_threshold']) || 0;
     const freeWeight = Number(settings['cargo_free_weight']) || 0;
     const freeQuantity = Number(settings['cargo_free_quantity']) || 0;
-    const codEnabled = settings['cargo_cod_enabled'];
-    const codFee = Number(settings['cargo_cod_fee']) || 0;
+    const codEnabled = settings['cash_on_delivery_enabled'];
+    const codFee = 0;
     const defaultPrice = Number(settings['cargo_default_price']) || 0;
 
     // Active cargo companies
@@ -269,7 +269,7 @@ export class SalesCoachComponent {
   private async getCargoSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cargo_cod_enabled, cargo_cod_fee, cargo_default_price, invoice_enabled, invoice_limit, invoice_remote_auto, invoice_default_vat, invoice_tc_policy, invoice_ai_behavior, invoice_footer_note, sector')
+      .select('yurtici_enabled, yurtici_price, mng_enabled, mng_price, aras_enabled, aras_price, cargo_free_enabled, cargo_free_type, cargo_free_threshold, cargo_free_weight, cargo_free_quantity, cash_on_delivery_enabled, cargo_default_price, invoice_enabled, invoice_limit, invoice_remote_auto, invoice_default_vat, invoice_tc_policy, invoice_ai_behavior, invoice_footer_note, sector')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     return data;

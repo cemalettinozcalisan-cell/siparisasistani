@@ -19,10 +19,10 @@ export class PaymentMethodsComponent {
       .eq('id', ctx.tenantId)
       .single();
 
-    // Check cargo COD setting
-    const { data: cargoSettings } = await this.supabase.db
+    // Check COD setting
+    const { data: codSettings } = await this.supabase.db
       .from('tenant_settings')
-      .select('cargo_cod_enabled, cargo_cod_fee')
+      .select('cash_on_delivery_enabled')
       .eq('tenant_id', ctx.tenantId)
       .maybeSingle();
 
@@ -40,14 +40,13 @@ export class PaymentMethodsComponent {
     if (settings?.payment_iyzico) {
       methods.push('- Kredi Kartı (Iyzico)');
     }
-    if (cargoSettings?.cargo_cod_enabled) {
-      const codFee = Number(cargoSettings.cargo_cod_fee) || 0;
-      methods.push(`- Kapıda Ödeme (Nakit/Kredi Kartı)${codFee > 0 ? `: +${codFee} TL hizmet bedeli` : ''}`);
+    if (codSettings?.cash_on_delivery_enabled) {
+      methods.push('- Kapıda Ödeme (Nakit/Kredi Kartı)');
     }
 
     if (methods.length === 0) return '';
 
-    const hasCOD = !!cargoSettings?.cargo_cod_enabled;
+    const hasCOD = !!codSettings?.cash_on_delivery_enabled;
     return ['[ÖDEME YÖNTEMLERİ — SADECE BUNLAR MEVCUTTUR]',
       ...methods,
       '',
