@@ -356,7 +356,14 @@ function CallsContent() {
         {filtered.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
             <Phone size={28} className="mx-auto text-slate-300 mb-3" />
-            <p className="text-sm font-medium text-slate-500">Henüz görüşme bulunmuyor</p>
+            {search ? (
+              <>
+                <p className="text-sm font-medium text-slate-500">Bu siparişe bağlı görüşme bulunmuyor</p>
+                <p className="text-xs text-slate-400 mt-1">Test verisinde yalnızca bir kısım sipariş görüşme kaydına bağlıdır.</p>
+              </>
+            ) : (
+              <p className="text-sm font-medium text-slate-500">Henüz görüşme bulunmuyor</p>
+            )}
           </div>
         ) : filtered.map(conv => {
           const summary = parseSummary(conv.summary);
