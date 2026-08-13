@@ -3,6 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
+import { ShoppingBag } from 'lucide-react';
 import { OrderDetail } from '@/components/order-detail';
 
 export default function OrdersPage() {
@@ -69,7 +70,12 @@ export default function OrdersPage() {
     <div className="p-4 flex gap-4 h-[calc(100vh-2rem)]">
       <div className="w-2/5 flex flex-col space-y-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Siparişler</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <ShoppingBag size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold">Siparişler</h1>
+          </div>
           <input placeholder="Müşteri ara..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-44" />
         </div>

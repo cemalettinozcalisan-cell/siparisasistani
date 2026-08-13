@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 import { getToken } from '@/lib/auth';
 
 import { useEffect, useState, useRef } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail, Settings } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
 const DAYS = [
@@ -308,9 +308,12 @@ export default function SettingsPage() {
     <div className="p-4 md:p-6 space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Brain size={22} className="text-indigo-500" /> İşletme Ayarları
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Settings size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">İşletme Ayarları</h1>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">İşletme tercihlerinizi yönetin</p>
         </div>
         <button

@@ -129,8 +129,8 @@ export default function AiTestPage() {
       {/* Top Control Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
-            <Cpu size={15} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+            <Bot size={16} strokeWidth={2.5} />
           </div>
           <span className="text-sm font-bold text-slate-900 dark:text-white">AI Test Lab</span>
         </div>

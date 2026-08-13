@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit, Plus, Trash2, Package, TrendingUp, Bot, User, Settings, Users, Tag } from 'lucide-react';
+import { Search, Calendar, History, ShoppingBag, Truck, CheckCircle, XCircle, Clock, AlertTriangle, Printer, MessageSquare, FileEdit, Plus, Trash2, Package, TrendingUp, Bot, User, Settings, Users, Tag, BarChart3 } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -128,9 +128,12 @@ export default function AuditLogsPage() {
   return (
     <div className="p-4 md:p-6 space-y-5 w-full">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <History size={22} className="text-indigo-500" /> Sistem Logları
-        </h1>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+            <BarChart3 size={16} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Sistem Logları</h1>
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tüm sistem hareketleri ve işlem kayıtları</p>
       </div>
 

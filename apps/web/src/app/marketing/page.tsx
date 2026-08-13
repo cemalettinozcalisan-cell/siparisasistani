@@ -97,9 +97,12 @@ export default function MarketingPage() {
     <div className="p-4 md:p-6 space-y-5 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Zap size={22} className="text-amber-500" /> Pazarlama
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Tags size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Pazarlama</h1>
+          </div>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Otomasyon kuralları ve kampanya yönetimi</p>
         </div>
       </div>

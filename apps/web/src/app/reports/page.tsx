@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Download, FileText, Package as PackageIcon, PhoneCall, Search, ChevronDown, ShoppingBag, Banknote, ShoppingCart, Truck, Calendar, MessageCircle, Camera, Globe, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react';
+import { Download, FileText, Package as PackageIcon, PhoneCall, Search, ChevronDown, ShoppingBag, Banknote, ShoppingCart, Truck, Calendar, MessageCircle, Camera, Globe, TrendingUp, TrendingDown, MessageSquare, BarChart3 } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 function authHeaders(): Record<string, string> {
@@ -178,9 +178,12 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <TrendingUp size={22} className="text-indigo-500" /> Raporlar
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <BarChart3 size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Raporlar</h1>
+          </div>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">İşletme performansı ve analizleri</p>
         </div>
         <div className="flex items-center gap-2">

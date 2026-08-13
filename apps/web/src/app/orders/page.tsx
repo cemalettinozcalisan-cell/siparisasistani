@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag } from 'lucide-react';
+import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock } from 'lucide-react';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
 function authHeaders(): Record<string, string> {
@@ -274,7 +274,7 @@ function OrdersPageContent() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
-            <ShoppingBag size={16} strokeWidth={2.5} />
+            {activeTab === 'active' ? <ShoppingBag size={16} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
           </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">
             {activeTab === 'active' ? 'Aktif Siparişler' : 'Geçmiş Siparişler'}

@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
-import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, UserPlus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, UserPlus, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {
@@ -193,7 +193,12 @@ export default function CustomersPage() {
     <div className="p-4 flex gap-4 h-[calc(100vh-2rem)]">
       <div className="w-1/3 flex flex-col space-y-3">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Müşteriler</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Users size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Müşteriler</h1>
+          </div>
           <div className="flex items-center gap-2">
             <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
               className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm w-40" />

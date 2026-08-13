@@ -107,9 +107,12 @@ export default function ComplaintsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <ShieldAlert size={22} className="text-rose-500" /> Destek & Talep Yönetimi
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <AlertTriangle size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Destek & Talep Yönetimi</h1>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Müşteri talep ve istekleri</p>
         </div>
         <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-xs font-semibold text-indigo-600 dark:text-indigo-400">{complaints.length} kayıt</span>

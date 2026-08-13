@@ -131,9 +131,12 @@ export default function HealthPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity size={22} className="text-indigo-500" /> Sistem Durumu
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Activity size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Sistem Durumu</h1>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tüm servislerin anlık durumu ve AI performansı</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">

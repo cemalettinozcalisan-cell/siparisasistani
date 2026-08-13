@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, TrendingDown, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, LayoutDashboard } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -83,7 +83,12 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Merhaba</h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <LayoutDashboard size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Merhaba</h1>
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         {/* Quota Widget */}

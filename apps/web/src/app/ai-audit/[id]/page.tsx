@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mic } from 'lucide-react';
 
 export default function AiAuditDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -27,7 +27,12 @@ export default function AiAuditDetailPage({ params }: { params: { id: string } }
       <a href="/ai-audit" className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition-colors">
         <ArrowLeft className="w-4 h-4" /> AI Denetim Merkezi
       </a>
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Konusma Detayi</h1>
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+          <Mic size={16} strokeWidth={2.5} />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Konusma Detayi</h1>
+      </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[

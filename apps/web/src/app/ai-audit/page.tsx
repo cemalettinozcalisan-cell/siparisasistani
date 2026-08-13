@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, Eye, Bot } from 'lucide-react';
+import { X, Eye, Bot, Mic } from 'lucide-react';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
 interface LogEntry {
@@ -198,8 +198,13 @@ export default function AiAuditPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Denetim Merkezi</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">AI konuşma logları, performans metrikleri ve maliyet analizi</p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Mic size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">AI Denetim Merkezi</h1>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">AI konuşma logları, performans metrikleri ve maliyet analizi</p>
         </div>
       </div>
 

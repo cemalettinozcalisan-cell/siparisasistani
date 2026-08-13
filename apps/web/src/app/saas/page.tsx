@@ -102,9 +102,12 @@ export default function SaasPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Sparkles size={22} className="text-indigo-500" /> Abonelik Yönetimi
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <CreditCard size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Abonelik Yönetimi</h1>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Paket, kullanım, fatura ve ödeme yönetimi</p>
         </div>
         {contractAccepted && (

@@ -110,8 +110,13 @@ export default function IntegrationsPage() {
     <div className="p-6 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entegrasyonlar</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Kanal ve yazıcı ayarlarını yönetin</p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <Webhook size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Entegrasyonlar</h1>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Kanal ve yazıcı ayarlarını yönetin</p>
         </div>
         <button
           onClick={save}

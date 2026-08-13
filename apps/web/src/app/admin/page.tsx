@@ -86,8 +86,10 @@ export default function AdminPage() {
   return (
     <div className="p-4 md:p-6 space-y-5 w-full">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield size={22} className="text-indigo-500" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+            <Shield size={16} strokeWidth={2.5} />
+          </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">Geliştirici Paneli</h1>
           <span className="px-2.5 py-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-full text-[10px] font-bold shadow-sm">SÜPER YÖNETİCİ</span>
         </div>

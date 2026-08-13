@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Copy, Loader2, Phone, MessageCircle, Camera, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown } from 'lucide-react';
+import { Brain, Copy, Loader2, Phone, MessageCircle, Camera, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown, FileText } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -114,9 +114,12 @@ export default function PromptsPage() {
     <div className="p-4 md:p-6 space-y-5 w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Brain size={22} className="text-violet-500" /> Prompt Denetleyici
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
+              <FileText size={16} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Prompt Denetleyici</h1>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             AI asistanına gönderilen sistem promptunu görüntüleyin, düzenleyin ve test edin
           </p>
