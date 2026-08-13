@@ -273,8 +273,8 @@ function OrdersPageContent() {
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
-            <ShoppingBag size={18} />
+          <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center">
+            <ShoppingBag size={20} strokeWidth={2.5} />
           </div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             {activeTab === 'active' ? 'Aktif Siparişler' : 'Geçmiş Siparişler'}
