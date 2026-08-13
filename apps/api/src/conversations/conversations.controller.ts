@@ -61,6 +61,19 @@ export class ConversationsController {
         .order('created_at', { ascending: false })
         .limit(20);
 
+      // Build transcript from session.messages when no audit logs exist (seed/test data)
+      let transcript = audits || [];
+      const sessionMessages = (session as any).messages as Array<{ role?: string; content?: string }> | null;
+      if (transcript.length === 0 && Array.isArray(sessionMessages) && sessionMessages.length > 0) {
+        transcript = sessionMessages.map((m) => ({
+          user_message: m.content || '',
+          raw_response: m.role === 'user' || m.role === 'customer' ? ' ' : null,
+          system_prompt: null,
+          confidence: 0,
+          created_at: (session as any).created_at || new Date().toISOString(),
+        }));
+      }
+
       // Get WhatsApp messages by phone via whatsapp_conversations
       const sessionPhone = (session as any).phone;
       let waMessages: any[] = [];
@@ -84,7 +97,7 @@ export class ConversationsController {
       }
 
       // If database has no data, use mock for demo experience
-      const hasRealData = recording || (audits && audits.length > 0) || waMessages.length > 0;
+      const hasRealData = recording || (transcript && transcript.length > 0) || waMessages.length > 0;
       if (!hasRealData) {
         this.logger.warn('No real data found for session, returning mock');
         return this.getMockDetail(sessionId);
@@ -93,7 +106,7 @@ export class ConversationsController {
       return {
         session,
         recording: recording ? { ...recording, recording_url: recordingUrl } : recordingUrl ? { recording_url: recordingUrl } : null,
-        transcript: audits || [],
+        transcript,
         whatsappMessages: waMessages.map((m: Record<string, unknown>) => ({
           id: m.id,
           direction: m.direction,
