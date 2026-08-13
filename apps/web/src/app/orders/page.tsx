@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin } from 'lucide-react';
+import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag } from 'lucide-react';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
 function authHeaders(): Record<string, string> {
@@ -272,9 +272,14 @@ function OrdersPageContent() {
   return (
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          {activeTab === 'active' ? '⚡ Aktif Siparişler' : '📜 Geçmiş Siparişler'}
-        </h1>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
+            <ShoppingBag size={18} />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            {activeTab === 'active' ? 'Aktif Siparişler' : 'Geçmiş Siparişler'}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400">{displayOrders.length} sipariş</span>
           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">

@@ -52,7 +52,7 @@ if (typeof window !== 'undefined') {
 const navItems = [
   // Ana
   { href: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/orders?tab=active', label: 'Aktif Siparişler', icon: Zap, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/orders?tab=active', label: 'Aktif Siparişler', icon: ShoppingBag, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/orders?tab=history', label: 'Geçmiş Siparişler', icon: Clock, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/customers', label: 'Müşteriler', icon: Users, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/calls', label: 'Görüşmeler', icon: Phone, roles: ['owner', 'manager', 'staff'], group: 'main' },
