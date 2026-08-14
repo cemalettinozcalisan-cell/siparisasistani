@@ -267,7 +267,7 @@ export default function DashboardPage() {
         </div>
 
         {/* AI Orchestration Hub — Müşterileriniz Nerede Olursa Olsun */}
-        <div className="text-center lg:pt-2">
+        <div className="text-left lg:pt-2">
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             Müşterileriniz Nerede Olursa Olsun
           </h2>
