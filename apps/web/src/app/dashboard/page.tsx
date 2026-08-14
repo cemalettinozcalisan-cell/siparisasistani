@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, LayoutDashboard, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, Headset, CreditCard } from 'lucide-react';
+import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { TenantSwitcher } from '@/components/tenant-switcher';
+import { NotificationBell } from '@/components/notification-bell';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -47,6 +50,21 @@ function InstagramIcon({ size = 20 }: { size?: number }) {
       <circle cx="16" cy="16" r="5.5" fill="none" stroke="#fff" strokeWidth="1.8" />
       <circle cx="23" cy="9.5" r="1.6" fill="#fff" />
     </svg>
+  );
+}
+
+function PageThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+      aria-label="Tema değiştir"
+    >
+      {mounted && theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
   );
 }
 
@@ -166,13 +184,14 @@ export default function DashboardPage() {
   }, [toast]);
 
   const today = stats.today as Record<string, unknown> || {};
-  const totalOrders = (stats.todayOrders as number) || 12;
-  const todayRevenue = Number(stats.todayRevenue || 8450);
-  const aiSuccessRate = (stats.aiSuccessRate as number) ?? (today.aiSuccessRate as number) ?? 98;
+  const totalOrders = (stats.todayOrders as number) || 37;
+  const todayRevenue = Number(stats.todayRevenue || 28760);
+  const aiSuccessRate = (stats.aiSuccessRate as number) ?? (today.aiSuccessRate as number) ?? 97;
   const aiRevenue = Number(stats.aiRevenue ?? 24800);
-  const aiCustomers = Number(stats.aiCustomers ?? 6);
-  const pendingOrders = Number(stats.pendingOrders ?? 3);
+  const aiCustomers = Number(stats.aiCustomers ?? 15);
+  const pendingOrders = Number(stats.pendingOrders ?? 20);
   const complaints24h = (stats.complaints24h as Record<string, any>[]) || [];
+  const complaintsCount = complaints24h.length || 5;
   const todayOrdersList = (stats.todayOrdersList as Record<string, any>[]) || [];
   const pendingOrdersList = (stats.pendingOrdersList as Record<string, any>[]) || [];
 
@@ -189,14 +208,13 @@ export default function DashboardPage() {
   const totalRevenue = Number(stats.totalRevenue ?? 24800);
   const totalCustomers = Number(stats.totalCustomers ?? 126);
 
-  const usagePct = usage ? (usage.usagePercent as number) || 0 : 0;
   const remaining = usage ? (usage.remaining as number) || 0 : 0;
   const orderLimit = usage ? (usage.orderLimit as number) || 250 : 250;
 
   const kpis = [
     { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingBag, color: 'text-blue-500', iconBox: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
     { label: 'Bekleyen', value: pendingOrders, icon: Clock, color: 'text-amber-500', iconBox: 'bg-amber-50 dark:bg-amber-500/15', trend: '↑ %12', onClick: () => setShowPendingModal(true) },
-    { label: 'Talep & İstek', value: complaints24h.length, icon: GitPullRequest, color: 'text-pink-500', iconBox: 'bg-pink-50 dark:bg-pink-500/15', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
+    { label: 'Talep & İstek', value: complaintsCount, icon: GitPullRequest, color: 'text-pink-500', iconBox: 'bg-pink-50 dark:bg-pink-500/15', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
     { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, color: 'text-emerald-500', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
     { label: 'AI Müşteri', value: aiCustomers, icon: Users, color: 'text-purple-500', iconBox: 'bg-purple-50 dark:bg-purple-500/15', trend: '↑ %33' },
     { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, color: 'text-cyan-500', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15', trend: '↑ %28', suffix: ' TL' },
@@ -206,144 +224,156 @@ export default function DashboardPage() {
   if (!mounted) return <div className="p-6" />;
 
   return (
-    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] bg-[#F8FAFC] dark:bg-[#080B1A] text-slate-900 dark:text-white p-4 md:p-6 space-y-6 w-full animate-fade-in">
+    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-gradient-to-tr from-[#F1F5F9] via-[#F8FAFC] to-[#EFF6FF] dark:from-[#020410] dark:via-[#05081C] dark:to-[#0A0E2E] text-slate-900 dark:text-white p-4 md:p-8 space-y-8 w-full animate-fade-in">
       {/* Ambient glow orbs */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-100/70 dark:bg-indigo-600/10 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-100/60 dark:bg-purple-600/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 w-96 h-96 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 blur-3xl" />
 
-      <div className="relative z-10 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-500/20">
-                <LayoutDashboard size={16} strokeWidth={2.5} />
-              </div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Kontrol Paneli</h1>
+      <div className="relative z-10 space-y-8">
+        {/* Özel sayfa header (desktop — layout header /dashboard'da lg: gizli) */}
+        <div className="hidden lg:flex items-center justify-between w-full border-b border-slate-200/70 dark:border-slate-800/80 pb-6">
+          <div className="flex items-center gap-3.5">
+            <img src="/logo2.png" alt="SiparişAsistanı" className="w-12 h-12 object-contain" />
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">SiparişAsistanı</h1>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Akıllı Sipariş, Güçlü İşletme.</p>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
-          {/* Kalan Kota — minimal badge */}
-          {usage && (
-            <div className="rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-white/5 backdrop-blur-sm px-3.5 py-1.5 flex items-center gap-2 shadow-sm">
-              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/20 dark:to-violet-500/20 flex items-center justify-center">
-                <BarChart3 size={11} className="text-indigo-500 dark:text-indigo-400" />
-              </div>
-              <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium">Kalan Kota</span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
-              <div className="w-12 bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-                <div className={`h-full rounded-full ${usagePct > 80 ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 to-indigo-600'}`} style={{ width: `${usagePct}%` }} />
-              </div>
+          <div className="flex items-center gap-3">
+            <TenantSwitcher />
+            <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-slate-200/70 dark:border-slate-800 rounded-full px-1.5 py-1">
+              <PageThemeToggle />
+              <NotificationBell />
             </div>
-          )}
+            {usage && (
+              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-[#0C1027]/70 text-[11px]">
+                <BarChart3 size={12} className="text-indigo-500" />
+                <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
+              </div>
+            )}
+            <div className="px-4 py-2 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Sistem Aktif</span>
+            </div>
+            <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-tight text-right shrink-0">
+              Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
+            </div>
+          </div>
         </div>
 
         {/* AI Orchestration Hub — Müşterileriniz Nerede Olursa Olsun */}
-        <div className="rounded-3xl bg-white/80 dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-indigo-500/30 shadow-xl shadow-indigo-100/50 dark:shadow-2xl backdrop-blur-xl p-6 md:p-10 relative overflow-hidden">
-          <div className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full bg-indigo-100/60 dark:bg-indigo-600/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-16 w-72 h-72 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 blur-3xl" />
+        <div className="text-center lg:pt-2">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+            Müşterileriniz Nerede Olursa Olsun
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
+            Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.
+          </p>
+        </div>
 
-          {/* Başlık */}
-          <div className="text-center mb-6 relative z-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-              Müşterileriniz Nerede Olursa Olsun
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
-              Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.
-            </p>
+        {/* Orkestrasyon alanı — yüzen kartlar + bağlantı hatları */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
+          {/* Kavisli bağlantı hatları */}
+          <div className="hidden lg:block absolute inset-0 pointer-events-none">
+            <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
+              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <circle cx="250" cy="80" r="3" fill="#3b82f6" />
+              <circle cx="335" cy="140" r="4.5" fill="#3b82f6" className="animate-pulse" />
+              <circle cx="250" cy="200" r="3" fill="#10b981" />
+              <circle cx="335" cy="200" r="4.5" fill="#10b981" className="animate-pulse" />
+              <circle cx="250" cy="320" r="3" fill="#d946ef" />
+              <circle cx="335" cy="260" r="4.5" fill="#d946ef" className="animate-pulse" />
+              <circle cx="583" cy="140" r="3" fill="#f59e0b" />
+              <circle cx="495" cy="165" r="4.5" fill="#f59e0b" className="animate-pulse" />
+              <circle cx="583" cy="260" r="3" fill="#06b6d4" />
+              <circle cx="495" cy="235" r="4.5" fill="#06b6d4" className="animate-pulse" />
+            </svg>
           </div>
 
-          {/* Orkestrasyon alanı */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative z-10">
-            {/* Sol kanallar */}
-            <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start">
-              {HUB_LEFT.map((ch) => {
-                const ChIcon = ch.icon;
+          {/* Sol kanallar */}
+          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start z-10">
+            {HUB_LEFT.map((ch) => {
+              const ChIcon = ch.icon;
+              return (
+                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
+                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
+                    <ChIcon size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
+                  </div>
+                  {/* Sağ kenar ortası bağlantı noktası */}
+                  <span className={`absolute right-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Merkez AI Çekirdek */}
+          <div className="lg:col-span-4 flex flex-col items-center justify-center gap-6 z-10 py-6">
+            <div className="relative">
+              <div className="absolute inset-[-28px] rounded-full border border-indigo-100/70 dark:border-purple-500/10" />
+              <div className="absolute inset-[-15px] rounded-full border border-indigo-200/50 dark:border-indigo-500/20" />
+              <div className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                <div className="absolute inset-[-8px] rounded-full border-2 border-indigo-100 dark:border-indigo-500/20 animate-ping [animation-duration:3s]" />
+                <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+              </div>
+            </div>
+            <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-cyan-400/50 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] px-8 py-2.5 flex items-baseline gap-2">
+              <span className="text-sm font-bold text-blue-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
+              <span className="text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">%{aiSuccessRate}</span>
+            </div>
+          </div>
+
+          {/* Sağ kanallar */}
+          <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
+            {HUB_RIGHT.map((ch) => {
+              const ChIcon = ch.icon;
+              return (
+                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
+                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
+                    <ChIcon size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
+                  </div>
+                  {/* Sol kenar ortası bağlantı noktası */}
+                  <span className={`absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Özellik Paneli (Glassmorphism) */}
+          <div className="lg:col-span-3 flex justify-center lg:justify-end z-10">
+            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-indigo-400">Neler Yapabilir?</p>
+              {HUB_FEATURES.map((f) => {
+                const FIcon = f.icon;
                 return (
-                  <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} dark:border-indigo-500/30 shadow-sm dark:shadow-md ${ch.glow} hover:shadow-lg transition-all w-52 lg:w-full`}>
-                    <div className={`w-10 h-10 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                      <ChIcon size={20} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
-                    </div>
-                    {/* Sağ kenar ortası bağlantı noktası */}
-                    <span className={`absolute right-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                  <div key={f.text} className="flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center shrink-0">
+                      <FIcon size={14} className={f.color} />
+                    </span>
+                    {f.text}
                   </div>
                 );
               })}
             </div>
-
-            {/* Merkez AI Çekirdek */}
-            <div className="lg:col-span-5 flex flex-col items-center justify-center gap-5">
-              {/* Kavisli bağlantı hatları (sol & sağ kanallardan merkeze) */}
-              <div className="hidden lg:block absolute inset-0 -z-0">
-                <svg className="w-full h-full" viewBox="0 0 1200 400" fill="none" preserveAspectRatio="none">
-                  {/* Soldan merkeze */}
-                  <path d="M 300 80 C 440 120, 480 170, 520 195" stroke="#3b82f6" strokeWidth="1.5" strokeOpacity="0.45" strokeDasharray="6 5" />
-                  <path d="M 300 200 C 440 210, 480 200, 520 200" stroke="#10b981" strokeWidth="1.5" strokeOpacity="0.45" strokeDasharray="6 5" />
-                  <path d="M 300 320 C 440 280, 480 230, 520 205" stroke="#d946ef" strokeWidth="1.5" strokeOpacity="0.45" strokeDasharray="6 5" />
-                  {/* Sağdan merkeze */}
-                  <path d="M 900 150 C 800 180, 720 195, 680 200" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.45" strokeDasharray="6 5" />
-                  <path d="M 900 250 C 800 230, 720 205, 680 200" stroke="#06b6d4" strokeWidth="1.5" strokeOpacity="0.45" strokeDasharray="6 5" />
-                </svg>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-[-10px] rounded-full border border-indigo-300/60 dark:border-indigo-500/30 animate-ping [animation-duration:3s]" />
-                <div className="absolute inset-[-22px] rounded-full border border-purple-200/70 dark:border-purple-500/20" />
-                <div className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 animate-pulse shadow-[0_0_50px_rgba(99,102,241,0.5)] flex items-center justify-center">
-                  <Headset size={72} className="text-white drop-shadow-lg" strokeWidth={1.5} />
-                </div>
-              </div>
-              <div className="rounded-full bg-white/90 dark:bg-indigo-950/80 border border-blue-200 dark:border-cyan-400/50 text-blue-600 dark:text-cyan-300 font-bold px-8 py-2 text-lg shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                AI Aktif %{aiSuccessRate}
-              </div>
-            </div>
-
-            {/* Sağ kanallar + Özellik Paneli */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-              <div className="flex flex-col gap-3">
-                {HUB_RIGHT.map((ch) => {
-                  const ChIcon = ch.icon;
-                  return (
-                    <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} dark:border-indigo-500/30 shadow-sm dark:shadow-md ${ch.glow} hover:shadow-lg transition-all`}>
-                      <div className={`w-10 h-10 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                        <ChIcon size={20} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
-                      </div>
-                      {/* Sol kenar ortası bağlantı noktası */}
-                      <span className={`absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Glassmorphism özellik paneli */}
-              <div className="rounded-2xl bg-slate-50/80 dark:bg-indigo-950/30 border border-slate-200/60 dark:border-indigo-500/20 backdrop-blur-md p-6 flex flex-col gap-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-indigo-400 mb-1">Neler Yapabilir?</p>
-                {HUB_FEATURES.map((f) => {
-                  const FIcon = f.icon;
-                  return (
-                    <div key={f.text} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      <FIcon size={15} className={f.color} /> {f.text}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* 7 KPI — tek sıra glassmorphism */}
+        {/* 7 KPI — tek sıra */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {!loaded ? Array.from({ length: 7 }).map((_, i) => <SkeletonKPI key={i} />) : kpis.map((kpi) => {
             const Icon = kpi.icon;
@@ -351,20 +381,20 @@ export default function DashboardPage() {
               <button
                 key={kpi.label}
                 onClick={kpi.onClick}
-                className={`group bg-white dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-slate-800 dark:hover:border-indigo-500/50 rounded-2xl p-4 backdrop-blur-lg shadow-sm dark:shadow-xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group bg-white dark:bg-[#0C1027]/40 border border-slate-100/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl ${kpi.iconBox} flex items-center justify-center shadow-sm`}>
-                    <Icon size={18} className={kpi.color} />
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon size={18} className={kpi.color} />
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{kpi.label}</span>
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
+                  {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
                     {kpi.trend}
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1">
-                  {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
-                </div>
-                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{kpi.label}</p>
               </button>
             );
           })}

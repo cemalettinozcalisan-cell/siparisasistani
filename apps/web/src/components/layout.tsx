@@ -296,6 +296,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const isDashboard = pathname === '/dashboard';
 
   useEffect(() => setMounted(true), []);
 
@@ -306,7 +308,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
       <CommandPalette />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3">
+        <header className={`sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3 ${isDashboard ? 'lg:hidden' : ''}`}>
           <div className="flex items-center justify-between gap-2 lg:gap-4">
             <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
               <Menu className="w-5 h-5" />
