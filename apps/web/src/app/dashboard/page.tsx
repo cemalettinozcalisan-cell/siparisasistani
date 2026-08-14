@@ -26,10 +26,10 @@ function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: num
 }
 
 // --- Orijinal marka logoları ---
-function WhatsAppIcon({ size = 20 }: { size?: number }) {
+function WhatsAppIcon() {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="#25D366" aria-label="WhatsApp">
-      <path d="M16.004 3.2c-7.06 0-12.8 5.74-12.8 12.8 0 2.26.59 4.46 1.71 6.4L3.2 28.8l6.57-1.68a12.74 12.74 0 0 0 6.23 1.6h.01c7.06 0 12.79-5.74 12.79-12.8S23.06 3.2 16.004 3.2zm0 23.36h-.01a10.6 10.6 0 0 1-5.4-1.48l-.39-.23-3.9 1 1.04-3.8-.25-.39a10.56 10.56 0 0 1-1.62-5.66c0-5.87 4.78-10.65 10.66-10.65 2.84 0 5.51 1.11 7.52 3.12a10.56 10.56 0 0 1 3.11 7.53c0 5.87-4.78 10.65-10.66 10.65zm5.85-7.98c-.32-.16-1.89-.93-2.18-1.04-.29-.11-.5-.16-.72.16-.21.32-.82 1.04-1.01 1.25-.18.21-.37.24-.69.08-.32-.16-1.35-.5-2.57-1.59-.95-.85-1.59-1.9-1.78-2.22-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.56.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.37-.26-.62-.52-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.11 1.09-1.11 2.65 0 1.56 1.14 3.07 1.3 3.28.16.21 2.24 3.42 5.43 4.8.76.33 1.35.52 1.81.67.76.24 1.45.21 2 .13.61-.09 1.89-.77 2.16-1.52.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37z" />
+    <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
+      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99 0-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.285-.143-1.689-.834-1.951-.929-.263-.095-.454-.143-.645.143-.191.285-.74.929-.907 1.12-.167.19-.334.214-.619.071-.285-.143-1.206-.444-2.298-1.417-.85-.758-1.424-1.693-1.591-1.979-.167-.285-.018-.439.125-.581.129-.128.285-.334.428-.5.143-.167.191-.285.285-.477.095-.192.048-.358-.024-.5-.071-.143-.645-1.554-.883-2.126-.232-.557-.468-.481-.644-.49-.167-.008-.358-.01-.549-.01-.191 0-.501.071-.763.358-.263.285-1.002.978-1.002 2.385 0 1.407 1.026 2.768 1.169 2.959.143.191 2.019 3.084 4.891 4.324.683.295 1.217.472 1.633.604.687.218 1.312.187 1.806.113.551-.083 1.689-.69 1.928-1.358.238-.668.238-1.24.167-1.358-.071-.118-.262-.19-.547-.333z" />
     </svg>
   );
 }
@@ -101,7 +101,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 // AI Hub kanalları — renkli zeminli ikon kutuları + beyaz ikonlar
 const HUB_LEFT = [
   { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: MessageCircle, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
   { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
 ];
 
@@ -300,7 +300,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Sol kanallar */}
-          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start z-10">
+          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-end z-10">
             {HUB_LEFT.map((ch) => {
               const ChIcon = ch.icon;
               return (
