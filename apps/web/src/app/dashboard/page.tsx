@@ -98,16 +98,16 @@ const SEVERITY_STYLES: Record<string, string> = {
   LOW: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
 };
 
-// AI Hub kanalları — orijinal marka logoları (WhatsApp/Instagram) + beyaz ikonlar
+// AI Hub kanalları — renkli zeminli ikon kutuları + beyaz ikonlar
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', brand: false, cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', brand: true, cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: InstagramIcon, iconBg: 'bg-pink-50 dark:bg-pink-500/15', brand: true, cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: MessageCircle, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', brand: false, cardBorder: 'border-amber-200 dark:border-amber-500/40', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
-  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-sky-500', brand: false, cardBorder: 'border-cyan-200 dark:border-cyan-500/40', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-200 dark:border-orange-500/40', glow: 'hover:shadow-orange-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
+  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
 ];
 
 const HUB_FEATURES = [
@@ -306,10 +306,10 @@ export default function DashboardPage() {
               return (
                 <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                    {ch.brand ? <ChIcon size={22} /> : <ChIcon size={22} className="text-white" />}
+                    <ChIcon size={22} className="text-white" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
                   {/* Sağ kenar ortası bağlantı noktası */}
@@ -342,10 +342,10 @@ export default function DashboardPage() {
               return (
                 <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                    {ch.brand ? <ChIcon size={22} /> : <ChIcon size={22} className="text-white" />}
+                    <ChIcon size={22} className="text-white" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
                   {/* Sol kenar ortası bağlantı noktası */}
