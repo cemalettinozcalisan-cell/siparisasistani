@@ -27,7 +27,7 @@ export class OrdersListController {
     try {
       let query = this.supabase.db
         .from('orders')
-        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, customer:customer_id(name, phone, city, address)')
+        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, cargo_company, tracking_number, payment_method, payment_status, customer:customer_id(name, phone, city, address)')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
 
@@ -52,6 +52,8 @@ export class OrdersListController {
         id: o.id, order_number: o.order_number, total_price: o.total_price,
         status: o.status, channel: o.channel, source: o.source || 'PHONE',
         notes: o.notes || '', customer_note: (o as any).customer_note || (o as any).notes || '',
+        cargo_company: o.cargo_company || '', tracking_number: o.tracking_number || '',
+        payment_method: o.payment_method || '', payment_status: o.payment_status || '',
         created_at: o.created_at,
         customer_name: (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
         customer_phone: (o.customer as Record<string, unknown>)?.phone || (o as any).customer_phone || '',
@@ -107,7 +109,13 @@ export class OrdersListController {
       { id: 'ord-025', order_number: '26-00025', total_price: 1760, status: 'new', channel: 'website', source: 'WEBSITE', payment: 'Kapıda Nakit', notes: '', customer_note: '', created_at: new Date(now - 12000000).toISOString(), customer_name: 'Engin Tufan', customer_phone: '05325558899', customer_city: 'Denizli', customer_address: 'Denizli, Merkezefendi', customer_company: '', customer_birthday: '', customer_identity: '', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', unit_price: 890 }, { product_name: 'Kangal Sucuk', quantity: 1, unit: 'KG', unit_price: 750 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', unit_price: 120 }] },
     ];
     if (sourceFilter && sourceFilter !== 'all') return orders.filter((o) => o.source === sourceFilter);
-    return orders;
+    return orders.map((o, i) => ({
+      ...o,
+      cargo_company: (o as any).cargo_company || ['yurtici', 'mng', 'aras', 'ptt', 'surat', 'dhl'][i % 6],
+      tracking_number: (o as any).tracking_number || `${['YT', 'MNG', 'AR', 'PTT', 'SUR', 'DHL'][i % 6]}${String(1000000 + i * 137)}`,
+      payment_method: (o as any).payment_method || (o as any).payment || 'iban',
+      payment_status: (o as any).payment_status || (['DELIVERED', 'COMPLETED'].includes(String(o.status)) ? 'paid' : 'waiting'),
+    }));
   }
 
   @Roles('owner', 'manager', 'staff')

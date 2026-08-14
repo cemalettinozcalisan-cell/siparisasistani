@@ -62,6 +62,7 @@ import { ContactModule } from './contact/contact.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { QueueMonitorModule } from './queue-monitor/queue-monitor.module';
 import { SalesEngineModule } from './sales-engine/sales-engine.module';
+import { CargoTrackingModule } from './cargo-tracking/cargo-tracking.module';
 
 
 
@@ -123,6 +124,7 @@ import { SalesEngineModule } from './sales-engine/sales-engine.module';
     ApiKeysModule,
     QueueMonitorModule,
     SalesEngineModule,
+    CargoTrackingModule,
   ],
   controllers: [
     DashboardController,

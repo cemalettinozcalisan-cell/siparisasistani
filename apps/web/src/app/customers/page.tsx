@@ -205,11 +205,11 @@ export default function CustomersPage() {
           <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-0 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
           <button onClick={() => setShowImport(true)}
-            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all">
+            className="h-10 inline-flex items-center gap-1.5 px-4 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all">
             <FileSpreadsheet size={14} /> Excel'den Yükle
           </button>
           <button onClick={() => setShowAddCustomer(true)}
-            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
+            className="h-10 inline-flex items-center gap-1.5 px-4 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
             <UserPlus size={14} /> Müşteri Ekle
           </button>
         </div>

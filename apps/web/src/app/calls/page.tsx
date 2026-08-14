@@ -18,7 +18,7 @@ interface Conversation {
 interface CallDetail {
   session: Record<string, unknown>;
   recording?: { recording_url?: string } | null;
-  transcript?: { user_message: string; raw_response: string; confidence: number; created_at: string }[];
+  transcript?: { user_message: string; raw_response: string; confidence: number; created_at: string; parsed_json?: Record<string, unknown> | null; reasoning_summary?: string | null }[];
   whatsappMessages?: { id: string; direction: string; body: string; mediaUrl?: string; createdAt: string }[];
 }
 
@@ -476,6 +476,26 @@ function CallsContent() {
                                 <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{summary.shortSummary}</p>
                               </div>
                             )}
+
+                            {/* AI Karar Mantığı */}
+                            {(() => {
+                              const reasoning =
+                                summary?.reasoning_summary ||
+                                (summary?.reasoning) ||
+                                (detail?.transcript || []).map((t) => (t as any).parsed_json || (t as any).reasoning_summary).find(Boolean) ||
+                                (summary?.ai_errors && summary.ai_errors.length > 0 ? `Görüşme sırasında ${summary.ai_errors.length} hata tespit edildi; sipariş tamamlanamadığı için müşteri insan desteğine yönlendirildi.` : null) ||
+                                (summary?.needs_human ? 'Müşterinin talebi AI kuralları içinde tamamlanamadığı için insan müdahalesi gerekiyordu.' : null);
+                              if (!reasoning) return null;
+                              return (
+                                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                                  <p className="text-xs text-slate-700 dark:text-slate-200 font-bold flex items-center gap-1.5 mb-1">
+                                    <Bot size={12} className="text-violet-500" /> AI Karar Mantığı
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{String(reasoning)}</p>
+                                </div>
+                              );
+                            })()}
+
                             {summary?.ai_errors && summary.ai_errors.length > 0 && (
                               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 rounded-xl p-3">
                                 <p className="text-xs text-amber-800 dark:text-amber-200 font-medium flex items-center gap-1"><AlertTriangle size={12} /> AI Hataları</p>

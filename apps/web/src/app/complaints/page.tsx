@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, ShieldAlert, PhoneCall, MessageSquare, Camera, Settings, Clock, User, Hash, Phone, MessageCircle } from 'lucide-react';
 
 const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
@@ -44,11 +46,22 @@ const FILTER_TABS: { key: FilterTab; label: string; icon: typeof AlertTriangle; 
 ];
 
 export default function ComplaintsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ComplaintsContent />
+    </Suspense>
+  );
+}
+
+function ComplaintsContent() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('id');
   const [complaints, setComplaints] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState('');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tid, setTid] = useState('');
+  const [highlighted, setHighlighted] = useState<string | null>(highlightId);
 
   useEffect(() => { import('@/lib/tenant').then(m => setTid(m.getTenantId())); }, []);
 
@@ -61,9 +74,17 @@ export default function ComplaintsPage() {
           (e.event_type as string)?.startsWith('COMPLAINT') || (e.event_type as string) === 'HUMAN_REQUIRED'
         );
         setComplaints(filtered.length > 0 ? filtered : getMockComplaints());
+        // URL'den gelen id: otomatik genişlet + vurgula
+        if (highlightId) {
+          setExpanded(highlightId);
+          setHighlighted(highlightId);
+          setTimeout(() => {
+            document.getElementById(`complaint-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }
       })
       .catch(() => setComplaints(getMockComplaints()));
-  }, [tid]);
+  }, [tid, highlightId]);
 
   const getMockComplaints = (): Record<string, unknown>[] => [
     { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'AI, Test Müşteri için yüksek seviyede talep kaydı oluşturdu: Geç teslimat', actor_type: 'AI', channel: 'VOICE', customer_name: 'Test Müşteri', customer_phone: '05321234567', created_at: new Date(Date.now() - 3600000).toISOString(), metadata: { severity: 'HIGH', ticket_number: 'TKT-0001' } },
@@ -195,8 +216,10 @@ export default function ComplaintsPage() {
 
           return (
             <React.Fragment key={i}>
-            <div className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 ${
-              isResolved ? 'border-emerald-200 dark:border-emerald-800' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800'
+            <div id={`complaint-${c.id}`} className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 ${
+              highlighted === c.id
+                ? 'border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/30 shadow-lg shadow-indigo-500/10'
+                : isResolved ? 'border-emerald-200 dark:border-emerald-800' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800'
             }`}>
               <div className="flex items-start gap-4">
                 {/* Left: Customer + Ticket */}

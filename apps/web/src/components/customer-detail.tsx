@@ -227,13 +227,13 @@ export function CustomerDetail({ customer, orders, timeline, complaints, onRefre
 
           {/* Özel Fiyat */}
           {userRole !== 'staff' && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm ring-1 ring-indigo-50 dark:ring-indigo-900/20">
-            <div className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border-b-2 border-indigo-100 dark:border-indigo-900/50 rounded-t-xl">
-              <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-700 rounded-t-xl">
+              <h3 className="text-xs font-bold text-amber-500 uppercase tracking-wide">
                 Özel Fiyat Listesi
               </h3>
               <button onClick={() => setShowPriceForm(!showPriceForm)}
-                className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
+                className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-sm hover:from-amber-600 hover:to-orange-600 transition-all">
                 + Özel Fiyat
               </button>
             </div>
