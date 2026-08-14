@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, LayoutDashboard, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Bot, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, LayoutDashboard, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -45,12 +45,15 @@ const CARGO_FIRMA_ADI: Record<string, string> = {
   yurtici: 'Yurtiçi Kargo', mng: 'MNG Kargo', aras: 'Aras Kargo', ptt: 'PTT Kargo', surat: 'Sürat Kargo', dhl: 'DHL',
 };
 
-const AI_CHANNELS = [
+const AI_CHANNELS_LEFT = [
   { name: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-blue-600', status: 'AKTİF', statusColor: 'text-emerald-400' },
   { name: 'WhatsApp', icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600', status: 'AKTİF', statusColor: 'text-emerald-400' },
   { name: 'Instagram', icon: Camera, gradient: 'from-pink-500 via-purple-500 to-purple-600', status: 'AKTİF', statusColor: 'text-emerald-400' },
-  { name: 'SMS', icon: MessageCircle, gradient: 'from-sky-400 to-blue-500', status: 'AKTİF', statusColor: 'text-emerald-400' },
-  { name: 'Web', icon: Globe, gradient: 'from-cyan-500 to-teal-500', status: 'BAĞLANMADI', statusColor: 'text-amber-400' },
+];
+
+const AI_CHANNELS_RIGHT = [
+  { name: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500', status: 'AKTİF', statusColor: 'text-emerald-400' },
+  { name: 'Web Sitesi', icon: Globe, gradient: 'from-cyan-500 to-teal-500', status: '7/24 Senkronize & Aktif', statusColor: 'text-emerald-400' },
 ];
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -179,34 +182,25 @@ export default function DashboardPage() {
           <p className="text-xs text-slate-400 mt-0.5">{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <div className="flex items-center gap-2.5">
-          {/* Futuristik Saat Badge */}
-          <div className="rounded-xl border border-cyan-500/30 bg-slate-900/90 px-4 py-2.5 flex items-center gap-3 shadow-lg shadow-cyan-500/10">
-            <div className="flex items-center gap-1.5">
-              <Clock size={13} className="text-cyan-400" />
-              <span className="text-lg font-bold text-cyan-400 tabular-nums tracking-wider font-mono">{clock}</span>
-            </div>
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-              </span>
-              CANLI
+          {/* Saat Badge — soft neon cyan */}
+          <div className="rounded-full border border-cyan-400/30 bg-cyan-50/70 dark:bg-cyan-500/10 backdrop-blur-sm px-3.5 py-1.5 flex items-center gap-2 shadow-sm shadow-cyan-500/10">
+            <Clock size={13} className="text-cyan-600 dark:text-cyan-400" />
+            <span className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 tabular-nums font-mono tracking-wide">{clock}</span>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
           </div>
-          {/* Quota Widget */}
+          {/* Quota Widget — minimal SaaS badge */}
           {usage && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm px-4 py-2.5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 flex items-center justify-center">
-                <BarChart3 size={14} className="text-indigo-500" />
+            <div className="rounded-full border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-3.5 py-1.5 flex items-center gap-2 shadow-sm">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/30 dark:to-violet-900/30 flex items-center justify-center">
+                <BarChart3 size={11} className="text-indigo-500" />
               </div>
-              <div>
-                <div className="text-[11px] text-slate-400 font-medium">Kalan Kota</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-slate-900 dark:text-white">{remaining} / {orderLimit}</span>
-                  <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                    <div className={`h-full rounded-full ${usagePct > 80 ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 to-indigo-600'}`} style={{ width: `${usagePct}%` }} />
-                  </div>
-                </div>
+              <span className="text-[11px] text-slate-400 font-medium">Kalan Kota</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
+              <div className="w-12 bg-slate-100 dark:bg-slate-700 rounded-full h-1 overflow-hidden">
+                <div className={`h-full rounded-full ${usagePct > 80 ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-emerald-500 to-indigo-600'}`} style={{ width: `${usagePct}%` }} />
               </div>
             </div>
           )}
@@ -269,43 +263,93 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* 3-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* AI Agent — 5 kanallı neon kart */}
-        <div className="rounded-xl bg-slate-900 dark:bg-slate-900 border border-slate-700/60 shadow-lg shadow-indigo-500/10 p-5 space-y-3 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-indigo-500/20 blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-md shadow-indigo-500/40">
-                <Bot size={16} className="text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-white text-sm">AI Ajanların</h2>
-                <p className="text-[10px] text-cyan-400 font-medium">5 kanalda senin için çalışıyor</p>
-              </div>
+      {/* AI Showroom Card — futuristic AI hub, full width */}
+      <div className="rounded-2xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 border border-indigo-500/30 p-8 shadow-2xl relative overflow-hidden">
+        {/* Ambient neon blobs */}
+        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-indigo-600/20 blur-3xl" />
+        <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-cyan-500/15 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-md shadow-indigo-500/40">
+              <Bot size={18} className="text-white" />
             </div>
-            <div className="space-y-2">
-              {AI_CHANNELS.map((ch) => {
+            <h2 className="text-lg md:text-xl font-bold text-white tracking-wide">
+              Yapay Zeka Ajanları Senin İçin Çalışıyor
+            </h2>
+          </div>
+
+          {/* Orb + connecting channels */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+            {/* Left channels: Telefon, WhatsApp, Instagram */}
+            <div className="flex flex-row md:flex-col gap-3 order-2 md:order-1">
+              {AI_CHANNELS_LEFT.map((ch) => {
                 const ChIcon = ch.icon;
                 return (
-                  <div key={ch.name} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/40 hover:bg-white/10 transition-all">
-                    <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ch.gradient} flex items-center justify-center shrink-0`}>
-                      <ChIcon size={13} className="text-white" />
+                  <div key={ch.name} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.35)] hover:bg-white/10 transition-all">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${ch.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                      <ChIcon size={14} className="text-white" />
                     </div>
-                    <span className="flex-1 text-xs font-semibold text-slate-200">{ch.name}</span>
-                    <span className={`text-[10px] font-bold ${ch.statusColor}`}>{ch.status}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-100 whitespace-nowrap">{ch.name}</p>
+                      <p className={`text-[10px] font-semibold ${ch.statusColor}`}>{ch.status}</p>
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <div className="mt-3 flex items-center justify-between px-2.5 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+
+            {/* Center: AI Orb */}
+            <div className="flex items-center justify-center order-1 md:order-2 shrink-0">
+              <div className="relative">
+                {/* Glow lines left & right */}
+                <div className="absolute top-1/2 -translate-y-1/2 h-[2px] w-20 md:w-28 bg-gradient-to-r from-transparent via-cyan-400/50 to-cyan-400/70 -left-20 md:-left-28 hidden md:block" />
+                <div className="absolute top-1/2 -translate-y-1/2 h-[2px] w-20 md:w-28 bg-gradient-to-l from-transparent via-cyan-400/50 to-cyan-400/70 -right-20 md:-right-28 hidden md:block" />
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-cyan-400 animate-pulse shadow-[0_0_40px_rgba(99,102,241,0.6)] flex items-center justify-center">
+                  <Bot size={44} className="text-white drop-shadow-lg" />
+                </div>
+                <div className="absolute inset-0 rounded-full border border-white/20" />
+                <div className="absolute inset-[-8px] rounded-full border border-indigo-400/30 animate-ping [animation-duration:2.5s]" />
+              </div>
+            </div>
+
+            {/* Right channels: SMS, Web Sitesi */}
+            <div className="flex flex-row md:flex-col gap-3 order-3">
+              {AI_CHANNELS_RIGHT.map((ch) => {
+                const ChIcon = ch.icon;
+                return (
+                  <div key={ch.name} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.35)] hover:bg-white/10 transition-all">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${ch.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                      <ChIcon size={14} className="text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-100 whitespace-nowrap">{ch.name}</p>
+                      <p className={`text-[10px] font-semibold ${ch.statusColor}`}>{ch.status}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* AI Başarı footer */}
+          <div className="mt-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-400/30 backdrop-blur-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-400" />
+              </span>
               <span className="text-[11px] font-semibold text-cyan-300">AI Başarı Oranı</span>
               <span className="text-sm font-bold text-cyan-300">%{aiSuccessRate}</span>
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Bottom row: Quick Actions + Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions */}
         <div className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-3">
           <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
