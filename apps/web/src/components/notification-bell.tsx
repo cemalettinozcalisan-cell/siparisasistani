@@ -10,7 +10,7 @@ const ICON_MAP: Record<string, string> = {
   callback: '📞', warning: '⚠️',
 };
 
-export function NotificationBell() {
+export function NotificationBell({ size = 'text-lg' }: { size?: string }) {
   const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -56,7 +56,7 @@ export function NotificationBell() {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-lg group">
+      <button onClick={() => setOpen(!open)} className={`relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors ${size} group`}>
         <span className="inline-block group-hover:animate-[wiggle_0.4s_ease-in-out]">🔔</span>
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">

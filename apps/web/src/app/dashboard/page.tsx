@@ -98,16 +98,16 @@ const SEVERITY_STYLES: Record<string, string> = {
   LOW: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
 };
 
-// AI Hub kanalları — renkli zemin üzerine beyaz ikonlar
+// AI Hub kanalları — orijinal marka logoları (WhatsApp/Instagram) + beyaz ikonlar
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: MessageCircle, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600', cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', brand: false, cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', brand: true, cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: InstagramIcon, iconBg: 'bg-pink-50 dark:bg-pink-500/15', brand: true, cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-amber-200 dark:border-amber-500/40', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
-  { name: 'Web Sitesi', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-sky-500', cardBorder: 'border-cyan-200 dark:border-cyan-500/40', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', brand: false, cardBorder: 'border-amber-200 dark:border-amber-500/40', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
+  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-sky-500', brand: false, cardBorder: 'border-cyan-200 dark:border-cyan-500/40', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
 ];
 
 const HUB_FEATURES = [
@@ -236,20 +236,21 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3.5">
             <img src="/logo2.png" alt="SiparişAsistanı" className="w-12 h-12 object-contain" />
             <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">SiparişAsistanı</h1>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Akıllı Sipariş, Güçlü İşletme.</p>
+              <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-blue-400 bg-clip-text text-transparent">SiparişAsistanı</h1>
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Akıllı Sipariş, Güçlü İşletme.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <TenantSwitcher />
             <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-slate-200/70 dark:border-slate-800 rounded-full px-1.5 py-1">
               <PageThemeToggle />
-              <NotificationBell />
+              <NotificationBell size="text-base" />
             </div>
             {usage && (
-              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-[#0C1027]/70 text-[11px]">
-                <BarChart3 size={12} className="text-indigo-500" />
-                <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
+              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
+                <BarChart3 size={13} className="text-indigo-500" />
+                <span className="font-medium text-slate-500 dark:text-slate-400">Sipariş Hakkı:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
               </div>
             )}
             <div className="px-4 py-2 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
@@ -257,9 +258,9 @@ export default function DashboardPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Sistem Aktif</span>
+              <span className="text-sm font-normal text-slate-600 dark:text-slate-300">Sistem Aktif</span>
             </div>
-            <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-tight text-right shrink-0">
+            <div className="text-slate-700 dark:text-slate-300 text-xs font-semibold leading-tight text-right shrink-0">
               Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
             </div>
           </div>
@@ -280,11 +281,11 @@ export default function DashboardPage() {
           {/* Kavisli bağlantı hatları */}
           <div className="hidden lg:block absolute inset-0 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
-              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
+              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" className="opacity-50 dark:opacity-70" />
               <circle cx="250" cy="80" r="3" fill="#3b82f6" />
               <circle cx="335" cy="140" r="4.5" fill="#3b82f6" className="animate-pulse" />
               <circle cx="250" cy="200" r="3" fill="#10b981" />
@@ -303,9 +304,9 @@ export default function DashboardPage() {
             {HUB_LEFT.map((ch) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
+                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                    <ChIcon size={22} className="text-white" />
+                    {ch.brand ? <ChIcon size={22} /> : <ChIcon size={22} className="text-white" />}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
@@ -339,9 +340,9 @@ export default function DashboardPage() {
             {HUB_RIGHT.map((ch) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
+                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                    <ChIcon size={22} className="text-white" />
+                    {ch.brand ? <ChIcon size={22} /> : <ChIcon size={22} className="text-white" />}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
@@ -355,14 +356,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Özellik Paneli (Glassmorphism) */}
-          <div className="lg:col-span-3 flex justify-center lg:justify-end z-10">
-            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
+          <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
+            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-2.5 w-full max-w-[15rem] h-full">
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
                 return (
-                  <div key={f.text} className="flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <span className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
-                      <FIcon size={14} className="text-violet-500" />
+                  <div key={f.text} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="w-6 h-6 rounded-md bg-violet-50 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
+                      <FIcon size={13} className="text-violet-500" />
                     </span>
                     {f.text}
                   </div>
@@ -386,9 +387,9 @@ export default function DashboardPage() {
                   <span className={`w-8 h-8 rounded-full ${kpi.iconBg} flex items-center justify-center shrink-0`}>
                     <Icon size={16} className={kpi.color} />
                   </span>
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{kpi.label}</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{kpi.label}</span>
                 </div>
-                <div className="text-3xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
+                <div className="text-2xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
                   {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
                 </div>
                 <div className="flex items-center justify-center">
@@ -399,13 +400,6 @@ export default function DashboardPage() {
               </button>
             );
           })}
-        </div>
-
-        {/* En alt slogan */}
-        <div className="text-center">
-          <p className="text-xs font-bold tracking-widest text-violet-500/90 dark:text-violet-400/80">
-            DAHA FAZLA ZAMAN <span className="mx-2">•</span> DAHA FAZLA SATIŞ <span className="mx-2">•</span> DAHA MUTLU MÜŞTERİLER
-          </p>
         </div>
 
         {/* Alt satır: Hızlı İşlemler + Son Aktiviteler */}
@@ -470,7 +464,7 @@ export default function DashboardPage() {
 
         {/* Footer slogan */}
         <div className="text-center py-6">
-          <p className="text-xs font-bold tracking-[0.25em] uppercase text-indigo-500/80 dark:text-indigo-400/80">
+          <p className="text-xs font-bold tracking-[0.25em] uppercase text-violet-500/90 dark:text-violet-400/80">
             Daha Fazla Zaman <span className="mx-3 opacity-60">•</span> Daha Fazla Satış <span className="mx-3 opacity-60">•</span> Daha Mutlu Müşteriler
           </p>
         </div>
