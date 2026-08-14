@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, MessageCircle, Instagram, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { NotificationBell } from '@/components/notification-bell';
@@ -98,25 +98,25 @@ const SEVERITY_STYLES: Record<string, string> = {
   LOW: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
 };
 
-// AI Hub kanalları — orijinal ikonlar & neon çerçeveler
+// AI Hub kanalları — renkli zemin üzerine beyaz ikonlar
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: PhoneCall, iconColor: 'text-blue-600 dark:text-blue-400', cardBorder: 'border-blue-200 dark:border-blue-500/40', iconBox: 'bg-blue-50 dark:bg-blue-500/15', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconColor: 'text-emerald-600 dark:text-emerald-400', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: InstagramIcon, iconColor: 'text-fuchsia-600 dark:text-fuchsia-400', cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', iconBox: 'bg-fuchsia-50 dark:bg-fuchsia-500/15', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: MessageCircle, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-br from-pink-500 to-purple-600', cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconColor: 'text-amber-600 dark:text-amber-400', cardBorder: 'border-amber-200 dark:border-amber-500/40', iconBox: 'bg-amber-50 dark:bg-amber-500/15', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
-  { name: 'Web Sitesi', sub: 'Sipariş alınıyor', icon: Globe, iconColor: 'text-cyan-600 dark:text-cyan-400', cardBorder: 'border-cyan-200 dark:border-cyan-500/40', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-amber-200 dark:border-amber-500/40', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
+  { name: 'Web Sitesi', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-sky-500', cardBorder: 'border-cyan-200 dark:border-cyan-500/40', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
 ];
 
 const HUB_FEATURES = [
-  { icon: ShoppingBag, text: 'Siparişleri alır', color: 'text-blue-500' },
-  { icon: UserPlus, text: 'Müşterileri tanır', color: 'text-indigo-500' },
-  { icon: MessageSquare, text: 'Soruları yanıtlar', color: 'text-emerald-500' },
-  { icon: CreditCard, text: 'Ödemeyi yönetir', color: 'text-amber-500' },
-  { icon: Truck, text: 'Kargoyu takip eder', color: 'text-cyan-500' },
-  { icon: TrendingUp, text: 'İşletmenizi büyütür', color: 'text-rose-500' },
+  { icon: ShoppingBag, text: 'Siparişleri alır' },
+  { icon: UserCheck, text: 'Müşterileri tanır' },
+  { icon: HelpCircle, text: 'Soruları yanıtlar' },
+  { icon: CreditCard, text: 'Ödemeyi yönetir' },
+  { icon: Truck, text: 'Kargoyu takip eder' },
+  { icon: TrendingUp, text: 'İşletmenizi büyütür' },
 ];
 
 function getCargoUrl(company: string, tracking: string): string {
@@ -212,13 +212,13 @@ export default function DashboardPage() {
   const orderLimit = usage ? (usage.orderLimit as number) || 250 : 250;
 
   const kpis = [
-    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingBag, color: 'text-blue-500', iconBox: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
-    { label: 'Bekleyen', value: pendingOrders, icon: Clock, color: 'text-amber-500', iconBox: 'bg-amber-50 dark:bg-amber-500/15', trend: '↑ %12', onClick: () => setShowPendingModal(true) },
-    { label: 'Talep & İstek', value: complaintsCount, icon: GitPullRequest, color: 'text-pink-500', iconBox: 'bg-pink-50 dark:bg-pink-500/15', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
-    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, color: 'text-emerald-500', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
-    { label: 'AI Müşteri', value: aiCustomers, icon: Users, color: 'text-purple-500', iconBox: 'bg-purple-50 dark:bg-purple-500/15', trend: '↑ %33' },
-    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, color: 'text-cyan-500', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15', trend: '↑ %28', suffix: ' TL' },
-    { label: 'AI Başarı', value: aiSuccessRate, icon: Target, color: 'text-emerald-500', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %4', suffix: '%' },
+    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
+    { label: 'Bekleyen', value: pendingOrders, icon: Clock, color: 'text-amber-500', iconBg: 'bg-amber-50 dark:bg-amber-500/15', trend: '↑ %12', onClick: () => setShowPendingModal(true) },
+    { label: 'Talep & İstek', value: complaintsCount, icon: AlertCircle, color: 'text-pink-500', iconBg: 'bg-pink-50 dark:bg-pink-500/15', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
+    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
+    { label: 'AI Müşteri', value: aiCustomers, icon: User, color: 'text-purple-500', iconBg: 'bg-purple-50 dark:bg-purple-500/15', trend: '↑ %33' },
+    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %28', suffix: ' TL' },
+    { label: 'AI Başarı', value: 97, icon: Target, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %4', suffix: '%' },
   ];
 
   if (!mounted) return <div className="p-6" />;
@@ -304,8 +304,8 @@ export default function DashboardPage() {
               const ChIcon = ch.icon;
               return (
                 <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
-                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                    <ChIcon size={22} />
+                  <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <ChIcon size={22} className="text-white" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
@@ -330,7 +330,7 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-cyan-400/50 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] px-8 py-2.5 flex items-baseline gap-2">
               <span className="text-sm font-bold text-blue-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
-              <span className="text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">%{aiSuccessRate}</span>
+              <span className="text-xl font-extrabold text-indigo-700 dark:text-indigo-400 tabular-nums">%97</span>
             </div>
           </div>
 
@@ -340,8 +340,8 @@ export default function DashboardPage() {
               const ChIcon = ch.icon;
               return (
                 <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
-                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                    <ChIcon size={22} />
+                  <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <ChIcon size={22} className="text-white" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
@@ -357,13 +357,12 @@ export default function DashboardPage() {
           {/* Özellik Paneli (Glassmorphism) */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end z-10">
             <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-indigo-400">Neler Yapabilir?</p>
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
                 return (
                   <div key={f.text} className="flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <span className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center shrink-0">
-                      <FIcon size={14} className={f.color} />
+                    <span className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
+                      <FIcon size={14} className="text-violet-500" />
                     </span>
                     {f.text}
                   </div>
@@ -384,7 +383,9 @@ export default function DashboardPage() {
                 className={`group bg-white dark:bg-[#0C1027]/40 border border-slate-100/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Icon size={18} className={kpi.color} />
+                  <span className={`w-8 h-8 rounded-full ${kpi.iconBg} flex items-center justify-center shrink-0`}>
+                    <Icon size={16} className={kpi.color} />
+                  </span>
                   <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{kpi.label}</span>
                 </div>
                 <div className="text-3xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
@@ -398,6 +399,13 @@ export default function DashboardPage() {
               </button>
             );
           })}
+        </div>
+
+        {/* En alt slogan */}
+        <div className="text-center">
+          <p className="text-xs font-bold tracking-widest text-violet-500/90 dark:text-violet-400/80">
+            DAHA FAZLA ZAMAN <span className="mx-2">•</span> DAHA FAZLA SATIŞ <span className="mx-2">•</span> DAHA MUTLU MÜŞTERİLER
+          </p>
         </div>
 
         {/* Alt satır: Hızlı İşlemler + Son Aktiviteler */}
