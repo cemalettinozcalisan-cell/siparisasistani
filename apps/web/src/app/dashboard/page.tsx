@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon } from 'lucide-react';
+import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon, Headset } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { NotificationBell } from '@/components/notification-bell';
@@ -224,7 +224,7 @@ export default function DashboardPage() {
   if (!mounted) return <div className="p-6" />;
 
   return (
-    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-gradient-to-tr from-[#F1F5F9] via-[#F8FAFC] to-[#EFF6FF] dark:from-[#020410] dark:via-[#05081C] dark:to-[#0A0E2E] text-slate-900 dark:text-white p-4 md:p-8 space-y-8 w-full animate-fade-in">
+    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-[#F8FAFC] dark:bg-[#080B1A] text-slate-900 dark:text-white p-4 md:p-8 space-y-8 w-full animate-fade-in">
       {/* Ambient glow orbs */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-100/70 dark:bg-indigo-600/10 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-100/60 dark:bg-purple-600/10 blur-3xl" />
@@ -270,7 +270,7 @@ export default function DashboardPage() {
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             Müşterileriniz Nerede Olursa Olsun
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
+          <p className="text-slate-400 text-center text-sm mb-8">
             Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.
           </p>
         </div>
@@ -280,21 +280,30 @@ export default function DashboardPage() {
           {/* Kavisli bağlantı hatları */}
           <div className="hidden lg:block absolute inset-0 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
-              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5 5" className="opacity-50 dark:opacity-70" />
-              <circle cx="250" cy="80" r="3" fill="#3b82f6" />
-              <circle cx="335" cy="140" r="4.5" fill="#3b82f6" className="animate-pulse" />
-              <circle cx="250" cy="200" r="3" fill="#10b981" />
-              <circle cx="335" cy="200" r="4.5" fill="#10b981" className="animate-pulse" />
-              <circle cx="250" cy="320" r="3" fill="#d946ef" />
-              <circle cx="335" cy="260" r="4.5" fill="#d946ef" className="animate-pulse" />
-              <circle cx="583" cy="140" r="3" fill="#f59e0b" />
-              <circle cx="495" cy="165" r="4.5" fill="#f59e0b" className="animate-pulse" />
-              <circle cx="583" cy="260" r="3" fill="#06b6d4" />
-              <circle cx="495" cy="235" r="4.5" fill="#06b6d4" className="animate-pulse" />
+              <defs>
+                <filter id="neonGlow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
+              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
+              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
+              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
+              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
+              <circle cx="250" cy="80" r="3" fill="#3b82f6" className="opacity-90" />
+              <circle cx="335" cy="140" r="5" fill="#3b82f6" className="animate-pulse" />
+              <circle cx="250" cy="200" r="3" fill="#10b981" className="opacity-90" />
+              <circle cx="335" cy="200" r="5" fill="#10b981" className="animate-pulse" />
+              <circle cx="250" cy="320" r="3" fill="#d946ef" className="opacity-90" />
+              <circle cx="335" cy="260" r="5" fill="#d946ef" className="animate-pulse" />
+              <circle cx="583" cy="140" r="3" fill="#f59e0b" className="opacity-90" />
+              <circle cx="495" cy="165" r="5" fill="#f59e0b" className="animate-pulse" />
+              <circle cx="583" cy="260" r="3" fill="#06b6d4" className="opacity-90" />
+              <circle cx="495" cy="235" r="5" fill="#06b6d4" className="animate-pulse" />
             </svg>
           </div>
 
@@ -303,7 +312,7 @@ export default function DashboardPage() {
             {HUB_LEFT.map((ch) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
+                <div key={ch.name} className={`relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#0C1027]/90 border ${ch.cardBorder} shadow-sm dark:shadow-[0_0_15px_rgba(99,102,241,0.15)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
                     <ChIcon size={22} />
                   </div>
@@ -312,7 +321,7 @@ export default function DashboardPage() {
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
                   {/* Sağ kenar ortası bağlantı noktası */}
-                  <span className={`absolute right-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                  <span className={`absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
                 </div>
               );
             })}
@@ -323,14 +332,14 @@ export default function DashboardPage() {
             <div className="relative">
               <div className="absolute inset-[-28px] rounded-full border border-indigo-100/70 dark:border-purple-500/10" />
               <div className="absolute inset-[-15px] rounded-full border border-indigo-200/50 dark:border-indigo-500/20" />
-              <div className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+              <div className="relative w-48 h-48 rounded-full bg-white dark:bg-[#0C1027]/90 border border-slate-200/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
                 <div className="absolute inset-[-8px] rounded-full border-2 border-indigo-100 dark:border-indigo-500/20 animate-ping [animation-duration:3s]" />
-                <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+                <Headset size={84} strokeWidth={1.5} className="text-indigo-500 dark:text-indigo-400 dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
               </div>
             </div>
-            <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-cyan-400/50 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] px-8 py-2.5 flex items-baseline gap-2">
-              <span className="text-sm font-bold text-blue-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
-              <span className="text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">%{aiSuccessRate}</span>
+            <div className="rounded-full bg-white dark:bg-indigo-950/80 border border-blue-200 dark:border-cyan-400/50 text-blue-600 dark:text-cyan-300 font-bold text-lg px-8 py-2 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-baseline gap-2">
+              <span>AI Aktif</span>
+              <span className="tabular-nums">&nbsp;%{aiSuccessRate}</span>
             </div>
           </div>
 
@@ -339,7 +348,7 @@ export default function DashboardPage() {
             {HUB_RIGHT.map((ch) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
+                <div key={ch.name} className={`relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#0C1027]/90 border ${ch.cardBorder} shadow-sm dark:shadow-[0_0_15px_rgba(99,102,241,0.15)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
                     <ChIcon size={22} />
                   </div>
@@ -348,7 +357,7 @@ export default function DashboardPage() {
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
                   {/* Sol kenar ortası bağlantı noktası */}
-                  <span className={`absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                  <span className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
                 </div>
               );
             })}
@@ -356,7 +365,7 @@ export default function DashboardPage() {
 
           {/* Özellik Paneli (Glassmorphism) */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end z-10">
-            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
+            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/90 border border-slate-200/70 dark:border-indigo-500/30 backdrop-blur-md shadow-sm dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-indigo-400">Neler Yapabilir?</p>
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
@@ -381,7 +390,7 @@ export default function DashboardPage() {
               <button
                 key={kpi.label}
                 onClick={kpi.onClick}
-                className={`group bg-white dark:bg-[#0C1027]/40 border border-slate-100/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group bg-white dark:bg-[#0C1027]/90 border border-slate-200/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-sm dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className="flex items-center gap-2 mb-4">
                   <Icon size={18} className={kpi.color} />
