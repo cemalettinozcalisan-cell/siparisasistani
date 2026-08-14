@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon, Headset } from 'lucide-react';
+import { ShoppingBag, TrendingUp, AlertCircle, AlertTriangle, Users, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, MessageCircle, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, Sun, Moon, Send } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { NotificationBell } from '@/components/notification-bell';
@@ -68,6 +68,49 @@ function PageThemeToggle() {
   );
 }
 
+// --- Referans komponent bileşenleri ---
+function ChannelCard({ icon, title, subtitle, dotColor, borderColor, bgColor, alignLeft = false }: { icon: React.ReactNode; title: string; subtitle: string; dotColor: string; borderColor: string; bgColor: string; alignLeft?: boolean }) {
+  return (
+    <div className={`relative flex items-center gap-3 rounded-2xl border ${borderColor} ${bgColor} p-3 transition duration-300 hover:scale-[1.02] shadow-sm`}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-black/40 shadow-sm">
+        {icon}
+      </div>
+      <div>
+        <h4 className="text-sm font-bold leading-none text-slate-900 dark:text-white">{title}</h4>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+      </div>
+      <span className={`absolute ${alignLeft ? '-left-1.5' : '-right-1.5'} top-1/2 -translate-y-1/2 h-3 w-3 rounded-full ${dotColor} ring-4 ring-white dark:ring-[#080822]`} />
+    </div>
+  );
+}
+
+function FeatureItem({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-2 py-1 text-xs text-slate-600 dark:text-slate-300">
+      <div className="text-violet-500 dark:text-violet-400 shrink-0">{icon}</div>
+      <span>{text}</span>
+    </div>
+  );
+}
+
+function StatCard({ title, value, trend, icon, highlight = false, onClick }: { title: string; value: React.ReactNode; trend: string; icon: React.ReactNode; highlight?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl border p-3.5 backdrop-blur-sm transition text-left ${highlight ? 'border-emerald-300 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/10' : 'border-slate-200 dark:border-violet-500/20 bg-white/80 dark:bg-white/[0.03]'} shadow-sm ${onClick ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-500/40' : 'cursor-default'}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">{title}</span>
+        {icon}
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <span className="text-lg font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white">{value}</span>
+        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{trend}</span>
+      </div>
+    </button>
+  );
+}
+
 const CHANNEL_COLORS: Record<string, { icon: typeof PhoneCall; gradient: string }> = {
   phone: { icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
   whatsapp: { icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600' },
@@ -98,25 +141,25 @@ const SEVERITY_STYLES: Record<string, string> = {
   LOW: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
 };
 
-// AI Hub kanalları — orijinal ikonlar & neon çerçeveler
+// AI Hub kanalları — referans komponente birebir
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: PhoneCall, iconColor: 'text-blue-600 dark:text-blue-400', cardBorder: 'border-blue-200 dark:border-blue-500/40', iconBox: 'bg-blue-50 dark:bg-blue-500/15', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconColor: 'text-emerald-600 dark:text-emerald-400', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: InstagramIcon, iconColor: 'text-fuchsia-600 dark:text-fuchsia-400', cardBorder: 'border-fuchsia-200 dark:border-fuchsia-500/40', iconBox: 'bg-fuchsia-50 dark:bg-fuchsia-500/15', glow: 'hover:shadow-fuchsia-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, dotColor: 'bg-blue-500', borderColor: 'border-blue-200 dark:border-blue-500/30', bgColor: 'bg-blue-50/50 dark:bg-blue-950/20' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, dotColor: 'bg-emerald-500', borderColor: 'border-emerald-200 dark:border-emerald-500/30', bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/20' },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: InstagramIcon, dotColor: 'bg-pink-500', borderColor: 'border-pink-200 dark:border-pink-500/30', bgColor: 'bg-pink-50/50 dark:bg-pink-950/20' },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconColor: 'text-amber-600 dark:text-amber-400', cardBorder: 'border-amber-200 dark:border-amber-500/40', iconBox: 'bg-amber-50 dark:bg-amber-500/15', glow: 'hover:shadow-amber-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
-  { name: 'Web Sitesi', sub: 'Sipariş alınıyor', icon: Globe, iconColor: 'text-cyan-600 dark:text-cyan-400', cardBorder: 'border-cyan-200 dark:border-cyan-500/40', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15', glow: 'hover:shadow-cyan-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: Send, dotColor: 'bg-orange-500', borderColor: 'border-orange-200 dark:border-orange-500/30', bgColor: 'bg-orange-50/50 dark:bg-orange-950/20' },
+  { name: 'Web Sitesi', sub: 'Sipariş alınıyor', icon: Globe, dotColor: 'bg-cyan-500', borderColor: 'border-cyan-200 dark:border-cyan-500/30', bgColor: 'bg-cyan-50/50 dark:bg-cyan-950/20' },
 ];
 
 const HUB_FEATURES = [
-  { icon: ShoppingBag, text: 'Siparişleri alır', color: 'text-blue-500' },
-  { icon: UserPlus, text: 'Müşterileri tanır', color: 'text-indigo-500' },
-  { icon: MessageSquare, text: 'Soruları yanıtlar', color: 'text-emerald-500' },
-  { icon: CreditCard, text: 'Ödemeyi yönetir', color: 'text-amber-500' },
-  { icon: Truck, text: 'Kargoyu takip eder', color: 'text-cyan-500' },
-  { icon: TrendingUp, text: 'İşletmenizi büyütür', color: 'text-rose-500' },
+  { icon: ShoppingBag, text: 'Siparişleri alır' },
+  { icon: UserPlus, text: 'Müşterileri tanır' },
+  { icon: MessageSquare, text: 'Soruları yanıtlar' },
+  { icon: CreditCard, text: 'Ödemeyi yönetir' },
+  { icon: Truck, text: 'Kargoyu takip eder' },
+  { icon: TrendingUp, text: 'İşletmenizi büyütür' },
 ];
 
 function getCargoUrl(company: string, tracking: string): string {
@@ -230,184 +273,169 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-100/60 dark:bg-purple-600/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 w-96 h-96 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 blur-3xl" />
 
-      <div className="relative z-10 space-y-8">
-        {/* Özel sayfa header (desktop — layout header /dashboard'da lg: gizli) */}
-        <div className="hidden lg:flex items-center justify-between w-full border-b border-slate-200/70 dark:border-slate-800/80 pb-6">
-          <div className="flex items-center gap-3.5">
-            <img src="/logo2.png" alt="SiparişAsistanı" className="w-12 h-12 object-contain" />
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">SiparişAsistanı</h1>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Akıllı Sipariş, Güçlü İşletme.</p>
+      <div className="relative z-10 space-y-6">
+        {/* HERO CARD — referans komponente birebir */}
+        <section className="relative w-full overflow-hidden rounded-[28px] border border-slate-200 dark:border-indigo-500/20 bg-white dark:bg-[#080822] px-6 py-6 text-slate-900 dark:text-white shadow-xl transition-colors duration-300">
+          {/* Arka Plan Glow Efektleri */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-violet-400/20 dark:bg-violet-600/20 blur-[110px]" />
+            <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-blue-400/20 dark:bg-blue-600/20 blur-[120px]" />
+            <div className="absolute bottom-0 left-1/2 h-64 w-96 -translate-x-1/2 rounded-full bg-fuchsia-300/20 dark:bg-fuchsia-600/10 blur-[120px]" />
+          </div>
+
+          {/* Üst Header / Logo & Durum */}
+          <div className="relative z-10 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600/10 text-violet-600 dark:text-violet-400">
+                <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+                  <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SiparişAsistanı</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Akıllı Sipariş, Güçlü İşletme.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <TenantSwitcher />
+              <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-1 py-0.5">
+                <PageThemeToggle />
+                <NotificationBell />
+              </div>
+              {usage && (
+                <div className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs">
+                  <BarChart3 size={12} className="text-violet-500" />
+                  <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 rounded-full border border-emerald-300 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-4 py-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-300">Sistem Aktif</span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <TenantSwitcher />
-            <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-slate-200/70 dark:border-slate-800 rounded-full px-1.5 py-1">
-              <PageThemeToggle />
-              <NotificationBell />
-            </div>
-            {usage && (
-              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-[#0C1027]/70 text-[11px]">
-                <BarChart3 size={12} className="text-indigo-500" />
-                <span className="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{remaining} / {orderLimit}</span>
-              </div>
-            )}
-            <div className="px-4 py-2 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+
+          {/* Ana Başlık */}
+          <div className="relative z-10 mt-6 text-center">
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight">
+              Müşterileriniz{" "}
+              <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-blue-400 bg-clip-text text-transparent">
+                Nerede Olursa Olsun
               </span>
-              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Sistem Aktif</span>
-            </div>
-            <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-tight text-right shrink-0">
-              Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
-            </div>
-          </div>
-        </div>
-
-        {/* AI Orchestration Hub — Müşterileriniz Nerede Olursa Olsun */}
-        <div className="text-center lg:pt-2">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-            Müşterileriniz Nerede Olursa Olsun
-          </h2>
-          <p className="text-slate-400 text-center text-sm mb-8">
-            Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.
-          </p>
-        </div>
-
-        {/* Orkestrasyon alanı — yüzen kartlar + bağlantı hatları */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
-          {/* Kavisli bağlantı hatları */}
-          <div className="hidden lg:block absolute inset-0 pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
-              <defs>
-                <filter id="neonGlow" x="-40%" y="-40%" width="180%" height="180%">
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
-              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
-              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
-              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
-              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5 5" filter="url(#neonGlow)" className="opacity-80" />
-              <circle cx="250" cy="80" r="3" fill="#3b82f6" className="opacity-90" />
-              <circle cx="335" cy="140" r="5" fill="#3b82f6" className="animate-pulse" />
-              <circle cx="250" cy="200" r="3" fill="#10b981" className="opacity-90" />
-              <circle cx="335" cy="200" r="5" fill="#10b981" className="animate-pulse" />
-              <circle cx="250" cy="320" r="3" fill="#d946ef" className="opacity-90" />
-              <circle cx="335" cy="260" r="5" fill="#d946ef" className="animate-pulse" />
-              <circle cx="583" cy="140" r="3" fill="#f59e0b" className="opacity-90" />
-              <circle cx="495" cy="165" r="5" fill="#f59e0b" className="animate-pulse" />
-              <circle cx="583" cy="260" r="3" fill="#06b6d4" className="opacity-90" />
-              <circle cx="495" cy="235" r="5" fill="#06b6d4" className="animate-pulse" />
-            </svg>
+            </h1>
+            <p className="mx-auto mt-2 max-w-lg text-xs md:text-sm text-slate-500 dark:text-slate-400">
+              Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.
+            </p>
           </div>
 
-          {/* Sol kanallar */}
-          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start z-10">
-            {HUB_LEFT.map((ch) => {
-              const ChIcon = ch.icon;
-              return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#0C1027]/90 border ${ch.cardBorder} shadow-sm dark:shadow-[0_0_15px_rgba(99,102,241,0.15)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full`}>
-                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                    <ChIcon size={22} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
-                  </div>
-                  {/* Sağ kenar ortası bağlantı noktası */}
-                  <span className={`absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+          {/* ORTA ORCHESTRATION ALANI (3 Sütun + SVG Bağlantıları) */}
+          <div className="relative z-10 mt-8 grid grid-cols-1 items-center gap-6 lg:grid-cols-[1fr_280px_1fr]">
+            {/* SOL SÜTUN - 3 Kanal */}
+            <div className="flex flex-col gap-4">
+              {HUB_LEFT.map((ch) => (
+                <ChannelCard
+                  key={ch.name}
+                  icon={<ch.icon size={20} />}
+                  title={ch.name}
+                  subtitle={ch.sub}
+                  dotColor={ch.dotColor}
+                  borderColor={ch.borderColor}
+                  bgColor={ch.bgColor}
+                />
+              ))}
+            </div>
+
+            {/* MERKEZ - Dairesel AI Çekirdeği */}
+            <div className="relative flex flex-col items-center justify-center py-4">
+              <svg className="absolute inset-0 hidden w-full h-full pointer-events-none lg:block" viewBox="0 0 280 280">
+                <path d="M 0 50 Q 80 50, 140 140" fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
+                <path d="M 0 140 Q 70 140, 140 140" fill="none" stroke="#10b981" strokeWidth="2" opacity="0.6" />
+                <path d="M 0 230 Q 80 230, 140 140" fill="none" stroke="#ec4899" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
+                <path d="M 280 80 Q 200 80, 140 140" fill="none" stroke="#f97316" strokeWidth="2" strokeDasharray="4 4" opacity="0.6" />
+                <path d="M 280 200 Q 200 200, 140 140" fill="none" stroke="#06b6d4" strokeWidth="2" opacity="0.6" />
+              </svg>
+
+              <div className="relative flex h-56 w-56 items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-violet-300 dark:border-violet-500/30 animate-pulse" />
+                <div className="absolute inset-4 rounded-full border border-blue-300 dark:border-blue-500/30" />
+                <div className="absolute inset-8 rounded-full bg-gradient-to-br from-violet-500/20 to-blue-500/20 blur-xl" />
+                <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-violet-400 dark:border-violet-400/60 bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/80 dark:to-blue-900/80 shadow-[0_0_50px_rgba(139,92,246,0.3)]">
+                  <svg className="w-16 h-16 text-violet-600 dark:text-violet-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                    <path d="M4 11a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7z" />
+                    <circle cx="9" cy="14" r="1" fill="currentColor" />
+                    <circle cx="15" cy="14" r="1" fill="currentColor" />
+                    <path d="M10 18h4" />
+                  </svg>
                 </div>
-              );
-            })}
-          </div>
+              </div>
 
-          {/* Merkez AI Çekirdek */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center gap-6 z-10 py-6">
-            <div className="relative">
-              <div className="absolute inset-[-28px] rounded-full border border-indigo-100/70 dark:border-purple-500/10" />
-              <div className="absolute inset-[-15px] rounded-full border border-indigo-200/50 dark:border-indigo-500/20" />
-              <div className="relative w-48 h-48 rounded-full bg-white dark:bg-[#0C1027]/90 border border-slate-200/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
-                <div className="absolute inset-[-8px] rounded-full border-2 border-indigo-100 dark:border-indigo-500/20 animate-ping [animation-duration:3s]" />
-                <Headset size={84} strokeWidth={1.5} className="text-indigo-500 dark:text-indigo-400 dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+              <div className="mt-2 flex items-center gap-2 rounded-full border border-violet-300 dark:border-violet-400/40 bg-white dark:bg-violet-950/80 px-6 py-1.5 shadow-md">
+                <span className="text-xs font-semibold text-violet-600 dark:text-violet-300">AI Aktif</span>
+                <span className="text-base font-extrabold text-slate-900 dark:text-white tabular-nums">%{aiSuccessRate}</span>
               </div>
             </div>
-            <div className="rounded-full bg-white dark:bg-indigo-950/80 border border-blue-200 dark:border-cyan-400/50 text-blue-600 dark:text-cyan-300 font-bold text-lg px-8 py-2 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-baseline gap-2">
-              <span>AI Aktif</span>
-              <span className="tabular-nums">&nbsp;%{aiSuccessRate}</span>
+
+            {/* SAĞ SÜTUN - 2 Kanal + Neler Yapabilir Özellik Paneli */}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                {HUB_RIGHT.map((ch) => (
+                  <ChannelCard
+                    key={ch.name}
+                    icon={<ch.icon size={20} />}
+                    title={ch.name}
+                    subtitle={ch.sub}
+                    dotColor={ch.dotColor}
+                    borderColor={ch.borderColor}
+                    bgColor={ch.bgColor}
+                    alignLeft
+                  />
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 dark:border-indigo-500/20 bg-slate-50/80 dark:bg-white/[0.03] p-3.5 backdrop-blur-sm">
+                <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 block">Neler Yapabilir?</span>
+                <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
+                  {HUB_FEATURES.map((f) => {
+                    const FIcon = f.icon;
+                    return <FeatureItem key={f.text} icon={<FIcon className="w-3.5 h-3.5" />} text={f.text} />;
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Sağ kanallar */}
-          <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
-            {HUB_RIGHT.map((ch) => {
-              const ChIcon = ch.icon;
-              return (
-                <div key={ch.name} className={`relative flex items-center gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#0C1027]/90 border ${ch.cardBorder} shadow-sm dark:shadow-[0_0_15px_rgba(99,102,241,0.15)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full`}>
-                  <div className={`w-11 h-11 rounded-xl ${ch.iconBox} flex items-center justify-center shrink-0`}>
-                    <ChIcon size={22} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{ch.name}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
-                  </div>
-                  {/* Sol kenar ortası bağlantı noktası */}
-                  <span className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
-                </div>
-              );
-            })}
+          {/* 7 KPI METRİK KARTLARI */}
+          <div className="relative z-10 mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+            {!loaded
+              ? Array.from({ length: 7 }).map((_, i) => <SkeletonKPI key={i} />)
+              : kpis.map((kpi) => {
+                  const Icon = kpi.icon;
+                  return (
+                    <StatCard
+                      key={kpi.label}
+                      title={kpi.label}
+                      value={<AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} />}
+                      trend={kpi.trend}
+                      icon={<Icon size={16} className={kpi.color} />}
+                      highlight={kpi.label === 'AI Başarı'}
+                      onClick={kpi.onClick}
+                    />
+                  );
+                })}
           </div>
 
-          {/* Özellik Paneli (Glassmorphism) */}
-          <div className="lg:col-span-3 flex justify-center lg:justify-end z-10">
-            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/90 border border-slate-200/70 dark:border-indigo-500/30 backdrop-blur-md shadow-sm dark:shadow-2xl p-6 flex flex-col gap-4 w-full max-w-xs">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-indigo-400">Neler Yapabilir?</p>
-              {HUB_FEATURES.map((f) => {
-                const FIcon = f.icon;
-                return (
-                  <div key={f.text} className="flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <span className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center shrink-0">
-                      <FIcon size={14} className={f.color} />
-                    </span>
-                    {f.text}
-                  </div>
-                );
-              })}
-            </div>
+          {/* En Alt Slogan */}
+          <div className="relative z-10 mt-6 text-center">
+            <p className="text-[11px] font-bold tracking-[0.3em] text-violet-600/80 dark:text-violet-400/80">
+              DAHA FAZLA ZAMAN <span className="mx-2">•</span> DAHA FAZLA SATIŞ <span className="mx-2">•</span> DAHA MUTLU MÜŞTERİLER
+            </p>
           </div>
-        </div>
-
-        {/* 7 KPI — tek sıra */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          {!loaded ? Array.from({ length: 7 }).map((_, i) => <SkeletonKPI key={i} />) : kpis.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <button
-                key={kpi.label}
-                onClick={kpi.onClick}
-                className={`group bg-white dark:bg-[#0C1027]/90 border border-slate-200/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-sm dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon size={18} className={kpi.color} />
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 truncate">{kpi.label}</span>
-                </div>
-                <div className="text-3xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
-                  {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
-                </div>
-                <div className="flex items-center justify-center">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                    {kpi.trend}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        </section>
 
         {/* Alt satır: Hızlı İşlemler + Son Aktiviteler */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -467,13 +495,6 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Footer slogan */}
-        <div className="text-center py-6">
-          <p className="text-xs font-bold tracking-[0.25em] uppercase text-indigo-500/80 dark:text-indigo-400/80">
-            Daha Fazla Zaman <span className="mx-3 opacity-60">•</span> Daha Fazla Satış <span className="mx-3 opacity-60">•</span> Daha Mutlu Müşteriler
-          </p>
         </div>
       </div>
 
