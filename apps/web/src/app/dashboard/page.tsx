@@ -281,16 +281,16 @@ export default function DashboardPage() {
           {/* Kavisli bağlantı hatları */}
           <div className="hidden lg:block absolute inset-0 pointer-events-none">
             <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
-              <path d="M 250 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 250 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 243 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 243 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" className="opacity-50 dark:opacity-70" />
+              <path d="M 243 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" className="opacity-50 dark:opacity-70" />
               <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" className="opacity-50 dark:opacity-70" />
               <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <circle cx="250" cy="80" r="3" fill="#3b82f6" />
+              <circle cx="243" cy="80" r="3" fill="#3b82f6" />
               <circle cx="335" cy="140" r="4.5" fill="#3b82f6" className="animate-pulse" />
-              <circle cx="250" cy="200" r="3" fill="#10b981" />
+              <circle cx="243" cy="200" r="3" fill="#10b981" />
               <circle cx="335" cy="200" r="4.5" fill="#10b981" className="animate-pulse" />
-              <circle cx="250" cy="320" r="3" fill="#d946ef" />
+              <circle cx="243" cy="320" r="3" fill="#d946ef" />
               <circle cx="335" cy="260" r="4.5" fill="#d946ef" className="animate-pulse" />
               <circle cx="583" cy="140" r="3" fill="#f59e0b" />
               <circle cx="495" cy="165" r="4.5" fill="#f59e0b" className="animate-pulse" />
@@ -300,11 +300,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Sol kanallar */}
-          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-end z-10">
+          <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
             {HUB_LEFT.map((ch) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 lg:w-full max-w-[15rem]`}>
+                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                     <ChIcon size={22} className="text-white" />
                   </div>
