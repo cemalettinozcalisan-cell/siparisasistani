@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, MessageCircle, Instagram, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TenantSwitcher } from '@/components/tenant-switcher';
@@ -99,16 +99,15 @@ const SEVERITY_STYLES: Record<string, string> = {
 };
 
 // AI Hub kanalları — renkli zeminli ikon kutuları + beyaz ikonlar
-// curve: kart kenarından merkeze uzanan çizgi; ex/ey: merkez tarafındaki uç nokta
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6', curve: 'M 0 48 C 44 48, 60 66, 112 84', ex: 112, ey: 84 },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981', curve: 'M 0 48 C 52 48, 84 48, 112 48', ex: 112, ey: 48 },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef', curve: 'M 0 48 C 44 48, 60 30, 112 12', ex: 112, ey: 12 },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', lineStroke: '#3b82f6' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', lineStroke: '#10b981' },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', lineStroke: '#d946ef' },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-200 dark:border-orange-500/40', glow: 'hover:shadow-orange-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b', curve: 'M 112 48 C 68 48, 52 66, 16 84', ex: 16, ey: 84 },
-  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4', curve: 'M 112 48 C 68 48, 52 30, 16 12', ex: 16, ey: 12 },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-200 dark:border-orange-500/40', glow: 'hover:shadow-orange-500/20', lineStroke: '#f59e0b' },
+  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-cyan-500', cardBorder: 'border-cyan-200 dark:border-cyan-500/40', glow: 'hover:shadow-cyan-500/20', lineStroke: '#06b6d4' },
 ];
 
 const HUB_FEATURES = [
@@ -162,6 +161,43 @@ export default function DashboardPage() {
 
   // Toaster
   const [toast, setToast] = useState<string | null>(null);
+
+  // Bağlantı çizgileri — kart ve logo konumları ölçülerek çizilir
+  const gridRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<HTMLDivElement>(null);
+  const leftCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rightCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [hubLines, setHubLines] = useState<{ x0: number; y0: number; x1: number; y1: number; color: string }[]>([]);
+
+  useEffect(() => {
+    const update = () => {
+      const grid = gridRef.current;
+      const coreEl = coreRef.current;
+      if (!grid || !coreEl) return;
+      const gr = grid.getBoundingClientRect();
+      const cr = coreEl.getBoundingClientRect();
+      const cx = cr.left + cr.width / 2 - gr.left;
+      const cy = cr.top + cr.height / 2 - gr.top;
+      const radius = cr.width / 2 + 26;
+      const next: { x0: number; y0: number; x1: number; y1: number; color: string }[] = [];
+      const connect = (el: HTMLDivElement | null, edgeFromLeft: boolean, color: string) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const x0 = (edgeFromLeft ? r.right : r.left) - gr.left;
+        const y0 = r.top + r.height / 2 - gr.top;
+        const dx = cx - x0;
+        const dy = cy - y0;
+        const dist = Math.hypot(dx, dy) || 1;
+        next.push({ x0, y0, x1: cx - (dx / dist) * radius, y1: cy - (dy / dist) * radius, color });
+      };
+      HUB_LEFT.forEach((ch, i) => connect(leftCardRefs.current[i], true, ch.lineStroke));
+      HUB_RIGHT.forEach((ch, i) => connect(rightCardRefs.current[i], false, ch.lineStroke));
+      setHubLines(next);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -278,13 +314,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Orkestrasyon alanı — yüzen kartlar + bağlantı hatları */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
+        <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
           {/* Sol kanallar */}
           <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
-            {HUB_LEFT.map((ch) => {
+            {HUB_LEFT.map((ch, i) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 max-w-[15rem]`}>
+                <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                     <ChIcon size={22} className="text-white" />
                   </div>
@@ -292,12 +328,6 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
-                  {/* Sağ kenar ortası bağlantı noktası + merkeze uzanan çizgi */}
-                  <svg className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 w-28 h-24 overflow-visible pointer-events-none" viewBox="0 0 112 96" fill="none">
-                    <path d={ch.curve} stroke={ch.lineStroke} strokeWidth="2" className="opacity-50 dark:opacity-70" />
-                    <circle cx="0" cy="48" r="4.5" fill={ch.lineStroke} stroke="white" strokeWidth="2" />
-                    <circle cx={ch.ex} cy={ch.ey} r="4.5" fill={ch.lineStroke} className="animate-pulse" />
-                  </svg>
                 </div>
               );
             })}
@@ -308,7 +338,7 @@ export default function DashboardPage() {
             <div className="relative">
               <div className="absolute inset-[-28px] rounded-full border border-indigo-100/70 dark:border-purple-500/10" />
               <div className="absolute inset-[-15px] rounded-full border border-indigo-200/50 dark:border-indigo-500/20" />
-              <div className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+              <div ref={coreRef} className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
                 <div className="absolute inset-[-8px] rounded-full border-2 border-indigo-100 dark:border-indigo-500/20 animate-ping [animation-duration:3s]" />
                 <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
               </div>
@@ -321,10 +351,10 @@ export default function DashboardPage() {
 
           {/* Sağ kanallar */}
           <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
-            {HUB_RIGHT.map((ch) => {
+            {HUB_RIGHT.map((ch, i) => {
               const ChIcon = ch.icon;
               return (
-                <div key={ch.name} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full max-w-[15rem]`}>
+                <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] ${ch.glow} hover:shadow-lg transition-all w-56 sm:w-full max-w-[15rem]`}>
                   <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                     <ChIcon size={22} className="text-white" />
                   </div>
@@ -332,12 +362,6 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
-                  {/* Sol kenar ortası bağlantı noktası + merkeze uzanan çizgi */}
-                  <svg className="hidden lg:block absolute right-full top-1/2 -translate-y-1/2 w-28 h-24 overflow-visible pointer-events-none" viewBox="0 0 112 96" fill="none">
-                    <path d={ch.curve} stroke={ch.lineStroke} strokeWidth="2" className="opacity-50 dark:opacity-70" />
-                    <circle cx="112" cy="48" r="4.5" fill={ch.lineStroke} stroke="white" strokeWidth="2" />
-                    <circle cx={ch.ex} cy={ch.ey} r="4.5" fill={ch.lineStroke} className="animate-pulse" />
-                  </svg>
                 </div>
               );
             })}
@@ -359,6 +383,22 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
+
+          {/* Ölçüme dayalı bağlantı hatları — kart kenarından logo dış halkasına */}
+          <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" fill="none">
+            {hubLines.map((l, i) => (
+              <g key={i}>
+                <path
+                  d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`}
+                  stroke={l.color}
+                  strokeWidth="2"
+                  className="opacity-50 dark:opacity-70"
+                />
+                <circle cx={l.x0} cy={l.y0} r="4.5" fill={l.color} stroke="white" strokeWidth="2" />
+                <circle cx={l.x1} cy={l.y1} r="4.5" fill={l.color} className="animate-pulse" />
+              </g>
+            ))}
+          </svg>
         </div>
 
         {/* 7 KPI — tek sıra */}
