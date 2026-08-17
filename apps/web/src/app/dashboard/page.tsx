@@ -262,13 +262,13 @@ export default function DashboardPage() {
   const orderLimit = usage ? (usage.orderLimit as number) || 250 : 250;
 
   const kpis = [
-    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
-    { label: 'Bekleyen', value: pendingOrders, icon: Clock, color: 'text-amber-500', iconBg: 'bg-amber-50 dark:bg-amber-500/15', trend: '↑ %12', onClick: () => setShowPendingModal(true) },
-    { label: 'Talep & İstek', value: complaintsCount, icon: AlertCircle, color: 'text-pink-500', iconBg: 'bg-pink-50 dark:bg-pink-500/15', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
-    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
-    { label: 'AI Müşteri', value: aiCustomers, icon: User, color: 'text-purple-500', iconBg: 'bg-purple-50 dark:bg-purple-500/15', trend: '↑ %33' },
-    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', trend: '↑ %28', suffix: ' TL' },
-    { label: 'AI Başarı', value: 97, icon: Target, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', trend: '↑ %4', suffix: '%' },
+    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
+    { label: 'Bekleyen', value: pendingOrders, icon: Clock, color: 'text-amber-500', iconBg: 'bg-amber-50 dark:bg-amber-500/15', cardBorder: 'border-amber-200 dark:border-amber-500/40', trend: '↑ %12', onClick: () => setShowPendingModal(true) },
+    { label: 'Talep & İstek', value: complaintsCount, icon: AlertCircle, color: 'text-pink-500', iconBg: 'bg-pink-50 dark:bg-pink-500/15', cardBorder: 'border-pink-200 dark:border-pink-500/40', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
+    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
+    { label: 'AI Müşteri', value: aiCustomers, icon: User, color: 'text-purple-500', iconBg: 'bg-purple-50 dark:bg-purple-500/15', cardBorder: 'border-purple-200 dark:border-purple-500/40', trend: '↑ %33' },
+    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, color: 'text-blue-500', iconBg: 'bg-blue-50 dark:bg-blue-500/15', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '↑ %28', suffix: ' TL' },
+    { label: 'AI Başarı', value: 97, icon: Target, color: 'text-emerald-500', iconBg: 'bg-emerald-50 dark:bg-emerald-500/15', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: '↑ %4', suffix: '%' },
   ];
 
   if (!mounted) return <div className="p-6" />;
@@ -379,10 +379,7 @@ export default function DashboardPage() {
 
           {/* Özellik Paneli (Glassmorphism) */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
-            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full lg:min-h-[24rem]">
-              <p className="text-xs font-bold text-slate-900 dark:text-white text-center leading-snug">
-                Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
-              </p>
+            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-violet-200/80 dark:border-violet-500/40 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full lg:min-h-[24rem]">
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
                 return (
@@ -422,7 +419,7 @@ export default function DashboardPage() {
               <button
                 key={kpi.label}
                 onClick={kpi.onClick}
-                className={`group bg-white dark:bg-[#0C1027]/40 border border-slate-100/80 dark:border-slate-800 dark:hover:border-indigo-500/40 rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group bg-white dark:bg-[#0C1027]/40 border ${kpi.cardBorder} rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all ${kpi.onClick ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className="flex items-center gap-2 mb-4">
                   <span className={`w-8 h-8 rounded-full ${kpi.iconBg} flex items-center justify-center shrink-0`}>
@@ -446,23 +443,23 @@ export default function DashboardPage() {
         {/* Alt satır: Hızlı İşlemler + Son Aktiviteler */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Quick Actions */}
-          <div className="rounded-2xl bg-white dark:bg-[#0C1027] border border-slate-200/80 dark:border-slate-800 shadow-sm dark:shadow-xl p-5 space-y-3">
+          <div className="rounded-2xl bg-white dark:bg-[#0C1027] border border-violet-200/80 dark:border-violet-500/40 shadow-sm dark:shadow-xl p-5 space-y-3">
             <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
               <Zap size={14} className="text-amber-500" /> Hızlı İşlemler
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
-                { href: '/orders', label: 'Siparişler', icon: ShoppingBag, color: 'text-blue-500', iconBox: 'bg-blue-50 dark:bg-blue-500/15' },
-                { href: '/customers', label: 'Müşteriler', icon: Users, color: 'text-emerald-500', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15' },
-                { href: '/products', label: 'Ürünler', icon: Package, color: 'text-amber-500', iconBox: 'bg-amber-50 dark:bg-amber-500/15' },
-                { href: '/calls', label: 'Görüşmeler', icon: PhoneCall, color: 'text-cyan-500', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15' },
-                { href: '/complaints', label: 'Talepler', icon: AlertTriangle, color: 'text-rose-500', iconBox: 'bg-rose-50 dark:bg-rose-500/15' },
-                { href: '/reports', label: 'Raporlar', icon: TrendingUp, color: 'text-violet-500', iconBox: 'bg-violet-50 dark:bg-violet-500/15' },
+                { href: '/orders', label: 'Siparişler', icon: ShoppingBag, color: 'text-blue-500', iconBox: 'bg-blue-50 dark:bg-blue-500/15', cardBorder: 'border-blue-200 dark:border-blue-500/40' },
+                { href: '/customers', label: 'Müşteriler', icon: Users, color: 'text-emerald-500', iconBox: 'bg-emerald-50 dark:bg-emerald-500/15', cardBorder: 'border-emerald-200 dark:border-emerald-500/40' },
+                { href: '/products', label: 'Ürünler', icon: Package, color: 'text-amber-500', iconBox: 'bg-amber-50 dark:bg-amber-500/15', cardBorder: 'border-amber-200 dark:border-amber-500/40' },
+                { href: '/calls', label: 'Görüşmeler', icon: PhoneCall, color: 'text-cyan-500', iconBox: 'bg-cyan-50 dark:bg-cyan-500/15', cardBorder: 'border-cyan-200 dark:border-cyan-500/40' },
+                { href: '/complaints', label: 'Talepler', icon: AlertTriangle, color: 'text-rose-500', iconBox: 'bg-rose-50 dark:bg-rose-500/15', cardBorder: 'border-rose-200 dark:border-rose-500/40' },
+                { href: '/reports', label: 'Raporlar', icon: TrendingUp, color: 'text-violet-500', iconBox: 'bg-violet-50 dark:bg-violet-500/15', cardBorder: 'border-violet-200 dark:border-violet-500/40' },
               ].map((item) => {
                 const QaIcon = item.icon;
                 return (
                   <a key={item.href} href={item.href}
-                    className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 shadow-sm hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all">
+                    className={`flex items-center gap-2 px-3 py-3 rounded-xl bg-white dark:bg-white/5 border ${item.cardBorder} shadow-sm hover:shadow-md dark:hover:shadow-indigo-500/10 transition-all`}>
                     <div className={`w-8 h-8 rounded-lg ${item.iconBox} flex items-center justify-center shrink-0`}>
                       <QaIcon size={15} className={item.color} />
                     </div>
@@ -474,7 +471,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className="rounded-2xl bg-white dark:bg-[#0C1027] border border-slate-200/80 dark:border-slate-800 shadow-sm dark:shadow-xl p-5">
+          <div className="rounded-2xl bg-white dark:bg-[#0C1027] border border-violet-200/80 dark:border-violet-500/40 shadow-sm dark:shadow-xl p-5">
             <h2 className="font-bold text-slate-900 dark:text-white text-sm mb-3 flex items-center gap-2">
               <ChevronRight size={14} className="text-indigo-500" /> Son Aktiviteler
             </h2>
