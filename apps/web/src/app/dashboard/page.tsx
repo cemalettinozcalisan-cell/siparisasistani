@@ -253,12 +253,12 @@ export default function DashboardPage() {
                 <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
               </div>
             )}
-            <div className="px-4 py-2 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
+            <div className="px-4 py-2 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span className="text-sm font-normal text-slate-600 dark:text-slate-300">Sistem Aktif</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
             </div>
             <div className="text-slate-700 dark:text-slate-300 text-xs font-semibold leading-tight text-right shrink-0">
               Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
@@ -329,9 +329,9 @@ export default function DashboardPage() {
                 <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
               </div>
             </div>
-            <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-slate-200/80 dark:border-cyan-400/50 shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.4)] px-8 py-2.5 flex items-baseline gap-2">
-              <span className="text-sm font-bold text-blue-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
-              <span className="text-xl font-extrabold text-indigo-700 dark:text-indigo-400 tabular-nums">%97</span>
+            <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-indigo-500/50 dark:border-indigo-400/60 shadow-md dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+              <span className="text-xs font-bold text-indigo-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
+              <span className="text-lg font-extrabold text-indigo-700 dark:text-indigo-400 tabular-nums">%97</span>
             </div>
           </div>
 
@@ -357,13 +357,13 @@ export default function DashboardPage() {
 
           {/* Özellik Paneli (Glassmorphism) */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
-            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-2.5 w-full max-w-[15rem] h-full">
+            <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full lg:min-h-[24rem]">
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
                 return (
                   <div key={f.text} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    <span className="w-6 h-6 rounded-md bg-violet-50 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
-                      <FIcon size={13} className="text-violet-500" />
+                    <span className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-500/15 flex items-center justify-center shrink-0">
+                      <FIcon size={15} className="text-violet-500" />
                     </span>
                     {f.text}
                   </div>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
                   </span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{kpi.label}</span>
                 </div>
-                <div className="text-2xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
+                <div className="text-xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">
                   {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
                 </div>
                 <div className="flex items-center justify-center">
