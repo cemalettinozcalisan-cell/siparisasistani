@@ -310,9 +310,6 @@ export default function DashboardPage() {
               </span>
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
             </div>
-            <div className="text-slate-900 dark:text-white text-xs font-semibold leading-tight text-right shrink-0">
-              Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
-            </div>
           </div>
         </div>
 
@@ -383,6 +380,9 @@ export default function DashboardPage() {
           {/* Özellik Paneli (Glassmorphism) */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
             <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-slate-200/70 dark:border-indigo-500/20 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full lg:min-h-[24rem]">
+              <p className="text-xs font-bold text-slate-900 dark:text-white text-center leading-snug">
+                Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
+              </p>
               {HUB_FEATURES.map((f) => {
                 const FIcon = f.icon;
                 return (
