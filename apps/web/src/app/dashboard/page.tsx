@@ -99,15 +99,16 @@ const SEVERITY_STYLES: Record<string, string> = {
 };
 
 // AI Hub kanalları — renkli zeminli ikon kutuları + beyaz ikonlar
+// curve: kart kenarından merkeze uzanan çizgi; ex/ey: merkez tarafındaki uç nokta
 const HUB_LEFT = [
-  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6' },
-  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981' },
-  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef' },
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-blue-500', lineStroke: '#3b82f6', curve: 'M 0 48 C 44 48, 60 66, 112 84', ex: 112, ey: 84 },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', glow: 'hover:shadow-emerald-500/20', dotColor: 'bg-emerald-500', lineStroke: '#10b981', curve: 'M 0 48 C 52 48, 84 48, 112 48', ex: 112, ey: 48 },
+  { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', glow: 'hover:shadow-pink-500/20', dotColor: 'bg-fuchsia-500', lineStroke: '#d946ef', curve: 'M 0 48 C 44 48, 60 30, 112 12', ex: 112, ey: 12 },
 ];
 
 const HUB_RIGHT = [
-  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-200 dark:border-orange-500/40', glow: 'hover:shadow-orange-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b' },
-  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4' },
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-200 dark:border-orange-500/40', glow: 'hover:shadow-orange-500/20', dotColor: 'bg-amber-500', lineStroke: '#f59e0b', curve: 'M 112 48 C 68 48, 52 66, 16 84', ex: 16, ey: 84 },
+  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', glow: 'hover:shadow-blue-500/20', dotColor: 'bg-cyan-500', lineStroke: '#06b6d4', curve: 'M 112 48 C 68 48, 52 30, 16 12', ex: 16, ey: 12 },
 ];
 
 const HUB_FEATURES = [
@@ -278,27 +279,6 @@ export default function DashboardPage() {
 
         {/* Orkestrasyon alanı — yüzen kartlar + bağlantı hatları */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
-          {/* Kavisli bağlantı hatları */}
-          <div className="hidden lg:block absolute inset-0 pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 1000 400" fill="none" preserveAspectRatio="none">
-              <path d="M 243 80 C 290 80, 310 140, 335 140" stroke="#3b82f6" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 243 200 C 285 200, 300 200, 335 200" stroke="#10b981" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 243 320 C 290 320, 310 260, 335 260" stroke="#d946ef" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 140 C 543 140, 520 165, 495 165" stroke="#f59e0b" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <path d="M 583 260 C 543 260, 520 235, 495 235" stroke="#06b6d4" strokeWidth="2" className="opacity-50 dark:opacity-70" />
-              <circle cx="243" cy="80" r="3" fill="#3b82f6" />
-              <circle cx="335" cy="140" r="4.5" fill="#3b82f6" className="animate-pulse" />
-              <circle cx="243" cy="200" r="3" fill="#10b981" />
-              <circle cx="335" cy="200" r="4.5" fill="#10b981" className="animate-pulse" />
-              <circle cx="243" cy="320" r="3" fill="#d946ef" />
-              <circle cx="335" cy="260" r="4.5" fill="#d946ef" className="animate-pulse" />
-              <circle cx="583" cy="140" r="3" fill="#f59e0b" />
-              <circle cx="495" cy="165" r="4.5" fill="#f59e0b" className="animate-pulse" />
-              <circle cx="583" cy="260" r="3" fill="#06b6d4" />
-              <circle cx="495" cy="235" r="4.5" fill="#06b6d4" className="animate-pulse" />
-            </svg>
-          </div>
-
           {/* Sol kanallar */}
           <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
             {HUB_LEFT.map((ch) => {
@@ -312,8 +292,12 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
-                  {/* Sağ kenar ortası bağlantı noktası */}
-                  <span className={`absolute right-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                  {/* Sağ kenar ortası bağlantı noktası + merkeze uzanan çizgi */}
+                  <svg className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 w-28 h-24 overflow-visible pointer-events-none" viewBox="0 0 112 96" fill="none">
+                    <path d={ch.curve} stroke={ch.lineStroke} strokeWidth="2" className="opacity-50 dark:opacity-70" />
+                    <circle cx="0" cy="48" r="4.5" fill={ch.lineStroke} stroke="white" strokeWidth="2" />
+                    <circle cx={ch.ex} cy={ch.ey} r="4.5" fill={ch.lineStroke} className="animate-pulse" />
+                  </svg>
                 </div>
               );
             })}
@@ -348,8 +332,12 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                   </div>
-                  {/* Sol kenar ortası bağlantı noktası */}
-                  <span className={`absolute left-[-5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ch.dotColor} ring-2 ring-white dark:ring-slate-900 hidden lg:block`} />
+                  {/* Sol kenar ortası bağlantı noktası + merkeze uzanan çizgi */}
+                  <svg className="hidden lg:block absolute right-full top-1/2 -translate-y-1/2 w-28 h-24 overflow-visible pointer-events-none" viewBox="0 0 112 96" fill="none">
+                    <path d={ch.curve} stroke={ch.lineStroke} strokeWidth="2" className="opacity-50 dark:opacity-70" />
+                    <circle cx="112" cy="48" r="4.5" fill={ch.lineStroke} stroke="white" strokeWidth="2" />
+                    <circle cx={ch.ex} cy={ch.ey} r="4.5" fill={ch.lineStroke} className="animate-pulse" />
+                  </svg>
                 </div>
               );
             })}
