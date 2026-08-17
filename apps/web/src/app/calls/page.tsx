@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
-import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, MessageCircle, User, Bot, AlertTriangle, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare, Sparkles, Mic, CheckCheck } from 'lucide-react';
+import { Phone, PhoneCall, Clock, Search, ChevronDown, ChevronUp, Play, Pause, User, Bot, AlertTriangle, Heart, ShoppingBag, MapPin, CreditCard, X, Instagram, MessageSquare, Sparkles, Mic, CheckCheck } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 import { useSearchParams } from 'next/navigation';
 import { getTenantId } from '@/lib/tenant';
 
@@ -29,7 +30,7 @@ function parseSummary(raw: unknown) {
 
 const CHANNEL_CONFIG = [
   { key: 'voice', type: 'call', label: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-blue-600', borderLeft: 'border-l-blue-500', shadow: 'shadow-blue-500/20', badgeBg: 'bg-blue-500' },
-  { key: 'whatsapp', type: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600', borderLeft: 'border-l-emerald-500', shadow: 'shadow-emerald-500/20', badgeBg: 'bg-emerald-500' },
+  { key: 'whatsapp', type: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600', borderLeft: 'border-l-emerald-500', shadow: 'shadow-emerald-500/20', badgeBg: 'bg-emerald-500' },
   { key: 'sms', type: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500', borderLeft: 'border-l-sky-400', shadow: 'shadow-sky-400/20', badgeBg: 'bg-sky-400' },
   { key: 'instagram', type: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 to-purple-600', borderLeft: 'border-l-pink-500', shadow: 'shadow-pink-500/20', badgeBg: 'bg-pink-500' },
 ];

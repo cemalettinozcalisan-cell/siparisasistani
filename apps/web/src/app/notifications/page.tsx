@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers, Bell, BellRing, MessageCircle, Package, Eye } from 'lucide-react';
+import { CheckCheck, CreditCard, ShoppingBag, Truck, UserCheck, PhoneCall, AlertTriangle, ChevronRight, Clock, Layers, Bell, BellRing, Package, Eye } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
-const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gradient: string; }> = {
+const NOTIF_CONFIG: Record<string, { label: string; icon: ChannelIconType; gradient: string; }> = {
   new_order: { label: 'Sipariş', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-500' },
   payment: { label: 'Ödeme', icon: CreditCard, gradient: 'from-emerald-500 to-green-500' },
   cargo: { label: 'Kargo', icon: Truck, gradient: 'from-amber-500 to-orange-500' },
@@ -13,11 +14,11 @@ const NOTIF_CONFIG: Record<string, { label: string; icon: typeof ShoppingBag; gr
   warning: { label: 'Uyarı', icon: AlertTriangle, gradient: 'from-red-500 to-rose-500' },
 };
 
-const ACTION_BUTTONS: Record<string, { label: string; icon: typeof ShoppingBag; action: (router: ReturnType<typeof useRouter>) => void }> = {
+const ACTION_BUTTONS: Record<string, { label: string; icon: ChannelIconType; action: (router: ReturnType<typeof useRouter>) => void }> = {
   new_order: { label: 'Siparişe Git', icon: Eye, action: (r) => r.push('/orders') },
   payment: { label: 'Görüntüle', icon: Eye, action: (r) => r.push('/orders') },
   cargo: { label: 'Kargo Takip', icon: Truck, action: (r) => r.push('/orders') },
-  human_request: { label: 'WhatsApp', icon: MessageCircle, action: () => window.open('https://wa.me/', '_blank') },
+  human_request: { label: 'WhatsApp', icon: WhatsAppIcon, action: () => window.open('https://wa.me/', '_blank') },
   callback: { label: 'Geri Ara', icon: PhoneCall, action: () => {} },
   warning: { label: 'Ürünler', icon: Package, action: (r) => r.push('/products') },
 };

@@ -3,7 +3,8 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, MessageCircle, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, TrendingDown, X, Save } from 'lucide-react';
+import { PhoneCall, Pencil, Sparkles, ShieldCheck, CheckCircle2, Crown, MapPin, Shield, ShoppingBag, TrendingDown, X, Save } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 
 interface CustomerDetailProps {
   customer: Record<string, unknown>;
@@ -151,7 +152,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints, onRefre
             </button>
             <button onClick={() => window.open(`https://wa.me/${customer.phone}`, '_blank')}
               className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:shadow transition-all">
-              <MessageCircle size={13} /> WhatsApp
+              <WhatsAppIcon size={13} /> WhatsApp
             </button>
             <button onClick={openEdit}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm transition-all">

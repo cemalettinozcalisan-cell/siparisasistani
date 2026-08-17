@@ -3,7 +3,8 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useRef } from 'react';
-import { Activity, Database, MessageSquare, Phone, Camera, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, MessageCircle, Users, ShoppingBag } from 'lucide-react';
+import { Activity, Database, MessageSquare, Phone, PhoneCall, Brain, Clock, TrendingUp, Zap, AlertTriangle, ArrowUpRight, Instagram, Users, ShoppingBag } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 interface ServiceInfo { name: string; status: 'ok' | 'down' | 'not_configured'; tip: string; techName?: string; }
 
@@ -17,13 +18,13 @@ interface HealthData {
 
 interface LicenseInfo { plan: string; used: number; limit: number; remaining: number; usagePercent: number; }
 
-const SERVICE_ICONS: Record<string, typeof Brain> = {
+const SERVICE_ICONS: Record<string, ChannelIconType> = {
   aiBrain: Brain,
   netgsm: PhoneCall,
   voice: Phone,
-  sms: MessageCircle,
-  whatsapp: MessageSquare,
-  instagram: Camera,
+  sms: MessageSquare,
+  whatsapp: WhatsAppIcon,
+  instagram: Instagram,
   database: Database,
 };
 

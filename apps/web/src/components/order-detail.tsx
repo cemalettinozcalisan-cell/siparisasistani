@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Printer, PhoneCall, MessageCircle, Mic, User, Smartphone, MapPin, Clock, Package } from 'lucide-react';
+import { MessageSquare, Printer, PhoneCall, Mic, User, Smartphone, MapPin, Clock, Package } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 import { getTenantId } from '@/lib/tenant';
 
@@ -114,7 +115,7 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
           </button>
           <button onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
             className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
-            <MessageCircle className="w-4 h-4" /> WhatsApp
+            <WhatsAppIcon size={16} /> WhatsApp
           </button>
         </div>
       </div>

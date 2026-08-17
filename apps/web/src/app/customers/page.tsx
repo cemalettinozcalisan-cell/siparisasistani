@@ -4,7 +4,8 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { CustomerDetail } from '@/components/customer-detail';
-import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, MessageCircle, Camera, MessageSquare, Globe, UserPlus, Users } from 'lucide-react';
+import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, Instagram, MessageSquare, Globe, UserPlus, Users } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {
@@ -216,11 +217,11 @@ export default function CustomersPage() {
         <div className="flex-1 overflow-y-auto space-y-1">
           {filtered.map((c) => {
             const src = (c as any).last_source || '';
-            const chInfo: Record<string, { cls: string; label: string; Icon: typeof PhoneCall }> = {
+            const chInfo: Record<string, { cls: string; label: string; Icon: ChannelIconType }> = {
               PHONE: { cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm', label: 'Telefon', Icon: PhoneCall },
-              WHATSAPP: { cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm', label: 'WhatsApp', Icon: MessageCircle },
+              WHATSAPP: { cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm', label: 'WhatsApp', Icon: WhatsAppIcon },
               SMS: { cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm', label: 'SMS', Icon: MessageSquare },
-              INSTAGRAM: { cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm', label: 'Instagram', Icon: Camera },
+              INSTAGRAM: { cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm', label: 'Instagram', Icon: Instagram },
               WEBSITE: { cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm', label: 'Web', Icon: Globe },
             };
             const phone = String(c.phone || '');

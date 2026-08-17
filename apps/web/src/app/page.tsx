@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Camera, Globe, Printer, MessageCircle, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Instagram, Globe, Printer, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 
 const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
-  { icon: MessageSquare, label: 'WhatsApp', desc: 'Mesajlaşma', color: 'from-emerald-500 to-emerald-600' },
-  { icon: Camera, label: 'Instagram', desc: 'DM mesajı', color: 'from-pink-500 to-pink-600' },
+  { icon: WhatsAppIcon, label: 'WhatsApp', desc: 'Mesajlaşma', color: 'from-emerald-500 to-emerald-600' },
+  { icon: Instagram, label: 'Instagram', desc: 'DM mesajı', color: 'from-pink-500 to-pink-600' },
   { icon: MessageSquare, label: 'SMS', desc: 'Kısa mesaj', color: 'from-sky-400 to-blue-500' },
   { icon: Globe, label: 'Web Sitesi', desc: 'Online sipariş', color: 'from-sky-500 to-sky-600' },
   { icon: Bot, label: 'AI Asistan', desc: 'Siparişi alır', color: 'from-violet-500 to-violet-600' },
   { icon: BarChart3, label: 'CRM', desc: 'Kayıt düşer', color: 'from-rose-500 to-rose-600' },
-  { icon: MessageCircle, label: 'WhatsApp', desc: 'Gruba iletir', color: 'from-emerald-500 to-emerald-600' },
+  { icon: WhatsAppIcon, label: 'WhatsApp', desc: 'Gruba iletir', color: 'from-emerald-500 to-emerald-600' },
   { icon: Printer, label: 'Yazıcı', desc: 'Fiş çıkar', color: 'from-amber-500 to-amber-600' },
   { icon: Truck, label: 'Kargo', desc: 'Kargo kodu iletilir', color: 'from-cyan-500 to-cyan-600' },
   { icon: ShoppingBag, label: 'Raporlar', desc: 'Analiz', color: 'from-indigo-500 to-indigo-600' },
@@ -373,14 +374,14 @@ export default function LandingPage() {
                 color: 'from-blue-500 to-indigo-600',
               },
               {
-                icon: MessageCircle, shadow: 'shadow-emerald-500/20',
+                icon: WhatsAppIcon, shadow: 'shadow-emerald-500/20',
                 title: 'WhatsApp Business',
                 desc: 'Resmi İşletme Mesajlaşması',
                 sub: 'Yapay zekâ asistanınız WhatsApp üzerinden müşterilerinizle 7/24 kesintisiz iletişim kursun, gelen soruları yanıtlayıp sipariş süreçlerini otomatik yönetsin.',
                 color: 'from-emerald-500 to-green-600',
               },
               {
-                icon: Camera, shadow: 'shadow-fuchsia-500/20',
+                icon: Instagram, shadow: 'shadow-fuchsia-500/20',
                 title: 'Instagram DM',
                 desc: 'Sosyal Medya Sipariş Yönetimi',
                 sub: 'Yapay zekâ sayesinde Instagram DM mesajlarını kaçırmayın; gelen tüm soruları anında yanıtlayarak otomatik olarak siparişe dönüştürün.',

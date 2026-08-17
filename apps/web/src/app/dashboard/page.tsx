@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, MessageCircle, Instagram, Camera, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, Clock, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { NotificationBell } from '@/components/notification-bell';
 import { getTenantId } from '@/lib/tenant';
@@ -25,34 +26,6 @@ function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: num
   return <>{count}{suffix}</>;
 }
 
-// --- Orijinal marka logoları ---
-function WhatsAppIcon() {
-  return (
-    <svg className="w-6 h-6 text-white fill-current" viewBox="0 0 24 24">
-      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99 0-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.285-.143-1.689-.834-1.951-.929-.263-.095-.454-.143-.645.143-.191.285-.74.929-.907 1.12-.167.19-.334.214-.619.071-.285-.143-1.206-.444-2.298-1.417-.85-.758-1.424-1.693-1.591-1.979-.167-.285-.018-.439.125-.581.129-.128.285-.334.428-.5.143-.167.191-.285.285-.477.095-.192.048-.358-.024-.5-.071-.143-.645-1.554-.883-2.126-.232-.557-.468-.481-.644-.49-.167-.008-.358-.01-.549-.01-.191 0-.501.071-.763.358-.263.285-1.002.978-1.002 2.385 0 1.407 1.026 2.768 1.169 2.959.143.191 2.019 3.084 4.891 4.324.683.295 1.217.472 1.633.604.687.218 1.312.187 1.806.113.551-.083 1.689-.69 1.928-1.358.238-.668.238-1.24.167-1.358-.071-.118-.262-.19-.547-.333z" />
-    </svg>
-  );
-}
-
-function InstagramIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-label="Instagram">
-      <defs>
-        <linearGradient id="ig-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#f09433" />
-          <stop offset="25%" stopColor="#e6683c" />
-          <stop offset="50%" stopColor="#dc2743" />
-          <stop offset="75%" stopColor="#cc2366" />
-          <stop offset="100%" stopColor="#bc1888" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="24" height="24" rx="7" fill="url(#ig-grad)" />
-      <circle cx="16" cy="16" r="5.5" fill="none" stroke="#fff" strokeWidth="1.8" />
-      <circle cx="23" cy="9.5" r="1.6" fill="#fff" />
-    </svg>
-  );
-}
-
 function PageThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -68,12 +41,12 @@ function PageThemeToggle() {
   );
 }
 
-const CHANNEL_COLORS: Record<string, { icon: typeof PhoneCall; gradient: string }> = {
+const CHANNEL_COLORS: Record<string, { icon: ChannelIconType; gradient: string }> = {
   phone: { icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
-  whatsapp: { icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600' },
-  instagram: { icon: Camera, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
+  whatsapp: { icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
+  instagram: { icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
   website: { icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
-  sms: { icon: MessageCircle, gradient: 'from-sky-400 to-blue-500' },
+  sms: { icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
   voice: { icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
   system: { icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
 };

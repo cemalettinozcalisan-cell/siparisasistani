@@ -3,7 +3,8 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Cpu, ChevronDown, ChevronUp, Trash2, Copy, Activity, Zap, Clock, FileJson, MessageSquare, Phone, Camera } from 'lucide-react';
+import { Bot, Send, Cpu, ChevronDown, ChevronUp, Trash2, Copy, Activity, Zap, Clock, FileJson, MessageSquare, Phone, Instagram } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 
 interface ParsedData { intent?: string; reply?: string; customer?: { name: string; phone?: string; }; products?: Array<{ product_name: string; quantity: number; unit: string; }>; address?: string; payment?: string; confidence?: number; }
 
@@ -21,8 +22,8 @@ interface DebugResult {
 
 const CHANNEL_OPTIONS = [
   { value: 'phone', label: 'Telefon', icon: Phone, gradient: 'from-blue-500 to-blue-600' },
-  { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, gradient: 'from-emerald-400 to-emerald-600' },
-  { value: 'instagram', label: 'Instagram', icon: Camera, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
+  { value: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
+  { value: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
   { value: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
 ];
 

@@ -4,7 +4,8 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PhoneCall, MessageCircle, Camera, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock } from 'lucide-react';
+import { PhoneCall, Instagram, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
 function authHeaders(): Record<string, string> {
@@ -18,8 +19,8 @@ function authHeaders(): Record<string, string> {
 // STATUS_BADGE maps them to Turkish display labels automatically
 const CHANNELS = [
   { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' },
-  { key: 'WHATSAPP', label: 'WhatsApp', icon: MessageCircle, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md' },
-  { key: 'INSTAGRAM', label: 'Instagram', icon: Camera, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md' },
+  { key: 'WHATSAPP', label: 'WhatsApp', icon: WhatsAppIcon, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md' },
+  { key: 'INSTAGRAM', label: 'Instagram', icon: Instagram, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md' },
   { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md' },
   { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md' },
 ];
@@ -562,7 +563,7 @@ function OrdersPageContent() {
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
                   className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-medium">
-                  <MessageCircle size={13} /> WA
+                  <WhatsAppIcon size={13} /> WA
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
                   className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-medium">

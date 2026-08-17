@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, ShieldAlert, PhoneCall, MessageSquare, Camera, Settings, Clock, User, Hash, Phone, MessageCircle } from 'lucide-react';
+import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, ShieldAlert, PhoneCall, Settings, Clock, User, Hash, Phone, Instagram } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
   LOW: { label: 'Düşük', gradient: 'from-emerald-400 to-teal-500' },
@@ -16,8 +17,8 @@ const CHANNEL_LABELS: Record<string, string> = {
   VOICE: 'Sesli', WHATSAPP: 'WhatsApp', PHONE: 'Telefon', INSTAGRAM: 'Instagram', SISTEM: 'Sistem',
 };
 
-const CHANNEL_ICONS: Record<string, typeof PhoneCall> = {
-  VOICE: PhoneCall, WHATSAPP: MessageSquare, PHONE: PhoneCall, INSTAGRAM: Camera, SISTEM: Settings,
+const CHANNEL_ICONS: Record<string, ChannelIconType> = {
+  VOICE: PhoneCall, WHATSAPP: WhatsAppIcon, PHONE: PhoneCall, INSTAGRAM: Instagram, SISTEM: Settings,
 };
 
 const CHANNEL_GRADIENT: Record<string, string> = {
@@ -277,7 +278,7 @@ function ComplaintsContent() {
                           </button>
                           <button onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customerPhone.replace(/\D/g, '')}`, '_blank'); }}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:from-emerald-500 hover:to-emerald-700 transition-all">
-                            <MessageCircle size={11} /> WhatsApp
+                            <WhatsAppIcon size={11} /> WhatsApp
                           </button>
                         </>
                       )}

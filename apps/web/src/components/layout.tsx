@@ -9,7 +9,7 @@ import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Zap, Clock, Phone } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Clock, Phone } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
@@ -74,7 +74,6 @@ const navItems = [
   { href: '/settings/audit-logs', label: 'Sistem Logları', icon: BarChart3, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
   { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
-  { href: '/developer/simulator', label: 'Test Simülatörü', icon: Zap, roles: ['owner'], group: 'settings' },
   // Geliştirici
   { href: '/admin', label: 'Geliştirici', icon: Shield, roles: ['owner'], group: 'admin' },
 ];

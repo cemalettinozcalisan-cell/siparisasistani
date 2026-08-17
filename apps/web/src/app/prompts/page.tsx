@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Copy, Loader2, Phone, MessageCircle, Camera, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown, FileText } from 'lucide-react';
+import { Brain, Copy, Loader2, Phone, Instagram, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown, FileText } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { getTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -12,10 +13,10 @@ const STATE_TR: Record<string, string> = {
   ORDER_CREATED: 'Sipariş Oluşturuldu', GOODBYE: 'Veda',
 };
 
-const CHANNELS: { key: string; label: string; icon: typeof Phone; gradient: string }[] = [
+const CHANNELS: { key: string; label: string; icon: ChannelIconType; gradient: string }[] = [
   { key: 'phone', label: 'Telefon', icon: Phone, gradient: 'from-blue-500 to-blue-600' },
-  { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, gradient: 'from-emerald-400 to-emerald-600' },
-  { key: 'instagram', label: 'Instagram', icon: Camera, gradient: 'from-pink-500 to-purple-600' },
+  { key: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
+  { key: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 to-purple-600' },
   { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
 ];
 

@@ -3,12 +3,13 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, MessageCircle, MessageSquare, Camera, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2 } from 'lucide-react';
+import { PhoneCall, Instagram, MessageSquare, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2 } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/channel-icons';
 import Link from 'next/link';
 
 const CHANNELS = [
-  { key: 'whatsapp_enabled', provider: 'meta_whatsapp', label: 'WhatsApp', icon: MessageCircle, desc: 'WhatsApp Business API ile sipariş alma', color: 'bg-emerald-500', ring: 'ring-emerald-500/20' },
-  { key: 'instagram_enabled', provider: 'meta_instagram', label: 'Instagram DM', icon: Camera, desc: 'Instagram Direct Message ile sipariş alma', color: 'bg-gradient-to-br from-pink-500 to-purple-600', ring: 'ring-pink-500/20' },
+  { key: 'whatsapp_enabled', provider: 'meta_whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, desc: 'WhatsApp Business API ile sipariş alma', color: 'bg-emerald-500', ring: 'ring-emerald-500/20' },
+  { key: 'instagram_enabled', provider: 'meta_instagram', label: 'Instagram DM', icon: Instagram, desc: 'Instagram Direct Message ile sipariş alma', color: 'bg-gradient-to-br from-pink-500 to-purple-600', ring: 'ring-pink-500/20' },
   { key: 'phone_enabled', provider: 'netgsm', label: 'Telefon (Voice AI)', icon: PhoneCall, desc: 'NetGSM üzerinden sesli arama ile sipariş', color: 'bg-blue-500', ring: 'ring-blue-500/20' },
   { key: 'sms_enabled', provider: 'netgsm', label: 'SMS Sipariş', icon: MessageSquare, desc: 'Kısa mesaj (SMS) ile sipariş alma', color: 'bg-sky-500', ring: 'ring-sky-500/20' },
   { key: 'voice_enabled', provider: 'elevenlabs', label: 'Yapay Ses (ElevenLabs)', icon: Volume2, desc: 'Doğal insan sesiyle müşterilerle konuşma', color: 'bg-violet-500', ring: 'ring-violet-500/20' },
