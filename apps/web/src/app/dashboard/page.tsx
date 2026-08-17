@@ -292,25 +292,25 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <TenantSwitcher />
-            <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-slate-200/70 dark:border-slate-800 rounded-full px-1.5 py-1">
+            <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-amber-400/70 dark:border-amber-500/40 rounded-full px-1.5 py-1">
               <PageThemeToggle />
               <NotificationBell size="text-base" />
             </div>
             {usage && (
-              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
-                <BarChart3 size={13} className="text-indigo-500" />
-                <span className="font-medium text-slate-500 dark:text-slate-400">Sipariş Hakkı:</span>
+              <div className="hidden xl:flex items-center gap-2 px-3 py-3 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
+                <BarChart3 size={13} className="text-orange-500" />
+                <span className="font-bold text-slate-700 dark:text-slate-200">Sipariş Hakkı:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
               </div>
             )}
-            <div className="px-4 py-2 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
+            <div className="px-4 py-3 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
             </div>
-            <div className="text-slate-700 dark:text-slate-300 text-xs font-semibold leading-tight text-right shrink-0">
+            <div className="text-slate-900 dark:text-white text-xs font-semibold leading-tight text-right shrink-0">
               Her kanal. Tek asistan.<br />Daha güçlü bir işletme.
             </div>
           </div>
@@ -349,10 +349,10 @@ export default function DashboardPage() {
           {/* Merkez AI Çekirdek */}
           <div className="lg:col-span-4 flex flex-col items-center justify-center gap-6 z-10 py-6">
             <div className="relative">
-              <div className="absolute inset-[-28px] rounded-full border border-indigo-100/70 dark:border-purple-500/10" />
-              <div className="absolute inset-[-15px] rounded-full border border-indigo-200/50 dark:border-indigo-500/20" />
+              <div className="absolute inset-[-28px] rounded-full border border-fuchsia-200/70 dark:border-fuchsia-400/10" />
+              <div className="absolute inset-[-15px] rounded-full border border-fuchsia-300/50 dark:border-fuchsia-400/20" />
               <div ref={coreRef} className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
-                <div className="absolute inset-[-8px] rounded-full border-2 border-indigo-100 dark:border-indigo-500/20 animate-ping [animation-duration:3s]" />
+                <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-400 dark:border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
                 <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function DashboardPage() {
                     <div className={`w-8 h-8 rounded-lg ${item.iconBox} flex items-center justify-center shrink-0`}>
                       <QaIcon size={15} className={item.color} />
                     </div>
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{item.label}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{item.label}</span>
                   </a>
                 );
               })}
