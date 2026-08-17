@@ -168,8 +168,10 @@ export default function DashboardPage() {
   const leftCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rightCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [hubLines, setHubLines] = useState<{ x0: number; y0: number; x1: number; y1: number; color: string }[]>([]);
+  const [gridSize, setGridSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
+    if (!mounted) return;
     const update = () => {
       const grid = gridRef.current;
       const coreEl = coreRef.current;
@@ -193,11 +195,22 @@ export default function DashboardPage() {
       HUB_LEFT.forEach((ch, i) => connect(leftCardRefs.current[i], true, ch.lineStroke));
       HUB_RIGHT.forEach((ch, i) => connect(rightCardRefs.current[i], false, ch.lineStroke));
       setHubLines(next);
+      setGridSize({ w: gr.width, h: gr.height });
     };
     update();
+    const t = setTimeout(update, 150);
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && gridRef.current) {
+      ro = new ResizeObserver(update);
+      ro.observe(gridRef.current);
+    }
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', update);
+      ro?.disconnect();
+    };
+  }, [mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -385,7 +398,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Ölçüme dayalı bağlantı hatları — kart kenarından logo dış halkasına */}
-          <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" fill="none">
+          <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
             {hubLines.map((l, i) => (
               <g key={i}>
                 <path
