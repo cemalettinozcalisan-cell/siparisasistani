@@ -62,6 +62,7 @@ export class ProductCatalogComponent {
     lines.push('- Toptan müşterilerde özel fiyat varsa onu kullan, yoksa normal fiyatı kullan.');
     lines.push('- Değişken ağırlıklı ürünlerde (sap gibi) müşteriye kesin fiyat yerine "tartımdan sonra netleşir" de.');
     lines.push('- Müşteri kg fiyatı sorarsa ürünün kg fiyatını söyle. Sap fiyatı sorarsa "ağırlık değiştiği için kg üzerinden hesaplanır" de.');
+    lines.push('- Ürün bilgisi verirken SADECE ürün adı + fiyat olarak paylaş. Link, URL, web adresi, görsel, QR veya sayfa bağlantısı KESİNLİKLE paylaşMA.');
     lines.push('- Her ürünün birden çok satış tipi olabilir. Müşterinin söylediği birime göre satış tipini belirle.');
 
     return lines.join('\n');
