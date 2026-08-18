@@ -46,7 +46,7 @@ const CHANNEL_COLORS: Record<string, { icon: ChannelIconType; gradient: string }
   whatsapp: { icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
   instagram: { icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
   website: { icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
-  sms: { icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
+  sms: { icon: MessageSquare, gradient: 'from-orange-400 to-orange-600' },
   voice: { icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
   system: { icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
 };
@@ -265,21 +265,21 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <TenantSwitcher />
-            <div className="flex items-center gap-1 bg-white/90 dark:bg-[#0C1027]/70 border border-amber-400/70 dark:border-amber-500/40 rounded-full px-1.5 py-1">
+            <div className="flex items-center gap-1">
               <PageThemeToggle />
               <NotificationBell size="text-base" />
             </div>
             {usage && (
-              <div className="hidden xl:flex items-center gap-2 px-3 py-3 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
+              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
                 <BarChart3 size={13} className="text-orange-500" />
                 <span className="font-bold text-slate-700 dark:text-slate-200">Sipariş Hakkı:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
               </div>
             )}
-            <div className="px-4 py-3 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2.5 shadow-sm">
-              <span className="relative flex h-2.5 w-2.5">
+            <div className="px-3 py-1.5 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2 shadow-sm">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
             </div>

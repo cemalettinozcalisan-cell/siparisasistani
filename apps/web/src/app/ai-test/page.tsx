@@ -24,7 +24,7 @@ const CHANNEL_OPTIONS = [
   { value: 'phone', label: 'Telefon', icon: Phone, gradient: 'from-blue-500 to-blue-600' },
   { value: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
   { value: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
-  { value: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
+  { value: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-orange-400 to-orange-600' },
 ];
 
 const STATE_LABELS: Record<string, string> = {

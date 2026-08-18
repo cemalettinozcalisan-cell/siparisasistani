@@ -319,7 +319,7 @@ export default function SettingsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-semibold transition-all shadow-md disabled:opacity-50"
         >
           <Save className="w-4 h-4" /> {saving ? 'Kaydediliyor...' : 'Tümünü Kaydet'}
         </button>
@@ -1063,7 +1063,7 @@ export default function SettingsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md disabled:opacity-50 text-white ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-md disabled:opacity-50 text-white ${
             saved ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700'
           }`}
         >

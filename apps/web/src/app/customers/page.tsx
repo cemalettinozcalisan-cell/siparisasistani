@@ -206,12 +206,12 @@ export default function CustomersPage() {
           <input placeholder="İsim/telefon ara..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-0 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
           <button onClick={() => setShowImport(true)}
-            className="h-10 inline-flex items-center gap-1.5 px-4 rounded-lg text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all">
-            <FileSpreadsheet size={14} /> Excel'den Yükle
+            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all">
+            <FileSpreadsheet size={13} /> Excel'den Yükle
           </button>
           <button onClick={() => setShowAddCustomer(true)}
-            className="h-10 inline-flex items-center gap-1.5 px-4 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
-            <UserPlus size={14} /> Müşteri Ekle
+            className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all">
+            <UserPlus size={13} /> Müşteri Ekle
           </button>
         </div>
         <div className="flex-1 overflow-y-auto space-y-1">
@@ -220,7 +220,7 @@ export default function CustomersPage() {
             const chInfo: Record<string, { cls: string; label: string; Icon: ChannelIconType }> = {
               PHONE: { cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm', label: 'Telefon', Icon: PhoneCall },
               WHATSAPP: { cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-sm', label: 'WhatsApp', Icon: WhatsAppIcon },
-              SMS: { cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm', label: 'SMS', Icon: MessageSquare },
+              SMS: { cls: 'bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-sm', label: 'SMS', Icon: MessageSquare },
               INSTAGRAM: { cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-sm', label: 'Instagram', Icon: Instagram },
               WEBSITE: { cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm', label: 'Web', Icon: Globe },
             };

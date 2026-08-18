@@ -17,7 +17,7 @@ const CHANNELS: { key: string; label: string; icon: ChannelIconType; gradient: s
   { key: 'phone', label: 'Telefon', icon: Phone, gradient: 'from-blue-500 to-blue-600' },
   { key: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
   { key: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 to-purple-600' },
-  { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
+  { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-orange-400 to-orange-600' },
 ];
 
 const CHEAT_SHEET = [

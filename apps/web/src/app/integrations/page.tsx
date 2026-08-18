@@ -11,7 +11,7 @@ const CHANNELS = [
   { key: 'whatsapp_enabled', provider: 'meta_whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, desc: 'WhatsApp Business API ile sipariş alma', color: 'bg-emerald-500', ring: 'ring-emerald-500/20' },
   { key: 'instagram_enabled', provider: 'meta_instagram', label: 'Instagram DM', icon: Instagram, desc: 'Instagram Direct Message ile sipariş alma', color: 'bg-gradient-to-br from-pink-500 to-purple-600', ring: 'ring-pink-500/20' },
   { key: 'phone_enabled', provider: 'netgsm', label: 'Telefon (Voice AI)', icon: PhoneCall, desc: 'NetGSM üzerinden sesli arama ile sipariş', color: 'bg-blue-500', ring: 'ring-blue-500/20' },
-  { key: 'sms_enabled', provider: 'netgsm', label: 'SMS Sipariş', icon: MessageSquare, desc: 'Kısa mesaj (SMS) ile sipariş alma', color: 'bg-sky-500', ring: 'ring-sky-500/20' },
+  { key: 'sms_enabled', provider: 'netgsm', label: 'SMS Sipariş', icon: MessageSquare, desc: 'Kısa mesaj (SMS) ile sipariş alma', color: 'bg-orange-500', ring: 'ring-orange-500/20' },
   { key: 'voice_enabled', provider: 'elevenlabs', label: 'Yapay Ses (ElevenLabs)', icon: Volume2, desc: 'Doğal insan sesiyle müşterilerle konuşma', color: 'bg-violet-500', ring: 'ring-violet-500/20' },
   { key: 'website_enabled', provider: null, label: 'Web Sitesi', icon: Globe, desc: 'WooCommerce / Shopify / İdeasoft entegrasyonu', color: 'bg-sky-600', ring: 'ring-sky-500/20' },
 ];
@@ -122,7 +122,7 @@ export default function IntegrationsPage() {
         <button
           onClick={save}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
         >
           <Save className="w-4 h-4" /> {saving ? 'Kaydediliyor...' : 'Tümünü Kaydet'}
         </button>

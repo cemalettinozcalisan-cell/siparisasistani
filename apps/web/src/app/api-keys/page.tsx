@@ -3,7 +3,8 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Eye, EyeOff, Save, RefreshCw, Brain, PhoneCall, Music, MessageCircle, Key } from 'lucide-react';
+import { Eye, EyeOff, Save, RefreshCw, Brain, PhoneCall, Music, MessageCircle, Key, Bot, Zap, Landmark, Smartphone, Volume2, Mic, AudioLines, Instagram } from 'lucide-react';
+import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 interface ProviderField {
   name: string;
@@ -14,7 +15,7 @@ interface ProviderField {
 interface Provider {
   key: string;
   label: string;
-  icon: string;
+  icon: ChannelIconType;
   desc: string;
   category: 'ai' | 'communication' | 'tts' | 'social';
   fields: ProviderField[];
@@ -22,17 +23,17 @@ interface Provider {
 }
 
 const PROVIDERS: Provider[] = [
-  { key: 'deepseek', label: 'DeepSeek AI', icon: '🤖', desc: 'Yapay zeka sohbet ve sipariş motoru', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-...' }], category: 'ai' },
-  { key: 'openai', label: 'OpenAI', icon: '⚡', desc: 'GPT-4o / GPT-4o-mini API', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-proj-...' }], category: 'ai' },
-  { key: 'bilge_ai', label: 'Bilge AI (TÜBİTAK)', icon: '🇹🇷', desc: 'Türkiye yerli LLM altyapısı', fields: [{ name: 'api_key', label: 'API Key', placeholder: '...' }, { name: 'endpoint_url', label: 'Endpoint URL', placeholder: 'https://...' }], category: 'ai' },
-  { key: 'anthropic', label: 'Anthropic Claude', icon: '🧠', desc: 'Claude 3.5 Sonnet API', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-ant-...' }], category: 'ai' },
-  { key: 'netgsm', label: 'NetGSM', icon: '📞', desc: 'Sesli arama ve SMS servisi', fields: [{ name: 'api_key', label: 'Kullanıcı Adı', placeholder: '850...' }, { name: 'api_secret', label: 'Şifre', placeholder: '...' }, { name: 'sms_header', label: 'SMS Başlığı', placeholder: 'SIPARIS' }], category: 'communication' },
-  { key: 'twilio', label: 'Twilio', icon: '📱', desc: 'Yedek SMS ve sesli arama', fields: [{ name: 'api_key', label: 'Account SID', placeholder: 'AC...' }, { name: 'api_secret', label: 'Auth Token', placeholder: '...' }, { name: 'phone', label: 'Telefon No', placeholder: '+90...' }], category: 'communication' },
-  { key: 'elevenlabs', label: 'ElevenLabs', icon: '🔊', desc: 'AI seslendirme motoru', fields: [{ name: 'api_key', label: 'API Key', placeholder: '...' }], category: 'tts' },
-  { key: 'azure_speech', label: 'Azure Speech', icon: '🎙️', desc: 'Microsoft Azure TTS', fields: [{ name: 'api_key', label: 'Subscription Key', placeholder: '...' }, { name: 'region', label: 'Region', placeholder: 'westeurope' }], category: 'tts' },
-  { key: 'openai_tts', label: 'OpenAI TTS', icon: '🗣️', desc: 'Mevcut OpenAI key ile seslendirme', fields: [], category: 'tts', isLinked: true },
-  { key: 'meta_whatsapp', label: 'WhatsApp Business', icon: '💬', desc: 'WhatsApp Cloud API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Phone Number ID', placeholder: '...' }], category: 'social' },
-  { key: 'meta_instagram', label: 'Instagram DM', icon: '📸', desc: 'Instagram Mesajlaşma API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Page ID', placeholder: '...' }], category: 'social' },
+  { key: 'deepseek', label: 'DeepSeek AI', icon: Bot, desc: 'Yapay zeka sohbet ve sipariş motoru', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-...' }], category: 'ai' },
+  { key: 'openai', label: 'OpenAI', icon: Zap, desc: 'GPT-4o / GPT-4o-mini API', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-proj-...' }], category: 'ai' },
+  { key: 'bilge_ai', label: 'Bilge AI (TÜBİTAK)', icon: Landmark, desc: 'Türkiye yerli LLM altyapısı', fields: [{ name: 'api_key', label: 'API Key', placeholder: '...' }, { name: 'endpoint_url', label: 'Endpoint URL', placeholder: 'https://...' }], category: 'ai' },
+  { key: 'anthropic', label: 'Anthropic Claude', icon: Brain, desc: 'Claude 3.5 Sonnet API', fields: [{ name: 'api_key', label: 'API Key', placeholder: 'sk-ant-...' }], category: 'ai' },
+  { key: 'netgsm', label: 'NetGSM', icon: PhoneCall, desc: 'Sesli arama ve SMS servisi', fields: [{ name: 'api_key', label: 'Kullanıcı Adı', placeholder: '850...' }, { name: 'api_secret', label: 'Şifre', placeholder: '...' }, { name: 'sms_header', label: 'SMS Başlığı', placeholder: 'SIPARIS' }], category: 'communication' },
+  { key: 'twilio', label: 'Twilio', icon: Smartphone, desc: 'Yedek SMS ve sesli arama', fields: [{ name: 'api_key', label: 'Account SID', placeholder: 'AC...' }, { name: 'api_secret', label: 'Auth Token', placeholder: '...' }, { name: 'phone', label: 'Telefon No', placeholder: '+90...' }], category: 'communication' },
+  { key: 'elevenlabs', label: 'ElevenLabs', icon: Volume2, desc: 'AI seslendirme motoru', fields: [{ name: 'api_key', label: 'API Key', placeholder: '...' }], category: 'tts' },
+  { key: 'azure_speech', label: 'Azure Speech', icon: Mic, desc: 'Microsoft Azure TTS', fields: [{ name: 'api_key', label: 'Subscription Key', placeholder: '...' }, { name: 'region', label: 'Region', placeholder: 'westeurope' }], category: 'tts' },
+  { key: 'openai_tts', label: 'OpenAI TTS', icon: AudioLines, desc: 'Mevcut OpenAI key ile seslendirme', fields: [], category: 'tts', isLinked: true },
+  { key: 'meta_whatsapp', label: 'WhatsApp Business', icon: WhatsAppIcon, desc: 'WhatsApp Cloud API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Phone Number ID', placeholder: '...' }], category: 'social' },
+  { key: 'meta_instagram', label: 'Instagram DM', icon: Instagram, desc: 'Instagram Mesajlaşma API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Page ID', placeholder: '...' }], category: 'social' },
 ];
 
 const CATEGORIES: { key: string; title: string; Icon: typeof Brain }[] = [
@@ -208,7 +209,9 @@ export default function ApiKeysPage() {
                     <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <span className="text-lg">{p.icon}</span>
+                          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700/60">
+                            <p.icon size={18} className="text-slate-700 dark:text-slate-300" />
+                          </span>
                           <div>
                             <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.label}</h3>
                             <p className="text-[11px] text-gray-400 dark:text-slate-500">{p.desc}</p>
@@ -229,7 +232,9 @@ export default function ApiKeysPage() {
                   <div key={p.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 transition space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{p.icon}</span>
+                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700/60">
+                          <p.icon size={18} className="text-slate-700 dark:text-slate-300" />
+                        </span>
                         <div>
                           <h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.label}</h3>
                           <p className="text-[11px] text-gray-400 dark:text-slate-500">{p.desc}</p>

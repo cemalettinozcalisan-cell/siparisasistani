@@ -8,7 +8,7 @@ const OMNICHANNEL_FLOW = [
   { icon: PhoneCall, label: 'Telefon', desc: 'Sesli arama', color: 'from-blue-500 to-blue-600' },
   { icon: WhatsAppIcon, label: 'WhatsApp', desc: 'Mesajlaşma', color: 'from-emerald-500 to-emerald-600' },
   { icon: Instagram, label: 'Instagram', desc: 'DM mesajı', color: 'from-pink-500 to-pink-600' },
-  { icon: MessageSquare, label: 'SMS', desc: 'Kısa mesaj', color: 'from-sky-400 to-blue-500' },
+  { icon: MessageSquare, label: 'SMS', desc: 'Kısa mesaj', color: 'from-orange-400 to-orange-600' },
   { icon: Globe, label: 'Web Sitesi', desc: 'Online sipariş', color: 'from-sky-500 to-sky-600' },
   { icon: Bot, label: 'AI Asistan', desc: 'Siparişi alır', color: 'from-violet-500 to-violet-600' },
   { icon: BarChart3, label: 'CRM', desc: 'Kayıt düşer', color: 'from-rose-500 to-rose-600' },
@@ -388,11 +388,11 @@ export default function LandingPage() {
                 color: 'from-fuchsia-500 to-rose-500',
               },
               {
-                icon: MessageSquare, shadow: 'shadow-sky-500/20',
+                icon: MessageSquare, shadow: 'shadow-orange-500/20',
                 title: 'SMS Sipariş',
                 desc: 'Kısa Mesaj ile Sipariş Alma',
                 sub: 'Müşterileriniz SMS ile sipariş versin; yapay zekâ asistanınız gelen mesajları anında okuyup yanıtlasın, sipariş olarak kaydetsin.',
-                color: 'from-sky-400 to-blue-500',
+                color: 'from-orange-400 to-orange-600',
               },
               {
                 icon: Truck, shadow: 'shadow-orange-500/20',

@@ -50,7 +50,7 @@ const SERVICE_COLORS: Record<string, string> = {
 
 const SERVICE_ICON_COLORS: Record<string, string> = {
   aiBrain: 'text-violet-600', netgsm: 'text-blue-600', voice: 'text-purple-600',
-  sms: 'text-sky-600', whatsapp: 'text-emerald-600', instagram: 'text-pink-600', database: 'text-amber-600',
+  sms: 'text-orange-600', whatsapp: 'text-emerald-600', instagram: 'text-pink-600', database: 'text-amber-600',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; color: string; }> = {

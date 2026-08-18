@@ -21,7 +21,7 @@ const CHANNELS = [
   { key: 'PHONE', label: 'Telefon', icon: PhoneCall, cls: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' },
   { key: 'WHATSAPP', label: 'WhatsApp', icon: WhatsAppIcon, cls: 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-white shadow-md' },
   { key: 'INSTAGRAM', label: 'Instagram', icon: Instagram, cls: 'bg-gradient-to-r from-pink-500 via-purple-500 to-purple-600 text-white shadow-md' },
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-md' },
+  { key: 'SMS', label: 'SMS', icon: MessageSquare, cls: 'bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-md' },
   { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md' },
 ];
 

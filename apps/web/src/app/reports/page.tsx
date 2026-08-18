@@ -16,7 +16,7 @@ const CHANNEL_CONFIG = [
   { key: 'phone', label: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-blue-600' },
   { key: 'whatsapp', label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-400 to-emerald-600' },
   { key: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
-  { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-sky-400 to-blue-500' },
+  { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-orange-400 to-orange-600' },
   { key: 'website', label: 'Web', icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
   { key: 'manual', label: 'Toptan', icon: PackageIcon, gradient: 'from-amber-400 to-orange-500' },
 ];

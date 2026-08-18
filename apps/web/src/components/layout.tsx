@@ -314,16 +314,16 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
             </button>
             <div className="flex-1 max-w-md"><GlobalSearch /></div>
             <div className="flex items-center gap-1 lg:gap-2">
-              <div className="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 dark:text-emerald-400 font-medium text-sm">
+              <TenantSwitcher />
+              <ThemeToggle />
+              <NotificationBell />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                Sistem Aktif
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
               </div>
-              <TenantSwitcher />
-              <ThemeToggle />
-              <NotificationBell />
             </div>
           </div>
         </header>
