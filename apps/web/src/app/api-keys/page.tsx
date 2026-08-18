@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Eye, EyeOff, Save, RefreshCw, Brain, PhoneCall, Music, MessageCircle, Key, Bot, Zap, Landmark, Smartphone, Volume2, Mic, AudioLines, Instagram } from 'lucide-react';
+import { Eye, EyeOff, Save, RefreshCw, Brain, PhoneCall, Music, MessageCircle, Key, Bot, Zap, Landmark, Smartphone, Volume2, Mic, AudioLines, Instagram, ShieldCheck } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 interface ProviderField {
@@ -33,7 +33,8 @@ const PROVIDERS: Provider[] = [
   { key: 'elevenlabs', label: 'ElevenLabs', icon: Volume2, iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600', desc: 'AI seslendirme motoru', fields: [{ name: 'api_key', label: 'API Key', placeholder: '...' }], category: 'tts' },
   { key: 'azure_speech', label: 'Azure Speech', icon: Mic, iconBg: 'bg-gradient-to-br from-sky-500 to-blue-600', desc: 'Microsoft Azure TTS', fields: [{ name: 'api_key', label: 'Subscription Key', placeholder: '...' }, { name: 'region', label: 'Region', placeholder: 'westeurope' }], category: 'tts' },
   { key: 'openai_tts', label: 'OpenAI TTS', icon: AudioLines, iconBg: 'bg-gradient-to-br from-teal-500 to-cyan-600', desc: 'Mevcut OpenAI key ile seslendirme', fields: [], category: 'tts', isLinked: true },
-  { key: 'meta_whatsapp', label: 'WhatsApp Business', icon: WhatsAppIcon, iconBg: 'bg-gradient-to-br from-emerald-400 to-emerald-600', desc: 'WhatsApp Cloud API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Phone Number ID', placeholder: '...' }], category: 'social' },
+  { key: 'meta_whatsapp', label: 'WhatsApp Business', icon: WhatsAppIcon, iconBg: 'bg-gradient-to-br from-emerald-400 to-emerald-600', desc: 'WhatsApp Cloud API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Phone Number ID', placeholder: '...' }, { name: 'waba_id', label: 'WABA ID', placeholder: '...' }], category: 'social' },
+  { key: 'iys', label: 'İYS (NetGSM)', icon: ShieldCheck, iconBg: 'bg-gradient-to-br from-emerald-500 to-green-600', desc: 'İleti Yönetim Sistemi — pazarlama SMS izinleri', fields: [{ name: 'api_key', label: 'İYS Kullanıcı Adı', placeholder: '...' }, { name: 'api_secret', label: 'İYS Şifre', placeholder: '...' }, { name: 'iys_code', label: 'İYS Kodu', placeholder: '...' }, { name: 'brand_code', label: 'Marka Kodu', placeholder: '...' }], category: 'communication' },
   { key: 'meta_instagram', label: 'Instagram DM', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', desc: 'Instagram Mesajlaşma API', fields: [{ name: 'api_key', label: 'Access Token', placeholder: 'EAA...' }, { name: 'api_secret', label: 'Page ID', placeholder: '...' }], category: 'social' },
 ];
 

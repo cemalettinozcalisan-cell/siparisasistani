@@ -57,6 +57,7 @@ export class ApiKeysService {
           break;
         case 'netgsm':
         case 'twilio':
+        case 'iys':
           status = (data as any).api_key && (data as any).api_secret ? 'configured' : 'missing_credentials';
           break;
         case 'openai_tts': {

@@ -44,7 +44,7 @@ export class WhatsAppConversationsService {
         body: params.body,
         message: params.body,
         attachment: params.attachment || null,
-        status: 'sent',
+        status: 'queued',
       });
 
     if (error) {

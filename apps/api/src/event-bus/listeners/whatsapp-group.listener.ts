@@ -32,7 +32,7 @@ export class WhatsAppGroupListener implements OnModuleInit {
 
   private async isWhatsAppGroupEnabled(tenantId: string): Promise<boolean> {
     const { data } = await this.supabase.db
-      .from('settings')
+      .from('tenant_settings')
       .select('whatsapp_group_enabled')
       .eq('tenant_id', tenantId)
       .single();
