@@ -43,6 +43,15 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING'];
 const HISTORY_STATUSES = ['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING', 'PREPARING'];
 
+const CARGO_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  pending: { label: '📦 Kargoya Verildi', cls: 'bg-amber-100 text-amber-700' },
+  in_transit: { label: '🚚 Kargoda', cls: 'bg-cyan-100 text-cyan-700' },
+  out_for_delivery: { label: '📬 Dağıtımda', cls: 'bg-blue-100 text-blue-700' },
+  delivered: { label: '🏠 Teslim Edildi', cls: 'bg-green-100 text-green-700' },
+  failed: { label: '⚠️ Takip Hatası', cls: 'bg-red-100 text-red-700' },
+  unknown: { label: '❓ Bilinmiyor', cls: 'bg-slate-100 text-slate-600' },
+};
+
 const PAYMENT_LABELS: Record<string, string> = {
   IBAN: '🏦 IBAN', 'Kapıda Nakit': '💵 Kapıda Nakit', 'Kapıda Kredi Kartı': '💳 Kapıda Kart',
   'Link ile Ödeme': '🔗 Link', CASH: '💵 Nakit', CARD: '💳 Kart',
@@ -66,6 +75,7 @@ interface Order {
   notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
   customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
   customer_company: string; tax_office?: string; payment?: string; items?: OrderItem[];
+  cargo_company?: string; cargo_status?: string;
 }
 
 function TimerBadge({ date }: { date: string }) {
@@ -365,6 +375,9 @@ function OrdersPageContent() {
               </div>
               <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
                 <TimerBadge date={o.created_at} />
+                {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${CARGO_STATUS_BADGE[o.cargo_status].cls}`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
+                )}
                 {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
                 {o.customer_note && <span className="text-amber-500 truncate">📝 {o.customer_note.substring(0, 30)}</span>}
               </div>

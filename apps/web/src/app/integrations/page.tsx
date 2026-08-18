@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, Instagram, MessageSquare, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2 } from 'lucide-react';
+import { PhoneCall, Instagram, MessageSquare, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2, Truck, RefreshCw } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 import Link from 'next/link';
 
@@ -30,6 +30,10 @@ export default function IntegrationsPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [testPrinting, setTestPrinting] = useState(false);
   const [testPrintResult, setTestPrintResult] = useState<string | null>(null);
+  const [cargoInts, setCargoInts] = useState<Record<string, unknown>[]>([]);
+  const [cargoEdit, setCargoEdit] = useState<Record<string, Record<string, unknown>>>({});
+  const [testingCargo, setTestingCargo] = useState<string | null>(null);
+  const [cargoTestResult, setCargoTestResult] = useState<Record<string, string>>({});
   const [origin, setOrigin] = useState('');
   const tid = getTenantId();
 
@@ -49,6 +53,12 @@ export default function IntegrationsPage() {
           });
         }
         setApiKeys(map);
+      })
+      .catch(() => {});
+    fetch(`/api/cargo/integrations/${tid}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setCargoInts(data);
       })
       .catch(() => {});
   }, []);
@@ -106,6 +116,66 @@ export default function IntegrationsPage() {
 
   const printerType = String(settings.printer_type || 'thermal');
   const printerCopyCount = Number(settings.printer_copy_count || 1);
+
+  const getCargoField = (company: string, field: string): string => {
+    if (cargoEdit[company]?.[field] !== undefined) return String(cargoEdit[company][field] || '');
+    const row = cargoInts.find((c) => c.company === company);
+    if (!row) return '';
+    if (field === 'api_key') return String(row.api_key || '');
+    if (field === 'api_secret') return String(row.api_secret || '');
+    return '';
+  };
+
+  const setCargoField = (company: string, field: string, value: string) => {
+    setCargoEdit((prev) => ({ ...prev, [company]: { ...(prev[company] || {}), [field]: value } }));
+  };
+
+  const saveCargo = async (company: string) => {
+    const edits = cargoEdit[company] || {};
+    const body: Record<string, unknown> = {
+      enabled: !!getCargoField(company, 'api_key') || !!edits.enabled,
+      api_key: getCargoField(company, 'api_key'),
+      api_secret: getCargoField(company, 'api_secret'),
+    };
+    if (!body.api_key) body.enabled = false;
+    await fetch(`/api/cargo/integrations/${tid}/${company}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    setCargoEdit((prev) => {
+      const next = { ...prev };
+      delete next[company];
+      return next;
+    });
+    setCargoTestResult((prev) => {
+      const next = { ...prev };
+      delete next[company];
+      return next;
+    });
+    const res = await fetch(`/api/cargo/integrations/${tid}`);
+    const data = await res.json();
+    if (Array.isArray(data)) setCargoInts(data);
+  };
+
+  const testCargo = async (company: string) => {
+    setTestingCargo(company);
+    setCargoTestResult((prev) => ({ ...prev, [company]: '' }));
+    try {
+      const res = await fetch(`/api/cargo/integrations/${tid}/${company}/test`, { method: 'POST' });
+      const data = await res.json();
+      setCargoTestResult((prev) => ({ ...prev, [company]: data.success ? 'success' : 'error' }));
+    } catch {
+      setCargoTestResult((prev) => ({ ...prev, [company]: 'error' }));
+    }
+    setTestingCargo(null);
+  };
+
+  const cargoFieldActive = (company: string): boolean => {
+    const edits = cargoEdit[company];
+    if (edits?.api_key !== undefined) return !!edits.api_key;
+    return cargoInts.some((c) => c.company === company && !!c.api_key);
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -207,6 +277,110 @@ export default function IntegrationsPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Cargo Integrations */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Kargo Entegrasyonları</h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400">Firma API anahtarlarıyla gönderim + otomatik takip. Şimdilik kalan firmalar "Hazırlanıyor".</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => { const res = await fetch(`/api/cargo/integrations/${tid}`); const data = await res.json(); if (Array.isArray(data)) setCargoInts(data); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Yenile
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {cargoInts.map((firm) => {
+            const company = String(firm.company);
+            const label = String(firm.label);
+            const hasKey = cargoFieldActive(company);
+            const enabled = !!firm.enabled && hasKey;
+            const testResult = cargoTestResult[company];
+            return (
+              <div key={company} className={`relative rounded-xl border p-4 transition-all ${enabled ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-900/5' : 'border-slate-200 dark:border-slate-700'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg ${hasKey ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-100 dark:bg-slate-800'} flex items-center justify-center`}>
+                      <Truck className={`w-4 h-4 ${hasKey ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">
+                        {hasKey ? (enabled ? 'Aktif - otomatik takip açık' : 'API anahtarı kayıtlı (pasif)') : 'Entegrasyon tanımlı değil'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${enabled ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300 dark:bg-slate-600'}`} />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] text-gray-500 dark:text-slate-400 w-16 shrink-0">API Key</label>
+                    <input
+                      type="password"
+                      value={getCargoField(company, 'api_key')}
+                      onChange={(e) => setCargoField(company, 'api_key', e.target.value)}
+                      placeholder="Kullanıcı adı / anahtar"
+                      className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-400 outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] text-gray-500 dark:text-slate-400 w-16 shrink-0">Şifre</label>
+                    <input
+                      type="password"
+                      value={getCargoField(company, 'api_secret')}
+                      onChange={(e) => setCargoField(company, 'api_secret', e.target.value)}
+                      placeholder="Şifre / secret"
+                      className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:border-blue-400 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={() => saveCargo(company)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" /> Kaydet
+                  </button>
+                  <button
+                    onClick={() => testCargo(company)}
+                    disabled={testingCargo === company || !hasKey}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-[11px] font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-40"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingCargo === company ? 'animate-spin' : ''}`} />
+                    {testingCargo === company ? 'Test...' : 'Test'}
+                  </button>
+                  <a
+                    href={String(firm.support_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-auto text-[11px] text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Takip sayfası
+                  </a>
+                </div>
+
+                {testResult === 'success' && (
+                  <p className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400">✓ Bağlantı hazır</p>
+                )}
+                {testResult === 'error' && (
+                  <p className="mt-2 text-[11px] text-red-500 dark:text-red-400">✗ Bağlantı kurulamadı</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Printer Panel */}

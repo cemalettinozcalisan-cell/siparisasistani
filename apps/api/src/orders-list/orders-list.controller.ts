@@ -27,7 +27,7 @@ export class OrdersListController {
     try {
       let query = this.supabase.db
         .from('orders')
-        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, cargo_company, tracking_number, payment_method, payment_status, customer:customer_id(name, phone, city, address)')
+        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, cargo_company, cargo_status, tracking_number, payment_method, payment_status, customer:customer_id(name, phone, city, address)')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
 
@@ -53,6 +53,7 @@ export class OrdersListController {
         status: o.status, channel: o.channel, source: o.source || 'PHONE',
         notes: o.notes || '', customer_note: (o as any).customer_note || (o as any).notes || '',
         cargo_company: o.cargo_company || '', tracking_number: o.tracking_number || '',
+        cargo_status: o.cargo_status || '',
         payment_method: o.payment_method || '', payment_status: o.payment_status || '',
         created_at: o.created_at,
         customer_name: (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
