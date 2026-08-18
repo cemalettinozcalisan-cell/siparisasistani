@@ -5,9 +5,11 @@ import { SupabaseService } from '../common/supabase.client';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 import { InstagramService } from '../instagram/instagram.service';
 import { AiBrainModule } from '../ai/brain/ai-brain.module';
+import { MessagesModule } from '../messages/messages.module';
+import { IysModule } from '../iys/iys.module';
 
 @Module({
-  imports: [AiBrainModule],
+  imports: [AiBrainModule, MessagesModule, IysModule],
   controllers: [SalesEngineController],
   providers: [SalesEngineService, SupabaseService, WhatsAppConversationsService, InstagramService],
   exports: [SalesEngineService],

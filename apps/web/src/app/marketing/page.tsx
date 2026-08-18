@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save, Zap, Send, TrendingUp, Cake, Sparkles } from 'lucide-react';
+import { X, Edit3, Trash2, Tags, Gift, Clock, ShoppingCart, Calendar, Save, Zap, Send, TrendingUp, Cake, Sparkles, Megaphone, MessageSquare, RefreshCw, CheckCircle2, XCircle, Clock3 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { getTenantId, getUserRole } from '@/lib/tenant';
 
@@ -10,6 +10,19 @@ interface Campaign {
   min_amount: number; min_quantity: number; target_product: string;
   start_date: string; end_date: string; active: boolean; created_at: string;
 }
+
+interface WtTemplate {
+  id: string; name: string; category: string; language: string; body: string;
+  variables: { key: string; label: string }[]; status: string; meta_status?: string;
+  rejection_reason?: string; created_at: string;
+}
+
+const TEMPLATE_STATUS: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Taslak', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' },
+  pending_review: { label: 'Meta Onayında', cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+  approved: { label: 'Onaylı', cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
+  rejected: { label: 'Reddedildi', cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+};
 
 const DISCOUNT_TYPES = [
   { key: 'gift', label: 'Hediye Ürün', icon: Gift, gradient: 'from-pink-500 to-rose-600' },
@@ -25,10 +38,11 @@ const AUTOMATION_RULES = [
 ];
 
 export default function MarketingPage() {
-  const [tab, setTab] = useState<'automation' | 'campaigns'>('automation');
+  const [tab, setTab] = useState<'automation' | 'campaigns' | 'bulk' | 'templates'>('automation');
   const [settings, setSettings] = useState<Record<string, unknown>>({});
   const [stats, setStats] = useState<Record<string, unknown>>({});
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [templates, setTemplates] = useState<WtTemplate[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -40,18 +54,34 @@ export default function MarketingPage() {
 
   const [form, setForm] = useState({ title: '', description: '', condition: '', offer: '', minAmount: '', minQuantity: '', targetProduct: '', startDate: '', endDate: '' });
 
+  // Toplu gönderim
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [bulkChannel, setBulkChannel] = useState<'sms' | 'whatsapp'>('sms');
+  const [bulkMax, setBulkMax] = useState(500);
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkResult, setBulkResult] = useState<Record<string, unknown> | null>(null);
+
+  // WhatsApp şablonları
+  const [wtName, setWtName] = useState('');
+  const [wtCategory, setWtCategory] = useState('MARKETING');
+  const [wtBody, setWtBody] = useState('');
+  const [wtSubmitting, setWtSubmitting] = useState<string | null>(null);
+  const [wtMsg, setWtMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+
   useEffect(() => { setUserRole(getUserRole()); }, []);
 
   const loadAll = useCallback(async () => {
     try {
-      const [sRes, cRes, stRes] = await Promise.all([
+      const [sRes, cRes, stRes, tRes] = await Promise.all([
         fetch(`/api/settings/${tid}`).then(r => r.json()),
         fetch(`/api/campaigns/${tid}`).then(r => r.json()),
         fetch(`/api/sales-engine/stats/${tid}`).then(r => r.json()),
+        fetch(`/api/whatsapp-templates/${tid}`).then(r => r.json()),
       ]);
       setSettings(sRes);
       if (Array.isArray(cRes)) setCampaigns(cRes);
       setStats(stRes);
+      if (Array.isArray(tRes)) setTemplates(tRes);
     } catch (e) { console.error(e); }
   }, [tid]);
 
@@ -69,6 +99,51 @@ export default function MarketingPage() {
   const triggerAutomation = async () => {
     try { await fetch(`/api/sales-engine/trigger/${tid}`, { method: 'POST' }); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch { setError('Otomasyon tetiklenemedi.'); setTimeout(() => setError(''), 3000); }
     loadAll();
+  };
+
+  const sendBulk = async () => {
+    if (!bulkMessage.trim()) { setError('Mesaj boş olamaz.'); setTimeout(() => setError(''), 3000); return; }
+    setBulkSending(true); setBulkResult(null);
+    try {
+      const res = await fetch(`/api/sales-engine/bulk-send/${tid}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: bulkMessage, channel: bulkChannel, maxCustomers: bulkMax }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gönderilemedi');
+      setBulkResult(data);
+      loadAll();
+    } catch (e) { setError(`Gönderim başarısız: ${(e as Error).message}`); setTimeout(() => setError(''), 4000); }
+    setBulkSending(false);
+  };
+
+  const createTemplate = async () => {
+    if (!wtName.trim() || !wtBody.trim()) { setError('Şablon adı ve içerik zorunlu.'); setTimeout(() => setError(''), 3000); return; }
+    try {
+      await fetch(`/api/whatsapp-templates/${tid}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: wtName, category: wtCategory, language: 'tr', body: wtBody }),
+      });
+      setWtName(''); setWtBody('');
+      loadAll();
+    } catch { setError('Şablon kaydedilemedi.'); setTimeout(() => setError(''), 3000); }
+  };
+
+  const submitTemplate = async (t: WtTemplate) => {
+    setWtSubmitting(t.id); setWtMsg(null);
+    try {
+      const res = await fetch(`/api/whatsapp-templates/${tid}/${t.id}/submit`, { method: 'POST' });
+      const data = await res.json();
+      setWtMsg({ id: t.id, text: data.message || 'Gönderildi', ok: res.ok });
+      loadAll();
+    } catch (e) { setWtMsg({ id: t.id, text: (e as Error).message, ok: false }); }
+    setWtSubmitting(null);
+  };
+
+  const deleteTemplate = async (t: WtTemplate) => {
+    if (!confirm(`"${t.name}" şablonunu silmek istediğinize emin misiniz?`)) return;
+    try { await fetch(`/api/whatsapp-templates/${tid}/${t.id}`, { method: 'DELETE' }); loadAll(); }
+    catch { setError('Şablon silinemedi.'); setTimeout(() => setError(''), 3000); }
   };
 
   const openNewForm = () => { setEditingId(null); setDiscountType('gift'); setForm({ title: '', description: '', condition: '', offer: '', minAmount: '', minQuantity: '', targetProduct: '', startDate: '', endDate: '' }); setShowForm(true); };
@@ -111,10 +186,12 @@ export default function MarketingPage() {
       {error && <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">{error}</div>}
 
       {/* Tabs */}
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 flex-wrap">
         {[
           { key: 'automation' as const, label: 'Otomatik Satış', icon: Zap },
+          { key: 'bulk' as const, label: 'Toplu Gönder', icon: Megaphone },
           { key: 'campaigns' as const, label: 'Özel Kampanyalar', icon: Sparkles },
+          { key: 'templates' as const, label: 'WhatsApp Şablonları', icon: MessageSquare },
         ].map((t) => {
           const Icon = t.icon;
           return (
@@ -167,6 +244,24 @@ export default function MarketingPage() {
               </div>
               <Toggle enabled={!!settings.sales_automation_enabled} onChange={(v) => saveSetting('sales_automation_enabled', v)} />
             </div>
+          </div>
+
+          {/* Campaign channel */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                <Send size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">Kampanya Kanalı</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500">Doğum günü ve bayram mesajları hangi kanaldan gitsin?</p>
+              </div>
+            </div>
+            <select value={String(settings.campaign_channel || 'whatsapp')} onChange={(e) => saveSetting('campaign_channel', e.target.value)}
+              className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              <option value="whatsapp">WhatsApp</option>
+              <option value="sms">SMS (NetGSM)</option>
+            </select>
           </div>
 
           {/* Rule Cards */}
@@ -308,6 +403,140 @@ export default function MarketingPage() {
                 <Tags size={36} className="mx-auto mb-3 opacity-30" />
                 <p className="text-sm font-semibold text-slate-400">Henüz kampanya eklenmemiş</p>
                 <p className="text-xs mt-1">İlk kampanyanızı oluşturmak için "Kampanya Ekle" butonunu kullanın</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: Bulk send */}
+      {tab === 'bulk' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 flex items-center justify-center shrink-0 shadow-sm">
+                <Megaphone size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">Tek Seferlik Toplu Gönderim</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500">Tüm müşterilerinize aynı mesajı SMS veya WhatsApp ile gönderin. {`{name}`} yazarsanız müşteri adı ile değiştirilir.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] text-gray-500 w-24">Kanal:</span>
+              <div className="flex gap-2">
+                {([['sms', 'SMS (NetGSM)'], ['whatsapp', 'WhatsApp']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setBulkChannel(k)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${bulkChannel === k ? 'text-white bg-gradient-to-r from-fuchsia-600 to-pink-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mesaj</label>
+              <textarea value={bulkMessage} onChange={(e) => setBulkMessage(e.target.value)}
+                placeholder={`Merhaba {name}! Bu hafta özel fırsatlarımız var. Detay için arayabilirsiniz.`}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-fuchsia-500/30 outline-none min-h-[100px]" />
+              <p className="text-[10px] text-slate-400 mt-1">İpucu: İYS pazarlama izni olmayan müşteriler otomatik olarak atlanır.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] text-gray-500 w-24">Maks. Kişi:</span>
+              <input type="number" value={String(bulkMax)} onChange={(e) => setBulkMax(Number(e.target.value))}
+                className="w-24 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button onClick={sendBulk} disabled={bulkSending}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md disabled:opacity-50">
+                {bulkSending ? <Clock3 size={14} className="animate-spin" /> : <Send size={14} />}
+                {bulkSending ? 'Gönderiliyor...' : 'Gönder'}
+              </button>
+              {bulkResult && (
+                <div className="text-[11px] font-medium space-y-0.5">
+                  <p className="text-slate-500">Toplam: <b>{String(bulkResult.total)}</b> · İYS engeli: <b className="text-amber-600">{String(bulkResult.iys_blocked)}</b> · Gönderilen: <b className="text-emerald-600">{String(bulkResult.sent)}</b> · Hata: <b className="text-red-500">{String(bulkResult.failed)}</b></p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: WhatsApp templates */}
+      {tab === 'templates' && (
+        <div className="space-y-5">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-sm">
+                <MessageSquare size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white text-sm">Yeni WhatsApp Şablonu</p>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500">Oluşturup Meta'ya onaya gönderin. Onaylı şablonlar kampanya gönderimlerinde kullanılır.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input value={wtName} onChange={(e) => setWtName(e.target.value)} placeholder="Şablon adı (örn: ozel_kampanya_1)"
+                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+              <select value={wtCategory} onChange={(e) => setWtCategory(e.target.value)}
+                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                <option value="MARKETING">MARKETING</option>
+                <option value="UTILITY">UTILITY</option>
+              </select>
+            </div>
+            <textarea value={wtBody} onChange={(e) => setWtBody(e.target.value)}
+              placeholder={'Mesaj içeriği — değişkenler için {{1}}, {{2}} kullanın. Örn: "Merhaba {{1}}, bu hafta özel indirimlerimiz var!"'}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white min-h-[80px]" />
+            <button onClick={createTemplate}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md">
+              <Save size={14} /> Şablon Oluştur
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {templates.map((t) => {
+              const st = TEMPLATE_STATUS[t.status] || TEMPLATE_STATUS.draft;
+              return (
+                <div key={t.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">{t.name}</span>
+                        <span className="text-[10px] text-slate-400">{t.language} · {t.category}</span>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${st.cls}`}>{st.label}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5 whitespace-pre-wrap">{t.body}</p>
+                      {t.status === 'rejected' && t.rejection_reason && (
+                        <p className="text-[10px] text-red-500 mt-1">Red nedeni: {t.rejection_reason}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {t.status !== 'approved' && (
+                        <button onClick={() => submitTemplate(t)} disabled={wtSubmitting === t.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 disabled:opacity-50">
+                          {wtSubmitting === t.id ? <RefreshCw size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+                          Meta'ya Gönder
+                        </button>
+                      )}
+                      <button onClick={() => deleteTemplate(t)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  {wtMsg && wtMsg.id === t.id && (
+                    <p className={`mt-2 text-[10px] font-medium ${wtMsg.ok ? 'text-emerald-600' : 'text-red-500'}`}>{wtMsg.text}</p>
+                  )}
+                </div>
+              );
+            })}
+            {templates.length === 0 && (
+              <div className="py-14 text-center text-gray-400">
+                <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-semibold text-slate-400">Henüz WhatsApp şablonu yok</p>
+                <p className="text-xs mt-1">Yukarıdan ilk şablonunuzu oluşturun</p>
               </div>
             )}
           </div>

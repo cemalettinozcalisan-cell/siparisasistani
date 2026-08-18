@@ -3,6 +3,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 import { InstagramService } from '../instagram/instagram.service';
+import { OutboundService } from '../messages/outbound.service';
+import { IysService } from '../iys/iys.service';
+
+const PROMOTIONAL_TYPES = ['birthday', 'holiday', 'bulk', 'reorder', 'abandoned_cart'];
 
 @Injectable()
 export class SalesEngineService {
@@ -12,6 +16,8 @@ export class SalesEngineService {
     private readonly supabase: SupabaseService,
     private readonly whatsapp: WhatsAppConversationsService,
     private readonly instagram: InstagramService,
+    private readonly outbound: OutboundService,
+    private readonly iys: IysService,
   ) {}
 
   // Abandoned cart check every hour (more frequent than daily ops)
@@ -43,20 +49,21 @@ export class SalesEngineService {
     try {
       const { data: tenants } = await this.supabase.db
         .from('tenant_settings')
-        .select('tenant_id, sales_automation_enabled, reorder_reminder_days, birthday_reminder_enabled, holiday_campaigns_enabled, birthday_discount_type, birthday_discount_value, birthday_message_template')
+        .select('tenant_id, sales_automation_enabled, reorder_reminder_days, birthday_reminder_enabled, holiday_campaigns_enabled, birthday_discount_type, birthday_discount_value, birthday_message_template, campaign_channel')
         .eq('sales_automation_enabled', true);
 
       for (const t of tenants || []) {
         const tid = (t as any).tenant_id;
+        const channel = (t as any).campaign_channel === 'sms' ? 'sms' : 'whatsapp';
 
         if ((t as any).reorder_reminder_days > 0) {
           await this.processReorderReminders(tid, (t as any).reorder_reminder_days);
         }
         if ((t as any).birthday_reminder_enabled) {
-          await this.processBirthdayReminders(tid, (t as any).birthday_discount_type || 'percent', (t as any).birthday_discount_value || 10, (t as any).birthday_message_template || '');
+          await this.processBirthdayReminders(tid, (t as any).birthday_discount_type || 'percent', (t as any).birthday_discount_value || 10, (t as any).birthday_message_template || '', channel);
         }
         if ((t as any).holiday_campaigns_enabled) {
-          await this.processHolidayCampaigns(tid);
+          await this.processHolidayCampaigns(tid, channel);
         }
       }
     } catch (e) {
@@ -105,7 +112,7 @@ export class SalesEngineService {
     }
   }
 
-  private async processBirthdayReminders(tenantId: string, discountType: string, discountValue: number, messageTemplate: string) {
+  private async processBirthdayReminders(tenantId: string, discountType: string, discountValue: number, messageTemplate: string, channel: 'sms' | 'whatsapp' = 'whatsapp') {
     const today = new Date();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
@@ -138,7 +145,7 @@ export class SalesEngineService {
         message = `İyi ki doğdunuz ${(c as any).name || 'Değerli Müşterimiz'}! 🎂 Doğum gününüze özel ${discountDesc} kazandınız. Bugün yapacağınız alışverişte geçerlidir.`;
       }
 
-      await this.logCampaign(tenantId, 'birthday', (c as any).id, message, (c as any).phone);
+      await this.logCampaign(tenantId, 'birthday', (c as any).id, message, (c as any).phone, channel);
 
       // Create notification
       try {
@@ -156,7 +163,7 @@ export class SalesEngineService {
     this.logger.log(`[Birthday] Tenant ${tenantId}: ${sentCount} birthday messages sent for ${month}-${day}`);
   }
 
-  private async processHolidayCampaigns(tenantId: string) {
+  private async processHolidayCampaigns(tenantId: string, channel: 'sms' | 'whatsapp' = 'whatsapp') {
     const { data: campaigns } = await this.supabase.db
       .from('sales_campaigns')
       .select('*')
@@ -176,7 +183,7 @@ export class SalesEngineService {
         const message = (campaign as any).message_template
           .replace('{name}', (c as any).name || 'Değerli Müşterimiz');
 
-        await this.logCampaign(tenantId, 'holiday', (c as any).id, message, (c as any).phone);
+        await this.logCampaign(tenantId, 'holiday', (c as any).id, message, (c as any).phone, channel);
       }
       this.logger.log(`[Campaign] Tenant ${tenantId}: Campaign ${(campaign as any).name} processed for ${customers?.length || 0} customers`);
     }
@@ -233,36 +240,91 @@ export class SalesEngineService {
     }
   }
 
-  private async logCampaign(tenantId: string, type: string, customerId: string, message: string, phone?: string) {
+  private async logCampaign(tenantId: string, type: string, customerId: string, message: string, phone?: string, channel: 'sms' | 'whatsapp' | 'instagram' = 'whatsapp') {
+    const targetPhone = phone || customerId;
+
+    // İYS: pazarlama amaçlı gönderimlerde izin kontrolü (opt-out / NetİYS)
+    if (PROMOTIONAL_TYPES.includes(type) && targetPhone && targetPhone.startsWith('05')) {
+      try {
+        const consent = await this.iys.checkConsent(tenantId, targetPhone);
+        if (consent.consent === 'ret') {
+          await this.supabase.db.from('campaign_logs').insert({
+            tenant_id: tenantId,
+            type,
+            customer_id: customerId,
+            status: 'skipped_iys',
+            message,
+            error_message: 'İYS izni yok',
+            sent_at: new Date().toISOString(),
+          });
+          this.logger.log(`[Campaign] İYS opt-out — ${type} skipped for ${targetPhone}`);
+          return;
+        }
+      } catch (err) {
+        this.logger.warn(`[Campaign] İYS kontrolü başarısız (atlandı): ${(err as Error).message}`);
+      }
+    }
+
     let status = 'sent';
     let errorMsg = '';
 
-    // Try to send via WhatsApp if phone number is available
-    const targetPhone = phone || customerId;
-    if (targetPhone && targetPhone.startsWith('05')) {
-      try {
-        const convId = await this.whatsapp.findOrCreate(tenantId, targetPhone);
-        await this.whatsapp.addMessage({
-          tenantId,
-          conversationId: convId,
-          direction: 'outgoing',
-          body: message,
-        });
-        this.logger.log(`[Campaign] WhatsApp sent to ${targetPhone}: ${message.substring(0, 50)}...`);
-      } catch (e) {
-        status = 'failed';
-        errorMsg = String(e);
-        this.logger.error(`[Campaign] WhatsApp send failed for ${targetPhone}: ${e}`);
-      }
-    } else {
-      this.logger.log(`[Campaign] No valid phone, logged only: ${message.substring(0, 50)}...`);
-    }
-
-    // Try Instagram DM if type is instagram-related or phone starts with IG prefix
+    // Instagram DM
     if (targetPhone && targetPhone.startsWith('ig-')) {
       try {
         await this.instagram.sendMessage(targetPhone.replace('ig-', ''), tenantId, message);
-      } catch {}
+      } catch (e) {
+        status = 'failed';
+        errorMsg = String(e);
+      }
+      await this.supabase.db.from('campaign_logs').insert({
+        tenant_id: tenantId,
+        type,
+        customer_id: customerId,
+        status,
+        message,
+        error_message: errorMsg || null,
+        sent_at: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (targetPhone && targetPhone.startsWith('05')) {
+      if (channel === 'sms') {
+        try {
+          const res = await this.outbound.send({
+            tenantId,
+            channel: 'sms',
+            to: targetPhone,
+            body: message,
+            customerId,
+          });
+          if (!res.success) {
+            status = 'failed';
+            errorMsg = res.error || '';
+          }
+          this.logger.log(`[Campaign] SMS to ${targetPhone}: ${res.success ? 'sent' : res.error}`);
+        } catch (e) {
+          status = 'failed';
+          errorMsg = String(e);
+        }
+      } else {
+        try {
+          const convId = await this.whatsapp.findOrCreate(tenantId, targetPhone);
+          await this.whatsapp.addMessage({
+            tenantId,
+            conversationId: convId,
+            direction: 'outgoing',
+            body: message,
+          });
+          this.logger.log(`[Campaign] WhatsApp sent to ${targetPhone}: ${message.substring(0, 50)}...`);
+        } catch (e) {
+          status = 'failed';
+          errorMsg = String(e);
+          this.logger.error(`[Campaign] WhatsApp send failed for ${targetPhone}: ${e}`);
+        }
+      }
+    } else {
+      this.logger.log(`[Campaign] No valid phone, logged only: ${message.substring(0, 50)}...`);
     }
 
     await this.supabase.db.from('campaign_logs').insert({
@@ -274,6 +336,68 @@ export class SalesEngineService {
       error_message: errorMsg || null,
       sent_at: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Panelden tek seferlik toplu gönderim (SMS / WhatsApp).
+   * Önce İYS filtresinden geçirir, sonra drip (200ms aralıklarla) gönderir.
+   */
+  async bulkSend(tenantId: string, input: { message: string; channel?: 'sms' | 'whatsapp'; maxCustomers?: number }) {
+    const { message, channel = 'sms', maxCustomers = 500 } = input;
+    if (!message || !message.trim()) throw new Error('Mesaj boş olamaz');
+
+    const { data: customers } = await this.supabase.db
+      .from('customers')
+      .select('id, name, phone')
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null);
+
+    const withPhone = (customers || []).filter((c: any) => c.phone && c.phone.startsWith('05')) as { id: string; name: string; phone: string }[];
+
+    // İYS izni olanları seç
+    const allowedPhones = await this.iys.filterMarketingAllowed(tenantId, withPhone.map((c) => c.phone));
+    const allowed = withPhone.filter((c) => allowedPhones.includes(c.phone)).slice(0, maxCustomers);
+
+    let sent = 0;
+    let failed = 0;
+    for (const c of allowed) {
+      const msg = message.replace('{name}', c.name || 'Değerli Müşterimiz');
+      try {
+        if (channel === 'whatsapp') {
+          const convId = await this.whatsapp.findOrCreate(tenantId, c.phone);
+          await this.whatsapp.addMessage({ tenantId, conversationId: convId, direction: 'outgoing', body: msg });
+          await this.supabase.db.from('campaign_logs').insert({
+            tenant_id: tenantId, type: 'bulk', customer_id: c.id, status: 'sent', message: msg, sent_at: new Date().toISOString(),
+          });
+        } else {
+          const res = await this.outbound.send({ tenantId, channel: 'sms', to: c.phone, body: msg, customerId: c.id });
+          if (!res.success) {
+            await this.supabase.db.from('campaign_logs').insert({
+              tenant_id: tenantId, type: 'bulk', customer_id: c.id, status: 'failed', message: msg, error_message: res.error || '', sent_at: new Date().toISOString(),
+            });
+            failed++;
+            continue;
+          }
+          await this.supabase.db.from('campaign_logs').insert({
+            tenant_id: tenantId, type: 'bulk', customer_id: c.id, status: 'sent', message: msg, sent_at: new Date().toISOString(),
+          });
+        }
+        sent++;
+      } catch (err) {
+        failed++;
+        this.logger.error(`[Bulk] send failed for ${c.phone}: ${(err as Error).message}`);
+      }
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
+    this.logger.log(`[Bulk] Tenant ${tenantId}: total=${withPhone.length} allowed=${allowed.length} sent=${sent} failed=${failed} (iys filtered=${withPhone.length - allowed.length})`);
+    return {
+      total: withPhone.length,
+      iys_blocked: withPhone.length - allowed.length,
+      sent,
+      failed,
+      channel,
+    };
   }
 
   // --- REST API methods ---

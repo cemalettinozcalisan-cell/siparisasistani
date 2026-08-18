@@ -47,4 +47,14 @@ export class SalesEngineController {
     await this.service.dailyAutomation();
     return { status: 'triggered' };
   }
+
+  @Roles('owner', 'manager')
+  @Post('bulk-send/:tenantId')
+  async bulkSend(
+    @Param('tenantId') tenantId: string,
+    @Body() body: { message: string; channel?: 'sms' | 'whatsapp'; maxCustomers?: number },
+  ) {
+    this.logger.log(`Bulk send requested for tenant ${tenantId} (${body.channel || 'sms'})`);
+    return this.service.bulkSend(tenantId, body);
+  }
 }
