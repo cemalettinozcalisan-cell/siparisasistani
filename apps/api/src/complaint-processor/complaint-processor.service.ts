@@ -7,9 +7,9 @@ export interface AiComplaintInput {
   tenantId: string;
   customer?: { name?: string; phone?: string };
   orderId?: string;
-  complaintType: string;
-  complaintSeverity: string;
-  complaintConfidence: number;
+  complaintType?: string;
+  complaintSeverity?: string;
+  complaintConfidence?: number;
   description: string;
   channel: string;
   sessionId?: string;
@@ -20,8 +20,23 @@ export interface ComplaintResult {
   ticketNumber: string;
   status: string;
   severity: string;
+  created: boolean;
 }
 
+const SEVERITY_MAP: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
+  LOW: 'low', NORMAL: 'medium', HIGH: 'high', CRITICAL: 'critical',
+};
+
+/**
+ * Birleşik Şikayet Hattı (Unified Complaint Line)
+ *
+ * Tüm kanallardan (telefon, SMS, WhatsApp, Instagram, panel) gelen şikayetlerin
+ * TEK giriş noktası. Yaptıkları:
+ *   1. complaints tablosuna kayıt (esnaf için kalıcı şikayet kaydı)
+ *   2. Timeline COMPLAINT_OPEN kaydı
+ *   3. HUMAN_REQUIRED event'i → panel bildirimi (notifications) + WhatsApp grubu
+ *      (ai_events) + yazıcı (print_jobs) — NotificationService üzerinden
+ */
 @Injectable()
 export class ComplaintProcessorService {
   private readonly logger = new Logger(ComplaintProcessorService.name);
@@ -33,44 +48,95 @@ export class ComplaintProcessorService {
   ) {}
 
   async process(input: AiComplaintInput): Promise<ComplaintResult> {
+    // Oturum başına TEK şikayet (aynı konuşmada tekrar tekrar kayıt oluşmasın)
+    if (input.sessionId) {
+      const { data: existing } = await this.supabase.db
+        .from('complaints')
+        .select('id, ticket_number')
+        .eq('tenant_id', input.tenantId)
+        .eq('session_id', input.sessionId)
+        .maybeSingle();
+
+      if (existing) {
+        return {
+          ticketId: existing.id as string,
+          ticketNumber: String(existing.ticket_number || ''),
+          status: 'OPEN',
+          severity: String(input.complaintSeverity || 'NORMAL').toUpperCase(),
+          created: false,
+        };
+      }
+    }
+
     const ticketNumber = await this.generateTicketNumber(input.tenantId);
     const ticketId = `CMP-${ticketNumber}`;
+    const channel = input.channel || 'phone';
 
     const channelMap: Record<string, string> = {
-      phone: 'VOICE', whatsapp: 'WHATSAPP', web: 'WEB', panel: 'PANEL',
+      phone: 'VOICE', whatsapp: 'WHATSAPP', instagram: 'INSTAGRAM', sms: 'SMS', web: 'WEB', panel: 'PANEL',
     };
-    const channel = channelMap[input.channel] || 'VOICE';
+    const channelLabel = channelMap[channel] || 'VOICE';
 
-    // Timeline (entity_id null gönder, ticket ID metadata'da)
+    const severityKey = String(input.complaintSeverity || 'NORMAL').toUpperCase();
+    const priority = severityKey === 'CRITICAL' ? 'high' : severityKey === 'HIGH' ? 'high' : 'medium';
+
+    // 1) Kalıcı şikayet kaydı
+    const { data: complaint, error } = await this.supabase.db
+      .from('complaints')
+      .insert({
+        tenant_id: input.tenantId,
+        session_id: input.sessionId || null,
+        ticket_number: ticketNumber,
+        channel,
+        source: 'ai',
+        customer_name: input.customer?.name || null,
+        customer_phone: input.customer?.phone || null,
+        category: input.complaintType || 'general',
+        severity: SEVERITY_MAP[severityKey] || 'medium',
+        priority,
+        description: input.description,
+        status: 'open',
+        order_id: input.orderId || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      this.logger.error(`Complaint insert failed: ${error.message}`);
+    }
+
+    // 2) Timeline kaydı
     await this.timeline.logEvent({
       tenantId: input.tenantId,
       entityType: 'complaint',
       entityId: undefined,
       eventType: 'COMPLAINT_OPEN',
-      description: `⚠️ AI, ${input.customer?.name || 'Bilinmiyor'} için ${this.getSeverityLabel(input.complaintSeverity)} seviyede şikayet kaydı oluşturdu: ${input.description}`,
+      description: `⚠️ AI, ${input.customer?.name || 'Bilinmiyor'} için ${this.getSeverityLabel(severityKey)} seviyede şikayet kaydı oluşturdu: ${input.description}`,
       metadata: {
-        type: input.complaintType, severity: input.complaintSeverity,
+        type: input.complaintType, severity: severityKey,
         confidence: input.complaintConfidence, ticket_number: ticketNumber,
       },
-      channel,
+      channel: channelLabel,
       actorType: 'AI',
     });
 
-    // Event Bus
+    // 3) Event Bus → panel bildirimi + WhatsApp grubu + yazıcı
     this.eventBus.emit(SystemEvents.HUMAN_REQUIRED, input.tenantId, {
       entityType: 'complaint',
       ticketId,
-      severity: input.complaintSeverity,
+      ticketNumber,
+      severity: severityKey,
       description: input.description,
       customerName: input.customer?.name,
       customerPhone: input.customer?.phone,
-      channel: input.channel,
-      priority: input.complaintSeverity === 'CRITICAL' ? 'VERY_URGENT' : input.complaintSeverity === 'HIGH' ? 'URGENT' : 'NORMAL',
-    });
+      channel: channelLabel,
+      priority: severityKey === 'CRITICAL' ? 'VERY_URGENT' : severityKey === 'HIGH' ? 'URGENT' : 'NORMAL',
+    }, input.orderId);
 
-    this.logger.log(`Ticket created: ${ticketId} (${input.complaintSeverity})`);
+    this.logger.log(`Ticket created: ${ticketId} (${severityKey}) via ${channel}`);
+    const finalId = (complaint?.id as string) || ticketId;
 
-    return { ticketId, ticketNumber, status: 'OPEN', severity: input.complaintSeverity };
+    return { ticketId: finalId, ticketNumber, status: 'OPEN', severity: severityKey, created: true };
   }
 
   private async generateTicketNumber(tenantId: string): Promise<string> {

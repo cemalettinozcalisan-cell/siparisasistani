@@ -5,6 +5,7 @@ import { AiParserService } from '../conversation/parser/ai-parser';
 import { OrderValidatorService } from '../conversation/validator/validator';
 import { AiAuditService } from '../audit/ai-audit.service';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
+import { ComplaintProcessorService } from '../../complaint-processor/complaint-processor.service';
 import { SupabaseService } from '../../common/supabase.client';
 
 export interface BrainInput {
@@ -38,6 +39,7 @@ export interface BrainOutput {
   recommendedAction?: string;
   sendWhatsapp?: boolean;
   whatsappMessage?: string;
+  complaintCreated?: boolean;
 }
 
 export interface CallSummary {
@@ -67,6 +69,7 @@ export class AiBrainService {
     private readonly audit: AiAuditService,
     private readonly orderEngine: OrderEngineService,
     private readonly supabase: SupabaseService,
+    private readonly complaintProcessor: ComplaintProcessorService,
   ) {}
 
   async process(input: BrainInput): Promise<BrainOutput> {
@@ -221,6 +224,30 @@ export class AiBrainService {
       whatsappMessage: parsed.reply || '',
     };
 
+    // Faz 3: Birleşik Şikayet Hattı — şikayet intent'ini tüm kanallarda tek noktadan kaydet
+    // (telefon/SMS/Instagram/WhatsApp fark etmez; oturum başına tek kayıt)
+    let complaintCreated = false;
+    if (parsed.intent === 'COMPLAINT' && !parsed.confirmed) {
+      try {
+        const complaintResult = await this.complaintProcessor.process({
+          tenantId: input.tenantId,
+          customer: { name: parsed.customer?.name, phone: input.phone },
+          complaintType: parsed.complaintType,
+          complaintSeverity: parsed.complaintSeverity,
+          complaintConfidence: parsed.complaintConfidence || 0,
+          description: `[${input.channel}] Müşteri: "${lastMessage}"`,
+          channel: input.channel,
+          sessionId,
+        });
+        complaintCreated = complaintResult.created;
+        if (complaintCreated) {
+          this.logger.log(`Unified complaint ticket ${complaintResult.ticketNumber} from ${input.channel} session ${sessionId}`);
+        }
+      } catch (err) {
+        this.logger.error(`Unified complaint routing failed: ${(err as Error).message}`);
+      }
+    }
+
     // Step 11: Order Engine (only if validated + confirmed)
     if (validation.valid && parsed.confirmed) {
       try {
@@ -244,6 +271,7 @@ export class AiBrainService {
           duplicateWarning,
           providerUsed,
           ...routingFields,
+          complaintCreated,
         };
       } catch (err) {
         this.logger.error(`Order creation failed: ${(err as Error).message}`);
@@ -267,6 +295,7 @@ export class AiBrainService {
       needsHuman, maintenanceMode: false, afterHours: false,
       duplicateWarning, providerUsed,
       ...routingFields,
+      complaintCreated,
     };
   }
 

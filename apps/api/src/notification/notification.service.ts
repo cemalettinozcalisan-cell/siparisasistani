@@ -89,15 +89,27 @@ export class NotificationService implements OnModuleInit {
         });
         break;
 
-      case 'printer':
+      case 'printer': {
+        const isComplaint = (event.payload.entityType as string) === 'complaint';
+        const p = event.payload as Record<string, unknown>;
         await this.supabase.db.from('print_jobs').insert({
           tenant_id: event.tenantId,
           order_id: event.entityId,
           status: 'pending',
           retry_count: 0,
           max_retries: 3,
+          job_type: isComplaint ? 'complaint' : 'order',
+          payload: isComplaint ? {
+            ticketNumber: p.ticketNumber || '',
+            customerName: p.customerName || '',
+            customerPhone: p.customerPhone || '',
+            severity: p.severity || 'NORMAL',
+            description: p.description || '',
+            channel: p.channel || 'VOICE',
+          } : null,
         });
         break;
+      }
     }
   }
 }

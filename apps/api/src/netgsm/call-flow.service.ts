@@ -71,23 +71,9 @@ export class CallFlowService {
     const result = await this.brain.process(brainInput);
 
     // ---- Faz 3: Akıllı Yönlendirme (Intent-based) ----
+    // Şikayet kaydı (complaints + timeline + bildirim/yazıcı/grup) artık
+    // AiBrainService içinde birleşik olarak oluşturulur (complaintCreated).
     if (result.intent === 'COMPLAINT' && !result.orderCreated) {
-      try {
-        await this.supabase.db.from('complaints').insert({
-          tenant_id: session.tenant_id,
-          phone: session.phone,
-          source: 'phone',
-          category: result.complaintType || 'general',
-          severity: result.complaintSeverity || 'medium',
-          description: `Telefon görüşmesi sırasında şikayet tespit edildi. Müşteri: "${userMessage}"`,
-          priority: result.escalationLevel && result.escalationLevel >= 3 ? 'high' : 'medium',
-          status: 'open',
-        });
-        this.logger.log(`Complaint auto-created for session ${sessionId} - severity: ${result.complaintSeverity}`);
-      } catch (e) {
-        this.logger.error(`Complaint creation failed: ${(e as Error).message}`);
-      }
-
       const complaintAudio = await this.voice.generateSpeech(
         'Talebinizi not aldık. En kısa sürede size dönüş yapacağız.', session.tenant_id,
       );

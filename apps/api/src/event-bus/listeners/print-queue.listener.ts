@@ -30,7 +30,7 @@ export class PrintQueueListener implements OnModuleInit {
 
   private async isPrinterEnabled(tenantId: string): Promise<boolean> {
     const { data } = await this.supabase.db
-      .from('settings')
+      .from('tenant_settings')
       .select('printer_enabled')
       .eq('tenant_id', tenantId)
       .single();

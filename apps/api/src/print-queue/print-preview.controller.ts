@@ -88,6 +88,39 @@ export class PrintPreviewController {
     return this.format.generateA4(result.orderData, result.items);
   }
 
+  /** Şikayet fişi — birleşik şikayet hattından gelen kaydı yazdırır */
+  @Get('complaint/:tenantId/:ticketNumber')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async renderComplaint(@Param('tenantId') tenantId: string, @Param('ticketNumber') ticketNumber: string) {
+    try {
+      const { data: complaint } = await this.supabase.db
+        .from('complaints')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('ticket_number', ticketNumber)
+        .maybeSingle();
+
+      if (complaint) {
+        return this.format.generateComplaintA4({
+          ...complaint,
+          customerName: complaint.customer_name,
+          customerPhone: complaint.customer_phone,
+          ticketNumber: complaint.ticket_number,
+        });
+      }
+    } catch {}
+
+    return this.format.generateComplaintA4({
+      ticketNumber,
+      customerName: '-',
+      customerPhone: '-',
+      severity: 'NORMAL',
+      description: 'Kayıt bulunamadı',
+      channel: '-',
+      created_at: new Date().toISOString(),
+    });
+  }
+
   private async getOrderData(tenantId: string, orderId: string): Promise<{ orderData: Record<string, unknown>; items: Record<string, unknown>[] } | null> {
     // Try real data first
     try {

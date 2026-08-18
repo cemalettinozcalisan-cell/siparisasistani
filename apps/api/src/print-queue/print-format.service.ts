@@ -89,4 +89,38 @@ ${note ? `<div class="note">📝 Müşteri Notu: ${note}</div>` : ''}
 <div class="footer">SiparişAsistanı - AI Ticaret İşletim Sistemi</div>
 </body></html>`;
   }
+
+  generateComplaintA4(complaint: Record<string, unknown>): string {
+    const severityMap: Record<string, string> = {
+      LOW: 'Düşük', NORMAL: 'Normal', HIGH: 'Yüksek', CRITICAL: 'Kritik',
+    };
+    const channelMap: Record<string, string> = {
+      VOICE: 'Sesli Arama', WHATSAPP: 'WhatsApp', INSTAGRAM: 'Instagram', SMS: 'SMS', WEB: 'Web', PANEL: 'Panel',
+    };
+    const severity = String(complaint.severity || 'NORMAL').toUpperCase();
+    const severityColor = severity === 'CRITICAL' ? '#dc2626' : severity === 'HIGH' ? '#ea580c' : severity === 'LOW' ? '#059669' : '#d97706';
+
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Şikayet #${complaint.ticketNumber || ''}</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:30px;color:#333}
+  h1{color:#dc2626;border-bottom:2px solid #dc2626;padding-bottom:8px;font-size:20px}
+  .sev{display:inline-block;color:#fff;background:${severityColor};padding:4px 14px;border-radius:6px;font-size:12px;font-weight:bold;margin:8px 0}
+  .info{background:#fef2f2;padding:12px;border-radius:8px;margin:12px 0;font-size:13px;line-height:1.7}
+  .desc{background:#f9fafb;border-left:4px solid #dc2626;padding:12px;border-radius:6px;margin:12px 0;font-size:14px}
+  .footer{margin-top:30px;font-size:11px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:12px}
+</style></head><body>
+<h1>⚠️ Şikayet Fişi</h1>
+<div class="sev">${severityMap[severity] || 'Normal'} Öncelik</div>
+<div class="info">
+  <strong>Ticket No:</strong> #${complaint.ticketNumber || '-'}<br>
+  <strong>Tarih:</strong> ${complaint.created_at ? new Date(complaint.created_at as string).toLocaleString('tr-TR') : new Date().toLocaleString('tr-TR')}<br>
+  <strong>Kanal:</strong> ${channelMap[String(complaint.channel || '')] || complaint.channel || '-'}<br>
+  <strong>Müşteri:</strong> ${complaint.customerName || '-'}<br>
+  <strong>Telefon:</strong> ${complaint.customerPhone || '-'}
+</div>
+<div class="desc"><strong>Şikayet:</strong><br>${complaint.description || '-'}</div>
+<div class="footer">SiparişAsistanı - AI Ticaret İşletim Sistemi</div>
+</body></html>`;
+  }
 }
