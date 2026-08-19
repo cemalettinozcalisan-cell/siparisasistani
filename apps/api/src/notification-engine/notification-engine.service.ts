@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { EventBusService } from '../event-bus/event-bus.service';
+import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { OrderCreatedHandler } from './handlers/order-created.handler';
 import { ComplaintHandler } from './handlers/complaint.handler';
 import { PaymentHandler } from './handlers/payment.handler';
@@ -22,6 +22,8 @@ export class NotificationEngineService implements OnModuleInit {
     this.register(complaint);
     this.register(payment);
     this.register(shipment);
+    // Kargo gönderimi iki farklı olay adıyla yayınlanabilir (STATUS_UPDATED / ORDER_SHIPPED)
+    this.handlers.set(SystemEvents.ORDER_SHIPPED, shipment);
   }
 
   private register(handler: NotificationHandler) {

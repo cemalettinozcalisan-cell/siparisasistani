@@ -13,12 +13,12 @@ export class ShipmentHandler implements NotificationHandler {
     const p = event.payload as Record<string, unknown>;
     const status = p.status as string;
 
-    if (status === 'SHIPPED') {
+    if (event.type === 'ORDER_SHIPPED' || status === 'SHIPPED') {
       await this.supabase.db.from('notifications').insert({
         tenant_id: event.tenantId,
         type: 'cargo',
         title: '🚚 Kargoya Verildi',
-        message: `${p.cargoCompany || ''} - ${p.trackingNo || ''}`,
+        message: `${p.cargoCompany || ''} ${p.trackingNumber || p.trackingNo || ''}`.trim(),
         status: 'unread',
       });
     } else if (status === 'DELIVERED') {

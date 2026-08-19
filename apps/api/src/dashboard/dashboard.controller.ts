@@ -63,22 +63,22 @@ export class DashboardController {
 
     const normalizeStatus = (s: unknown) => String(s || '').toUpperCase();
 
-    // Bekleyen = ödemesi yapılmamış VE kargosu teslim edilmemiş
-    const pendingOrdersList = orders
+    // Kargo Takibi = kargoya verilmiş (SHIPPED) ama henüz teslim edilmemiş siparişler.
+    // Teslim edilince status DELIVERED olur ve buradan otomatik kaybolur.
+    const cargoTrackingList = orders
       .filter((o) => {
         const st = normalizeStatus(o.status);
-        if (DELIVERED_STATUSES.includes(st)) return false;
-        const pay = normalizeStatus(o.payment_status);
-        return pay !== 'PAID';
+        return st === 'SHIPPED' && !DELIVERED_STATUSES.includes(st);
       })
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((o) => this.mapOrder(o));
 
     // Bugünkü siparişler — modal için detaylı
     const todayOrdersList = todayOrders
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map((o) => this.mapOrder(o));
 
-    const pendingOrders = pendingOrdersList.map((o) => this.mapOrder(o));
+    const cargoTracking = cargoTrackingList.length;
 
     // AI Satış: AI kanallarından bugün kapatılan siparişlerin cirosu
     const aiRevenue = todayOrders
@@ -111,7 +111,7 @@ export class DashboardController {
 
     return {
       todayOrders: todayOrders.length,
-      pendingOrders: pendingOrders.length,
+      cargoTracking,
       totalCustomers: customers.length,
       todayRevenue: todayOrders.reduce((sum, o) => sum + Number(o.total_price), 0),
       totalRevenue: (payments || []).reduce((sum, p) => sum + Number(p.amount), 0),
@@ -120,7 +120,7 @@ export class DashboardController {
       aiSuccessRate,
       complaints24h,
       todayOrdersList,
-      pendingOrdersList: pendingOrders,
+      cargoTrackingList,
       orderStats: {
         preparing: orders.filter((o) => normalizeStatus(o.status) === 'PACKAGING' || normalizeStatus(o.status) === 'PACKAGED' || normalizeStatus(o.status) === 'PREPARING').length,
         shipped: orders.filter((o) => normalizeStatus(o.status) === 'SHIPPED').length,
@@ -142,6 +142,7 @@ export class DashboardController {
       payment_status: o.payment_status,
       cargo_company: o.cargo_company || '',
       tracking_number: o.tracking_number || '',
+      cargo_status: o.cargo_status || '',
       created_at: o.created_at,
       customer_name: cust.name || '',
       customer_phone: cust.phone || '',
@@ -171,14 +172,14 @@ export class DashboardController {
     ];
     const todayOrdersList = mockOrders
       .filter((o) => ['ord-001', 'ord-002', 'ord-003'].includes(o.id))
-      .map((o) => ({ ...o, created_at: iso(0) }));
-    const pendingOrdersList = mockOrders
-      .filter((o) => o.payment_status === 'waiting' && o.status !== 'DELIVERED')
-      .map((o) => ({ ...o, created_at: iso(0) }));
+      .map((o) => ({ ...o, created_at: iso(0), cargo_status: (o as any).cargo_status || '' }));
+    const cargoTrackingList = mockOrders
+      .filter((o) => ['SHIPPED', 'shipped'].includes(String(o.status)))
+      .map((o) => ({ ...o, created_at: iso(0), cargo_status: (o as any).cargo_status || 'in_transit' }));
 
     return {
       todayOrders: todayOrdersList.length,
-      pendingOrders: pendingOrdersList.length,
+      cargoTracking: cargoTrackingList.length,
       totalCustomers: 126,
       todayRevenue: todayOrdersList.reduce((s, o) => s + Number(o.total_price), 0),
       totalRevenue: 24800,
@@ -191,7 +192,7 @@ export class DashboardController {
         { id: 'c3', event_type: 'HUMAN_REQUIRED', description: 'Müşteri iade talebinde bulundu, insan müdahalesi gerekiyor', channel: 'WHATSAPP', severity: 'NORMAL', ticket_number: 'TKT-0003', created_at: iso(14400000) },
       ],
       todayOrdersList,
-      pendingOrdersList,
+      cargoTrackingList,
       orderStats: {
         preparing: 3,
         shipped: 2,
