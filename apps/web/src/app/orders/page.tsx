@@ -55,7 +55,10 @@ const CARGO_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 const PAYMENT_LABELS: Record<string, string> = {
   IBAN: '🏦 IBAN', 'Kapıda Nakit': '💵 Kapıda Nakit', 'Kapıda Kredi Kartı': '💳 Kapıda Kart',
   'Link ile Ödeme': '🔗 Link', CASH: '💵 Nakit', CARD: '💳 Kart',
+  iban: '🏦 IBAN', cod: '💵 Kapıda Ödeme', website: '🔗 Link', paytr: '💳 Kart', iyzico: '💳 Kart',
 };
+
+const COD_METHODS = ['cod', 'Kapıda Nakit', 'Kapıda Kredi Kartı', 'Kapıda Ödeme', 'CASH', 'CARD'];
 
 const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_name', label: 'Müşteri Ad Soyad' },
@@ -76,6 +79,8 @@ interface Order {
   customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
   customer_company: string; tax_office?: string; payment?: string; items?: OrderItem[];
   cargo_company?: string; cargo_status?: string;
+  tracking_number?: string;
+  payment_method?: string; payment_status?: string;
 }
 
 function TimerBadge({ date }: { date: string }) {
@@ -118,6 +123,9 @@ function OrdersPageContent() {
   const [editItems, setEditItems] = useState<OrderItem[]>([]);
   const [showCargo, setShowCargo] = useState(false);
   const [cargoForm, setCargoForm] = useState({ company: '', tracking: '' });
+  const [defaultCargo, setDefaultCargo] = useState<{ company: string; label: string } | null>(null);
+  const [cargoMsg, setCargoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [cargoBusy, setCargoBusy] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [products, setProducts] = useState<Array<{ productName: string; unit: string; price: number }>>([]);
   const [productSearch, setProductSearch] = useState<Record<number, { open: boolean; query: string }>>({});
@@ -129,6 +137,12 @@ function OrdersPageContent() {
       if (Array.isArray(d)) setProducts(d.map((p: any) => ({
         productName: p.product_name || p.name || '', unit: p.unit || 'KG', price: Number(p.price || 0),
       })));
+    }).catch(() => {});
+    fetch(`/api/cargo/integrations/${tid}`).then(r => r.json()).then((d) => {
+      if (Array.isArray(d)) {
+        const def = d.find((c: any) => c.is_default) || d.find((c: any) => c.enabled && c.configured);
+        if (def) setDefaultCargo({ company: String(def.company), label: String(def.label) });
+      }
     }).catch(() => {});
   }, []);
 
@@ -198,14 +212,32 @@ function OrdersPageContent() {
     loadOrderItems(order);
   };
 
-  const handleApproveAndShip = async () => {
-    if (!selected || !cargoForm.company || !cargoForm.tracking) return;
-    await fetch(`/api/orders/${selected.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'PAYMENT_CONFIRMED' }) });
-    await fetch(`/api/orders/${selected.id}/cargo`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ cargo_company: cargoForm.company, tracking_number: cargoForm.tracking }) });
-    loadOrders();
-    setSelected(null);
-    setShowCargo(false);
-    setCargoForm({ company: '', tracking: '' });
+  const handleShip = async () => {
+    if (!selected) return;
+    setCargoBusy(true);
+    setCargoMsg(null);
+    try {
+      // 1) Ön ödemeli siparişlerde ödemeyi onayla (kapıda ödeme DEĞİLSE)
+      const isCod = COD_METHODS.includes(selected.payment_method || selected.payment || '');
+      if (!isCod && selected.status === 'PAYMENT_WAITING') {
+        await fetch(`/api/orders/${selected.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'PAYMENT_CONFIRMED' }) });
+      }
+      // 2) Varsayılan kargo firmasıyla gönderim oluştur (takip kodu API'den gelir)
+      const res = await fetch(`/api/cargo/shipments/${tid}/${selected.id}`, { method: 'POST', headers: authHeaders() });
+      const data = await res.json();
+      if (!data.success) {
+        setCargoMsg({ ok: false, text: data.message || 'Kargo gönderimi başarısız.' });
+        setCargoBusy(false);
+        return;
+      }
+      setCargoMsg({ ok: true, text: `Kargoya verildi — takip no: ${data.trackingNumber}` });
+      loadOrders();
+      setSelected(null);
+      setShowCargo(false);
+    } catch {
+      setCargoMsg({ ok: false, text: 'Kargo gönderimi başarısız.' });
+    }
+    setCargoBusy(false);
   };
 
   const handleRevise = async () => {
@@ -355,7 +387,7 @@ function OrdersPageContent() {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
-          const pmLabel = o.payment ? PAYMENT_LABELS[o.payment] || `💳 ${o.payment}` : '';
+          const pmLabel = PAYMENT_LABELS[o.payment || o.payment_method || ''] || (o.payment ? `💳 ${o.payment}` : '');
           return (
             <div key={o.id} onClick={() => selectOrder(o)}
               className={`bg-white dark:bg-slate-800 rounded-xl border px-4 py-3 cursor-pointer hover:shadow-md transition-all ${
@@ -419,6 +451,12 @@ function OrdersPageContent() {
                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">📝 {selected.customer_note || selected.notes}</div>
                   )}
 
+                  {(selected.cargo_company || selected.tracking_number) && (
+                    <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg text-xs text-cyan-700 dark:text-cyan-300">
+                      <p>🚚 Kargo: <b>{selected.cargo_company}</b> · Takip No: <b>{selected.tracking_number}</b></p>
+                    </div>
+                  )}
+
                   <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
                     <div className="text-xs text-gray-400 mb-1">Sipariş Kalemleri</div>
                     {items.length > 0 ? (
@@ -439,13 +477,32 @@ function OrdersPageContent() {
                     )}
                   </div>
 
-                  {/* Cargo Form (active only) */}
+                  {/* Cargo Ship (active only) */}
                   {showCargo && activeTab === 'active' && (
-                    <div className="space-y-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                      <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Kargo Bilgisi</h3>
-                      <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })} placeholder="Kargo firması (örn: MNG)" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
-                      <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })} placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
-                      <button onClick={handleApproveAndShip} className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20">✅ Ödemeyi Onayla & Kargoya Ver</button>
+                    <div className="space-y-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                      <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">🚚 Kargoya Ver</h3>
+                      <div className="text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
+                        {defaultCargo ? (
+                          <>
+                            <p>Kargo firması: <b>{defaultCargo.label}</b> <span className="text-emerald-500/70">(varsayılan)</span></p>
+                            <p>Takip kodu gönderim anında API'den otomatik alınır.</p>
+                            {COD_METHODS.includes(selected.payment_method || selected.payment || '') ? (
+                              <p className="text-amber-600 dark:text-amber-400">💵 Kapıda ödeme — tahsilat teslimatta yapılacaktır.</p>
+                            ) : (
+                              <p>Ödeme onaylanacak ve müşteri kargo bilgisiyle bilgilendirilecek.</p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-amber-600 dark:text-amber-400">Kargo entegrasyonu tanımlı değil. Önce <b>Entegrasyonlar → Kargo Entegrasyonları</b>'ndan bir firmaya API anahtarı girin ve <b>Varsayılan Yap</b> ile işaretleyin.</p>
+                        )}
+                      </div>
+                      <button onClick={handleShip} disabled={!defaultCargo || cargoBusy}
+                        className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20">
+                        {cargoBusy ? 'Gönderiliyor...' : '🚚 Kargoya Ver'}
+                      </button>
+                      {cargoMsg && (
+                        <p className={`text-[11px] font-medium ${cargoMsg.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-500'}`}>{cargoMsg.text}</p>
+                      )}
                     </div>
                   )}
                   {/* Cargo Form (history - revise only) */}
@@ -556,9 +613,9 @@ function OrdersPageContent() {
                   <Printer size={13} /> Yazdır
                 </button>
                 {activeTab === 'active' ? (
-                  <button onClick={() => setShowCargo(!showCargo)}
+                  <button onClick={() => { setShowCargo(!showCargo); setCargoMsg(null); }}
                     className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 text-emerald-600 dark:text-emerald-400'} hover:shadow`}>
-                    <Truck size={13} /> Öde&Kargo
+                    <Truck size={13} /> Kargoya Ver
                   </button>
                 ) : (
                   <button onClick={() => setShowCargo(!showCargo)}

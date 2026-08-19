@@ -3,7 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState } from 'react';
-import { PhoneCall, Instagram, MessageSquare, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2, Truck, RefreshCw } from 'lucide-react';
+import { PhoneCall, Instagram, MessageSquare, Globe, Printer, Save, Settings2, Copy, Check, Webhook, Volume2, Truck, RefreshCw, Star } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 import Link from 'next/link';
 
@@ -171,6 +171,13 @@ export default function IntegrationsPage() {
     setTestingCargo(null);
   };
 
+  const setDefaultCargo = async (company: string) => {
+    await fetch(`/api/cargo/integrations/${tid}/${company}/default`, { method: 'POST' });
+    const res = await fetch(`/api/cargo/integrations/${tid}`);
+    const data = await res.json();
+    if (Array.isArray(data)) setCargoInts(data);
+  };
+
   const cargoFieldActive = (company: string): boolean => {
     const edits = cargoEdit[company];
     if (edits?.api_key !== undefined) return !!edits.api_key;
@@ -308,6 +315,11 @@ export default function IntegrationsPage() {
             const testResult = cargoTestResult[company];
             return (
               <div key={company} className={`relative rounded-xl border p-4 transition-all ${enabled ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-900/5' : 'border-slate-200 dark:border-slate-700'}`}>
+                {!!firm.is_default && (
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm">
+                    ⭐ Varsayılan
+                  </span>
+                )}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className={`w-8 h-8 rounded-lg ${hasKey ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-100 dark:bg-slate-800'} flex items-center justify-center`}>
@@ -360,6 +372,14 @@ export default function IntegrationsPage() {
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${testingCargo === company ? 'animate-spin' : ''}`} />
                     {testingCargo === company ? 'Test...' : 'Test'}
+                  </button>
+                  <button
+                    onClick={() => setDefaultCargo(company)}
+                    disabled={!!firm.is_default}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-amber-200 dark:border-amber-700 text-amber-600 dark:text-amber-400 rounded-lg text-[11px] font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all disabled:opacity-40"
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                    {firm.is_default ? 'Varsayılan' : 'Varsayılan Yap'}
                   </button>
                   <a
                     href={String(firm.support_url)}

@@ -78,7 +78,7 @@ export class OrderProcessorService {
         source: input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : input.channel === 'sms' ? 'SMS' : 'PANEL'),
         status: 'new',
         payment_method: this.mapPayment(input.payment),
-        payment_status: input.payment && input.payment !== 'UNKNOWN' ? 'paid' : 'waiting',
+        payment_status: input.payment === 'cash_on_delivery' ? 'waiting' : (input.payment && input.payment !== 'UNKNOWN' ? 'paid' : 'waiting'),
         total_price: totalPrice,
         notes: null,
         ai_confidence: input.orderConfidence || 0,
@@ -267,7 +267,8 @@ export class OrderProcessorService {
   private mapPayment(payment?: string): string {
     const map: Record<string, string> = {
       IBAN: 'iban', CASH: 'iban', CARD: 'website', PAYTR: 'paytr',
-      UNKNOWN: 'iban',
+      UNKNOWN: 'iban', CASH_ON_DELIVERY: 'cod', cash_on_delivery: 'cod',
+      'Kapıda Nakit': 'cod', 'Kapıda Kredi Kartı': 'cod', 'Kapıda Ödeme': 'cod',
     };
     return map[payment || ''] || 'iban';
   }

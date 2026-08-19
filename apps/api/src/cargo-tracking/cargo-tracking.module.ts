@@ -11,6 +11,7 @@ import { PttProvider } from './providers/ptt.provider';
 import { TimelineModule } from '../timeline/timeline.module';
 import { EventBusModule } from '../event-bus/event-bus.module';
 import { SupabaseService } from '../common/supabase.client';
+import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 
 @Module({
   imports: [TimelineModule, EventBusModule],
@@ -19,6 +20,7 @@ import { SupabaseService } from '../common/supabase.client';
     CargoTrackingService,
     CargoFirmFactory,
     SupabaseService,
+    WhatsAppConversationsService,
     YurticiProvider,
     ArasProvider,
     MngProvider,

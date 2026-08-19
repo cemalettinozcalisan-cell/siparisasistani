@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
 import { TimelineService } from '../timeline/timeline.service';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
+import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 import { CargoFirmFactory } from './cargo.factory';
 import { CargoShipmentRequest, CargoProviderNotConfiguredError } from './cargo-provider.interface';
 
@@ -45,10 +46,41 @@ export class CargoTrackingService {
     private readonly timeline: TimelineService,
     private readonly eventBus: EventBusService,
     private readonly factory: CargoFirmFactory,
+    private readonly whatsapp: WhatsAppConversationsService,
   ) {}
 
-  /** Default mod sorgu botu — her 30 dakikada bir çalışır */
-  @Cron('0 */30 * * * *')
+  /** Varsayılan kargo firmasını döner: ayar → ilk enabled entegrasyon → null */
+  async getDefaultCargoCompany(tenantId: string): Promise<string | null> {
+    const { data: settings } = await this.supabase.db
+      .from('tenant_settings')
+      .select('default_cargo_company')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    if (settings?.default_cargo_company) return settings.default_cargo_company as string;
+
+    const { data: integrations } = await this.supabase.db
+      .from('cargo_integrations')
+      .select('company')
+      .eq('tenant_id', tenantId)
+      .eq('enabled', true)
+      .limit(1);
+
+    return integrations?.[0]?.company || null;
+  }
+
+  /** Entegrasyonlar sayfasından "Varsayılan Yap" ile kargo firmasını ayarlar. */
+  async setDefaultCargoCompany(tenantId: string, company: string): Promise<void> {
+    const adapter = this.factory.getAdapter(company);
+    if (!adapter) throw new Error('Firma tanınmıyor');
+
+    await this.supabase.db
+      .from('tenant_settings')
+      .upsert({ tenant_id: tenantId, default_cargo_company: adapter.company }, { onConflict: 'tenant_id' });
+  }
+
+  /** Default mod sorgu botu — her 15 dakikada bir çalışır */
+  @Cron('0 */15 * * * *')
   async pollShippedOrders() {
     try {
       const cutoff = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
@@ -112,9 +144,10 @@ export class CargoTrackingService {
 
   /**
    * Siparişi kargo firması üzerinden gönderime verir.
-   * Firma entegrasyonu yoksa hata mesajı döner (UI'da "API anahtarı tanımlı değil" gösterilir).
+   * Firma sırası: istek parametresi → siparişte kayıtlı firma → varsayılan firma.
+   * Başarıda takip kodu API'den gelir (elle girilmez), müşteri bilgilendirilir.
    */
-  async createShipment(tenantId: string, orderId: string): Promise<{ success: boolean; message?: string; trackingNumber?: string }> {
+  async createShipment(tenantId: string, orderId: string, company?: string): Promise<{ success: boolean; message?: string; trackingNumber?: string }> {
     const { data: order, error } = await this.supabase.db
       .from('orders')
       .select('*, customer:customer_id(name, phone, address, city), items:order_items(product_name, quantity, unit, unit_price)')
@@ -125,13 +158,17 @@ export class CargoTrackingService {
     if (error || !order) return { success: false, message: 'Sipariş bulunamadı' };
 
     const o = order as any;
-    const customer = o.customer || {};
-    const items = (o.items || []).map((i: any) => ({ productName: i.product_name, quantity: Number(i.quantity), unit: i.unit, price: Number(i.unit_price) }));
-    const adapter = this.factory.getAdapter(String(o.cargo_company || ''));
-    if (!adapter) return { success: false, message: 'Kargo firması tanımsız' };
+    const defaultCompany = company || o.cargo_company || (await this.getDefaultCargoCompany(tenantId));
+    const adapter = this.factory.getAdapter(String(defaultCompany || ''));
+    if (!adapter) {
+      return { success: false, message: 'Kargo firması tanımlı değil. Entegrasyonlar sayfasından bir firmayı "Varsayılan Yap" ile işaretleyin.' };
+    }
     if (!(await adapter.isConfigured(tenantId))) {
       return { success: false, message: `${adapter.label} entegrasyonu tanımlı değil. API anahtarlarını Entegrasyonlar sayfasından ekleyin.` };
     }
+
+    const customer = o.customer || {};
+    const items = (o.items || []).map((i: any) => ({ productName: i.product_name, quantity: Number(i.quantity), unit: i.unit, price: Number(i.unit_price) }));
 
     const req: CargoShipmentRequest = {
       tenantId,
@@ -150,7 +187,7 @@ export class CargoTrackingService {
       const result = await adapter.createShipment(tenantId, req);
       await this.supabase.db
         .from('orders')
-        .update({ tracking_number: result.trackingNumber, cargo_status: 'pending', cargo_status_updated_at: new Date().toISOString(), status: 'SHIPPED' })
+        .update({ cargo_company: adapter.company, tracking_number: result.trackingNumber, cargo_status: 'pending', cargo_status_updated_at: new Date().toISOString(), status: 'SHIPPED' })
         .eq('tenant_id', tenantId)
         .eq('id', orderId);
 
@@ -164,10 +201,44 @@ export class CargoTrackingService {
         channel: 'SYSTEM',
       });
 
+      // Müşteriye kargo bildirimi (firma + takip no + takip linki)
+      await this.notifyCustomer(tenantId, o, adapter.company, result.trackingNumber);
+
+      // Kargo gönderildi olayı (NotificationService → grup + yazıcı)
+      this.eventBus.emit(SystemEvents.ORDER_SHIPPED, tenantId, {
+        entityType: 'order',
+        orderId,
+        cargoCompany: adapter.company,
+        trackingNumber: result.trackingNumber,
+        description: `Sipariş #${o.order_number} kargoya verildi - ${adapter.label} (${result.trackingNumber})`,
+      }, orderId);
+
       return { success: true, trackingNumber: result.trackingNumber };
     } catch (err) {
       const msg = err instanceof CargoProviderNotConfiguredError ? 'Kargo entegrasyonu tanımlı değil' : (err as Error).message;
       return { success: false, message: msg };
+    }
+  }
+
+  /** Müşteriye takip bilgisi bildirimi (WhatsApp kuyruğa yazılır). */
+  private async notifyCustomer(tenantId: string, order: Record<string, any>, company: string, trackingNumber: string): Promise<void> {
+    try {
+      const customerId = order.customer_id;
+      if (!customerId) return;
+      const { data: customer } = await this.supabase.db
+        .from('customers')
+        .select('name, phone')
+        .eq('id', customerId)
+        .maybeSingle();
+      if (!customer?.phone) return;
+
+      const trackingUrl = getCargoTrackingUrl(company, trackingNumber);
+      const message = `Merhaba ${customer.name || 'Değerli Müşterimiz'}, #${order.order_number} nolu siparişiniz kargoya verilmiştir.\nKargo Firması: ${company}\nTakip No: ${trackingNumber}${trackingUrl ? `\nTakip: ${trackingUrl}` : ''}\n\nSiparişAsistanı`;
+
+      const convId = await this.whatsapp.findOrCreate(tenantId, customer.phone);
+      await this.whatsapp.addMessage({ tenantId, conversationId: convId, direction: 'outgoing', body: message });
+    } catch (err) {
+      this.logger.warn(`Müşteri kargo bildirimi gönderilemedi: ${(err as Error).message}`);
     }
   }
 
@@ -178,6 +249,7 @@ export class CargoTrackingService {
       .select('*')
       .eq('tenant_id', tenantId);
 
+    const defaultCompany = await this.getDefaultCargoCompany(tenantId);
     const map = new Map<string, Record<string, unknown>>();
     for (const row of data || []) {
       map.set(String((row as any).company), row);
@@ -192,6 +264,7 @@ export class CargoTrackingService {
         label: adapter.label,
         enabled: !!(existing as any)?.enabled,
         configured,
+        is_default: defaultCompany === adapter.company,
         api_key: (existing as any)?.api_key || '',
         api_secret: (existing as any)?.api_secret || '',
         extra_config: (existing as any)?.extra_config || {},
@@ -238,10 +311,10 @@ export class CargoTrackingService {
     const customerName = (order.customer as Record<string, unknown>)?.name || 'Müşteri';
     const orderNumber = order.order_number || '';
 
-    // 1. Sipariş durumunu güncelle
+    // 1. Sipariş durumunu güncelle — kapıda ödeme teslimatta tahsil edilir, diğerleri aynı kalır
     await this.supabase.db
       .from('orders')
-      .update({ status: 'DELIVERED', payment_status: order.payment_method === 'iban' || order.payment_status === 'waiting' ? 'waiting' : 'paid' })
+      .update({ status: 'DELIVERED', payment_status: order.payment_method === 'cod' ? 'paid' : (order.payment_status || 'waiting') })
       .eq('tenant_id', order.tenant_id)
       .eq('id', order.id);
 

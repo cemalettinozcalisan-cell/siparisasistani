@@ -25,9 +25,15 @@ export class CargoTrackingController {
     return this.service.testIntegration(tenantId, company);
   }
 
+  @Post('integrations/:tenantId/:company/default')
+  async setDefault(@Param('tenantId') tenantId: string, @Param('company') company: string) {
+    await this.service.setDefaultCargoCompany(tenantId, company);
+    return { success: true, default_company: company };
+  }
+
   @Post('shipments/:tenantId/:orderId')
-  async createShipment(@Param('tenantId') tenantId: string, @Param('orderId') orderId: string) {
-    return this.service.createShipment(tenantId, orderId);
+  async createShipment(@Param('tenantId') tenantId: string, @Param('orderId') orderId: string, @Body() body: { company?: string }) {
+    return this.service.createShipment(tenantId, orderId, body?.company);
   }
 
   @Post('check/:tenantId/:company')
