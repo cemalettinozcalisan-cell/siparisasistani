@@ -52,6 +52,8 @@ export class DhlProvider extends CargoFirmBase {
       const json = await response.json().catch(() => ({})) as any;
       const statusText = String(json?.shipments?.[0]?.status?.statusCode || '').toLowerCase();
       if (statusText.includes('delivered')) return { status: 'delivered', description: 'Teslim edildi', raw: json };
+      if (statusText.includes('out for delivery') || statusText.includes('with courier') || statusText.includes('delivery attempted')) return { status: 'out_for_delivery', description: 'Dağıtımda', raw: json };
+      if (statusText.includes('at delivery facility') || statusText.includes('arrived at') || statusText.includes('in delivery facility') || statusText.includes('at facility')) return { status: 'at_branch', description: 'Şubede', raw: json };
       if (statusText.includes('transit') || statusText.includes('pre-transit')) return { status: 'in_transit', description: 'Kargoda', raw: json };
       return { status: 'unknown', description: json?.shipments?.[0]?.status?.description || 'Bilinmiyor', raw: json };
     } catch (err) {

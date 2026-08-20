@@ -21,7 +21,7 @@ export interface CargoShipmentRequest {
   codAmount: number;
 }
 
-export type CargoStatus = 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'unknown';
+export type CargoStatus = 'pending' | 'in_transit' | 'at_branch' | 'out_for_delivery' | 'delivered' | 'failed' | 'unknown';
 
 export interface CargoCheckResult {
   status: CargoStatus;

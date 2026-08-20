@@ -60,7 +60,9 @@ export class YurticiProvider extends CargoFirmBase {
       const info = json?.shipmentInfo?.[0];
       const state = String(info?.state || '').toLowerCase();
       if (state.includes('teslim')) return { status: 'delivered', description: 'Teslim edildi', raw: info };
-      if (state.includes('yolda') || state.includes('aktarma')) return { status: 'in_transit', description: 'Kargoda', raw: info };
+      if (state.includes('dağıtıma') || state.includes('dağıtımda') || state.includes('saha personelinde') || state.includes('teslimatçıda')) return { status: 'out_for_delivery', description: 'Dağıtımda', raw: info };
+      if (state.includes('şubede') || state.includes('varış şubesinde') || state.includes('şubemizde')) return { status: 'at_branch', description: 'Şubede', raw: info };
+      if (state.includes('yolda') || state.includes('aktarma') || state.includes('sevkiyat')) return { status: 'in_transit', description: 'Kargoda', raw: info };
       return { status: 'unknown', description: info?.state || 'Bilinmiyor', raw: info };
     } catch (err) {
       this.logger.error(`Yurtiçi sorgu hatası: ${(err as Error).message}`);

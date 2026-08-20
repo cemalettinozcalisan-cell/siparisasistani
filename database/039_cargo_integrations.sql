@@ -21,7 +21,7 @@ create table if not exists cargo_integrations (
 create index if not exists idx_cargo_integrations_tenant on cargo_integrations(tenant_id);
 
 -- 2) orders - kargo durumu takip kolonları
--- cargo_status: pending | in_transit | out_for_delivery | delivered | failed | unknown
+-- cargo_status: pending | in_transit | at_branch | out_for_delivery | delivered | failed | unknown
 alter table orders add column if not exists cargo_status text;
 alter table orders add column if not exists cargo_status_updated_at timestamptz;
 

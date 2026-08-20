@@ -100,14 +100,15 @@ function cargoFirmaBadge(company: string) {
 }
 
 // Kargo aşama çubuğu adımları
-const CARGO_STAGES = ['Gönderi Alındı', 'Yolda', 'Dağıtımda', 'Teslim Edildi'];
+const CARGO_STAGES = ['Gönderi Alındı', 'Yolda', 'Şubede', 'Dağıtımda', 'Teslim Edildi'];
 
 function cargoStep(status: string): number {
   switch (String(status || '').toLowerCase()) {
     case 'pending': return 0;
     case 'in_transit': return 1;
-    case 'out_for_delivery': return 2;
-    case 'delivered': return 3;
+    case 'at_branch': return 2;
+    case 'out_for_delivery': return 3;
+    case 'delivered': return 4;
     default: return 1;
   }
 }
@@ -171,6 +172,8 @@ const CARGO_STATUS_META: Record<string, { label: string; cls: string }> = {
   PENDING: { label: 'Gönderi Alındı', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
   in_transit: { label: 'Yolda', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
   IN_TRANSIT: { label: 'Yolda', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  at_branch: { label: 'Şubede', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
+  AT_BRANCH: { label: 'Şubede', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
   out_for_delivery: { label: 'Dağıtımda', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
   OUT_FOR_DELIVERY: { label: 'Dağıtımda', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
   delivered: { label: 'Teslim Edildi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
@@ -298,7 +301,7 @@ export default function DashboardPage() {
   const [showCargoModal, setShowCargoModal] = useState(false);
   const [showComplaintsModal, setShowComplaintsModal] = useState(false);
   const [showRevenueModal, setShowRevenueModal] = useState(false);
-  const [cargoFilter, setCargoFilter] = useState<'all' | 'in_transit' | 'pending' | 'out'>('all');
+  const [cargoFilter, setCargoFilter] = useState<'all' | 'in_transit' | 'pending' | 'branch' | 'out'>('all');
 
   // Toaster
   const [toast, setToast] = useState<string | null>(null);
@@ -409,6 +412,7 @@ export default function DashboardPage() {
   const cargoFilteredList = cargoAllList.filter((o) => {
     if (cargoFilter === 'in_transit') return String(o.cargo_status).toLowerCase() === 'in_transit';
     if (cargoFilter === 'pending') return String(o.cargo_status).toLowerCase() === 'pending';
+    if (cargoFilter === 'branch') return String(o.cargo_status).toLowerCase() === 'at_branch';
     if (cargoFilter === 'out') return String(o.cargo_status).toLowerCase() === 'out_for_delivery';
     return true;
   });
@@ -768,6 +772,7 @@ export default function DashboardPage() {
               { key: 'all', label: 'Tüm Kargolar', count: cargoAllList.length },
               { key: 'in_transit', label: 'Yolda', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'in_transit').length },
               { key: 'pending', label: 'Aktarım Merkezinde', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'pending').length },
+              { key: 'branch', label: 'Şubede', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'at_branch').length },
               { key: 'out', label: 'Dağıtımdakiler', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'out_for_delivery').length },
             ] as const).map((tab) => (
               <button

@@ -122,6 +122,7 @@ export class CargoTrackingService {
       const mapped: Record<string, string> = {
         pending: 'PENDING',
         in_transit: 'IN_TRANSIT',
+        at_branch: 'AT_BRANCH',
         out_for_delivery: 'OUT_FOR_DELIVERY',
         delivered: 'DELIVERED',
         failed: 'FAILED',

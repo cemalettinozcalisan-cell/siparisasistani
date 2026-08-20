@@ -54,6 +54,8 @@ export class PttProvider extends CargoFirmBase {
       const json = await response.json().catch(() => ({})) as any;
       const statusText = String(json?.status || json?.eventCode || '').toLowerCase();
       if (statusText.includes('teslim')) return { status: 'delivered', description: 'Teslim edildi', raw: json };
+      if (statusText.includes('dağıtıma') || statusText.includes('dağıtımda') || statusText.includes('saha personelinde') || statusText.includes('teslimatçıda')) return { status: 'out_for_delivery', description: 'Dağıtımda', raw: json };
+      if (statusText.includes('şubede') || statusText.includes('varış şubesinde') || statusText.includes('şubemizde')) return { status: 'at_branch', description: 'Şubede', raw: json };
       if (statusText.includes('yolda') || statusText.includes('aktarma') || statusText.includes('sevkiyat')) return { status: 'in_transit', description: 'Kargoda', raw: json };
       return { status: 'unknown', description: json?.status || 'Bilinmiyor', raw: json };
     } catch (err) {
