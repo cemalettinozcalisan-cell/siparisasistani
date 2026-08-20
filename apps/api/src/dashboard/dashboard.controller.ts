@@ -218,13 +218,19 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
 
     // --- Ciro modalı: dün ile aynı saat dilimi karşılaştırması ---
     const todayRevenue = todayOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
-    const yesterdayRevenue = orders
-      .filter((o) => {
-        const t = new Date(o.created_at).getTime();
-        return t >= yesterdayStart.getTime() && t < new Date(yesterdayCutoff).getTime();
-      })
-      .reduce((sum, o) => sum + Number(o.total_price), 0);
+    const yesterdayOrders = orders.filter((o) => {
+      const t = new Date(o.created_at).getTime();
+      return t >= yesterdayStart.getTime() && t < new Date(yesterdayCutoff).getTime();
+    });
+    const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
     const revenueChangePct = yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100) : (todayRevenue > 0 ? 100 : 0);
+
+    // Dün karşılaştırması — sipariş adedi ve ortalama sepet (üst metrik kutuları)
+    const yesterdayOrdersCount = yesterdayOrders.length;
+    const todayAvgBasket = todayOrders.length > 0 ? todayRevenue / todayOrders.length : 0;
+    const yesterdayAvgBasket = yesterdayOrdersCount > 0 ? yesterdayRevenue / yesterdayOrdersCount : 0;
+    const ordersChangePct = yesterdayOrdersCount > 0 ? Math.round(((todayOrders.length - yesterdayOrdersCount) / yesterdayOrdersCount) * 100) : (todayOrders.length > 0 ? 100 : 0);
+    const avgBasketChangePct = yesterdayAvgBasket > 0 ? Math.round(((todayAvgBasket - yesterdayAvgBasket) / yesterdayAvgBasket) * 100) : (todayAvgBasket > 0 ? 100 : 0);
 
     return {
       todayOrders: todayOrders.length,
@@ -249,6 +255,11 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       cargoCollectionCount: cargoCollectionOrders.length,
       yesterdayRevenue,
       revenueChangePct,
+      yesterdayOrdersCount,
+      todayAvgBasket,
+      yesterdayAvgBasket,
+      ordersChangePct,
+      avgBasketChangePct,
       websiteEnabled,
       orderStats: {
         preparing: orders.filter((o) => normalizeStatus(o.status) === 'PACKAGING' || normalizeStatus(o.status) === 'PACKAGED' || normalizeStatus(o.status) === 'PREPARING').length,
@@ -347,6 +358,11 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       cargoCollectionCount: 5,
       yesterdayRevenue: 20500,
       revenueChangePct: 18,
+      yesterdayOrdersCount: 10,
+      todayAvgBasket: 2063,
+      yesterdayAvgBasket: 2050,
+      ordersChangePct: 40,
+      avgBasketChangePct: 1,
       websiteEnabled: true,
       orderStats: {
         preparing: 3,

@@ -122,7 +122,7 @@ const SOURCE_META: Record<string, { label: string; icon: ChannelIconType; gradie
   WHATSAPP: { label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-500 to-green-600' },
   PHONE: { label: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-cyan-600' },
   SMS: { label: 'SMS', icon: MessageSquare, gradient: 'from-orange-500 to-orange-600' },
-  INSTAGRAM: { label: 'Instagram DM', icon: Instagram, gradient: 'from-purple-500 to-violet-600' },
+  INSTAGRAM: { label: 'Instagram DM', icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
   WEBSITE: { label: 'Web Sitesi', icon: Globe, gradient: 'from-cyan-500 to-teal-600' },
   PANEL: { label: 'Panel', icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
 };
@@ -402,6 +402,8 @@ export default function DashboardPage() {
   const cargoCollectionCount = Number(stats.cargoCollectionCount ?? 0);
   const yesterdayRevenue = Number(stats.yesterdayRevenue ?? 0);
   const revenueChangePct = Number(stats.revenueChangePct ?? 0);
+  const ordersChangePct = Number(stats.ordersChangePct ?? 0);
+  const avgBasketChangePct = Number(stats.avgBasketChangePct ?? 0);
   const websiteEnabled = Boolean(stats.websiteEnabled ?? true);
 
   const cargoFilteredList = cargoAllList.filter((o) => {
@@ -876,6 +878,9 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-[10px] text-blue-600/70 dark:text-blue-300/70 uppercase font-extrabold tracking-widest">Bugünkü Sipariş</p>
                 <p className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1.5 tabular-nums">{todayOrdersList.length} <span className="text-sm font-bold">adet</span></p>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${ordersChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                  {ordersChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(ordersChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
+                </div>
                 <p className="text-[10px] text-slate-400 mt-2">Bugün oluşturulan sipariş sayısı (00:00 sonrası)</p>
               </div>
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-500/20 dark:to-green-500/5 border border-emerald-200/70 dark:border-emerald-500/20 p-5 text-center">
@@ -900,6 +905,9 @@ export default function DashboardPage() {
                 <p className="text-3xl font-black text-teal-600 dark:text-teal-400 mt-1.5 tabular-nums">
                   {todayOrdersList.length > 0 ? Math.round(todayRevenue / todayOrdersList.length).toLocaleString('tr-TR') : 0} <span className="text-sm font-bold">TL</span>
                 </p>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${avgBasketChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                  {avgBasketChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(avgBasketChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
+                </div>
                 <p className="text-[10px] text-slate-400 mt-2">Ciro ÷ sipariş sayısı (sipariş başına ortalama)</p>
               </div>
             </div>
@@ -915,12 +923,9 @@ export default function DashboardPage() {
                   const cm = sourceMeta(c.source);
                   const share = todayRevenue > 0 ? Math.round((Number(c.total || 0) / todayRevenue) * 100) : 0;
                   return (
-                    <div key={c.source} className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
+                    <div key={c.source} title={cm.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
                       <cm.icon size={13} />
-                      <div className="text-left">
-                        <p className="text-[9px] uppercase font-bold opacity-80 leading-none">{cm.label}</p>
-                        <p className="text-xs font-black leading-tight">{Number(c.total || 0).toLocaleString('tr-TR')} TL <span className="text-[9px] font-bold opacity-80">%{share}</span></p>
-                      </div>
+                      <p className="text-xs font-black leading-none">{Number(c.total || 0).toLocaleString('tr-TR')} TL <span className="text-[9px] font-bold opacity-80">%{share}</span></p>
                     </div>
                   );
                 })}
