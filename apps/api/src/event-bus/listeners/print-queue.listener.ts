@@ -12,20 +12,9 @@ export class PrintQueueListener implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.eventBus.on(SystemEvents.ORDER_CREATED).subscribe(async (event) => {
-      const enabled = await this.isPrinterEnabled(event.tenantId);
-      if (!enabled) return;
-
-      this.logger.log(`Print job queued for order ${event.entityId}`);
-
-      await this.supabase.db.from('print_jobs').insert({
-        tenant_id: event.tenantId,
-        order_id: event.entityId,
-        status: 'pending',
-        retry_count: 0,
-        max_retries: 3,
-      });
-    });
+    // Yazıcı fişleri tek noktadan NotificationService üzerinden yönetilir
+    // (ORDER_CREATED + ORDER_PAYMENT_CONFIRMED). Bu dinleyici artık doğrudan yazmaz.
+    this.logger.log('PrintQueueListener delegated to NotificationService');
   }
 
   private async isPrinterEnabled(tenantId: string): Promise<boolean> {

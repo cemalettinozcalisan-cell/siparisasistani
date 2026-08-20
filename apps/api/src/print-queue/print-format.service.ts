@@ -39,6 +39,11 @@ export class PrintFormatService {
 
     lines.push('', `Toplam: ${total.toLocaleString('tr-TR')} TL`);
 
+    const paymentNote = String(order.payment_note || '');
+    if (paymentNote) {
+      lines.push('', `💳 ${paymentNote}`);
+    }
+
     const note = String(order.customer_note || order.notes || '');
     if (note) {
       lines.push('', `📝 Not: ${note}`);
@@ -59,6 +64,7 @@ export class PrintFormatService {
     ).join('');
     const total = items.reduce((s, item) => s + Number(item.quantity || 0) * Number(item.unit_price || 0), 0);
     const note = String(order.customer_note || order.notes || '');
+    const paymentNote = String(order.payment_note || '');
 
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Sipariş #${order.order_number}</title>
@@ -85,6 +91,7 @@ export class PrintFormatService {
 </div>
 <table><thead><tr><th>Ürün</th><th>Miktar</th><th>Birim Fiyat</th><th>Tutar</th></tr></thead><tbody>${rows}</tbody></table>
 <div class="total">Toplam: ${total.toLocaleString('tr-TR')} TL</div>
+${paymentNote ? `<div class="note">💳 ${paymentNote}</div>` : ''}
 ${note ? `<div class="note">📝 Müşteri Notu: ${note}</div>` : ''}
 <div class="footer">SiparişAsistanı - AI Ticaret İşletim Sistemi</div>
 </body></html>`;

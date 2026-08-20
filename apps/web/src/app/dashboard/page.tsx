@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, UserPlus, GitPullRequest, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon, RefreshCw } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, ChevronDown, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, UserPlus, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon, Banknote, HandCoins, MapPin, Copy, Ticket } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { TenantSwitcher } from '@/components/tenant-switcher';
@@ -51,6 +51,89 @@ const CHANNEL_COLORS: Record<string, { icon: ChannelIconType; gradient: string }
   system: { icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
 };
 
+// Ödeme yöntemleri — renkli zeminli ikon kutucukları (kontrol paneli "Hızlı İşlemler" tarzı canlı renkler)
+const PAYMENT_META: Record<string, { label: string; icon: any; gradient: string }> = {
+  iban: { label: 'IBAN Havale', icon: Banknote, gradient: 'from-emerald-500 to-green-600' },
+  cod: { label: 'Kapıda Nakit', icon: HandCoins, gradient: 'from-orange-400 to-orange-600' },
+  kapida_kart: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-purple-500 to-violet-600' },
+  website: { label: 'Link ile Ödeme', icon: CreditCard, gradient: 'from-pink-500 to-rose-600' },
+  paytr: { label: 'Link ile Ödeme', icon: CreditCard, gradient: 'from-pink-500 to-rose-600' },
+  iyzico: { label: 'Link ile Ödeme', icon: CreditCard, gradient: 'from-pink-500 to-rose-600' },
+  link: { label: 'Link ile Ödeme', icon: CreditCard, gradient: 'from-pink-500 to-rose-600' },
+  payment_link: { label: 'Link ile Ödeme', icon: CreditCard, gradient: 'from-pink-500 to-rose-600' },
+};
+
+// Sipariş durumları — renkli pill rozetler
+const ORDER_STATUS_META: Record<string, { label: string; cls: string }> = {
+  new: { label: 'Yeni', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  NEW: { label: 'Yeni', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  PAYMENT_WAITING: { label: 'Ödeme Bekleniyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  PACKAGING: { label: 'Hazırlanıyor', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
+  PACKAGED: { label: 'Hazırlanıyor', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
+  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
+  SHIPPED: { label: 'Kargoda', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
+  shipped: { label: 'Kargoda', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
+  DELIVERED: { label: 'Teslim Edildi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  delivered: { label: 'Teslim Edildi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  COMPLETED: { label: 'Teslim Edildi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  completed: { label: 'Teslim Edildi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  CANCELLED: { label: 'İptal', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' },
+  cancelled: { label: 'İptal', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' },
+};
+
+function orderStatusMeta(status: string) {
+  return ORDER_STATUS_META[String(status || '').toUpperCase()] || ORDER_STATUS_META.new;
+}
+
+// Kargo firma rozetleri
+const CARGO_FIRMA_BADGE: Record<string, { label: string; short: string; cls: string }> = {
+  yurtici: { label: 'Yurtiçi Kargo', short: 'YK', cls: 'bg-blue-600' },
+  mng: { label: 'MNG Kargo', short: 'MNG', cls: 'bg-slate-700' },
+  aras: { label: 'Aras Kargo', short: 'ARAS', cls: 'bg-red-600' },
+  ptt: { label: 'PTT Kargo', short: 'PTT', cls: 'bg-orange-500' },
+  surat: { label: 'Sürat Kargo', short: 'SÜRAT', cls: 'bg-purple-600' },
+  dhl: { label: 'DHL', short: 'DHL', cls: 'bg-rose-600' },
+};
+
+function cargoFirmaBadge(company: string) {
+  return CARGO_FIRMA_BADGE[String(company || '').toLowerCase()] || { label: 'Kargo', short: 'KG', cls: 'bg-slate-600' };
+}
+
+// Kargo aşama çubuğu adımları
+const CARGO_STAGES = ['Gönderi Alındı', 'Yolda', 'Dağıtımda', 'Teslim Edildi'];
+
+function cargoStep(status: string): number {
+  switch (String(status || '').toLowerCase()) {
+    case 'pending': return 0;
+    case 'in_transit': return 1;
+    case 'out_for_delivery': return 2;
+    case 'delivered': return 3;
+    default: return 1;
+  }
+}
+
+const CHANNEL_LABEL: Record<string, string> = {
+  phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Web', sms: 'SMS', voice: 'Telefon', system: 'Sistem', panel: 'Panel',
+  PHONE: 'Telefon', WHATSAPP: 'WhatsApp', INSTAGRAM: 'Instagram', WEBSITE: 'Web', SMS: 'SMS', VOICE: 'Telefon', SYSTEM: 'Sistem', PANEL: 'Panel',
+};
+
+function channelMeta(channel: string, source: string) {
+  const key = String(channel || '').toLowerCase();
+  return CHANNEL_COLORS[key] || CHANNEL_COLORS[String(source || '').toLowerCase()] || CHANNEL_COLORS.phone;
+}
+
+function channelLabel(channel: string, source: string) {
+  const key = String(channel || '').toLowerCase();
+  return CHANNEL_LABEL[key] || CHANNEL_LABEL[String(source || '').toUpperCase()] || CHANNEL_LABEL.phone;
+}
+
+function paymentMeta(method: string) {
+  const m = String(method || '').toLowerCase();
+  if (m.includes('kredi') || m === 'card') return PAYMENT_META.kapida_kart;
+  if (m.includes('kapıda') || m.includes('nakit') || m.includes('cash') || m === 'cod') return PAYMENT_META.cod;
+  return PAYMENT_META[m] || PAYMENT_META.iban;
+}
+
 // Kargo firma takip linkleri (statik)
 const CARGO_TRACKING_URLS: Record<string, string> = {
   yurtici: 'https://gonderitakip.yurticikargo.com/',
@@ -59,9 +142,6 @@ const CARGO_TRACKING_URLS: Record<string, string> = {
   ptt: 'https://gonderitakip.ptt.gov.tr/',
   surat: 'https://www.suratkargo.com.tr/KargoTakip',
   dhl: 'https://www.dhl.com/tr-tr/home/tracking.html',
-};
-const CARGO_FIRMA_ADI: Record<string, string> = {
-  yurtici: 'Yurtiçi Kargo', mng: 'MNG Kargo', aras: 'Aras Kargo', ptt: 'PTT Kargo', surat: 'Sürat Kargo', dhl: 'DHL',
 };
 
 const CARGO_STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -78,10 +158,14 @@ const CARGO_STATUS_META: Record<string, { label: string; cls: string }> = {
 };
 
 const SEVERITY_STYLES: Record<string, string> = {
-  CRITICAL: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400',
-  HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
-  NORMAL: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  LOW: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+  CRITICAL: 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-sm ring-1 ring-inset ring-white/25',
+  HIGH: 'bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-sm ring-1 ring-inset ring-white/25',
+  NORMAL: 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-sm ring-1 ring-inset ring-white/25',
+  LOW: 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-sm ring-1 ring-inset ring-white/25',
+};
+
+const SEVERITY_LABEL: Record<string, string> = {
+  CRITICAL: 'Kritik', HIGH: 'Yüksek', NORMAL: 'Normal', LOW: 'Düşük',
 };
 
 // AI Hub kanalları — renkli zeminli ikon kutuları + beyaz ikonlar
@@ -112,13 +196,13 @@ function getCargoUrl(company: string, tracking: string): string {
 }
 
 // --- Ortak Modal ---
-function Modal({ title, icon, onClose, children, wide }: { title: string; icon?: React.ReactNode; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+function Modal({ title, icon, onClose, children, wide, gradient = 'from-blue-600 to-indigo-600' }: { title: string; icon?: React.ReactNode; onClose: () => void; children: React.ReactNode; wide?: boolean; gradient?: string }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-16 overflow-y-auto" onClick={onClose}>
       <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full ${wide ? 'max-w-3xl' : 'max-w-2xl'} animate-scale-in`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            {icon && <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center">{icon}</div>}
+            {icon && <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${gradient} text-white flex items-center justify-center shadow-sm`}>{icon}</div>}
             <h2 className="font-bold text-slate-900 dark:text-white text-sm">{title}</h2>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400">
@@ -126,6 +210,54 @@ function Modal({ title, icon, onClose, children, wide }: { title: string; icon?:
           </button>
         </div>
         <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// --- Talep kartı (genişletilebilir açıklama) ---
+function ComplaintCard({ c }: { c: Record<string, any> }) {
+  const [open, setOpen] = useState(false);
+  const ch = channelMeta(c.channel, c.channel);
+  const ChIcon = ch.icon;
+  const sevKey = SEVERITY_STYLES[String(c.severity)] ? String(c.severity) : 'NORMAL';
+  const desc = String(c.description || '');
+  const preview = desc.length > 130 ? desc.slice(0, 130) + '…' : desc;
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-white px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 shadow-sm ring-1 ring-inset ring-white/25">
+            <Ticket size={11} /> {c.ticket_number || 'Talep'}
+          </span>
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-white px-2.5 py-1 rounded-lg bg-gradient-to-r ${ch.gradient} shadow-sm ring-1 ring-inset ring-white/25`}>
+            <ChIcon size={11} /> {channelLabel(c.channel, c.channel)}
+          </span>
+        </div>
+        <span className={`text-[10px] font-extrabold tracking-wide px-2.5 py-1 rounded-full ${SEVERITY_STYLES[sevKey]}`}>{SEVERITY_LABEL[sevKey] || c.severity}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+        <UserPlus size={12} className="text-indigo-500" /> <b>{c.customer_name || 'Bilinmeyen Müşteri'}</b>
+        {c.customer_phone && <><span>•</span> {c.customer_phone}</>}
+        {c.customer_city && <><span>•</span> {c.customer_city}</>}
+      </div>
+      {c.customer_address && (
+        <p className="flex items-center gap-1 text-[11px] text-slate-400">
+          <MapPin size={11} className="text-pink-400" /> {c.customer_address}
+        </p>
+      )}
+      <p className="text-xs text-slate-600 dark:text-slate-300">{open ? desc : preview}</p>
+      {desc.length > 130 && (
+        <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          {open ? 'Daha Az Göster' : 'Devamını Gör'} <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+        <a href={`/complaints?id=${c.id}`}
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          Detayları Gör <ChevronRight size={11} />
+        </a>
       </div>
     </div>
   );
@@ -144,6 +276,7 @@ export default function DashboardPage() {
   const [showCargoModal, setShowCargoModal] = useState(false);
   const [showComplaintsModal, setShowComplaintsModal] = useState(false);
   const [showRevenueModal, setShowRevenueModal] = useState(false);
+  const [cargoFilter, setCargoFilter] = useState<'all' | 'in_transit' | 'pending' | 'out'>('all');
 
   // Toaster
   const [toast, setToast] = useState<string | null>(null);
@@ -198,19 +331,24 @@ export default function DashboardPage() {
     };
   }, [mounted]);
 
-  useEffect(() => {
-    setMounted(true);
-    Promise.all([
-      fetch(`/api/dashboard/${tid}`).then(r => r.json()),
-      fetch(`/api/timeline/recent/${tid}`).then(r => r.json()),
-      fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => ({})),
-      fetch(`/api/saas/usage/${tid}`).then(r => r.json()).catch(() => null),
-    ]).then(([d, tl, h, u]) => {
+  const loadDashboard = async () => {
+    try {
+      const [d, tl, h, u] = await Promise.all([
+        fetch(`/api/dashboard/${tid}`).then(r => r.json()),
+        fetch(`/api/timeline/recent/${tid}`).then(r => r.json()),
+        fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => ({})),
+        fetch(`/api/saas/usage/${tid}`).then(r => r.json()).catch(() => null),
+      ]);
       setStats({ ...d, ...h });
       setRecent(Array.isArray(tl) ? tl : []);
       if (u) setUsage(u);
       setTimeout(() => setLoaded(true), 50);
-    }).catch(() => {});
+    } catch { /* sessiz */ }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    loadDashboard();
   }, []);
 
   useEffect(() => {
@@ -220,32 +358,38 @@ export default function DashboardPage() {
   }, [toast]);
 
   const today = stats.today as Record<string, unknown> || {};
-  const totalOrders = (stats.todayOrders as number) || 37;
-  const todayRevenue = Number(stats.todayRevenue || 28760);
+  const totalOrders = (stats.todayOrders as number) ?? 37;
+  const todayRevenue = Number(stats.todayRevenue ?? 28760);
   const aiSuccessRate = (stats.aiSuccessRate as number) ?? (today.aiSuccessRate as number) ?? 97;
   const aiRevenue = Number(stats.aiRevenue ?? 24800);
   const aiCustomers = Number(stats.aiCustomers ?? 15);
   const cargoTracking = Number(stats.cargoTracking ?? 3);
-  const complaints24h = (stats.complaints24h as Record<string, any>[]) || [];
-  const complaintsCount = complaints24h.length || 5;
+  const rawComplaints = stats.complaints24h;
+  const complaints24h = Array.isArray(rawComplaints) ? (rawComplaints as Record<string, any>[]) : [];
+  const complaintsCount = Array.isArray(rawComplaints) ? complaints24h.length : 5;
   const todayOrdersList = (stats.todayOrdersList as Record<string, any>[]) || [];
-  const cargoTrackingList = (stats.cargoTrackingList as Record<string, any>[]) || [];
+  const cargoAllList = (stats.cargoTrackingList as Record<string, any>[]) || [];
 
-  // Kargo durumunu anında yeniden sorgula (15 dk'lık poll'u beklemeden)
-  const refreshCargo = async (orderId: string, company: string, tracking: string) => {
-    try {
-      const res = await fetch(`/api/cargo/check/${tid}/${company}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trackingNumber: tracking }),
-      });
-      const data = await res.json();
-      if (data && (data.status === 'delivered' || data.status === 'DELIVERED')) {
-        setToast(`#${orderId.slice(0, 8)} kargosu teslim edildi ✅`);
-      } else {
-        setToast(`Kargo durumu güncellendi (${data.status || 'yolda'})`);
-      }
-    } catch {
-      setToast('Kargo durumu sorgulanamadı');
-    }
+  const cargoFilteredList = cargoAllList.filter((o) => {
+    if (cargoFilter === 'in_transit') return String(o.cargo_status).toLowerCase() === 'in_transit';
+    if (cargoFilter === 'pending') return String(o.cargo_status).toLowerCase() === 'pending';
+    if (cargoFilter === 'out') return String(o.cargo_status).toLowerCase() === 'out_for_delivery';
+    return true;
+  });
+
+  // Takip numarasını panoya kopyala
+  const copyTracking = (text: string) => {
+    if (!text) return;
+    navigator.clipboard?.writeText(text)
+      .then(() => setToast('Takip numarası kopyalandı 📋'))
+      .catch(() => {});
+  };
+
+  // Firma takip sayfasını panelin üzerinde küçük pencerede açar (engellenirse yeni sekme)
+  const openCargoSite = (company: string, tracking: string) => {
+    const url = getCargoUrl(company, tracking);
+    const win = window.open(url, '_blank', 'width=640,height=720,popup=yes');
+    if (!win) window.open(url, '_blank', 'noreferrer');
   };
 
   const totalRevenue = Number(stats.totalRevenue ?? 24800);
@@ -511,26 +655,55 @@ export default function DashboardPage() {
 
       {/* Modal: Bugünkü Sipariş */}
       {showTodayModal && (
-        <Modal title="Bugünkü Siparişler" icon={<ShoppingBag size={15} />} onClose={() => setShowTodayModal(false)} wide>
+        <Modal title="Bugünkü Siparişler" icon={<ShoppingCart size={15} />} gradient="from-blue-500 to-cyan-600" onClose={() => setShowTodayModal(false)} wide>
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
             {(todayOrdersList.length > 0 ? todayOrdersList : [
-              { id: 'demo-1', order_number: '26-00001', total_price: 1780, customer_name: 'Zafer Ayyıldız', customer_phone: '05321234567', customer_city: 'Afyonkarahisar', customer_address: 'Atatürk Cad. No:42', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }] },
-              { id: 'demo-2', order_number: '26-00002', total_price: 4500, customer_name: 'Mehmet Öztürk', customer_phone: '05339876543', customer_city: 'Afyonkarahisar', customer_address: 'Zafer Mah.', created_at: new Date().toISOString(), items: [{ product_name: 'Pastırma', quantity: 3, unit: 'KG', total: 3600 }, { product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', total: 890 }] },
-            ]).map((o) => (
+              { id: 'demo-1', order_number: '26-00001', total_price: 1780, status: 'new', channel: 'phone', payment_method: 'iban', customer_name: 'Zafer Ayyıldız', customer_phone: '05321234567', customer_city: 'Afyonkarahisar', customer_address: 'Atatürk Cad. No:42', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }] },
+              { id: 'demo-2', order_number: '26-00002', total_price: 4500, status: 'PAYMENT_WAITING', channel: 'whatsapp', payment_method: 'Kapıda Nakit', customer_name: 'Mehmet Öztürk', customer_phone: '05339876543', customer_city: 'Afyonkarahisar', customer_address: 'Zafer Mah.', created_at: new Date().toISOString(), items: [{ product_name: 'Pastırma', quantity: 3, unit: 'KG', total: 3600 }, { product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', total: 890 }] },
+              { id: 'demo-3', order_number: '26-00003', total_price: 6800, status: 'PACKAGING', channel: 'instagram', payment_method: 'Kapıda Kredi Kartı', customer_name: 'Ayşe Demir', customer_phone: '05351234455', customer_city: 'İzmir', customer_address: 'Alsancak Mah. No:7', created_at: new Date().toISOString(), items: [{ product_name: 'Köy Yumurtası', quantity: 10, unit: 'KOLİ', total: 6500 }, { product_name: 'Kaymak', quantity: 1, unit: 'KG', total: 300 }] },
+              { id: 'demo-4', order_number: '26-00004', total_price: 920, status: 'SHIPPED', channel: 'website', payment_method: 'paytr', customer_name: 'Ali Kaya', customer_phone: '05411223344', customer_city: 'İstanbul', customer_address: 'Kadıköy, Moda Cad. No:15', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Sucuk', quantity: 1, unit: 'KG', total: 920 }] },
+              { id: 'demo-5', order_number: '26-00005', total_price: 2650, status: 'new', channel: 'sms', payment_method: 'havale', customer_name: 'Fatma Şahin', customer_phone: '05051239876', customer_city: 'Ankara', customer_address: 'Çankaya, Kızılay Mah.', created_at: new Date().toISOString(), items: [{ product_name: 'Çiğköfte (Karışık)', quantity: 5, unit: 'KG', total: 2650 }] },
+              { id: 'demo-6', order_number: '26-00006', total_price: 3990, status: 'DELIVERED', channel: 'panel', payment_method: 'iyzico', customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', customer_address: 'Keçiören, Fatih Mah. No:8', created_at: new Date().toISOString(), items: [{ product_name: 'Bükme (Patatesli)', quantity: 6, unit: 'TEPİ', total: 3600 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', total: 390 }] },
+            ]).map((o) => {
+              const sm = orderStatusMeta(o.status);
+              return (
               <div key={o.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400">#{o.order_number}</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${sm.cls}`}>{sm.label}</span>
                     <span className="text-[11px] text-slate-400">{new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {(() => {
+                    const ch = channelMeta(o.channel, o.source);
+                    const ChIcon = ch.icon;
+                    const pm = paymentMeta(o.payment_method);
+                    const PmIcon = pm.icon;
+                    return (
+                      <>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${ch.gradient}`}>
+                          <ChIcon size={11} /> {channelLabel(o.channel, o.source)}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${pm.gradient}`}>
+                          <PmIcon size={11} /> {pm.label}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
                   <UserPlus size={12} className="text-indigo-500" /> <b>{o.customer_name}</b>
                   <span>•</span> {o.customer_phone}
                   {o.customer_city && <><span>•</span> {o.customer_city}</>}
                 </div>
-                {o.customer_address && <p className="text-[11px] text-slate-400">📍 {o.customer_address}</p>}
+                {o.customer_address && (
+                  <p className="flex items-center gap-1 text-[11px] text-slate-400">
+                    <MapPin size={11} className="text-cyan-500" /> {o.customer_address}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-1.5">
                   {(o.items || []).map((it: any, idx: number) => (
                     <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -539,7 +712,8 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
             {todayOrdersList.length === 0 && <div className="py-8 text-center text-xs text-slate-400">Bugün henüz sipariş yok</div>}
           </div>
         </Modal>
@@ -547,150 +721,148 @@ export default function DashboardPage() {
 
       {/* Modal: Kargo Takibi (yolda olan siparişler) */}
       {showCargoModal && (
-        <Modal title="Kargo Takibi" icon={<Truck size={15} />} onClose={() => setShowCargoModal(false)} wide>
-          <div className="mb-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/70 dark:border-blue-500/20 text-[11px] text-blue-700 dark:text-blue-300">
-            🚚 Kargoya verilen siparişleriniz burada listelenir. Teslimat kargo firmasına ulaştığında buradan otomatik kaybolur.
-            Bir aksilik olduğunu düşünüyorsanız <b>Durumu Güncelle</b> ile anında sorgulayabilirsiniz.
+        <Modal title="Kargo Takibi" icon={<Truck size={15} />} gradient="from-amber-500 to-orange-600" onClose={() => setShowCargoModal(false)} wide>
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 text-[11px] text-slate-600 dark:text-slate-300">
+            <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0 shadow-sm"><Truck size={13} /></span>
+            <p>Kargoya verilen siparişler anlık takip edilir. Müşteriye teslim edilen kargolar <b>listeden otomatik olarak kaldırılır</b>.</p>
+          </div>
+          {/* Filtre sekmeleri */}
+          <div className="mb-3 flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+            {([
+              { key: 'all', label: 'Tüm Kargolar', count: cargoAllList.length },
+              { key: 'in_transit', label: 'Yolda', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'in_transit').length },
+              { key: 'pending', label: 'Aktarım Merkezinde', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'pending').length },
+              { key: 'out', label: 'Dağıtımdakiler', count: cargoAllList.filter((o) => String(o.cargo_status).toLowerCase() === 'out_for_delivery').length },
+            ] as const).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setCargoFilter(tab.key)}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${cargoFilter === tab.key ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60'}`}>
+                {tab.label}
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${cargoFilter === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{tab.count}</span>
+              </button>
+            ))}
           </div>
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-            {(cargoTrackingList.length > 0 ? cargoTrackingList : [
-              { id: 'demo-p1', order_number: '26-00004', total_price: 15600, customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', cargo_company: 'ptt', tracking_number: 'PTT12345', cargo_status: 'in_transit', items: [{ product_name: 'Bükme (Patatesli)', quantity: 12, unit: 'TEPİ', total: 7200 }, { product_name: 'Haşhaş Ezmesi', quantity: 20, unit: 'KG', total: 8400 }] },
-              { id: 'demo-p2', order_number: '26-00006', total_price: 3200, customer_name: 'Mustafa Öztürk', customer_phone: '05551234567', customer_city: 'Afyonkarahisar', cargo_company: 'surat', tracking_number: 'SUR1234', cargo_status: 'out_for_delivery', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }, { product_name: 'Pastırma', quantity: 1, unit: 'KG', total: 1200 }] },
+            {(cargoAllList.length > 0 ? cargoFilteredList : [
+              { id: 'demo-p1', order_number: '26-00004', total_price: 15600, status: 'SHIPPED', customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', cargo_company: 'ptt', tracking_number: 'PTT12345', cargo_status: 'pending', items: [{ product_name: 'Bükme (Patatesli)', quantity: 12, unit: 'TEPİ', total: 7200 }, { product_name: 'Haşhaş Ezmesi', quantity: 20, unit: 'KG', total: 8400 }] },
+              { id: 'demo-p2', order_number: '26-00006', total_price: 3200, status: 'SHIPPED', customer_name: 'Mustafa Öztürk', customer_phone: '05551234567', customer_city: 'Afyonkarahisar', cargo_company: 'surat', tracking_number: 'SUR1234', cargo_status: 'in_transit', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }, { product_name: 'Pastırma', quantity: 1, unit: 'KG', total: 1200 }] },
+              { id: 'demo-p3', order_number: '26-00008', total_price: 6800, status: 'SHIPPED', customer_name: 'Ayşe Demir', customer_phone: '05339876543', customer_city: 'İzmir', cargo_company: 'yurtici', tracking_number: 'YT11223344', cargo_status: 'out_for_delivery', items: [{ product_name: 'Köy Yumurtası', quantity: 10, unit: 'KOLİ', total: 6500 }, { product_name: 'Kaymak', quantity: 1, unit: 'KG', total: 300 }] },
             ]).map((o) => {
               const cMeta = CARGO_STATUS_META[String(o.cargo_status || '')] || CARGO_STATUS_META.IN_TRANSIT;
+              const badge = cargoFirmaBadge(o.cargo_company);
+              const step = cargoStep(o.cargo_status);
               return (
-                <div key={o.id} className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">#{o.order_number}</span>
-                      <span className="text-[11px] text-slate-400">{o.customer_city}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cMeta.cls}`}>
-                        {cMeta.label}
-                      </span>
+                <div key={o.id} className="rounded-xl border border-amber-200/70 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/10 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`w-9 h-9 rounded-xl ${badge.cls} text-white flex items-center justify-center text-[9px] font-black tracking-wide shadow-sm`}>{badge.short}</span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">#{o.order_number}</span>
+                          {o.tracking_number && (
+                            <button onClick={() => copyTracking(o.tracking_number)} title="Takip numarasını kopyala"
+                              className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 hover:border-amber-300 hover:text-amber-600 transition-colors">
+                              {o.tracking_number} <Copy size={11} className="text-amber-500" />
+                            </button>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400">{badge.label}</span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cMeta.cls}`}>{cMeta.label}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                    <UserPlus size={12} className="text-indigo-500" /> <b>{o.customer_name}</b>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <UserPlus size={13} className="text-indigo-500" /> <b>{o.customer_name}</b>
                     <span>•</span> {o.customer_phone}
+                    {o.customer_city && <><span>•</span> {o.customer_city}</>}
                   </div>
-                  {/* Kargo Takip */}
-                  {o.cargo_company && (
-                    <div className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2">
-                      <Truck size={13} className="text-blue-500 shrink-0" />
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 flex-1">
-                        {CARGO_FIRMA_ADI[String(o.cargo_company).toLowerCase()] || o.cargo_company}
-                        {o.tracking_number && <b className="text-slate-700 dark:text-slate-200"> · {o.tracking_number}</b>}
-                      </span>
-                      <a href={getCargoUrl(o.cargo_company, o.tracking_number)} target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                        <ExternalLink size={11} /> Takip Et
-                      </a>
+                  {/* Aşama çubuğu */}
+                  <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+                    <div className="flex items-center justify-between text-[10px]">
+                      {CARGO_STAGES.map((s, i) => (
+                        <span key={s} className={i <= step ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400'}>{s}</span>
+                      ))}
                     </div>
-                  )}
+                    <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full transition-all" style={{ width: `${((step + 1) / CARGO_STAGES.length) * 100}%` }} />
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
                     {(o.items || []).map((it: any, idx: number) => (
-                      <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                      <span key={idx} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                         {it.product_name} × {it.quantity} {it.unit || ''}
                       </span>
                     ))}
                   </div>
-                  <button
-                    onClick={() => refreshCargo(o.id, o.cargo_company, o.tracking_number)}
-                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 text-white text-xs font-bold shadow-sm hover:shadow-md transition-all">
-                    <RefreshCw size={13} /> Durumu Güncelle
-                  </button>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => openCargoSite(o.cargo_company, o.tracking_number)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-[11px] font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all">
+                      <ExternalLink size={12} /> Kargo Takip
+                    </button>
+                  </div>
                 </div>
               );
             })}
-            {cargoTrackingList.length === 0 && <div className="py-8 text-center text-xs text-slate-400">Kargoda sipariş yok 🎉</div>}
+            {cargoAllList.length > 0 && cargoFilteredList.length === 0 && (
+              <div className="py-8 text-center text-xs text-slate-400">Bu filtrede kargo bulunmuyor</div>
+            )}
+            {cargoAllList.length === 0 && <div className="py-8 text-center text-xs text-slate-400">Kargoda sipariş yok 🎉</div>}
           </div>
         </Modal>
       )}
 
       {/* Modal: Talep & İstek */}
       {showComplaintsModal && (
-        <Modal title="Son 24 Saat Talepleri" icon={<GitPullRequest size={15} />} onClose={() => setShowComplaintsModal(false)}>
+        <Modal title="Son 24 Saat Talepleri" icon={<AlertCircle size={15} />} gradient="from-pink-500 to-rose-600" onClose={() => setShowComplaintsModal(false)} wide>
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
             {(complaints24h.length > 0 ? complaints24h : [
-              { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'Müşteri: Ürünlerin son kullanma tarihi geçmiş', channel: 'WHATSAPP', severity: 'CRITICAL', ticket_number: 'TKT-0001', created_at: new Date().toISOString() },
-              { id: 'c2', event_type: 'COMPLAINT_OPEN', description: 'Müşteri iade talebinde bulundu', channel: 'VOICE', severity: 'HIGH', ticket_number: 'TKT-0002', created_at: new Date().toISOString() },
-            ]).map((c) => (
-              <div key={c.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={13} className="text-rose-500" />
-                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{c.ticket_number || c.event_type}</span>
-                    <span className="text-[10px] text-slate-400">{c.channel}</span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${SEVERITY_STYLES[c.severity] || SEVERITY_STYLES.NORMAL}`}>{c.severity}</span>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300">{c.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                  <a href={`/complaints?id=${c.id}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-                    Detayları Gör <ChevronRight size={11} />
-                  </a>
-                </div>
-              </div>
-            ))}
+              { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'Ürünlerin son kullanma tarihi geçmiş', channel: 'whatsapp', severity: 'CRITICAL', ticket_number: 'TKT-0001', created_at: new Date().toISOString(), customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', customer_address: 'Keçiören, Fatih Mah. No:8' },
+              { id: 'c2', event_type: 'COMPLAINT_OPEN', description: 'İade talebinde bulundu', channel: 'phone', severity: 'HIGH', ticket_number: 'TKT-0002', created_at: new Date().toISOString(), customer_name: 'Mehmet Öztürk', customer_phone: '05339876543', customer_city: 'Afyonkarahisar', customer_address: 'Zafer Mah.' },
+            ]).map((c) => <ComplaintCard key={c.id} c={c} />)}
             {complaints24h.length === 0 && <div className="py-8 text-center text-xs text-slate-400">Son 24 saatte talep yok</div>}
           </div>
         </Modal>
       )}
 
-      {/* Modal: Bugünkü Ciro & Satış Detayları (YENİ) */}
+      {/* Modal: Bugünkü Ciro & Satış Detayları */}
       {showRevenueModal && (
-        <Modal title="Bugünkü Ciro & Satış Detayları" icon={<Wallet size={15} />} onClose={() => setShowRevenueModal(false)} wide>
+        <Modal title="Bugünkü Ciro & Satış Detayları" icon={<Wallet size={15} />} gradient="from-emerald-500 to-green-600" onClose={() => setShowRevenueModal(false)} wide>
           <div className="space-y-4">
-            {/* Özet */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 p-3 text-center">
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Toplam Satış</p>
-                <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{todayOrdersList.length} adet</p>
-              </div>
-              <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 p-3 text-center">
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Bugünkü Ciro</p>
-                <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">{Number(todayRevenue).toLocaleString('tr-TR')} TL</p>
-              </div>
-              <div className="rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/20 p-3 text-center">
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Ort. Sepet</p>
-                <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                  {todayOrdersList.length > 0 ? Math.round(todayRevenue / todayOrdersList.length).toLocaleString('tr-TR') : 0} TL
-                </p>
-              </div>
-            </div>
-
-            {/* 24 saat satış listesi */}
-            <div className="space-y-2.5 max-h-[45vh] overflow-y-auto pr-1">
-              {(todayOrdersList.length > 0 ? todayOrdersList : [
-                { id: 'demo-1', order_number: '26-00001', total_price: 1780, customer_name: 'Zafer Ayyıldız', customer_phone: '05321234567', customer_city: 'Afyonkarahisar', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }] },
-                { id: 'demo-2', order_number: '26-00002', total_price: 4500, customer_name: 'Mehmet Öztürk', customer_phone: '05339876543', customer_city: 'Afyonkarahisar', created_at: new Date().toISOString(), items: [{ product_name: 'Pastırma', quantity: 3, unit: 'KG', total: 3600 }] },
-              ]).map((o) => (
-                <div key={o.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">#{o.order_number}</span>
-                      <span className="text-[11px] text-slate-400">{new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                    <UserPlus size={12} className="text-indigo-500" /> <b>{o.customer_name}</b>
-                    <span>•</span> {o.customer_phone}
-                    {o.customer_city && <><span>•</span> {o.customer_city}</>}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(o.items || []).map((it: any, idx: number) => (
-                      <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {it.product_name} × {it.quantity} {it.unit || ''}
-                      </span>
-                    ))}
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-500/20 dark:to-cyan-500/5 border border-blue-200/70 dark:border-blue-500/20 p-5 text-center">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-blue-300/20 dark:bg-blue-400/10 blur-2xl" />
+                <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
+                  <ShoppingCart size={15} />
                 </div>
-              ))}
-              {todayOrdersList.length === 0 && <div className="py-8 text-center text-xs text-slate-400">Son 24 saatte satış bulunmuyor</div>}
+                <p className="text-[10px] text-blue-600/70 dark:text-blue-300/70 uppercase font-extrabold tracking-widest">Bugünkü Sipariş</p>
+                <p className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1.5 tabular-nums">{todayOrdersList.length} <span className="text-sm font-bold">adet</span></p>
+                <p className="text-[10px] text-slate-400 mt-2">Bugün oluşturulan sipariş sayısı (00:00 sonrası)</p>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-500/20 dark:to-green-500/5 border border-emerald-200/70 dark:border-emerald-500/20 p-5 text-center">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-300/20 dark:bg-emerald-400/10 blur-2xl" />
+                <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md mb-2">
+                  <Wallet size={15} />
+                </div>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70 uppercase font-extrabold tracking-widest">Bugünkü Ciro</p>
+                <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5 tabular-nums">{Number(todayRevenue).toLocaleString('tr-TR')} <span className="text-sm font-bold">TL</span></p>
+                <p className="text-[10px] text-slate-400 mt-2">Bugünkü siparişlerin toplam tutarı</p>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-500/20 dark:to-cyan-500/5 border border-teal-200/70 dark:border-teal-500/20 p-5 text-center">
+                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-teal-300/20 dark:bg-teal-400/10 blur-2xl" />
+                <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
+                  <TrendingUp size={15} />
+                </div>
+                <p className="text-[10px] text-teal-600/70 dark:text-teal-300/70 uppercase font-extrabold tracking-widest">Ort. Sepet</p>
+                <p className="text-3xl font-black text-teal-600 dark:text-teal-400 mt-1.5 tabular-nums">
+                  {todayOrdersList.length > 0 ? Math.round(todayRevenue / todayOrdersList.length).toLocaleString('tr-TR') : 0} <span className="text-sm font-bold">TL</span>
+                </p>
+                <p className="text-[10px] text-slate-400 mt-2">Ciro ÷ sipariş sayısı (sipariş başına ortalama)</p>
+              </div>
             </div>
           </div>
         </Modal>

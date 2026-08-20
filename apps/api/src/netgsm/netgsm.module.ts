@@ -12,10 +12,11 @@ import { NetgsmProvider } from './providers/netgsm.provider';
 import { AiModule } from '../ai/ai.module';
 import { AiBrainModule } from '../ai/brain/ai-brain.module';
 import { VoiceModule } from '../voice/voice.module';
+import { OrderEngineModule } from '../order-engine/order-engine.module';
 import { SupabaseService } from '../common/supabase.client';
 
 @Module({
-  imports: [AiModule, AiBrainModule, VoiceModule],
+  imports: [AiModule, AiBrainModule, VoiceModule, OrderEngineModule],
   controllers: [NetgsmController],
   providers: [
     IncomingCallWebhook,

@@ -4,6 +4,12 @@ import { AiOrderInput, OrderResult } from '@siparis/types';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 
+const PREPAID_METHODS = ['iban', 'paytr', 'iyzico', 'website'];
+
+function isPrepaid(paymentMethod?: string): boolean {
+  return PREPAID_METHODS.includes(String(paymentMethod || '').toLowerCase());
+}
+
 @Injectable()
 export class OrderEngineService {
   private readonly logger = new Logger(OrderEngineService.name);
@@ -84,8 +90,8 @@ export class OrderEngineService {
         channel: input.channel,
         source,
         status: 'new',
-        payment_method: input.payment,
-        payment_status: 'waiting',
+        payment_method: this.normalizePayment(input.payment),
+        payment_status: this.normalizePayment(input.payment) === 'iban' ? 'awaiting_dekont' : 'waiting',
         total_price: totalPrice,
         notes: input.notes || null,
       })
@@ -98,11 +104,19 @@ export class OrderEngineService {
     }
 
     await this.createOrderItems(order.id, input.products, tenantId);
-    await this.createNotification(tenantId, order.id, orderNumber, totalPrice);
+
+    const paymentMethod = this.normalizePayment(input.payment);
+    const esnafNotify = !isPrepaid(paymentMethod);
+
+    if (esnafNotify) {
+      await this.createNotification(tenantId, order.id, orderNumber, totalPrice);
+    }
     await this.logAiEvent(tenantId, order.id, 'order_received', {
       confidence: input.confidence,
       channel: input.channel,
       products: input.products.length,
+      payment_method: paymentMethod,
+      esnaf_notified: esnafNotify,
     });
 
     if (input.confidence < 70) {
@@ -120,6 +134,8 @@ export class OrderEngineService {
       customerId,
       confidence: input.confidence,
       channel: input.channel,
+      paymentMethod,
+      esnafNotify,
       description: `#${orderNumber} - ${totalPrice.toLocaleString('tr-TR')} TL`,
       productCount: input.products.length,
     }, order.id);
@@ -240,6 +256,86 @@ export class OrderEngineService {
       event_type: eventType,
       event_data: eventData,
     });
+  }
+
+  private normalizePayment(payment?: string): string {
+    const map: Record<string, string> = {
+      IBAN: 'iban', iban: 'iban', 'IBAN (Havale/EFT)': 'iban',
+      CASH_ON_DELIVERY: 'cod', cash_on_delivery: 'cod', COD: 'cod', cod: 'cod',
+      CASH: 'cod', CARD: 'website', WEBSITE: 'website', website: 'website',
+      PAYTR: 'paytr', paytr: 'paytr', PAYMENT_LINK: 'paytr', LINK: 'paytr',
+      IYZICO: 'iyzico', iyzico: 'iyzico',
+    };
+    return map[String(payment || '').trim()] || 'iban';
+  }
+
+  /**
+   * IBAN siparişinde dekont alındığını işaretler ve esnaf bildirim zincirini tetikler.
+   * source: 'auto' (müşteri beyanı/gelen mesaj) | 'esnaf' (manuel onay)
+   */
+  async markDekontReceived(orderId: string, source: 'auto' | 'esnaf' = 'auto'): Promise<boolean> {
+    const { data: order } = await this.supabase.db
+      .from('orders')
+      .select('*, customer:customer_id(name, phone)')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (!order) return false;
+
+    const o = order as Record<string, unknown>;
+    if (this.normalizePayment(String(o.payment_method || '')) !== 'iban') return false;
+    if (['paid', 'dekont_alindi'].includes(String(o.payment_status || ''))) return false;
+
+    const paymentNote = source === 'auto'
+      ? 'Müşteri dekont gönderdi — onay bekliyor'
+      : 'Dekont esnafça görüldü — onaylandı';
+
+    await this.supabase.db
+      .from('orders')
+      .update({ payment_status: 'dekont_alindi', payment_note: paymentNote })
+      .eq('id', orderId);
+
+    this.eventBus.emit(SystemEvents.ORDER_PAYMENT_CONFIRMED, String(o.tenant_id), {
+      entityType: 'order',
+      orderId,
+      orderNumber: o.order_number,
+      customerName: (o.customer as Record<string, unknown>)?.name || '',
+      customerPhone: (o.customer as Record<string, unknown>)?.phone || '',
+      totalPrice: o.total_price,
+      paymentMethod: 'iban',
+      paymentNote,
+      dekont: true,
+      description: `🆕 Yeni Sipariş #${o.order_number}\n💵 Havale — ${paymentNote}`,
+    }, orderId);
+
+    this.logger.log(`Dekont received (${source}) for order ${o.order_number}`);
+    return true;
+  }
+
+  /** Ödeme bekleyen (dekont beklenen) IBAN siparişini telefon numarasına göre bulur. */
+  async findAwaitingDekontOrder(tenantId: string, phone: string): Promise<{ id: string } | null> {
+    if (!phone) return null;
+
+    const { data: customer } = await this.supabase.db
+      .from('customers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('phone', phone)
+      .maybeSingle();
+    if (!customer) return null;
+
+    const { data: order } = await this.supabase.db
+      .from('orders')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customer.id)
+      .in('payment_method', ['iban', 'IBAN'])
+      .in('payment_status', ['awaiting_dekont', 'waiting'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return order ? { id: String(order.id) } : null;
   }
 
   async updateStatus(orderId: string, status: string): Promise<void> {

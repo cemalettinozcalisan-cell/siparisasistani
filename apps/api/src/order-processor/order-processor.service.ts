@@ -78,7 +78,7 @@ export class OrderProcessorService {
         source: input.source || (input.channel === 'phone' ? 'PHONE' : input.channel === 'whatsapp' ? 'WHATSAPP' : input.channel === 'sms' ? 'SMS' : 'PANEL'),
         status: 'new',
         payment_method: this.mapPayment(input.payment),
-        payment_status: input.payment === 'cash_on_delivery' ? 'waiting' : (input.payment && input.payment !== 'UNKNOWN' ? 'paid' : 'waiting'),
+        payment_status: this.mapPayment(input.payment) === 'iban' ? 'awaiting_dekont' : 'waiting',
         total_price: totalPrice,
         notes: null,
         ai_confidence: input.orderConfidence || 0,
@@ -104,6 +104,8 @@ export class OrderProcessorService {
     }
 
     // 7. Event Bus - ORDER_CREATED
+    const paymentMethod = this.mapPayment(input.payment);
+    const esnafNotify = !['iban', 'paytr', 'iyzico', 'website'].includes(paymentMethod);
     this.eventBus.emit(SystemEvents.ORDER_CREATED, input.tenantId, {
       entityType: 'order',
       orderId: order.id,
@@ -112,6 +114,8 @@ export class OrderProcessorService {
       customerId,
       confidence: input.orderConfidence,
       channel: input.channel,
+      paymentMethod,
+      esnafNotify,
       description: `#${orderNumber} - ${totalPrice.toLocaleString('tr-TR')} TL`,
       productCount: input.products.length,
     }, order.id);

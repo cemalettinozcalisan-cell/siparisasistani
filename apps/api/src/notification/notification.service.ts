@@ -17,6 +17,7 @@ export class NotificationService implements OnModuleInit {
   onModuleInit() {
     const orderEvents = [
       SystemEvents.ORDER_CREATED,
+      SystemEvents.ORDER_PAYMENT_CONFIRMED,
       SystemEvents.ORDER_UPDATED,
       SystemEvents.ORDER_SHIPPED,
       SystemEvents.ORDER_CANCELLED,
@@ -32,6 +33,13 @@ export class NotificationService implements OnModuleInit {
   }
 
   private async route(event: SystemEvent) {
+    // Ön ödemeli siparişlerde (IBAN/link) esnaf bildirimi dekont/ödeme onayına kadar bekler.
+    // Burada yalnızca activity_log (denetim izi) yazılır; grup + yazıcı ORDER_PAYMENT_CONFIRMED ile gelir.
+    if (event.type === SystemEvents.ORDER_CREATED && event.payload.esnafNotify === false) {
+      await this.send('activity_log', event);
+      return;
+    }
+
     const channels = await this.resolveChannels(event.tenantId);
 
     const promises = channels.map(async (channel) => {
@@ -75,19 +83,24 @@ export class NotificationService implements OnModuleInit {
         });
         break;
 
-      case 'whatsapp_group':
+      case 'whatsapp_group': {
+        const p = event.payload as Record<string, unknown>;
+        const prefix = event.type === SystemEvents.ORDER_CREATED && p.orderNumber
+          ? `🆕 Yeni Sipariş #${p.orderNumber}\n`
+          : '';
         await this.supabase.db.from('ai_events').insert({
           tenant_id: event.tenantId,
           order_id: event.entityId,
           event_type: 'whatsapp_group_sent',
           event_data: {
             type: event.type,
-            message: event.payload.description,
+            message: `${prefix}${event.payload.description}`,
             channel: 'whatsapp_group',
             status: 'queued',
           },
         });
         break;
+      }
 
       case 'printer': {
         const isComplaint = (event.payload.entityType as string) === 'complaint';

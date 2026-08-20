@@ -58,7 +58,14 @@ const PAYMENT_LABELS: Record<string, string> = {
   iban: '🏦 IBAN', cod: '💵 Kapıda Ödeme', website: '🔗 Link', paytr: '💳 Kart', iyzico: '💳 Kart',
 };
 
-const COD_METHODS = ['cod', 'Kapıda Nakit', 'Kapıda Kredi Kartı', 'Kapıda Ödeme', 'CASH', 'CARD'];
+const PAYMENT_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  waiting: { label: '💳 Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
+  awaiting_dekont: { label: '🧾 Dekont Bekleniyor', cls: 'bg-amber-100 text-amber-700' },
+  dekont_alindi: { label: '✅ Dekont Alındı', cls: 'bg-emerald-100 text-emerald-700' },
+  paid: { label: '💰 Ödendi', cls: 'bg-emerald-100 text-emerald-700' },
+};
+
+const COD_METHODS = ['cod', 'cash_on_delivery', 'CASH_ON_DELIVERY', 'Kapıda Nakit', 'Kapıda Kredi Kartı', 'Kapıda Ödeme', 'CASH', 'CARD'];
 
 const EDIT_FIELDS: { key: string; label: string }[] = [
   { key: 'customer_name', label: 'Müşteri Ad Soyad' },
@@ -401,6 +408,9 @@ function OrdersPageContent() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {pmLabel && <span className="text-[11px] text-gray-500 shrink-0">{pmLabel}</span>}
+                  {o.payment_status && PAYMENT_STATUS_BADGE[o.payment_status] && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_BADGE[o.payment_status].cls}`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
+                  )}
                   <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
                   <span className="font-semibold text-base text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
@@ -490,6 +500,9 @@ function OrdersPageContent() {
                               <p className="text-amber-600 dark:text-amber-400">💵 Kapıda ödeme — tahsilat teslimatta yapılacaktır.</p>
                             ) : (
                               <p>Ödeme onaylanacak ve müşteri kargo bilgisiyle bilgilendirilecek.</p>
+                            )}
+                            {selected.payment_status === 'dekont_alindi' && (
+                              <p className="text-emerald-600 dark:text-emerald-400">✅ Müşteri dekont gönderdi — onaylamak için Kargoya Ver'e basın.</p>
                             )}
                           </>
                         ) : (

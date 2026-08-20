@@ -20,7 +20,7 @@ export class DashboardController {
     today.setHours(0, 0, 0, 0);
     const todayIso = today.toISOString();
 
-    const [orders, customers, payments, conversations, timeline] = await Promise.all([
+    const [orders, customers, payments, conversations] = await Promise.all([
       this.supabase.db
         .from('orders')
         .select('*, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
@@ -32,23 +32,65 @@ export class DashboardController {
         .select('phone, status, call_status, created_at')
         .eq('tenant_id', tenantId)
         .gte('created_at', todayIso),
-      this.supabase.db
-        .from('activity_logs')
-        .select('id, event_type, description, channel, created_at, metadata')
-        .eq('tenant_id', tenantId)
-        .gte('created_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(100),
     ]);
 
     const allOrders = (orders.data || []) as Record<string, any>[];
     const hasRealOrders = allOrders.length > 0;
 
+    // Talep & İstek: birleşik şikayet tablosu (son 24 saat) + müşteri adres/şehir zenginleştirme
+    const complaints = await this.fetchComplaints(tenantId);
+
     // Gerçek sipariş verisi varsa hepsini hesapla; yoksa mock fallback
-    let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], timeline.data || [], todayIso);
+    let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], complaints, todayIso);
     if (!hasRealOrders) data = this.getMockStats();
 
     return data;
+  }
+
+  /** Son 24 saatteki şikayet/talep kayıtlarını complaints tablosundan çeker, müşteri bilgisiyle zenginleştirir. */
+  private async fetchComplaints(tenantId: string) {
+    const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { data: rows } = await this.supabase.db
+      .from('complaints')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const list = (rows || []) as Record<string, any>[];
+
+    // Telefon ile müşteri eşleştir (adres + şehir için)
+    const phones = [...new Set(list.map((c) => String(c.customer_phone || '').trim()).filter(Boolean))];
+    let customerIndex: Record<string, Record<string, unknown>> = {};
+    if (phones.length) {
+      const { data: custRows } = await this.supabase.db
+        .from('customers')
+        .select('phone, name, city, address')
+        .in('phone', phones);
+      for (const row of custRows || []) {
+        customerIndex[String((row as any).phone)] = row as Record<string, unknown>;
+      }
+    }
+
+    const severityMap: Record<string, string> = { critical: 'CRITICAL', high: 'HIGH', medium: 'NORMAL', low: 'LOW' };
+
+    return list.map((c) => {
+      const cust = customerIndex[String(c.customer_phone || '').trim()] || {};
+      return {
+        id: c.id,
+        event_type: 'COMPLAINT_OPEN',
+        description: c.description || '',
+        channel: c.channel || 'phone',
+        severity: severityMap[String(c.severity || '').toLowerCase()] || 'NORMAL',
+        ticket_number: c.ticket_number || '',
+        created_at: c.created_at,
+        customer_name: (c.customer_name as string) || String(cust.name || ''),
+        customer_phone: (c.customer_phone as string) || '',
+        customer_city: String(cust.city || ''),
+        customer_address: String(cust.address || ''),
+      };
+    });
   }
 
   private computeStats(
@@ -56,7 +98,7 @@ export class DashboardController {
     customers: any[],
     payments: any[],
     conversations: any[],
-    timeline: any[],
+    complaints: any[],
     todayIso: string,
   ) {
     const todayOrders = orders.filter((o) => new Date(o.created_at) >= new Date(todayIso));
@@ -69,6 +111,16 @@ export class DashboardController {
       .filter((o) => {
         const st = normalizeStatus(o.status);
         return st === 'SHIPPED' && !DELIVERED_STATUSES.includes(st);
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((o) => this.mapOrder(o));
+
+    // Teslim edilenler (son 7 gün) — Kargo Takibi modalındaki "Teslim Edilenler" sekmesi için
+    const deliveredCutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const cargoDeliveredList = orders
+      .filter((o) => {
+        const st = normalizeStatus(o.status);
+        return (st === 'DELIVERED' || st === 'COMPLETED') && (o.cargo_company || o.tracking_number) && new Date(o.created_at) >= new Date(deliveredCutoff);
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map((o) => this.mapOrder(o));
@@ -96,18 +148,8 @@ export class DashboardController {
     }).length;
     const aiSuccessRate = totalCalls > 0 ? Math.round((handled / totalCalls) * 100) : 98;
 
-    // Talep & İstek: son 24 saatteki COMPLAINT / HUMAN_REQUIRED kayıtları
-    const complaints24h = (timeline || []).filter((e) =>
-      String(e.event_type || '').startsWith('COMPLAINT') || String(e.event_type || '') === 'HUMAN_REQUIRED'
-    ).map((e) => ({
-      id: e.id,
-      event_type: e.event_type,
-      description: e.description,
-      channel: e.channel,
-      severity: ((e.metadata as Record<string, unknown>)?.severity as string) || 'NORMAL',
-      ticket_number: ((e.metadata as Record<string, unknown>)?.ticket_number as string) || '',
-      created_at: e.created_at,
-    }));
+    // Talep & İstek: son 24 saatteki şikayet/talep kayıtları (complaints tablosundan)
+    const complaints24h = complaints || [];
 
     return {
       todayOrders: todayOrders.length,
@@ -121,6 +163,7 @@ export class DashboardController {
       complaints24h,
       todayOrdersList,
       cargoTrackingList,
+      cargoDeliveredList,
       orderStats: {
         preparing: orders.filter((o) => normalizeStatus(o.status) === 'PACKAGING' || normalizeStatus(o.status) === 'PACKAGED' || normalizeStatus(o.status) === 'PREPARING').length,
         shipped: orders.filter((o) => normalizeStatus(o.status) === 'SHIPPED').length,
@@ -176,6 +219,9 @@ export class DashboardController {
     const cargoTrackingList = mockOrders
       .filter((o) => ['SHIPPED', 'shipped'].includes(String(o.status)))
       .map((o) => ({ ...o, created_at: iso(0), cargo_status: (o as any).cargo_status || 'in_transit' }));
+    const cargoDeliveredList = mockOrders
+      .filter((o) => ['DELIVERED'].includes(String(o.status)))
+      .map((o) => ({ ...o, created_at: iso(0), cargo_status: 'delivered' }));
 
     return {
       todayOrders: todayOrdersList.length,
@@ -193,6 +239,7 @@ export class DashboardController {
       ],
       todayOrdersList,
       cargoTrackingList,
+      cargoDeliveredList,
       orderStats: {
         preparing: 3,
         shipped: 2,

@@ -33,6 +33,8 @@ export class PaymentHandler implements NotificationHandler {
   }
 
   private async handleCreated(event: SystemEvent, p: Record<string, unknown>) {
+    // IBAN siparişinde ödeme oluşturuldu bildirimi esnafa dekonttan önce sızmasın
+    if (p.esnafNotify === false) return;
     await this.supabase.db.from('notifications').insert({
       tenant_id: event.tenantId,
       type: 'payment',

@@ -97,6 +97,7 @@ export class PaymentEngineService implements OnModuleInit {
           entityType: 'payment', paymentId, orderId,
           orderNumber: order.order_number, method: 'IBAN',
           amount: order.total_price, eventSubType: 'PAYMENT_CREATED',
+          esnafNotify: false,
           description: `IBAN oluşturuldu: ${order.order_number}`,
         }, orderId);
       }
@@ -115,7 +116,7 @@ export class PaymentEngineService implements OnModuleInit {
 
     const { data: payment } = await this.supabase.db
       .from('payments')
-      .select('tenant_id, order_id, amount')
+      .select('tenant_id, order_id, amount, method')
       .eq('id', paymentId)
       .maybeSingle();
 
@@ -138,6 +139,36 @@ export class PaymentEngineService implements OnModuleInit {
         orderNumber: '', eventSubType: 'PAYMENT_RECEIVED',
         description: `Ödeme alındı: ${Number(payment.amount).toLocaleString('tr-TR')} TL`,
       }, payment.order_id);
+
+      // Ön ödemeli (link) yöntemlerde sipariş onayı esnafa burada bildirilir.
+      // IBAN kendi akışında (dekont alındı → markDekontReceived) bildirilir.
+      const method = String(payment.method || '').toLowerCase();
+      if (['website', 'paytr', 'iyzico', 'PAYMENT_LINK', 'LINK'].map((m) => m.toLowerCase()).includes(method)) {
+        try {
+          const { data: order } = await this.supabase.db
+            .from('orders')
+            .select('order_number, total_price, customer:customer_id(name, phone)')
+            .eq('id', payment.order_id)
+            .maybeSingle();
+          if (order) {
+            const o = order as Record<string, unknown>;
+            this.eventBus.emit(SystemEvents.ORDER_PAYMENT_CONFIRMED, payment.tenant_id, {
+              entityType: 'order',
+              orderId: payment.order_id,
+              orderNumber: o.order_number,
+              customerName: (o.customer as Record<string, unknown>)?.name || '',
+              customerPhone: (o.customer as Record<string, unknown>)?.phone || '',
+              totalPrice: o.total_price,
+              paymentMethod: method,
+              paymentNote: '💳 Ödeme alındı (ödeme linki)',
+              dekont: false,
+              description: `🆕 Yeni Sipariş #${o.order_number}\n💳 Ödeme alındı — sipariş onaylandı`,
+            }, payment.order_id);
+          }
+        } catch (err) {
+          this.logger.error(`ORDER_PAYMENT_CONFIRMED emit failed: ${(err as Error).message}`);
+        }
+      }
     }
   }
 

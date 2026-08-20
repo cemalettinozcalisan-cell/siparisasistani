@@ -37,13 +37,8 @@ export class CargoTrackingController {
   }
 
   @Post('check/:tenantId/:company')
-  async checkStatus(@Param('tenantId') tenantId: string, @Param('company') company: string, @Body() body: { trackingNumber: string }) {
+  async checkStatus(@Param('tenantId') tenantId: string, @Param('company') company: string, @Body() body: { trackingNumber: string; orderId?: string }) {
     if (!body?.trackingNumber) return { error: 'trackingNumber parametresi gerekli' };
-    const adapter = this.service.getAdapter(company);
-    if (!adapter) return { error: 'Firma tanınmıyor' };
-    if (!(await adapter.isConfigured(tenantId))) {
-      return { status: 'unknown', description: 'Entegrasyon tanımlı değil' };
-    }
-    return adapter.checkStatus(tenantId, body.trackingNumber);
+    return this.service.checkOrderStatus(tenantId, company, body.trackingNumber, body.orderId);
   }
 }

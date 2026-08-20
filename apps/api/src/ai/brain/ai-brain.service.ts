@@ -110,6 +110,11 @@ export class AiBrainService {
       sessionId = await this.createSession(input.tenantId, input.channel, input.phone, input.channelSource);
     }
 
+    // Step 4.5: Dekont alındı tespiti — müşteri "ödedim / dekont attım" beyan ederse,
+    // bekleyen IBAN siparişi varsa otomatik esnaf bildirimi tetiklenir (AI çağrısı yapılmaz).
+    const dekontReply = await this.maybeHandleDekont(input, lastMessage, sessionId);
+    if (dekontReply) return dekontReply;
+
     // Step 5: Prompt
     const tenantName = await this.getTenantName(input.tenantId);
 
@@ -449,6 +454,29 @@ export class AiBrainService {
     if (/ödeme|kart|iban|havale/i.test(lastAssistantMsg)) return 'payment';
     if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'asking_phone';
     return 'ordering';
+  }
+
+  private async maybeHandleDekont(input: BrainInput, lastMessage: string, sessionId: string): Promise<BrainOutput | null> {
+    if (!/dekont|att[ıi]m|gönderdim|gönderdik|ödedim|havale\s*(yapt|gönder)|transfer\s*(yapt|gönder)/i.test(lastMessage)) {
+      return null;
+    }
+
+    const order = await this.orderEngine.findAwaitingDekontOrder(input.tenantId, input.phone);
+    if (!order) return null;
+
+    const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');
+    if (!handled) return null;
+
+    this.logger.log(`Dekont detected in conversation for order ${order.id} (${input.channel})`);
+    return {
+      reply: 'Dekontunuz alındı, esnafımız onaylayacak. En kısa sürede kargoya veriyoruz.',
+      confidence: 90,
+      orderCreated: false,
+      sessionId,
+      needsHuman: false,
+      maintenanceMode: false,
+      afterHours: false,
+    };
   }
 
   private detectHumanRequest(reply: string): boolean {

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AiBrainService } from '../../ai/brain/ai-brain.service';
 import { NetgsmProvider } from '../providers/netgsm.provider';
 import { SupabaseService } from '../../common/supabase.client';
+import { OrderEngineService } from '../../order-engine/order-engine.service';
 
 @Injectable()
 export class IncomingSmsWebhook {
@@ -11,6 +12,7 @@ export class IncomingSmsWebhook {
     private readonly brain: AiBrainService,
     private readonly netgsm: NetgsmProvider,
     private readonly supabase: SupabaseService,
+    private readonly orderEngine: OrderEngineService,
   ) {}
 
   async handle(body: Record<string, unknown>) {
@@ -18,14 +20,34 @@ export class IncomingSmsWebhook {
     const message = String(body.message || body.msg || body.text || body.content || '');
     const tenantId = String(body.tenant_id || '00000000-0000-0000-0000-000000000001');
 
-    if (!rawPhone || !message) {
-      this.logger.warn('SMS webhook received empty phone or message');
+    if (!rawPhone) {
+      this.logger.warn('SMS webhook received empty phone');
       return { received: false, reason: 'empty payload' };
     }
 
     // Normalize phone: remove +, spaces, leading 0
     const phone = rawPhone.replace(/[+\s()]/g, '').replace(/^0/, '');
     this.logger.log(`SMS from ${phone}: ${message.substring(0, 80)}`);
+
+    // Dekont tespiti: yazısız medya (boş mesaj) veya "ödedim/dekont attım" beyanı.
+    // Bekleyen IBAN siparişi varsa otomatik esnaf bildirimi tetiklenir (AI çağrısı yapılmaz).
+    const isDekontHint = !message || /dekont|att[ıi]m|gönderdim|gönderdik|ödedim|havale\s*(yapt|gönder)|transfer\s*(yapt|gönder)/i.test(message);
+    if (isDekontHint) {
+      const order = await this.orderEngine.findAwaitingDekontOrder(tenantId, phone);
+      if (order) {
+        const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');
+        if (handled) {
+          const reply = 'Dekontunuz alındı, esnafımız onaylayacak. En kısa sürede kargoya veriyoruz.';
+          await this.netgsm.sendSms(rawPhone, reply);
+          return { received: true, replySent: true, sessionId: null, dekontDetected: true };
+        }
+      }
+    }
+
+    // Yalnızca medya mesajı (yazısız) ve eşleşen sipariş yoksa işlenmeden döner.
+    if (!message) {
+      return { received: false, reason: 'empty message' };
+    }
 
     // Find active SMS session for this phone (last 5 minutes)
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();

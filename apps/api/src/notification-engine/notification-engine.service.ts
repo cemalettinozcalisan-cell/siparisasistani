@@ -24,6 +24,8 @@ export class NotificationEngineService implements OnModuleInit {
     this.register(shipment);
     // Kargo gönderimi iki farklı olay adıyla yayınlanabilir (STATUS_UPDATED / ORDER_SHIPPED)
     this.handlers.set(SystemEvents.ORDER_SHIPPED, shipment);
+    // Ödeme onayı (dekont / link) geldiğinde de sipariş bildirimi düşer — aynı handler
+    this.handlers.set(SystemEvents.ORDER_PAYMENT_CONFIRMED, orderCreated);
   }
 
   private register(handler: NotificationHandler) {

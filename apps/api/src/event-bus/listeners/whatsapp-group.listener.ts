@@ -12,22 +12,9 @@ export class WhatsAppGroupListener implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.eventBus.on(SystemEvents.ORDER_CREATED).subscribe(async (event) => {
-      const enabled = await this.isWhatsAppGroupEnabled(event.tenantId);
-      if (!enabled) return;
-
-      this.logger.log(`WhatsApp group notification for order ${event.entityId}`);
-
-      await this.supabase.db.from('ai_events').insert({
-        tenant_id: event.tenantId,
-        order_id: event.entityId,
-        event_type: 'whatsapp_group_sent',
-        event_data: {
-          message: `🆕 Yeni Sipariş #${event.payload.orderNumber}\n${event.payload.description}`,
-          status: 'queued',
-        },
-      });
-    });
+    // Esnaf grubu bildirimleri tek noktadan NotificationService üzerinden yönetilir
+    // (ORDER_CREATED + ORDER_PAYMENT_CONFIRMED). Bu dinleyici artık doğrudan yazmaz.
+    this.logger.log('WhatsAppGroupListener delegated to NotificationService');
   }
 
   private async isWhatsAppGroupEnabled(tenantId: string): Promise<boolean> {

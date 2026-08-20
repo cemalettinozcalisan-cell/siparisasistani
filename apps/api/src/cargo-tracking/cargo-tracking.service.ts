@@ -143,6 +143,43 @@ export class CargoTrackingService {
   }
 
   /**
+   * "Durumu Güncelle" akışı: firmaya anlık sorgu atar ve sonucu DB'ye yazar.
+   * Sipariş teslim edildiyse markDelivered tetiklenir (bildirim + timeline + durum).
+   */
+  async checkOrderStatus(tenantId: string, company: string, trackingNumber: string, orderId?: string): Promise<Record<string, any>> {
+    const adapter = this.factory.getAdapter(company);
+    if (!adapter) return { error: 'Firma tanınmıyor' };
+    if (!(await adapter.isConfigured(tenantId))) {
+      return { status: 'unknown', description: 'Entegrasyon tanımlı değil' };
+    }
+
+    const result = await adapter.checkStatus(tenantId, trackingNumber);
+
+    if (orderId) {
+      const { data: order } = await this.supabase.db
+        .from('orders')
+        .select('*, customer:customer_id(name, phone)')
+        .eq('tenant_id', tenantId)
+        .eq('id', orderId)
+        .maybeSingle();
+
+      if (order) {
+        await this.supabase.db
+          .from('orders')
+          .update({ cargo_status: result.status, cargo_status_updated_at: new Date().toISOString() })
+          .eq('tenant_id', tenantId)
+          .eq('id', orderId);
+
+        if (String(result.status || '').toLowerCase() === 'delivered') {
+          await this.markDelivered(order);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Siparişi kargo firması üzerinden gönderime verir.
    * Firma sırası: istek parametresi → siparişte kayıtlı firma → varsayılan firma.
    * Başarıda takip kodu API'den gelir (elle girilmez), müşteri bilgilendirilir.
@@ -185,11 +222,39 @@ export class CargoTrackingService {
 
     try {
       const result = await adapter.createShipment(tenantId, req);
+      const pm = String(o.payment_method || '').toLowerCase();
+      const isCod = pm === 'cod' || pm === 'cash_on_delivery';
       await this.supabase.db
         .from('orders')
-        .update({ cargo_company: adapter.company, tracking_number: result.trackingNumber, cargo_status: 'pending', cargo_status_updated_at: new Date().toISOString(), status: 'SHIPPED' })
+        .update({
+          cargo_company: adapter.company,
+          tracking_number: result.trackingNumber,
+          cargo_status: 'pending',
+          cargo_status_updated_at: new Date().toISOString(),
+          status: 'SHIPPED',
+          payment_status: isCod ? (o.payment_status || 'waiting') : 'paid',
+        })
         .eq('tenant_id', tenantId)
         .eq('id', orderId);
+
+      // Manuel onay yolu: dekont otomatik tespit edilememişse, esnaf "Kargoya Ver" ile
+      // onayladığında esnaf bildirim zinciri (panel + grup + yazıcı) burada tetiklenir.
+      const isIban = pm === 'iban';
+      const alreadyNotified = ['dekont_alindi', 'paid'].includes(String(o.payment_status || ''));
+      if (isIban && !alreadyNotified) {
+        this.eventBus.emit(SystemEvents.ORDER_PAYMENT_CONFIRMED, tenantId, {
+          entityType: 'order',
+          orderId,
+          orderNumber: o.order_number,
+          customerName: customer.name || '',
+          customerPhone: customer.phone || '',
+          totalPrice: o.total_price,
+          paymentMethod: 'iban',
+          paymentNote: 'Dekont esnafça görüldü — onaylandı',
+          dekont: true,
+          description: `🆕 Yeni Sipariş #${o.order_number}\n💵 Havale — dekont esnafça onaylandı`,
+        }, orderId);
+      }
 
       await this.timeline.logEvent({
         tenantId,

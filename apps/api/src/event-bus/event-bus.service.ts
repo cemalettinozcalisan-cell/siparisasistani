@@ -3,6 +3,7 @@ import { Subject, filter, Observable } from 'rxjs';
 
 export enum SystemEvents {
   ORDER_CREATED = 'ORDER_CREATED',
+  ORDER_PAYMENT_CONFIRMED = 'ORDER_PAYMENT_CONFIRMED',
   ORDER_UPDATED = 'ORDER_UPDATED',
   ORDER_SHIPPED = 'ORDER_SHIPPED',
   ORDER_CANCELLED = 'ORDER_CANCELLED',
