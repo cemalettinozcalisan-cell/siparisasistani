@@ -260,8 +260,10 @@ export class OrderEngineService {
 
   private normalizePayment(payment?: string): string {
     const map: Record<string, string> = {
-      IBAN: 'iban', iban: 'iban', 'IBAN (Havale/EFT)': 'iban',
+      IBAN: 'iban', iban: 'iban', 'IBAN (Havale/EFT)': 'iban', HAVALE: 'iban', EFT: 'iban',
       CASH_ON_DELIVERY: 'cod', cash_on_delivery: 'cod', COD: 'cod', cod: 'cod',
+      'KAPIDA NAKİT': 'cod', 'Kapıda Nakit': 'cod', KAPIDA_NAKIT: 'cod', 'KAPIDA ODEME': 'cod', 'Kapıda Ödeme': 'cod',
+      'KAPIDA KREDI KARTI': 'kapida_kart', 'Kapıda Kredi Kartı': 'kapida_kart', KAPIDA_KART: 'kapida_kart', 'Kapıda Kart': 'kapida_kart',
       CASH: 'cod', CARD: 'website', WEBSITE: 'website', website: 'website',
       PAYTR: 'paytr', paytr: 'paytr', PAYMENT_LINK: 'paytr', LINK: 'paytr',
       IYZICO: 'iyzico', iyzico: 'iyzico',

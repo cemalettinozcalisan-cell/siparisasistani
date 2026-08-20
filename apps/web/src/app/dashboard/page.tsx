@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, ChevronDown, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, UserPlus, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon, Banknote, HandCoins, MapPin, Copy, Ticket } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, ChevronDown, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, UserPlus, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon, Banknote, HandCoins, MapPin, Copy, Ticket, ArrowUp, ArrowDown, Clock } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { TenantSwitcher } from '@/components/tenant-switcher';
@@ -115,6 +115,28 @@ function cargoStep(status: string): number {
 const CHANNEL_LABEL: Record<string, string> = {
   phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', website: 'Web', sms: 'SMS', voice: 'Telefon', system: 'Sistem', panel: 'Panel',
   PHONE: 'Telefon', WHATSAPP: 'WhatsApp', INSTAGRAM: 'Instagram', WEBSITE: 'Web', SMS: 'SMS', VOICE: 'Telefon', SYSTEM: 'Sistem', PANEL: 'Panel',
+};
+
+// Ciro modalı — kanal bazlı ciro rozetleri (source meta)
+const SOURCE_META: Record<string, { label: string; icon: ChannelIconType; gradient: string }> = {
+  WHATSAPP: { label: 'WhatsApp', icon: WhatsAppIcon, gradient: 'from-emerald-500 to-green-600' },
+  PHONE: { label: 'Telefon', icon: PhoneCall, gradient: 'from-blue-500 to-cyan-600' },
+  SMS: { label: 'SMS', icon: MessageSquare, gradient: 'from-orange-500 to-orange-600' },
+  INSTAGRAM: { label: 'Instagram DM', icon: Instagram, gradient: 'from-purple-500 to-violet-600' },
+  WEBSITE: { label: 'Web Sitesi', icon: Globe, gradient: 'from-cyan-500 to-teal-600' },
+  PANEL: { label: 'Panel', icon: Settings, gradient: 'from-indigo-500 to-violet-600' },
+};
+
+function sourceMeta(source: string) {
+  return SOURCE_META[String(source || '').toUpperCase()] || SOURCE_META.PHONE;
+}
+
+// Ciro modalı — ödeme yöntemi dağılım grupları (API paymentDistribution method key'leri)
+const PAYMENT_DIST_META: Record<string, { label: string; gradient: string }> = {
+  iban: { label: 'IBAN / Havale', gradient: 'from-emerald-500 to-green-600' },
+  link: { label: 'Link ile Ödeme', gradient: 'from-pink-500 to-rose-600' },
+  kapida_kart: { label: 'Kapıda Kredi Kartı', gradient: 'from-purple-500 to-violet-600' },
+  cod: { label: 'Kapıda Nakit', gradient: 'from-orange-400 to-orange-600' },
 };
 
 function channelMeta(channel: string, source: string) {
@@ -369,6 +391,18 @@ export default function DashboardPage() {
   const complaintsCount = Array.isArray(rawComplaints) ? complaints24h.length : 5;
   const todayOrdersList = (stats.todayOrdersList as Record<string, any>[]) || [];
   const cargoAllList = (stats.cargoTrackingList as Record<string, any>[]) || [];
+
+  const channelRevenue = (stats.channelRevenue as Record<string, any>[]) || [];
+  const paymentDistribution = (stats.paymentDistribution as Record<string, any>[]) || [];
+  const approvedRevenue = Number(stats.approvedRevenue ?? 0);
+  const pendingApprovalRevenue = Number(stats.pendingApprovalRevenue ?? 0);
+  const cargoCollectionRevenue = Number(stats.cargoCollectionRevenue ?? 0);
+  const approvedCount = Number(stats.approvedCount ?? 0);
+  const pendingApprovalCount = Number(stats.pendingApprovalCount ?? 0);
+  const cargoCollectionCount = Number(stats.cargoCollectionCount ?? 0);
+  const yesterdayRevenue = Number(stats.yesterdayRevenue ?? 0);
+  const revenueChangePct = Number(stats.revenueChangePct ?? 0);
+  const websiteEnabled = Boolean(stats.websiteEnabled ?? true);
 
   const cargoFilteredList = cargoAllList.filter((o) => {
     if (cargoFilter === 'in_transit') return String(o.cargo_status).toLowerCase() === 'in_transit';
@@ -833,6 +867,7 @@ export default function DashboardPage() {
       {showRevenueModal && (
         <Modal title="Bugünkü Ciro & Satış Detayları" icon={<Wallet size={15} />} gradient="from-emerald-500 to-green-600" onClose={() => setShowRevenueModal(false)} wide>
           <div className="space-y-4">
+            {/* Metrik özet kutuları */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-500/20 dark:to-cyan-500/5 border border-blue-200/70 dark:border-blue-500/20 p-5 text-center">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-blue-300/20 dark:bg-blue-400/10 blur-2xl" />
@@ -850,6 +885,10 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70 uppercase font-extrabold tracking-widest">Bugünkü Ciro</p>
                 <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5 tabular-nums">{Number(todayRevenue).toLocaleString('tr-TR')} <span className="text-sm font-bold">TL</span></p>
+                {/* Dün ile aynı saat dilimi karşılaştırma rozeti */}
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${revenueChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                  {revenueChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(revenueChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
+                </div>
                 <p className="text-[10px] text-slate-400 mt-2">Bugünkü siparişlerin toplam tutarı</p>
               </div>
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-500/20 dark:to-cyan-500/5 border border-teal-200/70 dark:border-teal-500/20 p-5 text-center">
@@ -863,6 +902,100 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-[10px] text-slate-400 mt-2">Ciro ÷ sipariş sayısı (sipariş başına ortalama)</p>
               </div>
+            </div>
+
+            {/* Kanal bazlı ciro */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Kanal Bazlı Ciro</p>
+                <p className="text-[11px] font-bold text-slate-400">{channelRevenue.reduce((s, c) => s + Number(c.total || 0), 0).toLocaleString('tr-TR')} TL</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {channelRevenue.map((c) => {
+                  const cm = sourceMeta(c.source);
+                  const share = todayRevenue > 0 ? Math.round((Number(c.total || 0) / todayRevenue) * 100) : 0;
+                  return (
+                    <div key={c.source} className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
+                      <cm.icon size={13} />
+                      <div className="text-left">
+                        <p className="text-[9px] uppercase font-bold opacity-80 leading-none">{cm.label}</p>
+                        <p className="text-xs font-black leading-tight">{Number(c.total || 0).toLocaleString('tr-TR')} TL <span className="text-[9px] font-bold opacity-80">%{share}</span></p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {channelRevenue.length === 0 && <p className="text-xs text-slate-400">Bugün satış kaydı yok</p>}
+              </div>
+            </div>
+
+            {/* Ödeme yöntemi dağılımı */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Ödeme Yöntemi Dağılımı</p>
+              <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
+                {paymentDistribution.map((p) => {
+                  const pm = PAYMENT_DIST_META[p.method] || PAYMENT_DIST_META.iban;
+                  return (
+                    <div key={p.method} title={`${pm.label}: ${Number(p.total || 0).toLocaleString('tr-TR')} TL`}
+                      className={`h-full bg-gradient-to-r ${pm.gradient} transition-all`}
+                      style={{ width: `${todayRevenue > 0 ? Math.max(1, (Number(p.total || 0) / todayRevenue) * 100) : 0}%` }} />
+                  );
+                })}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {paymentDistribution.map((p) => {
+                  const pm = PAYMENT_DIST_META[p.method] || PAYMENT_DIST_META.iban;
+                  const share = todayRevenue > 0 ? Math.round((Number(p.total || 0) / todayRevenue) * 100) : 0;
+                  return (
+                    <div key={p.method} className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-tr ${pm.gradient}`} />
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{pm.label}</span>
+                      <span className="text-[11px] font-black text-slate-900 dark:text-white tabular-nums">{Number(p.total || 0).toLocaleString('tr-TR')} TL</span>
+                      <span className="text-[10px] text-slate-400">· %{share}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tahsilat & Onay Durumu */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2.5">
+              <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Tahsilat & Onay Durumu</p>
+              <div className="flex items-center gap-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 px-3 py-2.5">
+                <span className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex items-center justify-center shrink-0 shadow-sm"><CheckCircle2 size={14} /></span>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Hesaba Geçen / Onaylı Ciro</p>
+                  <p className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70">IBAN, Link ve Webhook ile anında onaylanan siparişler</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-400 tabular-nums">{approvedRevenue.toLocaleString('tr-TR')} TL</p>
+                  <p className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70">{approvedCount} sipariş</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200/60 dark:border-amber-500/20 px-3 py-2.5">
+                <span className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm"><Truck size={14} /></span>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Kargo Tahsilatında Bekleyen Ciro</p>
+                  <p className="text-[10px] text-amber-600/70 dark:text-amber-300/70">Kargoya verildi, teslimatta tahsil edilecek (Kapıda Nakit / Kart)</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-amber-700 dark:text-amber-400 tabular-nums">{cargoCollectionRevenue.toLocaleString('tr-TR')} TL</p>
+                  <p className="text-[10px] text-amber-600/70 dark:text-amber-300/70">{cargoCollectionCount} sipariş</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 px-3 py-2.5">
+                <span className="w-8 h-8 rounded-lg bg-gradient-to-tr from-slate-400 to-slate-500 text-white flex items-center justify-center shrink-0 shadow-sm"><Clock size={14} /></span>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Onay Bekleyen Ciro</p>
+                  <p className="text-[10px] text-slate-400">Dekont bekleyen IBAN / ödeme bekleyen siparişler</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-slate-600 dark:text-slate-300 tabular-nums">{pendingApprovalRevenue.toLocaleString('tr-TR')} TL</p>
+                  <p className="text-[10px] text-slate-400">{pendingApprovalCount} sipariş</p>
+                </div>
+              </div>
+              {yesterdayRevenue > 0 && (
+                <p className="text-[10px] text-slate-400 pt-1">Dün aynı saat dilimi: <b>{yesterdayRevenue.toLocaleString('tr-TR')} TL</b></p>
+              )}
             </div>
           </div>
         </Modal>

@@ -9,43 +9,58 @@ const AI_SOURCES = ['PHONE', 'WHATSAPP', 'INSTAGRAM', 'WEBSITE', 'SMS'];
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 'cancelled'];
 
 @UseGuards(TenantGuard)
-@Controller('dashboard')
-export class DashboardController {
-  constructor(private readonly supabase: SupabaseService) {}
+  @Controller('dashboard')
+  export class DashboardController {
+    constructor(private readonly supabase: SupabaseService) {}
 
-  @Roles('owner', 'manager')
-  @Get(':tenantId')
-  async getStats(@Param('tenantId') tenantId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIso = today.toISOString();
+    @Roles('owner', 'manager')
+    @Get(':tenantId')
+    async getStats(@Param('tenantId') tenantId: string) {
+      const now = new Date();
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+      const todayIso = today.toISOString();
 
-    const [orders, customers, payments, conversations] = await Promise.all([
-      this.supabase.db
-        .from('orders')
-        .select('*, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
-        .eq('tenant_id', tenantId),
-      this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId),
-      this.supabase.db.from('payments').select('amount, status, created_at').eq('tenant_id', tenantId).eq('status', 'paid'),
-      this.supabase.db
-        .from('conversation_sessions')
-        .select('phone, status, call_status, created_at')
+      const [orders, customers, payments, conversations] = await Promise.all([
+        this.supabase.db
+          .from('orders')
+          .select('*, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
+          .eq('tenant_id', tenantId),
+        this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId),
+        this.supabase.db.from('payments').select('amount, status, created_at').eq('tenant_id', tenantId).eq('status', 'paid'),
+        this.supabase.db
+          .from('conversation_sessions')
+          .select('phone, status, call_status, created_at')
+          .eq('tenant_id', tenantId)
+          .gte('created_at', todayIso),
+      ]);
+
+      const allOrders = (orders.data || []) as Record<string, any>[];
+      const hasRealOrders = allOrders.length > 0;
+
+      // Talep & İstek: birleşik şikayet tablosu (son 24 saat) + müşteri adres/şehir zenginleştirme
+      const complaints = await this.fetchComplaints(tenantId);
+
+      // Web Sitesi (Webhook) entegrasyonu — ayar açık veya WEBSITE kaynaklı sipariş varsa aktif
+      const { data: settings } = await this.supabase.db
+        .from('tenant_settings')
+        .select('website_redirect_enabled, payment_website, website_url, cash_on_delivery_enabled')
         .eq('tenant_id', tenantId)
-        .gte('created_at', todayIso),
-    ]);
+        .maybeSingle();
+      const hasWebsiteOrders = allOrders.some((o) => String(o.source || '').toUpperCase() === 'WEBSITE');
+      const websiteEnabled = !!(
+        (settings as Record<string, unknown>)?.website_redirect_enabled ||
+        (settings as Record<string, unknown>)?.payment_website ||
+        (settings as Record<string, unknown>)?.website_url ||
+        hasWebsiteOrders
+      );
 
-    const allOrders = (orders.data || []) as Record<string, any>[];
-    const hasRealOrders = allOrders.length > 0;
+      // Gerçek sipariş verisi varsa hepsini hesapla; yoksa mock fallback
+      let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], complaints, todayIso, websiteEnabled);
+      if (!hasRealOrders) data = this.getMockStats();
 
-    // Talep & İstek: birleşik şikayet tablosu (son 24 saat) + müşteri adres/şehir zenginleştirme
-    const complaints = await this.fetchComplaints(tenantId);
-
-    // Gerçek sipariş verisi varsa hepsini hesapla; yoksa mock fallback
-    let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], complaints, todayIso);
-    if (!hasRealOrders) data = this.getMockStats();
-
-    return data;
-  }
+      return data;
+    }
 
   /** Son 24 saatteki şikayet/talep kayıtlarını complaints tablosundan çeker, müşteri bilgisiyle zenginleştirir. */
   private async fetchComplaints(tenantId: string) {
@@ -100,10 +115,19 @@ export class DashboardController {
     conversations: any[],
     complaints: any[],
     todayIso: string,
+    websiteEnabled: boolean,
   ) {
+    const now = new Date();
+    const todayStart = new Date(todayIso).getTime();
     const todayOrders = orders.filter((o) => new Date(o.created_at) >= new Date(todayIso));
+    // Dün aynı saat dilimi — bugün 00:00'dan şu ana kadar geçen süre dünün başlangıcına eklenir
+    const elapsedMs = now.getTime() - todayStart;
+    const yesterdayStart = new Date(todayStart - 24 * 3600 * 1000);
+    const yesterdayCutoff = new Date(yesterdayStart.getTime() + elapsedMs).toISOString();
+    const yesterdayIso = yesterdayStart.toISOString();
 
     const normalizeStatus = (s: unknown) => String(s || '').toUpperCase();
+    const normalizePayment = (m: unknown) => String(m || '').toLowerCase();
 
     // Kargo Takibi = kargoya verilmiş (SHIPPED) ama henüz teslim edilmemiş siparişler.
     // Teslim edilince status DELIVERED olur ve buradan otomatik kaybolur.
@@ -151,11 +175,62 @@ export class DashboardController {
     // Talep & İstek: son 24 saatteki şikayet/talep kayıtları (complaints tablosundan)
     const complaints24h = complaints || [];
 
+    // --- Ciro modalı: kanal bazlı kırılım (source üzerinden) ---
+    const CHANNEL_ORDER = ['WHATSAPP', 'PHONE', 'SMS', 'INSTAGRAM', 'WEBSITE'];
+    const channelBuckets: Record<string, { total: number; count: number }> = {};
+    for (const o of todayOrders) {
+      const src = String(o.source || o.channel || 'PHONE').toUpperCase();
+      const key = CHANNEL_ORDER.includes(src) ? src : 'PHONE';
+      if (!channelBuckets[key]) channelBuckets[key] = { total: 0, count: 0 };
+      channelBuckets[key].total += Number(o.total_price || 0);
+      channelBuckets[key].count += 1;
+    }
+    const channelRevenue = CHANNEL_ORDER
+      .map((source) => ({ source, ...(channelBuckets[source] || { total: 0, count: 0 }) }))
+      .filter((c) => (c.source !== 'WEBSITE' && c.total > 0) || (c.source === 'WEBSITE' && websiteEnabled));
+
+    // --- Ciro modalı: ödeme yöntemi dağılımı ---
+    const PAYMENT_KEYS = ['iban', 'link', 'kapida_kart', 'cod'];
+    const paymentBuckets: Record<string, { total: number; count: number }> = {};
+    for (const o of todayOrders) {
+      const pm = normalizePayment(o.payment_method);
+      let key: string;
+      if (pm === 'iban' || pm === 'havale' || pm === 'eft') key = 'iban';
+      else if (pm === 'cod' || pm === 'cash_on_delivery' || pm === 'kapida' || pm === 'nakit') key = 'cod';
+      else if (pm === 'kapida_kart' || pm === 'card' || pm === 'kredi') key = 'kapida_kart';
+      else key = 'link'; // website, paytr, iyzico, payment_link, link
+      if (!paymentBuckets[key]) paymentBuckets[key] = { total: 0, count: 0 };
+      paymentBuckets[key].total += Number(o.total_price || 0);
+      paymentBuckets[key].count += 1;
+    }
+    const paymentDistribution = PAYMENT_KEYS.map((method) => ({ method, ...(paymentBuckets[method] || { total: 0, count: 0 }) }));
+
+    // --- Ciro modalı: tahsilat & onay durumu ---
+    const approvedOrders = todayOrders.filter((o) => ['paid', 'dekont_alindi'].includes(normalizePayment(o.payment_status)));
+    const pendingOrders = todayOrders.filter((o) => ['waiting', 'awaiting_dekont'].includes(normalizePayment(o.payment_status)));
+    const cargoCollectionOrders = todayOrders.filter((o) => {
+      const pm = normalizePayment(o.payment_method);
+      return normalizeStatus(o.status) === 'SHIPPED' && (pm === 'cod' || pm === 'kapida_kart' || pm === 'cash_on_delivery' || pm === 'kapida');
+    });
+    const approvedRevenue = approvedOrders.reduce((s, o) => s + Number(o.total_price || 0), 0);
+    const pendingApprovalRevenue = pendingOrders.reduce((s, o) => s + Number(o.total_price || 0), 0);
+    const cargoCollectionRevenue = cargoCollectionOrders.reduce((s, o) => s + Number(o.total_price || 0), 0);
+
+    // --- Ciro modalı: dün ile aynı saat dilimi karşılaştırması ---
+    const todayRevenue = todayOrders.reduce((sum, o) => sum + Number(o.total_price), 0);
+    const yesterdayRevenue = orders
+      .filter((o) => {
+        const t = new Date(o.created_at).getTime();
+        return t >= yesterdayStart.getTime() && t < new Date(yesterdayCutoff).getTime();
+      })
+      .reduce((sum, o) => sum + Number(o.total_price), 0);
+    const revenueChangePct = yesterdayRevenue > 0 ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100) : (todayRevenue > 0 ? 100 : 0);
+
     return {
       todayOrders: todayOrders.length,
       cargoTracking,
       totalCustomers: customers.length,
-      todayRevenue: todayOrders.reduce((sum, o) => sum + Number(o.total_price), 0),
+      todayRevenue,
       totalRevenue: (payments || []).reduce((sum, p) => sum + Number(p.amount), 0),
       aiCustomers,
       aiRevenue,
@@ -164,6 +239,17 @@ export class DashboardController {
       todayOrdersList,
       cargoTrackingList,
       cargoDeliveredList,
+      channelRevenue,
+      paymentDistribution,
+      approvedRevenue,
+      pendingApprovalRevenue,
+      cargoCollectionRevenue,
+      approvedCount: approvedOrders.length,
+      pendingApprovalCount: pendingOrders.length,
+      cargoCollectionCount: cargoCollectionOrders.length,
+      yesterdayRevenue,
+      revenueChangePct,
+      websiteEnabled,
       orderStats: {
         preparing: orders.filter((o) => normalizeStatus(o.status) === 'PACKAGING' || normalizeStatus(o.status) === 'PACKAGED' || normalizeStatus(o.status) === 'PREPARING').length,
         shipped: orders.filter((o) => normalizeStatus(o.status) === 'SHIPPED').length,
@@ -240,6 +326,28 @@ export class DashboardController {
       todayOrdersList,
       cargoTrackingList,
       cargoDeliveredList,
+      channelRevenue: [
+        { source: 'WHATSAPP', total: 18200, count: 9 },
+        { source: 'PHONE', total: 7500, count: 5 },
+        { source: 'SMS', total: 4100, count: 3 },
+        { source: 'INSTAGRAM', total: 3060, count: 2 },
+        { source: 'WEBSITE', total: 0, count: 0 },
+      ],
+      paymentDistribution: [
+        { method: 'iban', total: 15800, count: 8 },
+        { method: 'link', total: 8200, count: 6 },
+        { method: 'kapida_kart', total: 5100, count: 3 },
+        { method: 'cod', total: 3760, count: 2 },
+      ],
+      approvedRevenue: 13200,
+      pendingApprovalRevenue: 9400,
+      cargoCollectionRevenue: 8860,
+      approvedCount: 7,
+      pendingApprovalCount: 6,
+      cargoCollectionCount: 5,
+      yesterdayRevenue: 20500,
+      revenueChangePct: 18,
+      websiteEnabled: true,
       orderStats: {
         preparing: 3,
         shipped: 2,

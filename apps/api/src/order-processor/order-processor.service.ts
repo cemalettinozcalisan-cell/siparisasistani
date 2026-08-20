@@ -270,9 +270,9 @@ export class OrderProcessorService {
 
   private mapPayment(payment?: string): string {
     const map: Record<string, string> = {
-      IBAN: 'iban', CASH: 'iban', CARD: 'website', PAYTR: 'paytr',
+      IBAN: 'iban', HAVALE: 'iban', EFT: 'iban', CASH: 'cod', CARD: 'website', PAYTR: 'paytr',
       UNKNOWN: 'iban', CASH_ON_DELIVERY: 'cod', cash_on_delivery: 'cod',
-      'Kapıda Nakit': 'cod', 'Kapıda Kredi Kartı': 'cod', 'Kapıda Ödeme': 'cod',
+      'Kapıda Nakit': 'cod', 'Kapıda Ödeme': 'cod', 'Kapıda Kredi Kartı': 'kapida_kart',
     };
     return map[payment || ''] || 'iban';
   }
