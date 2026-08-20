@@ -198,11 +198,16 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
 
   const inner = (
     <>
-      <div className="p-4 border-b border-slate-700/50 flex items-center gap-3 h-14">
-        <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0" />
-        {!collapsed && <span className="font-semibold text-sm">SiparişAsistanı</span>}
+      <div className="m-3 rounded-xl bg-gradient-to-r from-purple-900/40 to-indigo-900/40 backdrop-blur-md border border-white/10 p-4 flex items-center gap-3">
+        <img src="/logo2.png" alt="SiparişAsistanı" className="w-9 h-9 object-contain shrink-0 drop-shadow-lg" />
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <span className="font-bold text-sm text-white block leading-tight">SiparişAsistanı</span>
+            <span className="block text-[11px] font-semibold bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">Akıllı Sipariş, Güçlü İşletme.</span>
+          </div>
+        )}
         {mobileOpen && (
-          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden shrink-0"><X className="w-5 h-5" /></button>
         )}
       </div>
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
@@ -295,19 +300,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [usage, setUsage] = useState<Record<string, unknown> | null>(null);
   const pathname = usePathname();
   const isDashboard = pathname === '/dashboard';
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (!isDashboard) return;
+    let active = true;
+    fetch(`/api/saas/usage/${getTenantId()}`).then(r => r.json()).catch(() => null).then(u => { if (active && u) setUsage(u); });
+    return () => { active = false; };
+  }, [isDashboard]);
+
   if (!mounted) return <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
+
+  const remaining = usage ? (usage.remaining as number) || 0 : 0;
+  const orderLimit = usage ? (usage.orderLimit as number) || 250 : 250;
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">
       <CommandPalette />
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0">
-        <header className={`sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3 ${isDashboard ? 'lg:hidden' : ''}`}>
+        <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3">
           <div className="flex items-center justify-between gap-2 lg:gap-4">
             <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
               <Menu className="w-5 h-5" />
@@ -317,6 +333,13 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
               <TenantSwitcher />
               <ThemeToggle />
               <NotificationBell />
+              {isDashboard && usage && (
+                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
+                  <BarChart3 size={13} className="text-orange-500" />
+                  <span className="font-bold text-slate-700 dark:text-slate-200">Sipariş Hakkı:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
+                </div>
+              )}
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

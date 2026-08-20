@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, ChevronDown, Instagram, Globe, BarChart3, Settings, X, Truck, ExternalLink, UserPlus, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Sun, Moon, Banknote, HandCoins, MapPin, Copy, Ticket, ArrowUp, ArrowDown, Clock } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { ShoppingBag, ShoppingCart, TrendingUp, AlertCircle, AlertTriangle, Users, User, UserCheck, Package, CheckCircle2, Phone, PhoneCall, Zap, ChevronRight, ChevronDown, Instagram, Globe, Settings, X, Truck, ExternalLink, UserPlus, MessageSquare, Wallet, Target, CreditCard, HelpCircle, Banknote, HandCoins, MapPin, Copy, Ticket, ArrowUp, ArrowDown, Clock } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
-import { TenantSwitcher } from '@/components/tenant-switcher';
-import { NotificationBell } from '@/components/notification-bell';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
@@ -24,21 +21,6 @@ function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: num
     requestAnimationFrame(step);
   }, [target, duration]);
   return <>{count}{suffix}</>;
-}
-
-function PageThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  return (
-    <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-      aria-label="Tema değiştir"
-    >
-      {mounted && theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
-  );
 }
 
 const CHANNEL_COLORS: Record<string, { icon: ChannelIconType; gradient: string }> = {
@@ -291,7 +273,6 @@ function ComplaintCard({ c }: { c: Record<string, any> }) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<Record<string, unknown>>({});
   const [recent, setRecent] = useState<Record<string, unknown>[]>([]);
-  const [usage, setUsage] = useState<Record<string, unknown> | null>(null);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const tid = getTenantId();
@@ -358,15 +339,13 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const [d, tl, h, u] = await Promise.all([
+      const [d, tl, h] = await Promise.all([
         fetch(`/api/dashboard/${tid}`).then(r => r.json()),
         fetch(`/api/timeline/recent/${tid}`).then(r => r.json()),
         fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => ({})),
-        fetch(`/api/saas/usage/${tid}`).then(r => r.json()).catch(() => null),
       ]);
       setStats({ ...d, ...h });
       setRecent(Array.isArray(tl) ? tl : []);
-      if (u) setUsage(u);
       setTimeout(() => setLoaded(true), 50);
     } catch { /* sessiz */ }
   };
@@ -435,9 +414,6 @@ export default function DashboardPage() {
   const totalRevenue = Number(stats.totalRevenue ?? 24800);
   const totalCustomers = Number(stats.totalCustomers ?? 126);
 
-  const remaining = usage ? (usage.remaining as number) || 0 : 0;
-  const orderLimit = usage ? (usage.orderLimit as number) || 250 : 250;
-
   const kpis = [
     { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
     { label: 'Kargo Takibi', value: cargoTracking, icon: Truck, gradient: 'from-amber-500 to-orange-600', cardBorder: 'border-amber-200 dark:border-amber-500/40', trend: '↑ %12', onClick: () => setShowCargoModal(true) },
@@ -458,40 +434,8 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute bottom-0 left-1/3 w-96 h-96 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 blur-3xl" />
 
       <div className="relative z-10 space-y-8">
-        {/* Özel sayfa header (desktop — layout header /dashboard'da lg: gizli) */}
-        <div className="hidden lg:flex items-center justify-between w-full border-b border-slate-200/70 dark:border-slate-800/80 pb-6">
-          <div className="flex items-center gap-3.5">
-            <img src="/logo2.png" alt="SiparişAsistanı" className="w-12 h-12 object-contain" />
-            <div>
-              <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-blue-400 bg-clip-text text-transparent">SiparişAsistanı</h1>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">Akıllı Sipariş, Güçlü İşletme.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <TenantSwitcher />
-            <div className="flex items-center gap-1">
-              <PageThemeToggle />
-              <NotificationBell size="text-base" />
-            </div>
-            {usage && (
-              <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
-                <BarChart3 size={13} className="text-orange-500" />
-                <span className="font-bold text-slate-700 dark:text-slate-200">Sipariş Hakkı:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
-              </div>
-            )}
-            <div className="px-3 py-1.5 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80 flex items-center gap-2 shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
-            </div>
-          </div>
-        </div>
-
         {/* AI Orchestration Hub — Müşterileriniz Nerede Olursa Olsun */}
-        <div className="text-left lg:pt-2">
+        <div className="text-left">
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             Müşterileriniz Nerede Olursa Olsun
           </h2>
