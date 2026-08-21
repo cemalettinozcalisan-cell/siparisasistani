@@ -427,7 +427,7 @@ export default function DashboardPage() {
   if (!mounted) return <div className="p-6" />;
 
   return (
-    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-gradient-to-tr from-[#F1F5F9] via-[#F8FAFC] to-[#EFF6FF] dark:from-[#020410] dark:via-[#05081C] dark:to-[#0A0E2E] text-slate-900 dark:text-white p-4 md:p-8 space-y-8 w-full animate-fade-in">
+    <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-gradient-to-tr from-[#F1F5F9] via-[#F8FAFC] to-[#EFF6FF] dark:from-[#020410] dark:via-[#05081C] dark:to-[#0A0E2E] text-slate-900 dark:text-white px-4 md:px-8 pt-1 md:pt-2 pb-4 md:pb-8 space-y-8 w-full animate-fade-in">
       {/* Ambient glow orbs */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-100/70 dark:bg-indigo-600/10 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-100/60 dark:bg-purple-600/10 blur-3xl" />
