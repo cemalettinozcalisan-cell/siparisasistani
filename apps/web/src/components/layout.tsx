@@ -199,9 +199,11 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
   const inner = (
     <>
       <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-        <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0 drop-shadow-lg" />
+        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+          <img src="/logo2.png" alt="SiparişAsistanı" className="w-5 h-5 object-contain" />
+        </div>
         {!collapsed && (
-          <span className="font-bold text-sm bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text text-transparent">SiparişAsistanı</span>
+          <span className="font-semibold text-sm text-white">SiparişAsistanı</span>
         )}
         {mobileOpen && (
           <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden shrink-0"><X className="w-5 h-5" /></button>
