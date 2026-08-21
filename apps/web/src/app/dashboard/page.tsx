@@ -829,8 +829,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             {/* Metrik özet kutuları */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-500/20 dark:to-cyan-500/5 border border-blue-200/70 dark:border-blue-500/20 p-5 text-center">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-blue-300/20 dark:bg-blue-400/10 blur-2xl" />
+              <div className="rounded-2xl bg-white dark:bg-slate-900 border border-blue-200/70 dark:border-blue-500/30 p-5 text-center">
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
                   <ShoppingCart size={15} />
                 </div>
@@ -841,8 +840,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-[10px] text-blue-500/60 dark:text-blue-300/50 mt-2">Bugün oluşturulan sipariş sayısı (00:00 sonrası)</p>
               </div>
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-500/20 dark:to-green-500/5 border border-emerald-200/70 dark:border-emerald-500/20 p-5 text-center">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-300/20 dark:bg-emerald-400/10 blur-2xl" />
+              <div className="rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/70 dark:border-emerald-500/30 p-5 text-center">
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md mb-2">
                   <Wallet size={15} />
                 </div>
@@ -853,8 +851,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-[10px] text-emerald-500/60 dark:text-emerald-300/50 mt-2">Bugünkü siparişlerin toplam tutarı</p>
               </div>
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-500/20 dark:to-cyan-500/5 border border-teal-200/70 dark:border-teal-500/20 p-5 text-center">
-                <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-teal-300/20 dark:bg-teal-400/10 blur-2xl" />
+              <div className="rounded-2xl bg-white dark:bg-slate-900 border border-teal-200/70 dark:border-teal-500/30 p-5 text-center">
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
                   <TrendingUp size={15} />
                 </div>
