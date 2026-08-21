@@ -63,11 +63,11 @@ const PAYMENT_META: Record<string, { label: string; icon: any; gradient: string 
   kapida_kart: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
   card: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
   kredi: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
-  website: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
+  website: { label: 'Web', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
   paytr: { label: 'PayTR', icon: CreditCard, gradient: 'from-blue-500 to-cyan-600' },
   iyzico: { label: 'iyzico', icon: CreditCard, gradient: 'from-blue-500 to-cyan-600' },
-  payment_link: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
-  link: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
+  payment_link: { label: 'Web', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
+  link: { label: 'Web', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
 };
 
 function paymentBadge(method: string | undefined) {
@@ -430,7 +430,7 @@ function OrdersPageContent() {
                     const PbIcon = pb.icon;
                     return (
                       <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${pb.gradient}`}>
-                        <PbIcon size={11} /> {pb.label}
+                        <PbIcon size={10} /> {pb.label}
                       </span>
                     );
                   })()}
@@ -640,42 +640,42 @@ function OrdersPageContent() {
             {!showEdit && (
               <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
                 <button onClick={() => setShowChat(true)}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-violet-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <Eye size={13} /> Görüşme
                 </button>
                 <button onClick={openEdit}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-sky-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <Pencil size={13} /> Düzenle
                 </button>
                 <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-indigo-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <Printer size={13} /> Yazdır
                 </button>
                 {activeTab === 'active' ? (
                   <button onClick={() => { setShowCargo(!showCargo); setCargoMsg(null); }}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold ${showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 text-emerald-600 dark:text-emerald-400'} hover:shadow`}>
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-emerald-700 text-white shadow-emerald-700/25' : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25'}`}>
                     <Truck size={13} /> Kargoya Ver
                   </button>
                 ) : (
                   <button onClick={() => setShowCargo(!showCargo)}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold ${showCargo ? 'bg-amber-100 text-amber-700' : 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 text-amber-600 dark:text-amber-400'} hover:shadow`}>
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-amber-700 text-white shadow-amber-700/25' : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-amber-500/25'}`}>
                     <Truck size={13} /> Düzelt
                   </button>
                 )}
                 <button onClick={handleCancel}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-lg text-xs font-bold shadow-sm shadow-amber-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <Ban size={13} /> İptal
                 </button>
                 <button onClick={handleDelete}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-red-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <Trash2 size={13} /> Sil
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-emerald-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <WhatsAppIcon size={13} /> WhatsApp
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-bold">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-blue-500/25 hover:shadow-md hover:brightness-110 transition-all">
                   <PhoneCall size={13} /> Ara
                 </button>
               </div>
