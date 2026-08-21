@@ -638,45 +638,45 @@ function OrdersPageContent() {
 
             {/* Bottom Buttons */}
             {!showEdit && (
-              <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
+              <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-3 py-2.5 grid grid-cols-4 gap-1.5">
                 <button onClick={() => setShowChat(true)}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-violet-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <Eye size={13} /> Görüşme
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-violet-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <Eye size={12} /> Görüşme
                 </button>
                 <button onClick={openEdit}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-sky-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <Pencil size={13} /> Düzenle
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-teal-400 to-cyan-500 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-teal-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <Pencil size={12} /> Düzenle
                 </button>
                 <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-indigo-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <Printer size={13} /> Yazdır
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-slate-400 to-slate-500 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-slate-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <Printer size={12} /> Yazdır
                 </button>
                 {activeTab === 'active' ? (
                   <button onClick={() => { setShowCargo(!showCargo); setCargoMsg(null); }}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-emerald-700 text-white shadow-emerald-700/25' : 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25'}`}>
-                    <Truck size={13} /> Kargoya Ver
+                    className={`flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-amber-700 text-white shadow-amber-700/25' : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-amber-500/25'}`}>
+                    <Truck size={12} /> Kargoya Ver
                   </button>
                 ) : (
                   <button onClick={() => setShowCargo(!showCargo)}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-amber-700 text-white shadow-amber-700/25' : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-amber-500/25'}`}>
-                    <Truck size={13} /> Düzelt
+                    className={`flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-[11px] font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all ${showCargo ? 'bg-amber-700 text-white shadow-amber-700/25' : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-amber-500/25'}`}>
+                    <Truck size={12} /> Revize
                   </button>
                 )}
                 <button onClick={handleCancel}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-lg text-xs font-bold shadow-sm shadow-amber-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <Ban size={13} /> İptal
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-yellow-400 to-amber-400 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-yellow-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <Ban size={12} /> İptal
                 </button>
                 <button onClick={handleDelete}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-red-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <Trash2 size={13} /> Sil
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-red-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <Trash2 size={12} /> Sil
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-emerald-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <WhatsAppIcon size={13} /> WhatsApp
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-emerald-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <WhatsAppIcon size={12} /> WhatsApp
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-bold shadow-sm shadow-blue-500/25 hover:shadow-md hover:brightness-110 transition-all">
-                  <PhoneCall size={13} /> Ara
+                  className="flex items-center justify-center gap-1 px-1.5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-[11px] font-bold shadow-sm shadow-blue-500/25 hover:shadow-md hover:brightness-110 transition-all">
+                  <PhoneCall size={12} /> Ara
                 </button>
               </div>
             )}
