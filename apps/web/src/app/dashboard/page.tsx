@@ -234,35 +234,35 @@ function ComplaintCard({ c }: { c: Record<string, any> }) {
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-white px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 shadow-sm ring-1 ring-inset ring-white/25">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 shadow-sm ring-1 ring-inset ring-white/25">
             <Ticket size={11} /> {c.ticket_number || 'Talep'}
           </span>
-          <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-wide text-white px-2.5 py-1 rounded-lg bg-gradient-to-r ${ch.gradient} shadow-sm ring-1 ring-inset ring-white/25`}>
+          <span className={`inline-flex items-center gap-1.5 text-xs font-bold text-white px-2.5 py-1 rounded-lg bg-gradient-to-r ${ch.gradient} shadow-sm ring-1 ring-inset ring-white/25`}>
             <ChIcon size={11} /> {channelLabel(c.channel, c.channel)}
           </span>
         </div>
-        <span className={`text-[10px] font-extrabold tracking-wide px-2.5 py-1 rounded-full ${SEVERITY_STYLES[sevKey]}`}>{SEVERITY_LABEL[sevKey] || c.severity}</span>
+        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${SEVERITY_STYLES[sevKey]}`}>{SEVERITY_LABEL[sevKey] || c.severity}</span>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
         <UserPlus size={12} className="text-indigo-500" /> <b>{c.customer_name || 'Bilinmeyen Müşteri'}</b>
         {c.customer_phone && <><span>•</span> {c.customer_phone}</>}
         {c.customer_city && <><span>•</span> {c.customer_city}</>}
       </div>
       {c.customer_address && (
-        <p className="flex items-center gap-1 text-[11px] text-slate-400">
+        <p className="flex items-center gap-1 text-xs text-slate-400">
           <MapPin size={11} className="text-pink-400" /> {c.customer_address}
         </p>
       )}
       <p className="text-xs text-slate-600 dark:text-slate-300">{open ? desc : preview}</p>
       {desc.length > 130 && (
-        <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+        <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
           {open ? 'Daha Az Göster' : 'Devamını Gör'} <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
       )}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+        <span className="text-xs text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
         <a href={`/complaints?id=${c.id}`}
-          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
           Detayları Gör <ChevronRight size={11} />
         </a>
       </div>
@@ -655,8 +655,8 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400">#{o.order_number}</span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${sm.cls}`}>{sm.label}</span>
-                    <span className="text-[11px] text-slate-400">{new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${sm.cls}`}>{sm.label}</span>
+                    <span className="text-xs text-slate-400">{new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
@@ -668,29 +668,29 @@ export default function DashboardPage() {
                     const PmIcon = pm.icon;
                     return (
                       <>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${ch.gradient}`}>
+                        <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${ch.gradient}`}>
                           <ChIcon size={11} /> {channelLabel(o.channel, o.source)}
                         </span>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${pm.gradient}`}>
+                        <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-2 py-1 rounded-lg bg-gradient-to-r ${pm.gradient}`}>
                           <PmIcon size={11} /> {pm.label}
                         </span>
                       </>
                     );
                   })()}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <UserPlus size={12} className="text-indigo-500" /> <b>{o.customer_name}</b>
                   <span>•</span> {o.customer_phone}
                   {o.customer_city && <><span>•</span> {o.customer_city}</>}
                 </div>
                 {o.customer_address && (
-                  <p className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <p className="flex items-center gap-1 text-xs text-slate-400">
                     <MapPin size={11} className="text-cyan-500" /> {o.customer_address}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-1.5">
                   {(o.items || []).map((it: any, idx: number) => (
-                    <span key={idx} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <span key={idx} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                       {it.product_name} × {it.quantity} {it.unit || ''}
                     </span>
                   ))}
@@ -706,7 +706,7 @@ export default function DashboardPage() {
       {/* Modal: Kargo Takibi (yolda olan siparişler) */}
       {showCargoModal && (
         <Modal title="Kargo Takibi" icon={<Truck size={15} />} gradient="from-amber-500 to-orange-600" onClose={() => setShowCargoModal(false)} wide>
-          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 text-[11px] text-slate-600 dark:text-slate-300">
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 text-xs text-slate-600 dark:text-slate-300">
             <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0 shadow-sm"><Truck size={13} /></span>
             <p>Kargoya verilen siparişler anlık takip edilir. Müşteriye teslim edilen kargolar <b>listeden otomatik olarak kaldırılır</b>.</p>
           </div>
@@ -722,9 +722,9 @@ export default function DashboardPage() {
               <button
                 key={tab.key}
                 onClick={() => setCargoFilter(tab.key)}
-                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all ${cargoFilter === tab.key ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60'}`}>
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold transition-all ${cargoFilter === tab.key ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60'}`}>
                 {tab.label}
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${cargoFilter === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{tab.count}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${cargoFilter === tab.key ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{tab.count}</span>
               </button>
             ))}
           </div>
@@ -741,22 +741,22 @@ export default function DashboardPage() {
                 <div key={o.id} className="rounded-xl border border-amber-200/70 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/10 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <span className={`w-9 h-9 rounded-xl ${badge.cls} text-white flex items-center justify-center text-[9px] font-black tracking-wide shadow-sm`}>{badge.short}</span>
+                      <span className={`w-9 h-9 rounded-xl ${badge.cls} text-white flex items-center justify-center text-xs font-black shadow-sm`}>{badge.short}</span>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400">#{o.order_number}</span>
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">#{o.order_number}</span>
                           {o.tracking_number && (
                             <button onClick={() => copyTracking(o.tracking_number)} title="Takip numarasını kopyala"
-                              className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 hover:border-amber-300 hover:text-amber-600 transition-colors">
+                              className="inline-flex items-center gap-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 hover:border-amber-300 hover:text-amber-600 transition-colors">
                               {o.tracking_number} <Copy size={11} className="text-amber-500" />
                             </button>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-400">{badge.label}</span>
+                        <span className="text-xs text-slate-400">{badge.label}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cMeta.cls}`}>{cMeta.label}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cMeta.cls}`}>{cMeta.label}</span>
                       <span className="text-sm font-bold text-slate-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                     </div>
                   </div>
@@ -767,7 +767,7 @@ export default function DashboardPage() {
                   </div>
                   {/* Aşama çubuğu */}
                   <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-                    <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center justify-between text-xs">
                       {CARGO_STAGES.map((s, i) => (
                         <span key={s} className={i <= step ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400'}>{s}</span>
                       ))}
@@ -778,7 +778,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {(o.items || []).map((it: any, idx: number) => (
-                      <span key={idx} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                      <span key={idx} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                         {it.product_name} × {it.quantity} {it.unit || ''}
                       </span>
                     ))}
@@ -786,7 +786,7 @@ export default function DashboardPage() {
                   <div className="flex justify-end">
                     <button
                       onClick={() => openCargoSite(o.cargo_company, o.tracking_number)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-[11px] font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all">
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-xs font-bold shadow-sm hover:shadow-md hover:brightness-110 transition-all">
                       <ExternalLink size={12} /> Kargo Takip
                     </button>
                   </div>
