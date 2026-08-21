@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PhoneCall, Instagram, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock } from 'lucide-react';
+import { PhoneCall, Instagram, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock, Banknote, CreditCard, Wallet, CheckCircle2, Ban, Package, Sparkles, BellRing, Pencil, Phone } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
@@ -26,43 +26,62 @@ const CHANNELS = [
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  new: { label: '🆕 Yeni', cls: 'bg-blue-100 text-blue-700' },
-  PAYMENT_WAITING: { label: '💳 Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
-  PAYMENT_CONFIRMED: { label: '💰 Ödeme Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  APPROVED: { label: '✅ Onaylandı', cls: 'bg-emerald-100 text-emerald-700' },
-  PREPARING: { label: '📦 Hazırlanıyor', cls: 'bg-sky-100 text-sky-700' },
-  PACKAGING: { label: '📦 Paketleniyor', cls: 'bg-indigo-100 text-indigo-700' },
-  PACKAGED: { label: '📦 Paketlendi', cls: 'bg-violet-100 text-violet-700' },
-  PROCESSING: { label: '⚙️ İşleniyor', cls: 'bg-orange-100 text-orange-700' },
-  SHIPPED: { label: '🚚 Kargoya Verildi', cls: 'bg-cyan-100 text-cyan-700' },
-  DELIVERED: { label: '🏠 Teslim Edildi', cls: 'bg-green-100 text-green-700' },
-  COMPLETED: { label: '✓ Tamamlandı', cls: 'bg-gray-100 text-gray-700' },
-  CANCELLED: { label: '❌ İptal', cls: 'bg-red-100 text-red-700' },
+  new: { label: 'Yeni', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
+  PACKAGING: { label: 'Paketleniyor', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
+  PACKAGED: { label: 'Paketlendi', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
+  PROCESSING: { label: 'İşleniyor', cls: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' },
+  SHIPPED: { label: 'Kargoya Verildi', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
+  DELIVERED: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
+  COMPLETED: { label: 'Tamamlandı', cls: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400' },
+  CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
 };
 
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING'];
 const HISTORY_STATUSES = ['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING', 'PREPARING'];
 
 const CARGO_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  pending: { label: '📦 Kargoya Verildi', cls: 'bg-amber-100 text-amber-700' },
-  in_transit: { label: '🚚 Kargoda', cls: 'bg-cyan-100 text-cyan-700' },
-  out_for_delivery: { label: '📬 Dağıtımda', cls: 'bg-blue-100 text-blue-700' },
-  delivered: { label: '🏠 Teslim Edildi', cls: 'bg-green-100 text-green-700' },
-  failed: { label: '⚠️ Takip Hatası', cls: 'bg-red-100 text-red-700' },
-  unknown: { label: '❓ Bilinmiyor', cls: 'bg-slate-100 text-slate-600' },
+  pending: { label: 'Kargoya Verildi', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  in_transit: { label: 'Kargoda', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
+  out_for_delivery: { label: 'Dağıtımda', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  delivered: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
+  failed: { label: 'Takip Hatası', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
+  unknown: { label: 'Bilinmiyor', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
 };
 
-const PAYMENT_LABELS: Record<string, string> = {
-  IBAN: '🏦 IBAN', 'Kapıda Nakit': '💵 Kapıda Nakit', 'Kapıda Kredi Kartı': '💳 Kapıda Kart',
-  'Link ile Ödeme': '🔗 Link', CASH: '💵 Nakit', CARD: '💳 Kart',
-  iban: '🏦 IBAN', cod: '💵 Kapıda Ödeme', website: '🔗 Link', paytr: '💳 Kart', iyzico: '💳 Kart',
+const PAYMENT_META: Record<string, { label: string; icon: any; gradient: string }> = {
+  iban: { label: 'IBAN', icon: Banknote, gradient: 'from-emerald-500 to-green-600' },
+  havale: { label: 'Havale', icon: Banknote, gradient: 'from-emerald-500 to-green-600' },
+  eft: { label: 'EFT', icon: Banknote, gradient: 'from-emerald-500 to-green-600' },
+  cod: { label: 'Kapıda Nakit', icon: Wallet, gradient: 'from-orange-400 to-orange-600' },
+  cash_on_delivery: { label: 'Kapıda Nakit', icon: Wallet, gradient: 'from-orange-400 to-orange-600' },
+  kapida: { label: 'Kapıda Nakit', icon: Wallet, gradient: 'from-orange-400 to-orange-600' },
+  nakit: { label: 'Kapıda Nakit', icon: Wallet, gradient: 'from-orange-400 to-orange-600' },
+  kapida_kart: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
+  card: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
+  kredi: { label: 'Kapıda Kart', icon: CreditCard, gradient: 'from-violet-500 to-purple-600' },
+  website: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
+  paytr: { label: 'PayTR', icon: CreditCard, gradient: 'from-blue-500 to-cyan-600' },
+  iyzico: { label: 'iyzico', icon: CreditCard, gradient: 'from-blue-500 to-cyan-600' },
+  payment_link: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
+  link: { label: 'Link', icon: Globe, gradient: 'from-pink-500 to-rose-600' },
 };
+
+function paymentBadge(method: string | undefined) {
+  const key = String(method || '').toLowerCase().replace(/\s+/g, '_').replace(/[çÇ]/g, 'c').replace(/[ğĞ]/g, 'g').replace(/[ıİ]/g, 'i').replace(/[öÖ]/g, 'o').replace(/[şŞ]/g, 's').replace(/[üÜ]/g, 'u');
+  const pm = PAYMENT_META[key] || PAYMENT_META.iban;
+  const PmIcon = pm.icon;
+  return { label: pm.label, icon: PmIcon, gradient: pm.gradient };
+}
 
 const PAYMENT_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  waiting: { label: '💳 Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700' },
-  awaiting_dekont: { label: '🧾 Dekont Bekleniyor', cls: 'bg-amber-100 text-amber-700' },
-  dekont_alindi: { label: '✅ Dekont Alındı', cls: 'bg-emerald-100 text-emerald-700' },
-  paid: { label: '💰 Ödendi', cls: 'bg-emerald-100 text-emerald-700' },
+  waiting: { label: 'Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  awaiting_dekont: { label: 'Dekont Bekleniyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
+  dekont_alindi: { label: 'Dekont Alındı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+  paid: { label: 'Ödendi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
 };
 
 const COD_METHODS = ['cod', 'cash_on_delivery', 'CASH_ON_DELIVERY', 'Kapıda Nakit', 'Kapıda Kredi Kartı', 'Kapıda Ödeme', 'CASH', 'CARD'];
@@ -354,22 +373,22 @@ function OrdersPageContent() {
           );
         })}
         <div className="relative">
-          <button onClick={() => setShowFilter(!showFilter)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shadow-sm ${
-              filterStatus !== 'all' || filterChannel !== 'all' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
-            }`}>
+            <button onClick={() => setShowFilter(!showFilter)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all shadow-sm ${
+                filterStatus !== 'all' || filterChannel !== 'all' ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500'
+              }`}>
             <Filter size={12} /> Filtrele
           </button>
           {showFilter && (
             <div className="absolute top-full mt-1 left-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-3 z-20 min-w-[200px]" onMouseLeave={() => setShowFilter(false)}>
-              <div className="text-[10px] text-gray-400 uppercase font-semibold mb-1.5">Durum</div>
+              <div className="text-xs font-bold text-slate-500 mb-1.5">Durum</div>
               <div className="space-y-1">
                 {(activeTab === 'active'
-                  ? [{ key: 'all', label: 'Tümü' }, { key: 'payment', label: '💳 Ödeme Bekliyor' }]
-                  : [{ key: 'all', label: 'Tümü' }, { key: 'approved', label: '✅ Onaylananlar' }, { key: 'cancelled', label: '❌ İptal Edilenler' }]
+                  ? [{ key: 'all', label: 'Tümü' }, { key: 'payment', label: 'Ödeme Bekliyor' }]
+                  : [{ key: 'all', label: 'Tümü' }, { key: 'approved', label: 'Onaylananlar' }, { key: 'cancelled', label: 'İptal Edilenler' }]
                 ).map((s) => (
                   <button key={s.key} onClick={() => { setFilterStatus(s.key); setShowFilter(false); }}
-                    className={`block w-full text-left px-2 py-1 rounded text-xs font-medium ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>{s.label}</button>
+                    className={`block w-full text-left px-2 py-1 rounded text-xs font-bold ${filterStatus === s.key ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}>{s.label}</button>
                 ))}
               </div>
             </div>
@@ -384,7 +403,7 @@ function OrdersPageContent() {
 
       {notification && (
         <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 animate-pulse">
-          🔔 Yeni sipariş: {notification.name}
+          <BellRing size={13} className="inline mr-1 text-emerald-500" /> Yeni sipariş: {notification.name}
         </div>
       )}
 
@@ -394,7 +413,6 @@ function OrdersPageContent() {
           const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
           const chCfg = CHANNELS.find((c) => c.key === o.source);
           const ChIcon = chCfg?.icon || Globe;
-          const pmLabel = PAYMENT_LABELS[o.payment || o.payment_method || ''] || (o.payment ? `💳 ${o.payment}` : '');
           return (
             <div key={o.id} onClick={() => selectOrder(o)}
               className={`bg-white dark:bg-slate-800 rounded-xl border px-4 py-3 cursor-pointer hover:shadow-md transition-all ${
@@ -402,33 +420,41 @@ function OrdersPageContent() {
               } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold text-sm text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
-                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${chCfg.cls}`}><ChIcon size={14} /> {chCfg.label}</span>)}
-                  <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
+                  <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
+                  {chCfg && (<span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-bold ${chCfg.cls}`}><ChIcon size={13} /> {chCfg.label}</span>)}
+                  <span className="text-xs text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {pmLabel && <span className="text-[11px] text-gray-500 shrink-0">{pmLabel}</span>}
+                  {(() => {
+                    const pb = paymentBadge(o.payment_method || o.payment);
+                    const PbIcon = pb.icon;
+                    return (
+                      <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${pb.gradient}`}>
+                        <PbIcon size={11} /> {pb.label}
+                      </span>
+                    );
+                  })()}
                   {o.payment_status && PAYMENT_STATUS_BADGE[o.payment_status] && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_BADGE[o.payment_status].cls}`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${PAYMENT_STATUS_BADGE[o.payment_status].cls}`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
                   )}
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
-                  <span className="font-semibold text-base text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${badge.cls}`}>{badge.label}</span>
+                  <span className="font-bold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                 <TimerBadge date={o.created_at} />
                 {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${CARGO_STATUS_BADGE[o.cargo_status].cls}`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${CARGO_STATUS_BADGE[o.cargo_status].cls}`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
                 )}
                 {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
-                {o.customer_note && <span className="text-amber-500 truncate">📝 {o.customer_note.substring(0, 30)}</span>}
+                {o.customer_note && <span className="text-amber-500 truncate"><MapPin size={11} /> {o.customer_note.substring(0, 30)}</span>}
               </div>
             </div>
           );
         })}
         {displayOrders.length === 0 && (
           <div className="text-center py-12 text-gray-400 text-sm">
-            {activeTab === 'active' ? 'Aktif sipariş yok 🎉' : 'Geçmiş sipariş bulunamadı'}
+            {activeTab === 'active' ? 'Aktif sipariş yok' : 'Geçmiş sipariş bulunamadı'}
           </div>
         )}
       </div>
@@ -446,11 +472,11 @@ function OrdersPageContent() {
             <div className="p-4 space-y-4">
               {!showEdit ? (
                 <>
-                  <div className="space-y-2 text-sm">
-                    <div className="font-semibold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
-                    {selected.customer_phone && <div className="text-gray-500">📱 {selected.customer_phone}</div>}
+                  <div className="space-y-2 text-xs">
+                    <div className="font-bold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
+                    {selected.customer_phone && <div className="text-gray-500"><Phone size={14} className="inline mr-1" />{selected.customer_phone}</div>}
                     {selected.customer_address && <div className="text-gray-500"><MapPin size={14} className="inline mr-1" />{selected.customer_address}</div>}
-                    {selected.customer_city && <div className="text-gray-500">🏙️ {selected.customer_city}</div>}
+                    {selected.customer_city && <div className="text-gray-500"><MapPin size={14} className="inline mr-1 text-blue-400" />{selected.customer_city}</div>}
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                     {selected.customer_company && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}
@@ -458,51 +484,51 @@ function OrdersPageContent() {
                     {selected.tax_office && <div><span className="text-gray-400">Vergi D.:</span> <span className="text-gray-700 dark:text-slate-300">{selected.tax_office}</span></div>}
                   </div>
                   {(selected.customer_note || selected.notes) && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">📝 {selected.customer_note || selected.notes}</div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300"><Pencil size={12} className="inline mr-1" />{selected.customer_note || selected.notes}</div>
                   )}
 
                   {(selected.cargo_company || selected.tracking_number) && (
                     <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg text-xs text-cyan-700 dark:text-cyan-300">
-                      <p>🚚 Kargo: <b>{selected.cargo_company}</b> · Takip No: <b>{selected.tracking_number}</b></p>
+                      <p><Truck size={12} className="inline mr-1" />Kargo: <b>{selected.cargo_company}</b> · Takip No: <b>{selected.tracking_number}</b></p>
                     </div>
                   )}
 
                   <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
-                    <div className="text-xs text-gray-400 mb-1">Sipariş Kalemleri</div>
+                    <div className="text-xs font-bold text-slate-500 mb-1">Sipariş Kalemleri</div>
                     {items.length > 0 ? (
                       <div className="space-y-1 mb-2">
                         {items.map((item, i) => (
-                          <div key={i} className="flex justify-between text-sm">
+                          <div key={i} className="flex justify-between text-xs">
                             <span className="text-gray-700 dark:text-slate-300">{item.quantity}x {item.unit} {item.product_name}</span>
                             <span className="text-gray-500">{(item.quantity * item.unit_price).toLocaleString('tr-TR')} TL</span>
                           </div>
                         ))}
-                        <div className="border-t pt-1 flex justify-between font-semibold text-sm">
+                        <div className="border-t pt-1 flex justify-between font-bold text-xs">
                           <span>Toplam</span>
                           <span className="text-gray-900 dark:text-white">{Number(selected.total_price).toLocaleString('tr-TR')} TL</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-400">Ürün bilgisi yüklenemedi — sayfayı yenileyip tekrar deneyin</div>
+                      <div className="text-xs text-gray-400">Ürün bilgisi yüklenemedi — sayfayı yenileyip tekrar deneyin</div>
                     )}
                   </div>
 
                   {/* Cargo Ship (active only) */}
                   {showCargo && activeTab === 'active' && (
                     <div className="space-y-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                      <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">🚚 Kargoya Ver</h3>
+                      <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300"><Truck size={14} className="inline mr-1" />Kargoya Ver</h3>
                       <div className="text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
                         {defaultCargo ? (
                           <>
                             <p>Kargo firması: <b>{defaultCargo.label}</b> <span className="text-emerald-500/70">(varsayılan)</span></p>
                             <p>Takip kodu gönderim anında API'den otomatik alınır.</p>
                             {COD_METHODS.includes(selected.payment_method || selected.payment || '') ? (
-                              <p className="text-amber-600 dark:text-amber-400">💵 Kapıda ödeme — tahsilat teslimatta yapılacaktır.</p>
+                              <p className="text-amber-600 dark:text-amber-400"><Wallet size={12} className="inline mr-1" />Kapıda ödeme — tahsilat teslimatta yapılacaktır.</p>
                             ) : (
                               <p>Ödeme onaylanacak ve müşteri kargo bilgisiyle bilgilendirilecek.</p>
                             )}
                             {selected.payment_status === 'dekont_alindi' && (
-                              <p className="text-emerald-600 dark:text-emerald-400">✅ Müşteri dekont gönderdi — onaylamak için Kargoya Ver'e basın.</p>
+                              <p className="text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={12} className="inline mr-1" />Müşteri dekont gönderdi — onaylamak için Kargoya Ver'e basın.</p>
                             )}
                           </>
                         ) : (
@@ -510,30 +536,30 @@ function OrdersPageContent() {
                         )}
                       </div>
                       <button onClick={handleShip} disabled={!defaultCargo || cargoBusy}
-                        className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20">
-                        {cargoBusy ? 'Gönderiliyor...' : '🚚 Kargoya Ver'}
+                        className="w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-lg shadow-emerald-500/20">
+                        {cargoBusy ? 'Gönderiliyor...' : <><Truck size={13} className="inline mr-1" />Kargoya Ver</>}
                       </button>
                       {cargoMsg && (
-                        <p className={`text-[11px] font-medium ${cargoMsg.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-500'}`}>{cargoMsg.text}</p>
+                        <p className={`text-xs font-bold ${cargoMsg.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-500'}`}>{cargoMsg.text}</p>
                       )}
                     </div>
                   )}
                   {/* Cargo Form (history - revise only) */}
                   {showCargo && activeTab === 'history' && (
                     <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">Kargo Bilgisini Düzelt</h3>
+                      <h3 className="text-xs font-bold text-amber-700 dark:text-amber-300">Kargo Bilgisini Düzelt</h3>
                       <input value={cargoForm.company} onChange={(e) => setCargoForm({ ...cargoForm, company: e.target.value })} placeholder="Kargo firması" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
                       <input value={cargoForm.tracking} onChange={(e) => setCargoForm({ ...cargoForm, tracking: e.target.value })} placeholder="Takip numarası" className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900" />
-                      <button onClick={handleRevise} className="w-full px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-amber-500/20">🔄 Kargo Bilgisini Güncelle</button>
+                      <button onClick={handleRevise} className="w-full px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-amber-500/20"><Truck size={13} className="inline mr-1" />Kargo Bilgisini Güncelle</button>
                     </div>
                   )}
                 </>
               ) : (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">Siparişi Düzenle</h3>
+                  <h3 className="text-xs font-bold text-gray-700 dark:text-slate-200">Siparişi Düzenle</h3>
                   {EDIT_FIELDS.map(({ key, label }) => (
                     <div key={key}>
-                      <label className="text-[10px] text-gray-400 block mb-0.5">{label}</label>
+                      <label className="text-xs font-bold text-slate-500 block mb-0.5">{label}</label>
                       <input value={editForm[key] || ''} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
                         className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-600 rounded text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
                     </div>
@@ -542,10 +568,10 @@ function OrdersPageContent() {
                   {editItems.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-gray-400">Sipariş Kalemleri</label>
+                        <label className="text-xs font-bold text-slate-500">Sipariş Kalemleri</label>
                         <button
                           onClick={() => setEditItems([...editItems, { product_name: '', quantity: 1, unit: 'KG', unit_price: 0 }])}
-                          className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium">
+                          className="text-xs text-indigo-500 hover:text-indigo-700 font-bold">
                           Ürün Ekle
                         </button>
                       </div>
@@ -553,7 +579,7 @@ function OrdersPageContent() {
                         {editItems.map((item, i) => {
                           const subtotal = (item.quantity || 0) * (item.unit_price || 0);
                           return (
-                            <div key={i} className="flex items-center gap-1 text-[11px]">
+                            <div key={i} className="flex items-center gap-1 text-xs">
                               <select value={item.product_name}
                                 onChange={(e) => {
                                   const sel = products.find(p => p.productName === e.target.value);
@@ -597,14 +623,14 @@ function OrdersPageContent() {
                     </div>
                   )}
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-2 text-center mb-3">
-                    <div className="text-[10px] text-indigo-400 uppercase tracking-wide">Sipariş Genel Toplamı</div>
+                    <div className="text-xs font-bold text-indigo-500">Sipariş Genel Toplamı</div>
                     <div className="text-lg font-bold text-indigo-600 dark:text-indigo-300">
                       {editItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unit_price || 0), 0).toLocaleString('tr-TR')} TL
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-indigo-500/20">Kaydet</button>
-                    <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-500">İptal</button>
+                    <button onClick={handleEdit} className="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-indigo-500/20">Kaydet</button>
+                    <button onClick={() => setShowEdit(false)} className="px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-500">İptal</button>
                   </div>
                 </div>
               )}
@@ -614,42 +640,42 @@ function OrdersPageContent() {
             {!showEdit && (
               <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-4 py-3 grid grid-cols-4 gap-2">
                 <button onClick={() => setShowChat(true)}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-bold">
                   <Eye size={13} /> Görüşme
                 </button>
                 <button onClick={openEdit}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-medium">
-                  <Edit3 size={13} /> Düzenle
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-200 font-bold">
+                  <Pencil size={13} /> Düzenle
                 </button>
                 <button onClick={handlePrint}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 rounded-lg text-xs text-indigo-600 dark:text-indigo-400 hover:shadow font-bold">
                   <Printer size={13} /> Yazdır
                 </button>
                 {activeTab === 'active' ? (
                   <button onClick={() => { setShowCargo(!showCargo); setCargoMsg(null); }}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 text-emerald-600 dark:text-emerald-400'} hover:shadow`}>
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold ${showCargo ? 'bg-emerald-100 text-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 text-emerald-600 dark:text-emerald-400'} hover:shadow`}>
                     <Truck size={13} /> Kargoya Ver
                   </button>
                 ) : (
                   <button onClick={() => setShowCargo(!showCargo)}
-                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium ${showCargo ? 'bg-amber-100 text-amber-700' : 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 text-amber-600 dark:text-amber-400'} hover:shadow`}>
-                    <Truck size={13} /> Revize
+                    className={`flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold ${showCargo ? 'bg-amber-100 text-amber-700' : 'bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 text-amber-600 dark:text-amber-400'} hover:shadow`}>
+                    <Truck size={13} /> Düzelt
                   </button>
                 )}
                 <button onClick={handleCancel}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-medium">
-                  <AlertTriangle size={13} /> Sip.İptal
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400 hover:shadow font-bold">
+                  <Ban size={13} /> İptal
                 </button>
                 <button onClick={handleDelete}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 rounded-lg text-xs text-red-600 dark:text-red-400 hover:shadow font-bold">
                   <Trash2 size={13} /> Sil
                 </button>
                 <button onClick={() => window.open(`https://wa.me/${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-medium">
-                  <WhatsAppIcon size={13} /> WA
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:shadow font-bold">
+                  <WhatsAppIcon size={13} /> WhatsApp
                 </button>
                 <button onClick={() => window.open(`tel:${selected.customer_phone}`, '_blank')}
-                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-medium">
+                  className="flex items-center justify-center gap-1 px-2 py-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 rounded-lg text-xs text-blue-600 dark:text-blue-400 hover:shadow font-bold">
                   <PhoneCall size={13} /> Ara
                 </button>
               </div>

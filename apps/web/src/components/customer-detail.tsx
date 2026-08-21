@@ -142,7 +142,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints, onRefre
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{customer.name as string}</h2>
-              <p className="text-sm text-gray-500 dark:text-slate-400 font-mono">{(customer.phone as string || '').replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4')}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 font-mono font-bold">{(customer.phone as string || '').replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4')}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
@@ -273,8 +273,8 @@ export function CustomerDetail({ customer, orders, timeline, complaints, onRefre
                   {p.min_quantity > 0 && <span className="text-[10px] text-gray-400 ml-1">(Min {p.min_quantity} {p.unit})</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">{Number(p.price).toLocaleString('tr-TR')} TL/{p.unit}</span>
-                  <button onClick={() => handleDeletePrice(p.id)} className="text-[10px] text-red-400 hover:text-red-600">✕</button>
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{Number(p.price).toLocaleString('tr-TR')} TL/{p.unit}</span>
+                  <button onClick={() => handleDeletePrice(p.id)} className="text-xs text-red-400 hover:text-red-600"><X size={13} /></button>
                 </div>
               </div>
             ))}
