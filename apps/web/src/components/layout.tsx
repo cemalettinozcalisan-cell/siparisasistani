@@ -198,13 +198,10 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
 
   const inner = (
     <>
-      <div className="m-3 rounded-xl bg-gradient-to-r from-purple-900/40 to-indigo-900/40 backdrop-blur-md border border-white/10 p-4 flex items-center gap-3">
-        <img src="/logo2.png" alt="SiparişAsistanı" className="w-9 h-9 object-contain shrink-0 drop-shadow-lg" />
+      <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+        <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0" />
         {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <span className="font-bold text-sm text-white block leading-tight">SiparişAsistanı</span>
-            <span className="block text-[11px] font-semibold bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">Akıllı Sipariş, Güçlü İşletme.</span>
-          </div>
+          <span className="font-semibold text-sm text-white">SiparişAsistanı</span>
         )}
         {mobileOpen && (
           <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden shrink-0"><X className="w-5 h-5" /></button>
@@ -334,18 +331,18 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
               <NotificationBell />
               {isDashboard && usage && (
-                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-400/80 dark:border-orange-500/50 bg-white/90 dark:bg-[#0C1027]/70 text-xs">
-                  <BarChart3 size={13} className="text-orange-500" />
-                  <span className="font-bold text-slate-700 dark:text-slate-200">Sipariş Hakkı:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-100 tabular-nums">{remaining} / {orderLimit}</span>
+                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-xs shadow-md shadow-indigo-500/25">
+                  <BarChart3 size={13} className="text-white/90" />
+                  <span className="font-medium text-white">Sipariş Hakkı:</span>
+                  <span className="font-bold text-white tabular-nums">{remaining} / {orderLimit}</span>
                 </div>
               )}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/80 dark:border-emerald-500/50 bg-white/95 dark:bg-[#0C1027]/80">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/25">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                 </span>
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Sistem Aktif</span>
+                <span className="text-xs font-medium text-white">Sistem Aktif</span>
               </div>
             </div>
           </div>
