@@ -875,20 +875,17 @@ export default function DashboardPage() {
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Kanal Bazlı Ciro</p>
                 <p className="text-xs font-black text-slate-700 dark:text-slate-300 tabular-nums">{channelRevenue.reduce((s, c) => s + Number(c.total || 0), 0).toLocaleString('tr-TR')} TL</p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {channelRevenue.map((c) => {
                   const cm = sourceMeta(c.source);
                   const share = todayRevenue > 0 ? Math.round((Number(c.total || 0) / todayRevenue) * 100) : 0;
                   return (
-                    <div key={c.source} className={`inline-flex flex-col items-center gap-0.5 px-3.5 py-2 rounded-xl bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
-                      <div className="flex items-center gap-1.5">
+                    <div key={c.source} className="flex flex-col items-center gap-0.5">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-bold text-white px-2.5 py-1.5 rounded-full bg-gradient-to-r ${cm.gradient} shadow-sm ring-1 ring-inset ring-white/25`}>
                         <cm.icon size={13} />
-                        <span className="text-xs font-bold">{cm.label}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-black tabular-nums">{Number(c.total || 0).toLocaleString('tr-TR')} TL</span>
-                        <span className="text-[10px] font-bold opacity-80">%{share}</span>
-                      </div>
+                        {cm.label}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 tabular-nums">{Number(c.total || 0).toLocaleString('tr-TR')} TL · <span className="text-slate-400">%{share}</span></span>
                     </div>
                   );
                 })}
