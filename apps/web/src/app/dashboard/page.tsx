@@ -434,6 +434,15 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute bottom-0 left-1/3 w-96 h-96 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 blur-3xl" />
 
       <div className="relative z-10 space-y-8">
+        {/* Marka bloğu — logo + slogan */}
+        <div className="flex items-center gap-3">
+          <img src="/logo2.png" alt="SiparişAsistanı" className="w-10 h-10 object-contain" />
+          <div>
+            <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-600 dark:from-violet-400 dark:via-fuchsia-400 dark:to-blue-400 bg-clip-text text-transparent">SiparişAsistanı</h1>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Akıllı Sipariş, Güçlü İşletme.</p>
+          </div>
+        </div>
+
         {/* AI Orchestration Hub — Müşterileriniz Nerede Olursa Olsun */}
         <div className="text-left">
           <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
