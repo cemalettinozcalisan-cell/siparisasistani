@@ -825,47 +825,46 @@ export default function DashboardPage() {
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
                   <ShoppingCart size={15} />
                 </div>
-                <p className="text-[10px] text-blue-600/70 dark:text-blue-300/70 uppercase font-extrabold tracking-widest">Bugünkü Sipariş</p>
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Bugünkü Sipariş</p>
                 <p className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1.5 tabular-nums">{todayOrdersList.length} <span className="text-sm font-bold">adet</span></p>
-                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${ordersChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${ordersChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
                   {ordersChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(ordersChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2">Bugün oluşturulan sipariş sayısı (00:00 sonrası)</p>
+                <p className="text-[10px] text-blue-500/60 dark:text-blue-300/50 mt-2">Bugün oluşturulan sipariş sayısı (00:00 sonrası)</p>
               </div>
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-500/20 dark:to-green-500/5 border border-emerald-200/70 dark:border-emerald-500/20 p-5 text-center">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-300/20 dark:bg-emerald-400/10 blur-2xl" />
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md mb-2">
                   <Wallet size={15} />
                 </div>
-                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70 uppercase font-extrabold tracking-widest">Bugünkü Ciro</p>
+                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Bugünkü Ciro</p>
                 <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5 tabular-nums">{Number(todayRevenue).toLocaleString('tr-TR')} <span className="text-sm font-bold">TL</span></p>
-                {/* Dün ile aynı saat dilimi karşılaştırma rozeti */}
-                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${revenueChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${revenueChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
                   {revenueChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(revenueChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2">Bugünkü siparişlerin toplam tutarı</p>
+                <p className="text-[10px] text-emerald-500/60 dark:text-emerald-300/50 mt-2">Bugünkü siparişlerin toplam tutarı</p>
               </div>
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-500/20 dark:to-cyan-500/5 border border-teal-200/70 dark:border-teal-500/20 p-5 text-center">
                 <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-teal-300/20 dark:bg-teal-400/10 blur-2xl" />
                 <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-600 text-white flex items-center justify-center shadow-md mb-2">
                   <TrendingUp size={15} />
                 </div>
-                <p className="text-[10px] text-teal-600/70 dark:text-teal-300/70 uppercase font-extrabold tracking-widest">Ort. Sepet</p>
+                <p className="text-xs font-bold text-teal-700 dark:text-teal-400">Ortalama Sepet</p>
                 <p className="text-3xl font-black text-teal-600 dark:text-teal-400 mt-1.5 tabular-nums">
                   {todayOrdersList.length > 0 ? Math.round(todayRevenue / todayOrdersList.length).toLocaleString('tr-TR') : 0} <span className="text-sm font-bold">TL</span>
                 </p>
-                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${avgBasketChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ring-1 ring-inset ring-white/25 shadow-sm ${avgBasketChangePct >= 0 ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white'}`}>
                   {avgBasketChangePct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />} %{Math.abs(avgBasketChangePct)} <span className="opacity-80 font-bold">Düne Göre</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2">Ciro ÷ sipariş sayısı (sipariş başına ortalama)</p>
+                <p className="text-[10px] text-teal-500/60 dark:text-teal-300/50 mt-2">Ciro ÷ sipariş sayısı (sipariş başına ortalama)</p>
               </div>
             </div>
 
             {/* Kanal bazlı ciro */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Kanal Bazlı Ciro</p>
-                <p className="text-[11px] font-bold text-slate-400">{channelRevenue.reduce((s, c) => s + Number(c.total || 0), 0).toLocaleString('tr-TR')} TL</p>
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Kanal Bazlı Ciro</p>
+                <p className="text-xs font-black text-slate-700 dark:text-slate-300 tabular-nums">{channelRevenue.reduce((s, c) => s + Number(c.total || 0), 0).toLocaleString('tr-TR')} TL</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {channelRevenue.map((c) => {
@@ -884,7 +883,7 @@ export default function DashboardPage() {
 
             {/* Ödeme yöntemi dağılımı */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-              <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Ödeme Yöntemi Dağılımı</p>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Ödeme Yöntemi Dağılımı</p>
               <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
                 {paymentDistribution.map((p) => {
                   const pm = PAYMENT_DIST_META[p.method] || PAYMENT_DIST_META.iban;
@@ -902,9 +901,9 @@ export default function DashboardPage() {
                   return (
                     <div key={p.method} className="flex items-center gap-2">
                       <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-tr ${pm.gradient}`} />
-                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{pm.label}</span>
-                      <span className="text-[11px] font-black text-slate-900 dark:text-white tabular-nums">{Number(p.total || 0).toLocaleString('tr-TR')} TL</span>
-                      <span className="text-[10px] text-slate-400">· %{share}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{pm.label}</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white tabular-nums">{Number(p.total || 0).toLocaleString('tr-TR')} TL</span>
+                      <span className="text-[10px] text-slate-400 font-medium">· %{share}</span>
                     </div>
                   );
                 })}
@@ -913,7 +912,7 @@ export default function DashboardPage() {
 
             {/* Tahsilat & Onay Durumu */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2.5">
-              <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">Tahsilat & Onay Durumu</p>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Tahsilat & Onay Durumu</p>
               <div className="flex items-center gap-3 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 px-3 py-2.5">
                 <span className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex items-center justify-center shrink-0 shadow-sm"><CheckCircle2 size={14} /></span>
                 <div className="flex-1">
