@@ -880,9 +880,15 @@ export default function DashboardPage() {
                   const cm = sourceMeta(c.source);
                   const share = todayRevenue > 0 ? Math.round((Number(c.total || 0) / todayRevenue) * 100) : 0;
                   return (
-                    <div key={c.source} title={cm.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
-                      <cm.icon size={13} />
-                      <p className="text-xs font-black leading-none">{Number(c.total || 0).toLocaleString('tr-TR')} TL <span className="text-[9px] font-bold opacity-80">%{share}</span></p>
+                    <div key={c.source} className={`inline-flex flex-col items-center gap-0.5 px-3.5 py-2 rounded-xl bg-gradient-to-r ${cm.gradient} text-white shadow-sm ring-1 ring-inset ring-white/25`}>
+                      <div className="flex items-center gap-1.5">
+                        <cm.icon size={13} />
+                        <span className="text-xs font-bold">{cm.label}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-black tabular-nums">{Number(c.total || 0).toLocaleString('tr-TR')} TL</span>
+                        <span className="text-[10px] font-bold opacity-80">%{share}</span>
+                      </div>
                     </div>
                   );
                 })}
