@@ -25,31 +25,31 @@ const CHANNELS = [
   { key: 'WEBSITE', label: 'Web', icon: Globe, cls: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-md' },
 ];
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  new: { label: 'Yeni', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  APPROVED: { label: 'Onaylandı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  PREPARING: { label: 'Hazırlanıyor', cls: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
-  PACKAGING: { label: 'Paketleniyor', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
-  PACKAGED: { label: 'Paketlendi', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400' },
-  PROCESSING: { label: 'İşleniyor', cls: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' },
-  SHIPPED: { label: 'Kargoya Verildi', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
-  DELIVERED: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
-  COMPLETED: { label: 'Tamamlandı', cls: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400' },
-  CANCELLED: { label: 'İptal', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
+const STATUS_BADGE: Record<string, { label: string; gradient: string }> = {
+  new: { label: 'Yeni', gradient: 'from-violet-500 to-purple-600' },
+  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', gradient: 'from-orange-500 to-amber-500' },
+  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', gradient: 'from-teal-500 to-emerald-500' },
+  APPROVED: { label: 'Onaylandı', gradient: 'from-teal-500 to-emerald-500' },
+  PREPARING: { label: 'Hazırlanıyor', gradient: 'from-sky-400 to-blue-400' },
+  PACKAGING: { label: 'Paketleniyor', gradient: 'from-sky-400 to-blue-400' },
+  PACKAGED: { label: 'Paketlendi', gradient: 'from-sky-500 to-blue-500' },
+  PROCESSING: { label: 'İşleniyor', gradient: 'from-amber-500 to-yellow-500' },
+  SHIPPED: { label: 'Kargoya Verildi', gradient: 'from-blue-500 to-cyan-600' },
+  DELIVERED: { label: 'Teslim Edildi', gradient: 'from-emerald-500 to-green-600' },
+  COMPLETED: { label: 'Tamamlandı', gradient: 'from-emerald-500 to-green-600' },
+  CANCELLED: { label: 'İptal', gradient: 'from-red-500 to-rose-600' },
 };
 
 const ACTIVE_STATUSES = ['new', 'PAYMENT_WAITING'];
 const HISTORY_STATUSES = ['PAYMENT_CONFIRMED', 'PACKAGING', 'PACKAGED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'APPROVED', 'PROCESSING', 'PREPARING'];
 
-const CARGO_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'Kargoya Verildi', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  in_transit: { label: 'Kargoda', cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
-  out_for_delivery: { label: 'Dağıtımda', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  delivered: { label: 'Teslim Edildi', cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400' },
-  failed: { label: 'Takip Hatası', cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
-  unknown: { label: 'Bilinmiyor', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
+const CARGO_STATUS_BADGE: Record<string, { label: string; gradient: string }> = {
+  pending: { label: 'Kargoya Verildi', gradient: 'from-amber-500 to-amber-600' },
+  in_transit: { label: 'Kargoda', gradient: 'from-cyan-500 to-cyan-600' },
+  out_for_delivery: { label: 'Dağıtımda', gradient: 'from-blue-500 to-blue-600' },
+  delivered: { label: 'Teslim Edildi', gradient: 'from-emerald-500 to-green-600' },
+  failed: { label: 'Takip Hatası', gradient: 'from-red-500 to-rose-600' },
+  unknown: { label: 'Bilinmiyor', gradient: 'from-slate-400 to-slate-500' },
 };
 
 const PAYMENT_META: Record<string, { label: string; icon: any; gradient: string }> = {
@@ -77,11 +77,11 @@ function paymentBadge(method: string | undefined) {
   return { label: pm.label, icon: PmIcon, gradient: pm.gradient };
 }
 
-const PAYMENT_STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  waiting: { label: 'Ödeme Bekliyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  awaiting_dekont: { label: 'Dekont Bekleniyor', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  dekont_alindi: { label: 'Dekont Alındı', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  paid: { label: 'Ödendi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
+const PAYMENT_STATUS_BADGE: Record<string, { label: string; gradient: string }> = {
+  waiting: { label: 'Ödeme Bekliyor', gradient: 'from-orange-500 to-amber-500' },
+  awaiting_dekont: { label: 'Dekont Bekleniyor', gradient: 'from-orange-500 to-amber-500' },
+  dekont_alindi: { label: 'Dekont Alındı', gradient: 'from-emerald-500 to-emerald-600' },
+  paid: { label: 'Ödendi', gradient: 'from-emerald-500 to-emerald-600' },
 };
 
 const COD_METHODS = ['cod', 'cash_on_delivery', 'CASH_ON_DELIVERY', 'Kapıda Nakit', 'Kapıda Kredi Kartı', 'Kapıda Ödeme', 'CASH', 'CARD'];
@@ -410,8 +410,10 @@ function OrdersPageContent() {
       {/* Order Cards */}
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {displayOrders.map((o) => {
-          const badge = STATUS_BADGE[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-600' };
-          const chCfg = CHANNELS.find((c) => c.key === o.source);
+          const badge = STATUS_BADGE[o.status] || { label: o.status, gradient: 'from-slate-400 to-slate-500' };
+          const isWholesale = String(o.source || '').toUpperCase() === 'WHOLESALE';
+          // Kanal: önce source (WHATSAPP vb.), bulunamazsa channel (whatsapp) — toptan siparişlerde kanal ayrı görünsün
+          const chCfg = CHANNELS.find((c) => c.key === o.source) || CHANNELS.find((c) => c.key.toLowerCase() === String(o.channel || '').toLowerCase());
           const ChIcon = chCfg?.icon || Globe;
           return (
             <div key={o.id} onClick={() => selectOrder(o)}
@@ -420,7 +422,12 @@ function OrdersPageContent() {
               } ${o.status === 'new' ? 'border-l-4 border-l-emerald-400' : ''}`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">#{o.order_number}</span>
+                  <span className="font-bold text-xs text-gray-900 dark:text-white shrink-0">Sipariş No:#{o.order_number}</span>
+                  {isWholesale && (
+                    <span className="inline-flex items-center gap-1 text-xs font-black tracking-wide text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 shadow-sm ring-1 ring-inset ring-yellow-300/50">
+                      <Package size={11} /> TOPTAN
+                    </span>
+                  )}
                   {chCfg && (<span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-bold ${chCfg.cls}`}><ChIcon size={13} /> {chCfg.label}</span>)}
                   <span className="text-xs text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
@@ -435,16 +442,16 @@ function OrdersPageContent() {
                     );
                   })()}
                   {o.payment_status && PAYMENT_STATUS_BADGE[o.payment_status] && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${PAYMENT_STATUS_BADGE[o.payment_status].cls}`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
+                    <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${PAYMENT_STATUS_BADGE[o.payment_status].gradient} shadow-sm shadow-amber-500/25`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
                   )}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${badge.cls}`}>{badge.label}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${badge.gradient} shadow-sm shadow-blue-500/25`}>{badge.label}</span>
                   <span className="font-bold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                 <TimerBadge date={o.created_at} />
                 {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${CARGO_STATUS_BADGE[o.cargo_status].cls}`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${CARGO_STATUS_BADGE[o.cargo_status].gradient} shadow-sm shadow-cyan-500/25`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
                 )}
                 {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
                 {o.customer_note && <span className="text-amber-500 truncate"><MapPin size={11} /> {o.customer_note.substring(0, 30)}</span>}
@@ -465,7 +472,7 @@ function OrdersPageContent() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-800 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 px-4 py-3 flex items-center justify-between z-10">
-              <span className="font-semibold text-gray-900 dark:text-white">#{selected.order_number}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">Sipariş No:#{selected.order_number}</span>
               <button onClick={closeSlide} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><X size={18} /></button>
             </div>
 

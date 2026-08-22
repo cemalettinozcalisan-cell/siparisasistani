@@ -127,7 +127,7 @@ function GlobalSearch() {
           ))}
           {(results.orders as { id: string; order_number: string; total_price: number }[])?.slice(0, 3).map((o) => (
             <a key={o.id} href="/orders" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm">
-              <ShoppingBag className="w-4 h-4 text-slate-400" /><span className="font-medium">#{o.order_number}</span>
+              <ShoppingBag className="w-4 h-4 text-slate-400" /><span className="font-medium">Sipariş No:#{o.order_number}</span>
               <span className="text-slate-500">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
             </a>
           ))}

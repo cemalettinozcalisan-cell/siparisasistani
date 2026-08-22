@@ -324,7 +324,7 @@ export function CustomerDetail({ customer, orders, timeline, complaints, onRefre
               <div className="space-y-1">
                 {orders.slice(0, 5).map((o) => (
                   <div key={o.id as string} className="flex items-center justify-between py-1 text-[11px]">
-                    <span className="font-medium text-gray-900 dark:text-white">#{(o as any).order_number}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">Sipariş No:#{(o as any).order_number}</span>
                     <span className="text-gray-500">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</span>
                   </div>
                 ))}

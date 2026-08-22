@@ -663,7 +663,7 @@ export default function DashboardPage() {
               <div key={o.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">#{o.order_number}</span>
+                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Sipariş No:#{o.order_number}</span>
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${sm.cls}`}>{sm.label}</span>
                     <span className="text-xs text-slate-400">{new Date(o.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -753,7 +753,7 @@ export default function DashboardPage() {
                       <span className={`w-9 h-9 rounded-xl ${badge.cls} text-white flex items-center justify-center text-xs font-black shadow-sm`}>{badge.short}</span>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">#{o.order_number}</span>
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400">Sipariş No:#{o.order_number}</span>
                           {o.tracking_number && (
                             <button onClick={() => copyTracking(o.tracking_number)} title="Takip numarasını kopyala"
                               className="inline-flex items-center gap-1 text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-1.5 py-0.5 hover:border-amber-300 hover:text-amber-600 transition-colors">

@@ -7,29 +7,29 @@ import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 import { getTenantId } from '@/lib/tenant';
 
 const STATUS_FLOW: Record<string, { label: string; color: string }> = {
-  new: { label: 'Yeni', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  PACKAGING: { label: 'Paketleniyor', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' },
-  PACKAGED: { label: 'Paketlendi', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
-  SHIPPED: { label: 'Kargoda', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400' },
-  DELIVERED: { label: 'Teslim Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  CANCELLED: { label: 'İptal', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
-  COMPLETED: { label: 'Tamamlandı', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
+  new: { label: 'Yeni', color: 'bg-gradient-to-r from-violet-500 to-purple-600' },
+  PAYMENT_WAITING: { label: 'Ödeme Bekliyor', color: 'bg-gradient-to-r from-orange-500 to-amber-500' },
+  PAYMENT_CONFIRMED: { label: 'Ödeme Onaylandı', color: 'bg-gradient-to-r from-teal-500 to-emerald-500' },
+  PACKAGING: { label: 'Paketleniyor', color: 'bg-gradient-to-r from-sky-400 to-blue-400' },
+  PACKAGED: { label: 'Paketlendi', color: 'bg-gradient-to-r from-sky-500 to-blue-500' },
+  SHIPPED: { label: 'Kargoda', color: 'bg-gradient-to-r from-blue-500 to-cyan-600' },
+  DELIVERED: { label: 'Teslim Edildi', color: 'bg-gradient-to-r from-emerald-500 to-green-600' },
+  CANCELLED: { label: 'İptal', color: 'bg-gradient-to-r from-red-500 to-rose-600' },
+  COMPLETED: { label: 'Tamamlandı', color: 'bg-gradient-to-r from-emerald-500 to-green-600' },
 };
 
 const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
-  PHONE: { label: 'Telefon', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400' },
-  WHATSAPP: { label: 'WhatsApp', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  INSTAGRAM: { label: 'Instagram', color: 'bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-400' },
-  WEBSITE: { label: 'Web Sitesi', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400' },
-  MANUAL: { label: 'Perakende', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' },
-  WHOLESALE: { label: 'Toptan', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400' },
+  PHONE: { label: 'Telefon', color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
+  WHATSAPP: { label: 'WhatsApp', color: 'bg-gradient-to-r from-emerald-500 to-green-600' },
+  INSTAGRAM: { label: 'Instagram', color: 'bg-gradient-to-r from-pink-500 to-purple-600' },
+  WEBSITE: { label: 'Web Sitesi', color: 'bg-gradient-to-r from-cyan-500 to-teal-500' },
+  MANUAL: { label: 'Perakende', color: 'bg-gradient-to-r from-orange-500 to-amber-500' },
+  WHOLESALE: { label: 'Toptan', color: 'bg-gradient-to-r from-indigo-500 to-purple-600' },
 };
 
 function SourceBadge({ source }: { source: string }) {
-  const cfg = SOURCE_BADGES[source] || { label: source, color: 'bg-gray-100 text-gray-600' };
-  return <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold ${cfg.color}`}>{cfg.label}</span>;
+  const cfg = SOURCE_BADGES[source] || { label: source, color: 'bg-gradient-to-r from-slate-400 to-slate-500' };
+  return <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold text-white shadow-sm ${cfg.color}`}>{cfg.label}</span>;
 }
 
 const QUICK_ACTIONS: Record<string, { next: string; icon: any; label: string }[]> = {
@@ -50,12 +50,12 @@ interface OrderDetailProps {
 }
 
 function AiConfidenceBadge({ label, confidence }: { label: string; confidence?: number }) {
-  const color = confidence && confidence > 90 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : confidence && confidence > 70 ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
-  return <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold ${color}`}><Sparkles size={11} /> {label} {confidence ? `%${confidence}` : ''}</span>;
+  const color = confidence && confidence > 90 ? 'from-emerald-500 to-green-600' : confidence && confidence > 70 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500';
+  return <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold text-white shadow-sm bg-gradient-to-r ${color}`}><Sparkles size={11} /> {label} {confidence ? `%${confidence}` : ''}</span>;
 }
 
 export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDetailProps) {
-  const sc = STATUS_FLOW[order.status as string] || { label: order.status as string, color: 'bg-gray-100 text-gray-600' };
+  const sc = STATUS_FLOW[order.status as string] || { label: order.status as string, color: 'bg-gradient-to-r from-slate-400 to-slate-500' };
   const actions = QUICK_ACTIONS[order.status as string] || [];
   const [showChat, setShowChat] = useState(false);
   const [showCargoForm, setShowCargoForm] = useState(false);
@@ -82,16 +82,21 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sipariş #{(order as Record<string, string>).order_number}</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sipariş No:#{(order as Record<string, string>).order_number}</h2>
           <div className="flex items-center gap-2 mt-1">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-xs text-slate-400">{new Date(order.created_at as string).toLocaleString('tr-TR')}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-2">
+          {String(source || '').toUpperCase() === 'WHOLESALE' && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-black tracking-wide text-white bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 shadow-sm ring-1 ring-inset ring-yellow-300/50">
+              <Package size={11} /> TOPTAN
+            </span>
+          )}
           <AiConfidenceBadge label="AI Onaylı" confidence={order.ai_confidence as number} />
-          {source && <SourceBadge source={source} />}
-          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${sc.color}`}>{sc.label}</span>
+          {source && String(source).toUpperCase() !== 'WHOLESALE' && <SourceBadge source={source} />}
+          <span className={`px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm ${sc.color}`}>{sc.label}</span>
         </div>
       </div>
 
@@ -141,9 +146,13 @@ export function OrderDetail({ order, items, timeline, onStatusChange }: OrderDet
               <p className="text-xs text-slate-400">Kanal</p>
               <p className="text-xs font-bold text-slate-900 dark:text-white">
                 {(() => {
+                  // Gerçek kanal: önce channel alanı (whatsapp/phone/instagram...), yoksa source
+                  const ch = String((order as any).channel || '').toLowerCase();
+                  const chMap: Record<string, string> = { phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', sms: 'SMS', website: 'Web Sitesi', web: 'Web Sitesi', manual: 'Perakende' };
+                  if (chMap[ch]) return chMap[ch];
                   const src = (order.source as string) || '';
-                  const map: Record<string, string> = { INSTAGRAM: 'Instagram', WEBSITE: 'Web Sitesi', PHONE: 'Telefon', WHATSAPP: 'WhatsApp', WHOLESALE: 'Toptan', MANUAL: 'Perakende' };
-                  return map[src] || 'WhatsApp';
+                  const srcMap: Record<string, string> = { INSTAGRAM: 'Instagram', WEBSITE: 'Web Sitesi', PHONE: 'Telefon', WHATSAPP: 'WhatsApp', MANUAL: 'Perakende', WHOLESALE: 'WhatsApp' };
+                  return srcMap[src] || 'WhatsApp';
                 })()}
               </p>
             </div>

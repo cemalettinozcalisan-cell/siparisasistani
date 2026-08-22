@@ -96,7 +96,7 @@ export default function OrdersPage() {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{sc.icon}</span>
-                    <span className="font-semibold text-sm">#{o.order_number as string}</span>
+                    <span className="font-semibold text-sm">Sipariş No:#{o.order_number as string}</span>
                   </div>
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${o.channel === 'phone' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                     {o.channel === 'phone' ? 'ğı“' : 'ğı’¬'}

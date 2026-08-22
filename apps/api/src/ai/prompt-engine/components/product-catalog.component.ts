@@ -21,6 +21,7 @@ export class ProductCatalogComponent {
       const name = p['product_name'] || '';
       const price = Number(p['price'] || 0).toLocaleString('tr-TR');
       const wholesalePrice = p['wholesale_price'] ? Number(p['wholesale_price']).toLocaleString('tr-TR') : null;
+      const wholesaleMin = Number(p['wholesale_min_qty'] || 0);
       const minOrder = Number(p['min_order_qty'] || 0);
       const raw = p['sale_types'];
       const saleTypes: string[] = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : ['KG']);
@@ -31,7 +32,7 @@ export class ProductCatalogComponent {
 
       const typeStr = saleTypes.join(' / ');
       let line = `- ${name}: ${price} TL / ${typeStr}`;
-      if (wholesalePrice) line += ` [Toptan: ${wholesalePrice} TL/${unit}]`;
+      if (wholesalePrice) line += ` [Toptan: ${wholesalePrice} TL/${unit}${wholesaleMin > 0 ? ` - min ${wholesaleMin} ${saleTypes[0]}` : ''}]`;
       if (minOrder > 0) line += ` [Min. Sipariş: ${minOrder} ${saleTypes[0]}]`;
       if (category) line += ` (${category})`;
 
@@ -60,6 +61,8 @@ export class ProductCatalogComponent {
     lines.push('- TOPLAM ALGISI: Müşteri "10 tepsi", "30 koli", "2 palet" gibi büyük miktarlar söylüyorsa TOPTAN sipariş olarak değerlendir. source="WHOLESALE" kullan.');
     lines.push('- Müşteri perakende miktarlarda (1-5 kg, 1-2 adet gibi) source="PERAKENDE" kullan.');
     lines.push('- Toptan müşterilerde özel fiyat varsa onu kullan, yoksa normal fiyatı kullan.');
+    lines.push('- Toptan fiyat (wholesale_price) SADECE miktar, ürünün "min toptan" değerine eşit veya büyükse uygulanır. Min değer girilmemişse büyük miktarlarda (ör. 10+ kg) uygula.');
+    lines.push('- Toptan siparişte müşteriye toptan birim fiyatı net söyle, onayını al, sonra siparişi oluştur (source="WHOLESALE").');
     lines.push('- Değişken ağırlıklı ürünlerde (sap gibi) müşteriye kesin fiyat yerine "tartımdan sonra netleşir" de.');
     lines.push('- Müşteri kg fiyatı sorarsa ürünün kg fiyatını söyle. Sap fiyatı sorarsa "ağırlık değiştiği için kg üzerinden hesaplanır" de.');
     lines.push('- Ürün bilgisi verirken SADECE ürün adı + fiyat olarak paylaş. Link, URL, web adresi, görsel, QR veya sayfa bağlantısı KESİNLİKLE paylaşMA.');
@@ -71,7 +74,7 @@ export class ProductCatalogComponent {
   async findProduct(tenantId: string, productName: string) {
     const { data } = await this.supabase.db
       .from('products')
-      .select('id, product_name, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price')
+      .select('id, product_name, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price, wholesale_min_qty')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       .ilike('product_name', `%${productName}%`)
@@ -82,7 +85,7 @@ export class ProductCatalogComponent {
   private async loadProducts(tenantId: string) {
     const { data } = await this.supabase.db
       .from('products')
-      .select('product_name, category, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price')
+      .select('product_name, category, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price, wholesale_min_qty')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       .order('product_name');

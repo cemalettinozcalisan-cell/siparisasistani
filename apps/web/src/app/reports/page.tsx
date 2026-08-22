@@ -18,7 +18,6 @@ const CHANNEL_CONFIG = [
   { key: 'instagram', label: 'Instagram', icon: Instagram, gradient: 'from-pink-500 via-purple-500 to-purple-600' },
   { key: 'sms', label: 'SMS', icon: MessageSquare, gradient: 'from-orange-400 to-orange-600' },
   { key: 'website', label: 'Web', icon: Globe, gradient: 'from-cyan-500 to-teal-500' },
-  { key: 'manual', label: 'Toptan', icon: PackageIcon, gradient: 'from-amber-400 to-orange-500' },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; gradient: string }> = {
@@ -89,15 +88,26 @@ export default function ReportsPage() {
       .catch(() => { setOrders([]); setLoading(false); });
   }, [tid, dateOption, customFrom, customTo]);
 
-  const { totalOrders, totalRevenue, channels, statusCounts, avgBasket, topProducts, deliveredCount } = useMemo(() => {
+  const { totalOrders, totalRevenue, channels, statusCounts, avgBasket, topProducts, deliveredCount, wholesaleOrders, wholesaleRevenue, wholesaleCount } = useMemo(() => {
     let rev = 0;
-    const ch: Record<string, number> = { phone: 0, whatsapp: 0, instagram: 0, sms: 0, website: 0, manual: 0 };
+    const ch: Record<string, number> = { phone: 0, whatsapp: 0, instagram: 0, sms: 0, website: 0 };
     const st: Record<string, number> = {};
     const productMap: Record<string, { name: string; qty: number; revenue: number }> = {};
     let delivered = 0;
+    let wholesaleOrders = 0;
+    let wholesaleRevenue = 0;
+    let wholesaleCount = 0;
     orders.forEach((o) => {
       rev += Number(o.total_price || 0);
+      const source = String(o.source || '').toUpperCase();
       const channel = String(o.channel || 'phone').toLowerCase();
+      const isWholesale = source === 'WHOLESALE';
+      if (isWholesale) {
+        wholesaleOrders++;
+        wholesaleRevenue += Number(o.total_price || 0);
+        const items = o.items as Record<string, unknown>[] | undefined;
+        if (items) wholesaleCount += items.reduce((s, it) => s + Number(it.quantity || 0), 0);
+      }
       ch[channel] = (ch[channel] || 0) + 1;
       const status = String(o.status || 'unknown').toUpperCase();
       st[status] = (st[status] || 0) + 1;
@@ -119,6 +129,7 @@ export default function ReportsPage() {
       avgBasket: orders.length > 0 ? Math.round(rev / orders.length) : 0,
       topProducts: Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 8),
       deliveredCount: delivered,
+      wholesaleOrders, wholesaleRevenue, wholesaleCount,
     };
   }, [orders]);
 
@@ -149,7 +160,7 @@ export default function ReportsPage() {
       let birthday = '';
       if (birthdayRaw) { const d = new Date(String(birthdayRaw)); birthday = !isNaN(d.getTime()) ? d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' }) : String(birthdayRaw); }
       const identity = String((o as any).customer_identity || '');
-      return `<tr><td>#${o.order_number || ''}</td><td>${o.customer_name || '-'}</td><td>${company || '-'}</td><td>${phone}</td><td>${city}</td><td>${address}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${stCfg?.label || status}</td><td>${cfg?.label || ch}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td><td>${birthday || '-'}</td><td>${identity || '-'}</td><td>${identity || '-'}</td></tr>`;
+      return `<tr><td>Sipariş No:#${o.order_number || ''}</td><td>${o.customer_name || '-'}</td><td>${company || '-'}</td><td>${phone}</td><td>${city}</td><td>${address}</td><td>${items || '-'}</td><td>${Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td><td>${stCfg?.label || status}</td><td>${cfg?.label || ch}</td><td>${new Date(String(o.created_at)).toLocaleDateString('tr-TR')}</td><td>${birthday || '-'}</td><td>${identity || '-'}</td><td>${identity || '-'}</td></tr>`;
     }).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sipariş Raporu</title><style>body{font-family:Arial,sans-serif;margin:20px;color:#333;font-size:12px}h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:6px;font-size:18px}.stats{display:flex;gap:12px;margin:16px 0}.stat{background:#f3f4f6;padding:10px 18px;border-radius:8px;flex:1}.stat .label{font-size:10px;color:#6b7280}.stat .value{font-size:20px;font-weight:bold;color:#111827}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:10px}th{background:#4f46e5;color:#fff;padding:5px 6px;text-align:left}td{padding:4px 6px;border-bottom:1px solid #e5e7eb}.footer{margin-top:20px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px}</style></head><body><h1>Sipariş Raporu</h1><p style="color:#6b7280;font-size:11px">${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p><div class="stats"><div class="stat"><div class="label">Toplam Sipariş</div><div class="value">${totalOrders}</div></div><div class="stat"><div class="label">Toplam Ciro</div><div class="value">${totalRevenue.toLocaleString('tr-TR')} TL</div></div></div><h2 style="margin-top:20px;color:#374151;font-size:14px">Siparişler</h2><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Şirket</th><th>Tel</th><th>Şehir</th><th>Adres</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>Kanal</th><th>Tarih</th><th>Doğum Tarihi</th><th>TC</th><th>Vergi No</th></tr></thead><tbody>${rows}</tbody></table><div class="footer">SiparişAsistanı — Otomatik oluşturulmuştur</div></body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -259,6 +270,36 @@ export default function ReportsPage() {
             <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 mt-0.5">{card.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Toptan Satış Özeti — ayrı kart (kanal dağılımına dahil değil) */}
+      <div className="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950/30 dark:to-orange-950/20 rounded-xl border border-amber-200/70 dark:border-amber-800/50 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+            <PackageIcon size={15} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-amber-900 dark:text-amber-300">Toptan Satış Hacmi</h3>
+            <p className="text-[10px] font-medium text-amber-600/80 dark:text-amber-400/60">Büyük miktarlı / özel fiyatlı siparişler</p>
+          </div>
+          <span className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-bold shadow-sm">
+            <PackageIcon size={12} /> {wholesaleOrders} sipariş
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <div className="text-2xl font-black text-amber-900 dark:text-amber-300">{wholesaleRevenue.toLocaleString('tr-TR')} TL</div>
+            <div className="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/60">Toptan Ciro</div>
+          </div>
+          <div>
+            <div className="text-2xl font-black text-amber-900 dark:text-amber-300">{wholesaleCount}</div>
+            <div className="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/60">Satılan Miktar (adet/kg)</div>
+          </div>
+          <div>
+            <div className="text-2xl font-black text-amber-900 dark:text-amber-300">%{totalOrders > 0 ? Math.round((wholesaleOrders / totalOrders) * 100) : 0}</div>
+            <div className="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/60">Toplam İçindeki Pay</div>
+          </div>
+        </div>
       </div>
 
       {/* Channel + Status Row */}
@@ -395,14 +436,15 @@ export default function ReportsPage() {
               {loading && <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">Yükleniyor...</td></tr>}
               {!loading && filteredOrders.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">Sipariş bulunamadı</td></tr>}
               {!loading && filteredOrders.slice(0, 30).map((o) => {
+                const isWholesale = String(o.source || '').toUpperCase() === 'WHOLESALE';
                 const channel = String(o.channel || 'phone').toLowerCase();
-                const chCfg = CHANNEL_CONFIG.find((c) => c.key === channel) || CHANNEL_CONFIG[0];
+                const chCfg = isWholesale ? { key: 'wholesale', label: 'Toptan', icon: PackageIcon, gradient: 'from-amber-400 to-orange-500' } : (CHANNEL_CONFIG.find((c) => c.key === channel) || CHANNEL_CONFIG[0]);
                 const ChIcon = chCfg.icon;
                 const status = String(o.status || '').toUpperCase();
                 const stCfg = STATUS_CONFIG[status] || { label: status, gradient: 'from-slate-400 to-slate-500' };
                 return (
                   <tr key={String(o.id)} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                    <td className="px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-white">#{String(o.order_number || '')}</td>
+                    <td className="px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-white">Sipariş No:#{String(o.order_number || '')}</td>
                     <td className="px-4 py-2.5 text-sm text-gray-700 dark:text-slate-300">{String(o.customer_name || '—')}</td>
                     <td className="px-4 py-2.5 text-sm text-right font-semibold text-gray-700 dark:text-slate-300">{Number(o.total_price || 0).toLocaleString('tr-TR')} TL</td>
                     <td className="px-4 py-2.5">

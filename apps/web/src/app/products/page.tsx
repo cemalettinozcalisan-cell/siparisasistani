@@ -11,7 +11,7 @@ interface Product {
   id: string; product_name: string; category: string; price: number; unit: string;
   active: boolean; sale_types: string[]; variable_weight: boolean;
   avg_weight_gr: number | null; min_weight_gr: number | null; max_weight_gr: number | null;
-  ai_rules: string | null; min_order_qty?: number; wholesale_price?: number;
+  ai_rules: string | null; min_order_qty?: number; wholesale_price?: number; wholesale_min_qty?: number;
   stock_qty?: number; min_stock_qty?: number; track_stock?: boolean;
 }
 
@@ -23,7 +23,7 @@ export default function ProductsPage() {
   const [form, setForm] = useState({
     product_name: '', category: '', price: '', unit: 'KG',
     sale_types: ['KG'], variable_weight: false, avg_weight_gr: '', min_weight_gr: '', max_weight_gr: '', ai_rules: '',
-    min_order_qty: '', wholesale_price: '',
+    min_order_qty: '', wholesale_price: '', wholesale_min_qty: '',
     track_stock: false, stock_qty: '', min_stock_qty: '5',
   });
 
@@ -48,6 +48,7 @@ export default function ProductsPage() {
       avg_weight_gr: p.avg_weight_gr ? String(p.avg_weight_gr) : '', min_weight_gr: p.min_weight_gr ? String(p.min_weight_gr) : '',
       max_weight_gr: p.max_weight_gr ? String(p.max_weight_gr) : '', ai_rules: p.ai_rules || '',
       min_order_qty: p.min_order_qty ? String(p.min_order_qty) : '', wholesale_price: p.wholesale_price ? String(p.wholesale_price) : '',
+      wholesale_min_qty: p.wholesale_min_qty ? String(p.wholesale_min_qty) : '',
       track_stock: p.track_stock || false, stock_qty: p.stock_qty ? String(p.stock_qty) : '', min_stock_qty: p.min_stock_qty ? String(p.min_stock_qty) : '5',
     });
     setSlideOpen(true);
@@ -95,6 +96,7 @@ export default function ProductsPage() {
     ai_rules: form.ai_rules || null,
     min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : 0,
     wholesale_price: form.wholesale_price ? Number(form.wholesale_price) : null,
+    wholesale_min_qty: form.wholesale_min_qty ? Number(form.wholesale_min_qty) : 0,
     track_stock: form.track_stock,
     stock_qty: form.track_stock && form.stock_qty ? Number(form.stock_qty) : 0,
     min_stock_qty: form.track_stock && form.min_stock_qty ? Number(form.min_stock_qty) : 5,
@@ -108,7 +110,7 @@ export default function ProductsPage() {
       await fetch(`/api/products/${tid}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }
     setSlideOpen(false);
-    setForm({ product_name: '', category: '', price: '', unit: 'KG', sale_types: ['KG'], variable_weight: false, avg_weight_gr: '', min_weight_gr: '', max_weight_gr: '', ai_rules: '', min_order_qty: '', wholesale_price: '', track_stock: false, stock_qty: '', min_stock_qty: '5' });
+    setForm({ product_name: '', category: '', price: '', unit: 'KG', sale_types: ['KG'], variable_weight: false, avg_weight_gr: '', min_weight_gr: '', max_weight_gr: '', ai_rules: '', min_order_qty: '', wholesale_price: '', wholesale_min_qty: '', track_stock: false, stock_qty: '', min_stock_qty: '5' });
     load();
   };
 
@@ -259,7 +261,7 @@ export default function ProductsPage() {
                     <td className="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">{p.category || '-'}</td>
                     <td className="px-4 py-2.5">
                       <span className="text-sm font-semibold text-slate-900 dark:text-white">{Number(p.price).toLocaleString('tr-TR')} TL</span>
-                      {(p as any).wholesale_price > 0 && <span className="block text-[10px] text-slate-400 mt-0.5">Toptan: {Number((p as any).wholesale_price).toLocaleString('tr-TR')} TL</span>}
+                      {(p as any).wholesale_price > 0 && <span className="block text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Toptan: {Number((p as any).wholesale_price).toLocaleString('tr-TR')} TL{(p as any).wholesale_min_qty > 0 ? ` (min ${(p as any).wholesale_min_qty})` : ''}</span>}
                     </td>
                     <td className="px-4 py-2.5">
                       <div className="flex gap-1 flex-wrap">
@@ -379,6 +381,12 @@ export default function ProductsPage() {
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Toptan Fiyat (TL)</label>
                   <input type="number" value={form.wholesale_price} onChange={e => setForm({ ...form, wholesale_price: e.target.value })} placeholder="Opsiyonel"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Toptan Min. Miktar</label>
+                  <input type="number" value={form.wholesale_min_qty} onChange={e => setForm({ ...form, wholesale_min_qty: e.target.value })} placeholder="Örn: 50"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Bu miktardan az satışta toptan fiyat uygulanmaz</p>
                 </div>
               </div>
 

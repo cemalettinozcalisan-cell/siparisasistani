@@ -254,6 +254,8 @@ export class AiBrainService {
     }
 
     // Step 11: Order Engine (only if validated + confirmed)
+    // TOPTAN: AI, ürünlerde tanımlı wholesale_price'ı kullanarak müşteri onayıyla
+    // normal sipariş gibi kurar (source=WHOLESALE). Esnafa ayrıca sormaz.
     if (validation.valid && parsed.confirmed) {
       try {
         const orderInput = this.parser.toOrderInput(parsed, input.channel);

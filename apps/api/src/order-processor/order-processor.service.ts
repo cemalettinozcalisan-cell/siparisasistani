@@ -80,7 +80,7 @@ export class OrderProcessorService {
         payment_method: this.mapPayment(input.payment),
         payment_status: this.mapPayment(input.payment) === 'iban' ? 'awaiting_dekont' : 'waiting',
         total_price: totalPrice,
-        notes: null,
+        notes: input.source === 'WHOLESALE' ? 'Toptan sipariş' : null,
         ai_confidence: input.orderConfidence || 0,
         ai_transcript: null,
       })
@@ -217,7 +217,7 @@ export class OrderProcessorService {
 
     const { data: allProducts } = await this.supabase.db
       .from('products')
-      .select('id, product_name, price, wholesale_price')
+      .select('id, product_name, price, wholesale_price, wholesale_min_qty')
       .eq('tenant_id', tenantId);
 
     if (!allProducts) return null;
