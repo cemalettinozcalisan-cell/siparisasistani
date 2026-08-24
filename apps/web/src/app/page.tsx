@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Instagram, Globe, Printer, TrendingUp, AlertCircle, Phone, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, LineChart, FileText, Megaphone, HandCoins, Instagram, Globe, Printer, TrendingUp, AlertCircle, Phone, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 
 const OMNICHANNEL_FLOW = [
@@ -33,9 +33,13 @@ const MOCK_HUB_RIGHT = [
 const MOCK_HUB_FEATURES = [
   { icon: ShoppingBag, text: 'Siparişleri alır', gradient: 'from-blue-500 to-cyan-600' },
   { icon: UserCheck, text: 'Müşterileri tanır', gradient: 'from-emerald-500 to-green-600' },
-  { icon: HelpCircle, text: 'Soruları yanıtlar', gradient: 'from-violet-500 to-purple-600' },
+  { icon: LineChart, text: 'Müşteri Analizi yapar', gradient: 'from-violet-500 to-purple-600' },
+  { icon: HelpCircle, text: 'Soruları yanıtlar', gradient: 'from-sky-500 to-blue-600' },
   { icon: CreditCard, text: 'Ödemeyi yönetir', gradient: 'from-amber-500 to-orange-600' },
   { icon: Truck, text: 'Kargoyu takip eder', gradient: 'from-cyan-500 to-teal-600' },
+  { icon: FileText, text: 'Raporlar', gradient: 'from-indigo-500 to-blue-600' },
+  { icon: Megaphone, text: 'Kampanyaları Yönetir', gradient: 'from-fuchsia-500 to-pink-600' },
+  { icon: HandCoins, text: 'Satış Yapar', gradient: 'from-emerald-500 to-green-600' },
   { icon: TrendingUp, text: 'İşletmenizi büyütür', gradient: 'from-pink-500 to-rose-600' },
 ];
 
@@ -265,7 +269,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section id="anasayfa" className="max-w-7xl mx-auto px-6 py-24 text-center">
+      <section id="anasayfa" className="max-w-[88rem] mx-auto px-6 py-24 text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 rounded-full text-xs font-medium text-violet-700 mb-6 animate-fade-in">
           <Sparkles className="w-3.5 h-3.5" /> AI Destekli Sipariş Sistemi
         </div>
@@ -287,7 +291,7 @@ export default function LandingPage() {
         </div>
 
         {/* Browser Mockup — dark dashboard (AI çipi + kanallar + özellikler + KPI) */}
-        <div className="mt-20 relative max-w-7xl mx-auto">
+        <div className="mt-20 relative max-w-[80rem] mx-auto">
           {/* Dış parıltı */}
           <div className="absolute -inset-6 bg-gradient-to-r from-indigo-600/25 via-purple-600/25 to-blue-600/25 rounded-3xl blur-2xl -z-10" />
 
@@ -321,7 +325,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Orkestrasyon — AI çipi + kanallar + özellik paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
-                <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative">
+                <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-center relative">
                   {/* Neon SVG bağlantı hatları */}
                   <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
                     {hubLines.map((l, i) => (
@@ -387,7 +391,7 @@ export default function LandingPage() {
 
                   {/* Özellik Paneli */}
                   <div className="lg:col-span-4 flex justify-center lg:justify-end items-stretch z-10">
-                    <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-5 flex flex-col justify-center gap-3 w-full max-w-[17rem] h-full lg:min-h-[19rem]">
+                    <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-5 flex flex-col justify-center gap-2.5 w-full max-w-[19rem] h-full lg:min-h-[24rem]">
                       {MOCK_HUB_FEATURES.map((f, i) => {
                         const FIcon = f.icon;
                         return (
