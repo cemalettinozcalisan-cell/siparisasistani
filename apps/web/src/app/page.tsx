@@ -290,96 +290,111 @@ export default function LandingPage() {
           <a href="#demo" className="btn-secondary">Hemen Bilgi Al</a>
         </div>
 
-        {/* AI Scheme + KPI — çerçevesiz sade kart */}
-        <div className="mt-16 relative max-w-3xl mx-auto">
-          <div className="bg-slate-950/80 backdrop-blur-xl border border-indigo-500/20 rounded-2xl p-5 shadow-[0_0_40px_rgba(99,102,241,0.15)]">
-            <div className="relative space-y-5">
-              {/* Orkestrasyon — AI çipi + kanallar (ölçüme dayalı neon bağlantı hatlarıyla) */}
-              <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center relative">
-                {/* Neon SVG bağlantı hatları */}
-                <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
-                  {hubLines.map((l, i) => (
-                    <g key={i}>
-                      <path d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`} stroke={l.color} strokeWidth="2" className="opacity-60" style={{ filter: `drop-shadow(0 0 5px ${l.color})` }} />
-                      <circle cx={l.x0} cy={l.y0} r="4" fill={l.color} stroke="#0f172a" strokeWidth="1.5" />
-                      <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} className="animate-pulse" />
-                    </g>
-                  ))}
-                </svg>
+        {/* AI Scheme + Yetenek Paneli + KPI — ferah, şeffaf yapı */}
+        <div className="mt-20 relative max-w-5xl mx-auto drop-shadow-[0_10px_35px_rgba(99,102,241,0.15)]">
+          <div className="relative">
+            {/* Orkestrasyon — AI çipi + kanallar + yetenek paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
+            <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative">
+              {/* Neon SVG bağlantı hatları */}
+              <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
+                {hubLines.map((l, i) => (
+                  <g key={i}>
+                    <path d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`} stroke={l.color} strokeWidth="2" className="opacity-60" style={{ filter: `drop-shadow(0 0 5px ${l.color})` }} />
+                    <circle cx={l.x0} cy={l.y0} r="4" fill={l.color} stroke="#0f172a" strokeWidth="1.5" />
+                    <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} className="animate-pulse" />
+                  </g>
+                ))}
+              </svg>
 
-                {/* Sol kanallar */}
-                <div className="lg:col-span-4 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
-                  {MOCK_HUB_LEFT.map((ch, i) => {
-                    const ChIcon = ch.icon;
-                    return (
-                      <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 max-w-[13rem]`}>
-                        <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                          <ChIcon size={20} className="text-white" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{ch.name}</p>
-                          <p className="text-[10px] text-slate-400">{ch.sub}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Merkez AI Çekirdek */}
-                <div className="lg:col-span-4 flex flex-col items-center justify-center gap-3 z-10 py-4">
-                  <div className="relative">
-                    <div className="absolute inset-[-24px] rounded-full border border-fuchsia-400/10" />
-                    <div className="absolute inset-[-12px] rounded-full border border-fuchsia-400/20" />
-                    <div ref={coreRef} className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
-                      <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
-                      <img src="/logo2.png" alt="AI Çekirdek" className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
-                    </div>
-                  </div>
-                  <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-5 py-1.5 flex items-baseline gap-2">
-                    <span className="text-xs font-bold text-cyan-400 tracking-wide">AI Aktif</span>
-                    <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%97</span>
-                  </div>
-                </div>
-
-                {/* Sağ kanallar */}
-                <div className="lg:col-span-4 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
-                  {MOCK_HUB_RIGHT.map((ch, i) => {
-                    const ChIcon = ch.icon;
-                    return (
-                      <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 sm:w-full max-w-[13rem]`}>
-                        <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                          <ChIcon size={20} className="text-white" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{ch.name}</p>
-                          <p className="text-[10px] text-slate-400">{ch.sub}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 7 KPI — tek sıra */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                {MOCK_KPIS.map((k, i) => {
-                  const KIcon = k.icon;
+              {/* Sol kanallar */}
+              <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3.5 flex-wrap justify-center lg:justify-start lg:items-end z-10">
+                {MOCK_HUB_LEFT.map((ch, i) => {
+                  const ChIcon = ch.icon;
                   return (
-                    <div key={i} className={`group bg-[#0C1027]/40 border ${k.border} rounded-2xl p-3 shadow-2xl`}>
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                          <KIcon size={18} className="text-white" />
-                        </span>
-                        <span className="text-[11px] font-bold text-slate-200 truncate">{k.label}</span>
+                    <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[14rem]`}>
+                      <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <ChIcon size={20} className="text-white" />
                       </div>
-                      <div className="text-lg font-extrabold text-white text-center mb-2 tabular-nums">{k.value}</div>
-                      <div className="flex items-center justify-center">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{ch.name}</p>
+                        <p className="text-[10px] text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Merkez AI Çekirdek */}
+              <div className="lg:col-span-4 flex flex-col items-center justify-center gap-4 z-10 py-4">
+                <div className="relative">
+                  <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
+                  <div className="absolute inset-[-14px] rounded-full border border-fuchsia-400/20" />
+                  <div ref={coreRef} className="relative w-36 h-36 md:w-44 md:h-44 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                    <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
+                    <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+                  </div>
+                </div>
+                <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+                  <span className="text-sm font-bold text-cyan-400 tracking-wide">AI Aktif</span>
+                  <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%97</span>
+                </div>
+              </div>
+
+              {/* Sağ kanallar */}
+              <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
+                {MOCK_HUB_RIGHT.map((ch, i) => {
+                  const ChIcon = ch.icon;
+                  return (
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 sm:w-full max-w-[14rem]`}>
+                      <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <ChIcon size={20} className="text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{ch.name}</p>
+                        <p className="text-[10px] text-slate-400">{ch.sub}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt */}
+              <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
+                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[16rem] h-full flex flex-col justify-center gap-2 border border-white/5">
+                  {MOCK_HUB_FEATURES.map((f, i) => {
+                    const FIcon = f.icon;
+                    return (
+                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-300">
+                        <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                          <FIcon size={14} className="text-white" />
+                        </span>
+                        {f.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 7 KPI — tek sıra (dikey nefes payı ile) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mt-10">
+              {MOCK_KPIS.map((k, i) => {
+                const KIcon = k.icon;
+                return (
+                  <div key={i} className={`group bg-slate-900/60 backdrop-blur-sm border ${k.border} rounded-2xl p-3.5 shadow-2xl`}>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <KIcon size={18} className="text-white" />
+                      </span>
+                      <span className="text-xs font-bold text-slate-200 leading-tight">{k.label}</span>
+                    </div>
+                    <div className="text-lg font-extrabold text-white text-center mb-2 tabular-nums">{k.value}</div>
+                    <div className="flex items-center justify-center">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
