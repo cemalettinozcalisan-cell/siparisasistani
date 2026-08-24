@@ -285,8 +285,11 @@ function CallsContent() {
   useEffect(() => { load(); }, [load]);
 
   // ?session=X parametresiyle gelindiğinde ilgili görüşmeyi otomatik aç
+  // Filtreyi 'all' yap — görüşme kanal filtresiyle elenmesin
   useEffect(() => {
-    if (!sessionParam || !conversations.length || expandedId) return;
+    if (!sessionParam) return;
+    setFilter('all');
+    if (!conversations.length || expandedId) return;
     const target = conversations.find(c => c.id === sessionParam);
     if (target) {
       setExpandedId(target.id);

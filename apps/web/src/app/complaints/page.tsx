@@ -30,6 +30,13 @@ const CHANNEL_GRADIENT: Record<string, string> = {
   phone: 'from-blue-500 to-blue-600', instagram: 'from-pink-500 via-purple-500 to-purple-600', sms: 'from-orange-400 to-orange-600', web: 'from-cyan-500 to-teal-500',
 };
 
+// Hızlı yanıt şablonları — esnaf tek tıkla doldurabilir
+const QUICK_TEMPLATES = [
+  { label: '📦 Kargoya Verildi', text: 'Talebiniz işleme alındı, eksik/yeni ürününüz kargoya verilmiştir.' },
+  { label: '💰 İade/Ödeme Yapıldı', text: 'Ödemeniz/iadeniz kontrol edilip hesabınıza tanımlanmıştır.' },
+  { label: '📞 Müşteri Arandı', text: 'Müşterimizle telefon görüşmesi yapılarak detaylar iletilmiştir.' },
+];
+
 type FilterTab = 'all' | 'open' | 'high' | 'resolved';
 
 const FILTER_TABS: { key: FilterTab; label: string; icon: typeof AlertTriangle; gradient: string }[] = [
@@ -195,28 +202,26 @@ function ComplaintsContent() {
         ))}
       </div>
 
-      {/* Filter Tabs + Search */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Müşteri veya talep no ara..."
-              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900" />
-          </div>
+      {/* Filter Tabs + Search — segmented pill stili */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Müşteri veya talep no ara..."
+            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900" />
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl ml-auto">
           {FILTER_TABS.map((tab) => {
             const active = filterTab === tab.key;
             const count = getCount(tab.key);
             const TabIcon = tab.icon;
             return (
               <button key={tab.key} onClick={() => setFilterTab(tab.key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
-                  active ? 'text-white shadow-sm bg-gradient-to-r ' + tab.gradient : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  active ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}>
                 <TabIcon size={12} /> {tab.label}
-                <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${active ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{count}</span>
+                {count > 0 && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{count}</span>}
               </button>
             );
           })}
@@ -250,9 +255,9 @@ function ComplaintsContent() {
               }`}>
                 <div className="flex items-start gap-4">
                   {/* Left: Customer + Ticket */}
-                  <div className="flex-shrink-0" style={{ minWidth: '140px' }}>
+                  <div className="flex-shrink-0 space-y-1" style={{ minWidth: '140px' }}>
                     {customerName && (
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <div className="flex items-center gap-1.5">
                         <User size={12} className="text-slate-400" />
                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{customerName}</span>
                       </div>
@@ -263,7 +268,7 @@ function ComplaintsContent() {
                         <span className="text-[10px] font-mono text-slate-500">{c.ticket_number}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex items-center gap-1.5">
                       <Clock size={11} className="text-slate-400" />
                       <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
@@ -277,11 +282,11 @@ function ComplaintsContent() {
                       </span>
                       <span className="text-[10px] text-slate-400">{isResolved ? 'Çözüldü' : 'Açık'}</span>
                     </div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{c.description}</h3>
+                    <h3 className="text-sm font-medium text-slate-600 dark:text-slate-300 line-clamp-2">{c.description}</h3>
                   </div>
 
                   {/* Right: Severity + Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 flex-shrink-0">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${sevCfg.gradient} shadow-sm`}>{sevCfg.label}</span>
                     {isResolved ? (
                       <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm"><CheckCircle2 size={12} /> Çözüldü</span>
@@ -324,11 +329,21 @@ function ComplaintsContent() {
                     </div>
                   </div>
 
+                  {/* Müşteri kartı (kompakt) */}
+                  <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">{(customerName || '?')[0].toUpperCase()}</div>
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{customerName || 'Bilinmeyen'}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{customerPhone || '—'}</p>
+                        {(customerAddress || c.customer_city) && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><MapPin size={11} /> {[customerAddress, c.customer_city].filter(Boolean).join(', ')}</p>}
+                      </div>
+                    </div>
+                    <a href={`/customers`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline shrink-0"><User size={12} /> Detay</a>
+                  </div>
+
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    {customerPhone && (
-                      <a href={`/customers`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-violet-600 hover:to-purple-700 transition-all"><User size={12} /> Müşteri Detayı</a>
-                    )}
                     {c.session_id && (
                       <a href={`/calls?session=${c.session_id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-sky-600 hover:to-blue-700 transition-all"><MessageSquare size={12} /> Görüşme Detayı</a>
                     )}
@@ -344,34 +359,62 @@ function ComplaintsContent() {
       </div>
 
       {/* Resolve Modal */}
-      {resolveTarget && (
+      {resolveTarget && (() => {
+        const rch = resolveTarget.channel || 'phone';
+        const RIcon = CHANNEL_ICONS[rch] || Settings;
+        const isWA = rch === 'whatsapp';
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setResolveTarget(null)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            {/* Başlık — müşteri + talep no + kanal badge */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-sm"><CheckCircle2 size={16} /></div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Talebi Çözümlendi Olarak İşaretle</h3>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{resolveTarget.customer_name} · {resolveTarget.ticket_number}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0"><CheckCircle2 size={17} /></div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Talebi Çözümlendi İşaretle</h3>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-200"><User size={10} /> {resolveTarget.customer_name || 'Bilinmiyor'}</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-300">#{resolveTarget.ticket_number || '—'}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[rch] || 'from-slate-500 to-slate-600'}`}><RIcon size={10} /> {CHANNEL_LABELS[rch] || rch}</span>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setResolveTarget(null)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">✕</button>
+              <button onClick={() => setResolveTarget(null)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">✕</button>
             </div>
+
+            {/* Hızlı yanıt pill'leri */}
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_TEMPLATES.map((t) => (
+                <button key={t.label} onClick={() => setResolveNote(t.text)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:ring-1 hover:ring-emerald-300/50 transition-all">
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Müşteriye Gönderilecek Not</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Müşteriye Gönderilecek Not</label>
               <textarea value={resolveNote} onChange={(e) => setResolveNote(e.target.value)} rows={3} placeholder="Örn: Talebinizle ilgilenildi, eksik ürününüz yarın kargoya verilecektir."
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
-              <p className="text-[10px] text-slate-400 mt-1">Not, müşteriye otomatik gönderilir (WhatsApp'tan geldiyse WhatsApp'a, değilse SMS'e).</p>
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400/40 transition-all resize-none" />
+              <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1.5">
+                <MessageSquare size={11} className={`${isWA ? 'text-emerald-500' : 'text-orange-500'}`} />
+                {isWA ? 'WhatsApp kanalından geldi — not WhatsApp üzerinden gönderilecek.' : 'SMS kanalından geldi — not SMS üzerinden gönderilecek.'}
+              </p>
             </div>
+
             {resolveMsg && <p className={`text-xs font-medium ${resolveMsg.startsWith('Talep çözüldü') ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{resolveMsg}</p>}
-            <div className="flex gap-2">
-              <button onClick={doResolve} disabled={resolveSaving} className="flex-1 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold shadow-sm hover:from-emerald-600 hover:to-green-600 transition-all disabled:opacity-50">{resolveSaving ? 'İşleniyor...' : 'Onayla & Müşteriye Bildir'}</button>
-              <button onClick={() => setResolveTarget(null)} className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">İptal</button>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={doResolve} disabled={resolveSaving} className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-md shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                {resolveSaving ? <><span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> İşleniyor...</> : <><CheckCircle2 size={15} /> Onayla & Müşteriye Bildir</>}
+              </button>
+              <button onClick={() => setResolveTarget(null)} className="px-4 py-2.5 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">İptal</button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
