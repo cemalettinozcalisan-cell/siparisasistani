@@ -324,21 +324,19 @@ export default function LandingPage() {
                 })}
               </div>
 
-              {/* Merkez AI Çekirdek — gradient çerçeveli */}
-              <div className="lg:col-span-4 flex flex-col items-center justify-center z-10 py-4">
-                <div className="rounded-xl bg-slate-900/60 backdrop-blur-md border border-indigo-400/40 w-full max-w-[17rem] px-5 py-6 flex flex-col items-center gap-4 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
-                  <div className="relative">
-                    <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
-                    <div className="absolute inset-[-14px] rounded-full border border-fuchsia-400/20" />
-                    <div ref={coreRef} className="relative w-36 h-36 md:w-40 md:h-40 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
-                      <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
-                      <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
-                    </div>
+              {/* Merkez AI Çekirdek */}
+              <div className="lg:col-span-4 flex flex-col items-center justify-center gap-4 z-10 py-4">
+                <div className="relative">
+                  <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
+                  <div className="absolute inset-[-14px] rounded-full border border-fuchsia-400/20" />
+                  <div ref={coreRef} className="relative w-36 h-36 md:w-44 md:h-44 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                    <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
+                    <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
                   </div>
-                  <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
-                    <span className="text-sm font-bold text-cyan-400 tracking-wide">AI Aktif</span>
-                    <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%98</span>
-                  </div>
+                </div>
+                <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+                  <span className="text-sm font-bold text-cyan-400 tracking-wide">AI Aktif</span>
+                  <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%98</span>
                 </div>
               </div>
 
@@ -360,13 +358,13 @@ export default function LandingPage() {
                 })}
               </div>
 
-              {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt, gradient çerçeveli */}
+              {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt */}
               <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
-                <div className="rounded-xl bg-slate-900/60 backdrop-blur-md p-3 w-full max-w-[16rem] h-full flex flex-col justify-center gap-2 border border-indigo-400/40">
+                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[16rem] h-full flex flex-col justify-center gap-2 border border-white/5">
                   {MOCK_HUB_FEATURES.map((f, i) => {
                     const FIcon = f.icon;
                     return (
-                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-200 rounded-lg bg-slate-800/40 border border-indigo-400/30 px-2.5 py-1.5">
+                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-300">
                         <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
                           <FIcon size={14} className="text-white" />
                         </span>
