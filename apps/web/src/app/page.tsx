@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, PhoneCall, ShoppingBag, Users, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Instagram, Globe, Printer, TrendingUp, AlertCircle, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Instagram, Globe, Printer, TrendingUp, AlertCircle, AlertTriangle, Phone, Package, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 
 const OMNICHANNEL_FLOW = [
@@ -206,43 +206,186 @@ export default function LandingPage() {
           <a href="#demo" className="btn-secondary">Hemen Bilgi Al</a>
         </div>
 
-        {/* Mockup */}
-        <div className="mt-16 relative max-w-4xl mx-auto">
-          <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 bg-slate-800">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">SiparişAsistanı - Kontrol Paneli</span>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[
-                  { val: '12', label: 'Bugün Sipariş', icon: ShoppingBag },
-                  { val: '8.450 TL', label: 'Bugün Ciro', icon: TrendingUp },
-                  { val: '%98', label: 'AI Başarı', icon: Bot },
-                  { val: '3', label: 'Bekleyen', icon: AlertCircle },
-                ].map((item, i) => {
-                  const MIcon = item.icon;
-                  return (
-                  <div key={i} className="bg-slate-800/50 rounded-lg p-3 text-left border border-slate-700/50">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-1"><MIcon size={13} className="text-slate-400 dark:text-slate-500" /> {item.label}</div>
-                    <div className="text-xl font-bold text-white mt-0.5">{item.val}</div>
-                  </div>
-                )})}
+        {/* Browser Mockup — dark dashboard kopyası (marka bloğundan Hızlı İşlemler'e) */}
+        <div className="mt-16 relative max-w-5xl mx-auto">
+          {/* Dış parıltı */}
+          <div className="absolute -inset-4 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-blue-600/20 rounded-3xl blur-2xl -z-10" />
+
+          <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.35)] border border-slate-800">
+            {/* Pencere çubuğu */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 border-b border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
               </div>
-              <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-2">
-                  <span className="text-emerald-400 font-medium">🟢 AI Çalışıyor</span>
-                  <span>•</span>
-                  <span>Son Sipariş: 2 dk önce</span>
-                  <span>•</span>
-                  <span>Müşteri: Ahmet Y.</span>
+              <div className="flex-1 flex justify-center">
+                <span className="text-[11px] text-slate-500 bg-slate-800/70 rounded-md px-3 py-1 font-mono">app.siparisasistani.com/dashboard</span>
+              </div>
+              <div className="w-10" />
+            </div>
+
+            {/* Dashboard dark-mode görünümü */}
+            <div className="relative overflow-hidden bg-gradient-to-tr from-[#020410] via-[#05081C] to-[#0A0E2E] text-white px-4 md:px-6 pt-4 md:pt-5 pb-5 space-y-6">
+              <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-indigo-600/10 blur-3xl" />
+              <div className="pointer-events-none absolute top-1/3 -right-24 w-72 h-72 rounded-full bg-purple-600/10 blur-3xl" />
+
+              <div className="relative z-10 space-y-6">
+                {/* Marka bloğu */}
+                <div className="flex items-center gap-3">
+                  <img src="/logo2.png" alt="SiparişAsistanı" className="w-10 h-10 object-contain" />
+                  <div>
+                    <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text text-transparent">SiparişAsistanı</h1>
+                    <p className="text-xs font-semibold text-slate-400">Akıllı Sipariş, Güçlü İşletme.</p>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">✅ Onaylandı</span>
-                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px] font-medium">📞 Telefon</span>
-                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-medium">💰 600 TL</span>
+
+                {/* AI Hub başlığı */}
+                <div className="text-left">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2">Müşterileriniz Nerede Olursa Olsun</h2>
+                  <p className="text-slate-400 text-sm md:text-base">Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.</p>
+                </div>
+
+                {/* Orkestrasyon alanı */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center relative">
+                  {/* Sol kanallar */}
+                  <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
+                    {[
+                      { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-500/40' },
+                      { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-500/40' },
+                      { name: 'Instagram DM', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-500/40' },
+                    ].map((ch, i) => {
+                      const ChIcon = ch.icon;
+                      return (
+                        <div key={i} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[15rem]`}>
+                          <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <ChIcon size={22} className="text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{ch.name}</p>
+                            <p className="text-[11px] text-slate-400">{ch.sub}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Merkez AI Çekirdek */}
+                  <div className="lg:col-span-4 flex flex-col items-center justify-center gap-6 z-10 py-6">
+                    <div className="relative">
+                      <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
+                      <div className="absolute inset-[-15px] rounded-full border border-fuchsia-400/20" />
+                      <div className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                        <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
+                        <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+                      </div>
+                    </div>
+                    <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+                      <span className="text-xs font-bold text-cyan-400 tracking-wide">AI Aktif</span>
+                      <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%97</span>
+                    </div>
+                  </div>
+
+                  {/* Sağ kanallar */}
+                  <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
+                    {[
+                      { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-500/40' },
+                      { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-cyan-500', cardBorder: 'border-cyan-500/40' },
+                    ].map((ch, i) => {
+                      const ChIcon = ch.icon;
+                      return (
+                        <div key={i} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 sm:w-full max-w-[15rem]`}>
+                          <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <ChIcon size={22} className="text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{ch.name}</p>
+                            <p className="text-[11px] text-slate-400">{ch.sub}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Özellik Paneli */}
+                  <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
+                    <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full lg:min-h-[24rem]">
+                      {[
+                        { icon: ShoppingBag, text: 'Siparişleri alır', gradient: 'from-blue-500 to-cyan-600' },
+                        { icon: UserCheck, text: 'Müşterileri tanır', gradient: 'from-emerald-500 to-green-600' },
+                        { icon: HelpCircle, text: 'Soruları yanıtlar', gradient: 'from-violet-500 to-purple-600' },
+                        { icon: CreditCard, text: 'Ödemeyi yönetir', gradient: 'from-amber-500 to-orange-600' },
+                        { icon: Truck, text: 'Kargoyu takip eder', gradient: 'from-cyan-500 to-teal-600' },
+                        { icon: TrendingUp, text: 'İşletmenizi büyütür', gradient: 'from-pink-500 to-rose-600' },
+                      ].map((f, i) => {
+                        const FIcon = f.icon;
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-sm font-semibold text-slate-300">
+                            <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                              <FIcon size={15} className="text-white" />
+                            </span>
+                            {f.text}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 7 KPI — tek sıra */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                  {[
+                    { label: 'Bugünkü Sipariş', value: '42', icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', border: 'border-blue-500/40', trend: '↑ %19' },
+                    { label: 'Kargo Takibi', value: '14', icon: Truck, gradient: 'from-amber-500 to-orange-600', border: 'border-amber-500/40', trend: '↑ %12' },
+                    { label: 'Talep & İstek', value: '6', icon: AlertCircle, gradient: 'from-pink-500 to-rose-600', border: 'border-pink-500/40', trend: '↑ %14' },
+                    { label: 'Bugünkü Ciro', value: '28.450 TL', icon: Wallet, gradient: 'from-emerald-500 to-green-600', border: 'border-emerald-500/40', trend: '↑ %22' },
+                    { label: 'AI Müşteri', value: '118', icon: User, gradient: 'from-purple-500 to-violet-600', border: 'border-purple-500/40', trend: '↑ %33' },
+                    { label: 'AI Satış', value: '8.450 TL', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600', border: 'border-blue-500/40', trend: '↑ %28' },
+                    { label: 'AI Başarı', value: '%97', icon: Target, gradient: 'from-teal-500 to-emerald-600', border: 'border-emerald-500/40', trend: '↑ %4' },
+                  ].map((k, i) => {
+                    const KIcon = k.icon;
+                    return (
+                      <div key={i} className={`group bg-[#0C1027]/40 border ${k.border} rounded-2xl p-4 shadow-2xl`}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <KIcon size={17} className="text-white" />
+                          </span>
+                          <span className="text-xs font-bold text-slate-200 truncate">{k.label}</span>
+                        </div>
+                        <div className="text-xl font-extrabold text-white text-center mb-2 tabular-nums">{k.value}</div>
+                        <div className="flex items-center justify-center">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Hızlı İşlemler */}
+                <div className="rounded-2xl bg-[#0C1027] border border-violet-500/40 shadow-xl p-5 space-y-3">
+                  <h2 className="font-bold text-white text-sm flex items-center gap-2">
+                    <Zap size={14} className="text-amber-500" /> Hızlı İşlemler
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: 'Siparişler', icon: ShoppingBag, gradient: 'from-blue-500 to-cyan-600', border: 'border-blue-500/40' },
+                      { label: 'Müşteriler', icon: Users, gradient: 'from-emerald-500 to-green-600', border: 'border-emerald-500/40' },
+                      { label: 'Ürünler', icon: Package, gradient: 'from-amber-500 to-orange-600', border: 'border-amber-500/40' },
+                      { label: 'Görüşmeler', icon: PhoneCall, gradient: 'from-cyan-500 to-teal-600', border: 'border-cyan-500/40' },
+                      { label: 'Talepler', icon: AlertTriangle, gradient: 'from-rose-500 to-pink-600', border: 'border-rose-500/40' },
+                      { label: 'Raporlar', icon: TrendingUp, gradient: 'from-violet-500 to-purple-600', border: 'border-violet-500/40' },
+                    ].map((item, i) => {
+                      const QaIcon = item.icon;
+                      return (
+                        <div key={i} className={`flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 border ${item.border}`}>
+                          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <QaIcon size={16} className="text-white" />
+                          </div>
+                          <span className="text-xs font-bold text-white">{item.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
