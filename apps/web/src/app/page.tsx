@@ -265,7 +265,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section id="anasayfa" className="max-w-6xl mx-auto px-6 py-20 text-center">
+      <section id="anasayfa" className="max-w-7xl mx-auto px-6 py-24 text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 rounded-full text-xs font-medium text-violet-700 mb-6 animate-fade-in">
           <Sparkles className="w-3.5 h-3.5" /> AI Destekli Sipariş Sistemi
         </div>
@@ -287,11 +287,11 @@ export default function LandingPage() {
         </div>
 
         {/* Browser Mockup — dark dashboard (AI çipi + kanallar + özellikler + KPI) */}
-        <div className="mt-16 relative max-w-6xl mx-auto">
+        <div className="mt-20 relative max-w-7xl mx-auto">
           {/* Dış parıltı */}
-          <div className="absolute -inset-4 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-blue-600/20 rounded-3xl blur-2xl -z-10" />
+          <div className="absolute -inset-6 bg-gradient-to-r from-indigo-600/25 via-purple-600/25 to-blue-600/25 rounded-3xl blur-2xl -z-10" />
 
-          <div className="bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+          <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
             {/* Pencere çubuğu */}
             <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800">
               <div className="flex items-center gap-1.5">
@@ -306,22 +306,22 @@ export default function LandingPage() {
             </div>
 
             {/* Dashboard dark-mode görünümü */}
-            <div className="relative overflow-hidden bg-gradient-to-tr from-[#020410] via-[#05081C] to-[#0A0E2E] text-white p-6">
+            <div className="relative overflow-hidden bg-gradient-to-tr from-[#020410] via-[#05081C] to-[#0A0E2E] text-white p-6 md:p-10">
               <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-indigo-600/10 blur-3xl" />
               <div className="pointer-events-none absolute top-1/3 -right-24 w-72 h-72 rounded-full bg-purple-600/10 blur-3xl" />
 
-              <div className="relative z-10 space-y-4">
+              <div className="relative z-10 space-y-6">
                 {/* Marka + AI Hub başlığı */}
-                <div className="flex items-center gap-3">
-                  <img src="/logo2.png" alt="SiparişAsistanı" className="w-9 h-9 object-contain" />
+                <div className="flex items-center gap-3.5">
+                  <img src="/logo2.png" alt="SiparişAsistanı" className="w-11 h-11 object-contain" />
                   <div>
-                    <h2 className="text-lg md:text-xl font-extrabold text-white tracking-tight leading-tight">Müşterileriniz Nerede Olursa Olsun</h2>
-                    <p className="text-[11px] text-slate-400">Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.</p>
+                    <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight leading-tight">Müşterileriniz Nerede Olursa Olsun</h2>
+                    <p className="text-xs md:text-sm text-slate-400">Yapay zeka, tüm kanallardan gelen siparişleri sizin için yönetir.</p>
                   </div>
                 </div>
 
                 {/* Orkestrasyon — AI çipi + kanallar + özellik paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
-                <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center relative">
+                <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative">
                   {/* Neon SVG bağlantı hatları */}
                   <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
                     {hubLines.map((l, i) => (
@@ -334,17 +334,17 @@ export default function LandingPage() {
                   </svg>
 
                   {/* Sol kanallar */}
-                  <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
+                  <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3.5 flex-wrap justify-center lg:justify-start lg:items-end z-10">
                     {MOCK_HUB_LEFT.map((ch, i) => {
                       const ChIcon = ch.icon;
                       return (
-                        <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 max-w-[13rem]`}>
-                          <div className={`w-9 h-9 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                            <ChIcon size={18} className="text-white" />
+                        <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-60 max-w-[15rem]`}>
+                          <div className={`w-11 h-11 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <ChIcon size={22} className="text-white" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-white truncate">{ch.name}</p>
-                            <p className="text-[10px] text-slate-400">{ch.sub}</p>
+                            <p className="text-sm font-bold text-white truncate">{ch.name}</p>
+                            <p className="text-[11px] text-slate-400">{ch.sub}</p>
                           </div>
                         </div>
                       );
@@ -352,33 +352,33 @@ export default function LandingPage() {
                   </div>
 
                   {/* Merkez AI Çekirdek */}
-                  <div className="lg:col-span-3 flex flex-col items-center justify-center gap-3 z-10 py-4">
+                  <div className="lg:col-span-3 flex flex-col items-center justify-center gap-4 z-10 py-5">
                     <div className="relative">
-                      <div className="absolute inset-[-24px] rounded-full border border-fuchsia-400/10" />
-                      <div className="absolute inset-[-12px] rounded-full border border-fuchsia-400/20" />
-                      <div ref={coreRef} className="relative w-32 h-32 md:w-36 md:h-36 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                      <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
+                      <div className="absolute inset-[-14px] rounded-full border border-fuchsia-400/20" />
+                      <div ref={coreRef} className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
                         <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
-                        <img src="/logo2.png" alt="AI Çekirdek" className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+                        <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
                       </div>
                     </div>
-                    <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-4 py-1.5 flex items-baseline gap-2">
-                      <span className="text-xs font-bold text-cyan-400 tracking-wide">AI Aktif</span>
-                      <span className="text-base font-extrabold text-indigo-400 tabular-nums">%97</span>
+                    <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+                      <span className="text-sm font-bold text-cyan-400 tracking-wide">AI Aktif</span>
+                      <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%97</span>
                     </div>
                   </div>
 
                   {/* Sağ kanallar */}
-                  <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
+                  <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
                     {MOCK_HUB_RIGHT.map((ch, i) => {
                       const ChIcon = ch.icon;
                       return (
-                        <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 sm:w-full max-w-[13rem]`}>
-                          <div className={`w-9 h-9 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                            <ChIcon size={18} className="text-white" />
+                        <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-60 sm:w-full max-w-[15rem]`}>
+                          <div className={`w-11 h-11 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <ChIcon size={22} className="text-white" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-white truncate">{ch.name}</p>
-                            <p className="text-[10px] text-slate-400">{ch.sub}</p>
+                            <p className="text-sm font-bold text-white truncate">{ch.name}</p>
+                            <p className="text-[11px] text-slate-400">{ch.sub}</p>
                           </div>
                         </div>
                       );
@@ -387,13 +387,13 @@ export default function LandingPage() {
 
                   {/* Özellik Paneli */}
                   <div className="lg:col-span-4 flex justify-center lg:justify-end items-stretch z-10">
-                    <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-3.5 flex flex-col justify-center gap-2 w-full max-w-[15rem] h-full lg:min-h-[15rem]">
+                    <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-5 flex flex-col justify-center gap-3 w-full max-w-[17rem] h-full lg:min-h-[19rem]">
                       {MOCK_HUB_FEATURES.map((f, i) => {
                         const FIcon = f.icon;
                         return (
-                          <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-                            <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                              <FIcon size={14} className="text-white" />
+                          <div key={i} className="flex items-center gap-2.5 text-sm font-semibold text-slate-300">
+                            <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                              <FIcon size={16} className="text-white" />
                             </span>
                             {f.text}
                           </div>
@@ -404,20 +404,20 @@ export default function LandingPage() {
                 </div>
 
                 {/* 7 KPI — tek sıra */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3.5">
                   {MOCK_KPIS.map((k, i) => {
                     const KIcon = k.icon;
                     return (
-                      <div key={i} className={`group bg-[#0C1027]/40 border ${k.border} rounded-2xl p-3 shadow-2xl`}>
-                        <div className="flex items-center gap-2 mb-2.5">
-                          <span className={`w-8 h-8 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                            <KIcon size={16} className="text-white" />
+                      <div key={i} className={`group bg-[#0C1027]/40 border ${k.border} rounded-2xl p-4 shadow-2xl`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                            <KIcon size={19} className="text-white" />
                           </span>
-                          <span className="text-[11px] font-bold text-slate-200 truncate">{k.label}</span>
+                          <span className="text-xs font-bold text-slate-200 truncate">{k.label}</span>
                         </div>
-                        <div className="text-lg font-extrabold text-white text-center mb-2 tabular-nums">{k.value}</div>
+                        <div className="text-xl font-extrabold text-white text-center mb-2.5 tabular-nums">{k.value}</div>
                         <div className="flex items-center justify-center">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">{k.trend}</span>
                         </div>
                       </div>
                     );
