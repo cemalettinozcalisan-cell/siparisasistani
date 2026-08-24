@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, ShieldAlert, PhoneCall, Settings, Clock, User, Hash, Phone, Instagram } from 'lucide-react';
+import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, PhoneCall, Settings, Clock, User, Hash, Phone, Instagram, MapPin, MessageSquare, StickyNote } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
@@ -15,26 +15,19 @@ const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
 
 const CHANNEL_LABELS: Record<string, string> = {
   VOICE: 'Sesli', WHATSAPP: 'WhatsApp', PHONE: 'Telefon', INSTAGRAM: 'Instagram', SISTEM: 'Sistem',
+  voice: 'Sesli', whatsapp: 'WhatsApp', phone: 'Telefon', instagram: 'Instagram', sms: 'SMS', web: 'Web',
 };
 
 const CHANNEL_ICONS: Record<string, ChannelIconType> = {
   VOICE: PhoneCall, WHATSAPP: WhatsAppIcon, PHONE: PhoneCall, INSTAGRAM: Instagram, SISTEM: Settings,
+  voice: PhoneCall, whatsapp: WhatsAppIcon, phone: PhoneCall, instagram: Instagram, sms: MessageSquare,
 };
 
 const CHANNEL_GRADIENT: Record<string, string> = {
-  VOICE: 'from-blue-500 to-blue-600',
-  WHATSAPP: 'from-emerald-400 to-emerald-600',
-  PHONE: 'from-blue-500 to-blue-600',
-  INSTAGRAM: 'from-pink-500 via-purple-500 to-purple-600',
-  SISTEM: 'from-indigo-500 to-violet-500',
-};
-
-const EVENT_LABELS: Record<string, string> = {
-  COMPLAINT_OPEN: 'Talep Açıldı', COMPLAINT_RESOLVED: 'Çözüldü', HUMAN_REQUIRED: 'Müdahale Gerekli',
-};
-
-const ACTOR_LABELS: Record<string, string> = {
-  AI: 'Yapay Zeka', HUMAN: 'Müşteri', STAFF: 'Personel',
+  VOICE: 'from-blue-500 to-blue-600', WHATSAPP: 'from-emerald-400 to-emerald-600',
+  PHONE: 'from-blue-500 to-blue-600', INSTAGRAM: 'from-pink-500 via-purple-500 to-purple-600',
+  SISTEM: 'from-indigo-500 to-violet-500', voice: 'from-blue-500 to-blue-600', whatsapp: 'from-emerald-400 to-emerald-600',
+  phone: 'from-blue-500 to-blue-600', instagram: 'from-pink-500 via-purple-500 to-purple-600', sms: 'from-orange-400 to-orange-600', web: 'from-cyan-500 to-teal-500',
 };
 
 type FilterTab = 'all' | 'open' | 'high' | 'resolved';
@@ -45,6 +38,22 @@ const FILTER_TABS: { key: FilterTab; label: string; icon: typeof AlertTriangle; 
   { key: 'high', label: 'Yüksek / Kritik', icon: AlertTriangle, gradient: 'from-red-500 to-rose-600' },
   { key: 'resolved', label: 'Çözülenler', icon: CheckCircle2, gradient: 'from-emerald-500 to-green-600' },
 ];
+
+interface Complaint {
+  id: string;
+  ticket_number: string;
+  channel: string;
+  category: string;
+  status: string; // open | resolved
+  severity: string; // LOW|NORMAL|HIGH|CRITICAL
+  description: string;
+  session_id: string | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  customer_city: string;
+  created_at: string;
+}
 
 export default function ComplaintsPage() {
   return (
@@ -57,25 +66,27 @@ export default function ComplaintsPage() {
 function ComplaintsContent() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('id');
-  const [complaints, setComplaints] = useState<Record<string, unknown>[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [search, setSearch] = useState('');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tid, setTid] = useState('');
   const [highlighted, setHighlighted] = useState<string | null>(highlightId);
+  // Not + çözüldü modalı
+  const [resolveTarget, setResolveTarget] = useState<Complaint | null>(null);
+  const [resolveNote, setResolveNote] = useState('');
+  const [resolveSaving, setResolveSaving] = useState(false);
+  const [resolveMsg, setResolveMsg] = useState<string | null>(null);
 
   useEffect(() => { import('@/lib/tenant').then(m => setTid(m.getTenantId())); }, []);
 
-  useEffect(() => {
+  const load = () => {
     if (!tid) return;
-    fetch(`/api/timeline/recent/${tid}?limit=100`)
+    fetch(`/api/complaints/${tid}`)
       .then(r => r.json())
       .then(data => {
-        const filtered = (Array.isArray(data) ? data : []).filter((e: Record<string, unknown>) =>
-          (e.event_type as string)?.startsWith('COMPLAINT') || (e.event_type as string) === 'HUMAN_REQUIRED'
-        );
-        setComplaints(filtered.length > 0 ? filtered : getMockComplaints());
-        // URL'den gelen id: otomatik genişlet + vurgula
+        const arr = Array.isArray(data) ? data : (data?.success === false ? [] : []);
+        setComplaints(arr as Complaint[]);
         if (highlightId) {
           setExpanded(highlightId);
           setHighlighted(highlightId);
@@ -84,34 +95,26 @@ function ComplaintsContent() {
           }, 300);
         }
       })
-      .catch(() => setComplaints(getMockComplaints()));
-  }, [tid, highlightId]);
+      .catch(() => setComplaints([]));
+  };
 
-  const getMockComplaints = (): Record<string, unknown>[] => [
-    { id: 'c1', event_type: 'COMPLAINT_OPEN', description: 'AI, Test Müşteri için yüksek seviyede talep kaydı oluşturdu: Geç teslimat', actor_type: 'AI', channel: 'VOICE', customer_name: 'Test Müşteri', customer_phone: '05321234567', created_at: new Date(Date.now() - 3600000).toISOString(), metadata: { severity: 'HIGH', ticket_number: 'TKT-0001' } },
-    { id: 'c2', event_type: 'COMPLAINT_OPEN', description: 'Müşteri: Ürünlerin son kullanma tarihi geçmiş', actor_type: 'HUMAN', channel: 'WHATSAPP', customer_name: 'Ali Kaya', customer_phone: '05329876543', created_at: new Date(Date.now() - 7200000).toISOString(), metadata: { severity: 'CRITICAL', ticket_number: 'TKT-0002' } },
-    { id: 'c3', event_type: 'HUMAN_REQUIRED', description: 'Müşteri iade talebinde bulundu, insan müdahalesi gerekiyor', actor_type: 'AI', channel: 'WHATSAPP', customer_name: 'Mehmet Öztürk', customer_phone: '05431112233', created_at: new Date(Date.now() - 14400000).toISOString(), metadata: { severity: 'NORMAL', ticket_number: 'TKT-0003' } },
-    { id: 'c4', event_type: 'COMPLAINT_RESOLVED', description: 'Talep çözüldü: Eksik ürün teslim edildi', actor_type: 'STAFF', channel: 'SYSTEM', customer_name: 'Zafer Ayyıldız', customer_phone: '05331114455', created_at: new Date(Date.now() - 28800000).toISOString(), metadata: { severity: 'LOW', ticket_number: 'TKT-0004' } },
-  ];
+  useEffect(load, [tid, highlightId]);
 
-  const openComplaints = complaints.filter(c => c.event_type !== 'COMPLAINT_RESOLVED');
+  const openComplaints = complaints.filter(c => c.status !== 'resolved');
   const highPriority = complaints.filter(c => {
-    const meta = c.metadata as Record<string, unknown> || {};
-    const sev = (meta.severity as string) || 'NORMAL';
-    return sev === 'HIGH' || sev === 'CRITICAL';
+    const s = String(c.severity || 'NORMAL').toUpperCase();
+    return (s === 'HIGH' || s === 'CRITICAL') && c.status !== 'resolved';
   });
-  const aiDetected = complaints.filter(c => c.actor_type === 'AI');
-  const resolved = complaints.filter(c => c.event_type === 'COMPLAINT_RESOLVED');
+  const resolved = complaints.filter(c => c.status === 'resolved');
 
   const filtered = complaints.filter(c => {
-    if (search && !(c.description as string || '').toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterTab === 'open' && c.event_type === 'COMPLAINT_RESOLVED') return false;
+    if (search && !(c.description || '').toLowerCase().includes(search.toLowerCase()) && !(c.customer_name || '').toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterTab === 'open' && c.status === 'resolved') return false;
     if (filterTab === 'high') {
-      const meta = c.metadata as Record<string, unknown> || {};
-      const sev = (meta.severity as string) || 'NORMAL';
-      if (sev !== 'HIGH' && sev !== 'CRITICAL') return false;
+      const s = String(c.severity || 'NORMAL').toUpperCase();
+      if ((s !== 'HIGH' && s !== 'CRITICAL') || c.status === 'resolved') return false;
     }
-    if (filterTab === 'resolved' && c.event_type !== 'COMPLAINT_RESOLVED') return false;
+    if (filterTab === 'resolved' && c.status !== 'resolved') return false;
     return true;
   });
 
@@ -122,6 +125,36 @@ function ComplaintsContent() {
       case 'high': return highPriority.length;
       case 'resolved': return resolved.length;
     }
+  };
+
+  const openResolveModal = (c: Complaint) => {
+    setResolveTarget(c);
+    setResolveNote('');
+    setResolveMsg(null);
+  };
+
+  const doResolve = async () => {
+    if (!resolveTarget) return;
+    setResolveSaving(true);
+    setResolveMsg(null);
+    try {
+      const res = await fetch(`/api/complaints/${resolveTarget.id}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` },
+        body: JSON.stringify({ tenantId: tid, note: resolveNote }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setComplaints(prev => prev.map(c => c.id === resolveTarget.id ? { ...c, status: 'resolved' } : c));
+        setResolveMsg('Talep çözüldü. Not müşteriye gönderildi.');
+        setTimeout(() => { setResolveTarget(null); setExpanded(null); }, 1200);
+      } else {
+        setResolveMsg(data.message || 'Çözülürken hata oluştu.');
+      }
+    } catch {
+      setResolveMsg('Sunucu hatası.');
+    }
+    setResolveSaving(false);
   };
 
   return (
@@ -140,13 +173,13 @@ function ComplaintsContent() {
         <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 rounded-full text-xs font-semibold text-indigo-600 dark:text-indigo-400">{complaints.length} kayıt</span>
       </div>
 
-      {/* KPI Stats — 4 columns */}
+      {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Toplam Talep', value: complaints.length, icon: AlertTriangle, gradient: 'from-blue-500 to-cyan-600', iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600' },
-          { label: 'Müdahale Gerekli', value: openComplaints.length, icon: AlertTriangle, gradient: 'from-amber-500 to-orange-600', iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600' },
-          { label: 'AI Tespiti', value: aiDetected.length, icon: Bot, gradient: 'from-violet-500 to-purple-600', iconBg: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600' },
-          { label: 'Çözülenler', value: resolved.length, icon: CheckCircle2, gradient: 'from-emerald-500 to-green-600', iconBg: 'bg-emerald-50 dark:bg-emerald-900/20', iconColor: 'text-emerald-600' },
+          { label: 'Toplam Talep', value: complaints.length, icon: AlertTriangle, gradient: 'from-blue-500 to-cyan-600' },
+          { label: 'Müdahale Gerekli', value: openComplaints.length, icon: AlertTriangle, gradient: 'from-amber-500 to-orange-600' },
+          { label: 'Yüksek / Kritik', value: highPriority.length, icon: AlertTriangle, gradient: 'from-red-500 to-rose-600' },
+          { label: 'Çözülenler', value: resolved.length, icon: CheckCircle2, gradient: 'from-emerald-500 to-green-600' },
         ].map((kpi) => (
           <div key={kpi.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
@@ -180,14 +213,10 @@ function ComplaintsContent() {
             return (
               <button key={tab.key} onClick={() => setFilterTab(tab.key)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
-                  active
-                    ? 'text-white shadow-sm bg-gradient-to-r ' + tab.gradient
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  active ? 'text-white shadow-sm bg-gradient-to-r ' + tab.gradient : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}>
                 <TabIcon size={12} /> {tab.label}
-                <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
-                  active ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                }`}>{count}</span>
+                <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${active ? 'bg-white/25 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{count}</span>
               </button>
             );
           })}
@@ -204,135 +233,145 @@ function ComplaintsContent() {
             <p className="text-slate-700 dark:text-slate-300 font-semibold">Talep veya istek bulunmuyor</p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Tüm talepler çözülmüş görünüyor</p>
           </div>
-        ) : filtered.map((c, i) => {
-          const meta = c.metadata as Record<string, unknown> || {};
-          const severity = (meta.severity as string) || 'NORMAL';
-          const sevCfg = SEVERITY_CONFIG[severity] || { label: severity, gradient: 'from-slate-400 to-slate-500' };
-          const channel = (c.channel as string) || 'SISTEM';
+        ) : filtered.map((c) => {
+          const sevKey = String(c.severity || 'NORMAL').toUpperCase();
+          const sevCfg = SEVERITY_CONFIG[sevKey] || { label: sevKey, gradient: 'from-slate-400 to-slate-500' };
+          const channel = c.channel || 'phone';
           const ChannelIcon = CHANNEL_ICONS[channel] || Settings;
-          const isResolved = c.event_type === 'COMPLAINT_RESOLVED';
-          const isOpen = c.event_type === 'COMPLAINT_OPEN';
-          const customerPhone = (c.customer_phone as string) || '';
-          const customerName = (c.customer_name as string) || '';
+          const isResolved = c.status === 'resolved';
+          const customerPhone = c.customer_phone || '';
+          const customerName = c.customer_name || '';
+          const customerAddress = c.customer_address || '';
 
           return (
-            <React.Fragment key={i}>
-            <div id={`complaint-${c.id}`} className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 ${
-              highlighted === c.id
-                ? 'border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/30 shadow-lg shadow-indigo-500/10'
-                : isResolved ? 'border-emerald-200 dark:border-emerald-800' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800'
-            }`}>
-              <div className="flex items-start gap-4">
-                {/* Left: Customer + Ticket */}
-                <div className="flex-shrink-0" style={{ minWidth: '140px' }}>
-                  {customerName && (
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <User size={12} className="text-slate-400" />
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{customerName}</span>
-                    </div>
-                  )}
-                  {Boolean(meta.ticket_number) && (
-                    <div className="flex items-center gap-1.5">
-                      <Hash size={12} className="text-slate-400" />
-                      <span className="text-[10px] font-mono text-slate-500">{String(meta.ticket_number)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Clock size={11} className="text-slate-400" />
-                    <span className="text-[10px] text-slate-400">{new Date(c.created_at as string).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                </div>
-
-                {/* Center: Description + Badges */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    {c.actor_type === 'AI' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r from-violet-500 to-purple-600 shadow-sm">
-                        <Bot size={11} /> AI Tespiti
-                      </span>
+            <React.Fragment key={c.id}>
+              <div id={`complaint-${c.id}`} onClick={() => setExpanded(expanded === c.id ? null : c.id)} className={`cursor-pointer bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 ${
+                highlighted === c.id ? 'border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/30 shadow-lg shadow-indigo-500/10' : isResolved ? 'border-emerald-200 dark:border-emerald-800' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800'
+              }`}>
+                <div className="flex items-start gap-4">
+                  {/* Left: Customer + Ticket */}
+                  <div className="flex-shrink-0" style={{ minWidth: '140px' }}>
+                    {customerName && (
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <User size={12} className="text-slate-400" />
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{customerName}</span>
+                      </div>
                     )}
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[channel] || 'from-slate-500 to-slate-600'} shadow-sm`}>
-                      <ChannelIcon size={12} /> {CHANNEL_LABELS[channel] || channel}
-                    </span>
-                    <span className="text-[10px] text-slate-400">{EVENT_LABELS[c.event_type as string] || (c.event_type as string)}</span>
-                  </div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{c.description as string}</h3>
-                </div>
-
-                {/* Right: Severity + Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${sevCfg.gradient} shadow-sm`}>
-                    {sevCfg.label}
-                  </span>
-                  {isResolved ? (
-                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm">
-                      <CheckCircle2 size={12} /> Çözüldü
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      {customerPhone && (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); window.open(`tel:${customerPhone}`, '_blank'); }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all">
-                            <Phone size={11} /> Ara
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customerPhone.replace(/\D/g, '')}`, '_blank'); }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:from-emerald-500 hover:to-emerald-700 transition-all">
-                            <WhatsAppIcon size={11} /> WhatsApp
-                          </button>
-                        </>
-                      )}
-                      <button onClick={() => setExpanded(expanded === c.id ? null : String(c.id))}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">
-                        {expanded === c.id ? 'Kapat' : 'İncele'} <ChevronRight size={12} className={`transition-transform ${expanded === c.id ? 'rotate-90' : ''}`} />
-                      </button>
+                    {c.ticket_number && (
+                      <div className="flex items-center gap-1.5">
+                        <Hash size={12} className="text-slate-400" />
+                        <span className="text-[10px] font-mono text-slate-500">{c.ticket_number}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Clock size={11} className="text-slate-400" />
+                      <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Center: Description + Badges */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[channel] || 'from-slate-500 to-slate-600'} shadow-sm`}>
+                        <ChannelIcon size={12} /> {CHANNEL_LABELS[channel] || channel}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{isResolved ? 'Çözüldü' : 'Açık'}</span>
+                    </div>
+                    <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{c.description}</h3>
+                  </div>
+
+                  {/* Right: Severity + Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${sevCfg.gradient} shadow-sm`}>{sevCfg.label}</span>
+                    {isResolved ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm"><CheckCircle2 size={12} /> Çözüldü</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        {customerPhone && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); window.open(`tel:${customerPhone}`, '_blank'); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all"><Phone size={11} /> Ara</button>
+                            <button onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${customerPhone.replace(/\D/g, '')}`, '_blank'); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm hover:from-emerald-500 hover:to-emerald-700 transition-all"><WhatsAppIcon size={11} /> WhatsApp</button>
+                          </>
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); setExpanded(expanded === c.id ? null : c.id); }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm hover:from-indigo-600 hover:to-violet-600 transition-all">{expanded === c.id ? 'Kapat' : 'İncele'} <ChevronRight size={12} className={`transition-transform ${expanded === c.id ? 'rotate-90' : ''}`} /></button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            {/* Expanded Detail */}
-            {expanded === c.id && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm p-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                  <span className="text-[10px] text-slate-400 block mb-1">Açıklama</span>
-                  <span className="text-xs text-slate-700 dark:text-slate-300">{c.description as string}</span>
+
+              {/* Expanded Detail */}
+              {expanded === c.id && (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm p-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <span className="text-[10px] text-slate-400 block mb-1">Açıklama</span>
+                      <span className="text-xs text-slate-700 dark:text-slate-300">{c.description}</span>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 space-y-1">
+                      <span className="text-[10px] text-slate-400 block mb-1">Müşteri Bilgileri</span>
+                      <div className="flex items-center gap-1.5"><User size={12} className="text-slate-400" /><span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{customerName || '-'}</span></div>
+                      {customerPhone && <div className="flex items-center gap-1.5"><Phone size={12} className="text-slate-400" /><span className="text-xs text-slate-600 dark:text-slate-300">{customerPhone}</span></div>}
+                      {(customerAddress || c.customer_city) && <div className="flex items-center gap-1.5"><MapPin size={12} className="text-slate-400" /><span className="text-xs text-slate-600 dark:text-slate-300">{[customerAddress, c.customer_city].filter(Boolean).join(', ') || '-'}</span></div>}
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <span className="text-[10px] text-slate-400 block mb-1">Kanal</span>
+                      <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1"><ChannelIcon size={12} className="text-slate-500" /> {CHANNEL_LABELS[channel] || channel}</span>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
+                      <span className="text-[10px] text-slate-400 block mb-1">Ticket No</span>
+                      <span className="text-xs text-slate-700 dark:text-slate-300 font-mono">{c.ticket_number || '—'}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {customerPhone && (
+                      <a href={`/customers`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-violet-600 hover:to-purple-700 transition-all"><User size={12} /> Müşteri Detayı</a>
+                    )}
+                    {c.session_id && (
+                      <a href={`/calls?session=${c.session_id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-sky-600 hover:to-blue-700 transition-all"><MessageSquare size={12} /> Görüşme Detayı</a>
+                    )}
+                    {!isResolved && (
+                      <button onClick={(e) => { e.stopPropagation(); openResolveModal(c); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-emerald-600 hover:to-green-600 transition-all"><StickyNote size={12} /> Not Ekle & Çözüldü İşaretle</button>
+                    )}
+                  </div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                  <span className="text-[10px] text-slate-400 block mb-1">Oluşturan</span>
-                  <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    {c.actor_type === 'AI' ? <Bot size={12} className="text-violet-500" /> : ''}
-                    {ACTOR_LABELS[c.actor_type as string] || (c.actor_type as string)}
-                  </span>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                  <span className="text-[10px] text-slate-400 block mb-1">Kanal</span>
-                  <span className="text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <ChannelIcon size={12} className="text-slate-500" /> {CHANNEL_LABELS[channel] || channel}
-                  </span>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                  <span className="text-[10px] text-slate-400 block mb-1">Ticket No</span>
-                  <span className="text-xs text-slate-700 dark:text-slate-300 font-mono">{String(meta.ticket_number || '—')}</span>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  {!isResolved && (
-                    <button onClick={() => {
-                      const updated = complaints.map(x => x.id === c.id ? { ...x, event_type: 'COMPLAINT_RESOLVED' } : x);
-                      setComplaints(updated);
-                      setExpanded(null);
-                    }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-xs font-semibold shadow-sm hover:from-emerald-600 hover:to-green-600 transition-all">
-                      <CheckCircle2 size={12} /> Çözüldü Olarak İşaretle
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+              )}
             </React.Fragment>
           );
         })}
       </div>
+
+      {/* Resolve Modal */}
+      {resolveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setResolveTarget(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-sm"><CheckCircle2 size={16} /></div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Talebi Çözümlendi Olarak İşaretle</h3>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{resolveTarget.customer_name} · {resolveTarget.ticket_number}</p>
+                </div>
+              </div>
+              <button onClick={() => setResolveTarget(null)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">✕</button>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Müşteriye Gönderilecek Not</label>
+              <textarea value={resolveNote} onChange={(e) => setResolveNote(e.target.value)} rows={3} placeholder="Örn: Talebinizle ilgilenildi, eksik ürününüz yarın kargoya verilecektir."
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+              <p className="text-[10px] text-slate-400 mt-1">Not, müşteriye otomatik gönderilir (WhatsApp'tan geldiyse WhatsApp'a, değilse SMS'e).</p>
+            </div>
+            {resolveMsg && <p className={`text-xs font-medium ${resolveMsg.startsWith('Talep çözüldü') ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>{resolveMsg}</p>}
+            <div className="flex gap-2">
+              <button onClick={doResolve} disabled={resolveSaving} className="flex-1 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg text-xs font-bold shadow-sm hover:from-emerald-600 hover:to-green-600 transition-all disabled:opacity-50">{resolveSaving ? 'İşleniyor...' : 'Onayla & Müşteriye Bildir'}</button>
+              <button onClick={() => setResolveTarget(null)} className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">İptal</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

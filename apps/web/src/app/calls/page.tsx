@@ -269,6 +269,7 @@ function CallsContent() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [tid, setTid] = useState('');
   const [activeTab, setActiveTab] = useState<'list' | 'transcript'>('list');
+  const sessionParam = searchParams.get('session');
 
   useEffect(() => { setTid(getTenantId()); }, []);
 
@@ -282,6 +283,21 @@ function CallsContent() {
   }, [tid]);
 
   useEffect(() => { load(); }, [load]);
+
+  // ?session=X parametresiyle gelindiğinde ilgili görüşmeyi otomatik aç
+  useEffect(() => {
+    if (!sessionParam || !conversations.length || expandedId) return;
+    const target = conversations.find(c => c.id === sessionParam);
+    if (target) {
+      setExpandedId(target.id);
+      setExpandedChannel(target.channel);
+      setActiveTab('list');
+      fetchDetail(target.id);
+      setTimeout(() => {
+        document.getElementById(`conv-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [sessionParam, conversations, expandedId]);
 
   const fetchDetail = async (sessionId: string) => {
     setDetailLoading(true);
@@ -378,7 +394,7 @@ function CallsContent() {
           const isExpanded = expandedId === conv.id;
 
           return (
-            <div key={conv.id} className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border-l-4 ${channelCfg.borderLeft}`}>
+            <div key={conv.id} id={`conv-${conv.id}`} className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border-l-4 ${channelCfg.borderLeft}`}>
               <button onClick={() => toggleExpand(conv)}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${channelCfg.gradient} flex items-center justify-center shrink-0 ${channelCfg.shadow}`}>
