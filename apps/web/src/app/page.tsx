@@ -290,9 +290,9 @@ export default function LandingPage() {
           <a href="#demo" className="btn-secondary">Hemen Bilgi Al</a>
         </div>
 
-        {/* AI Scheme + Yetenek Paneli + KPI — ferah, şeffaf yapı */}
-        <div className="mt-20 relative max-w-5xl mx-auto drop-shadow-[0_10px_35px_rgba(99,102,241,0.15)]">
-          <div className="relative">
+        {/* AI Scheme + Yetenek Paneli + KPI — koyu çerçeveli, ferah yapı */}
+        <div className="mt-20 relative max-w-5xl mx-auto">
+          <div className="relative bg-slate-950/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 md:p-8 shadow-[0_10px_35px_rgba(99,102,241,0.15)]">
             {/* Orkestrasyon — AI çipi + kanallar + yetenek paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
             <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative">
               {/* Neon SVG bağlantı hatları */}
