@@ -341,11 +341,11 @@ export default function LandingPage() {
               </div>
 
               {/* Sağ kanallar */}
-              <div className="lg:col-span-3 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
+              <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
                 {MOCK_HUB_RIGHT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-64 max-w-[17rem]`}>
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-60 sm:w-full max-w-[15rem]`}>
                       <div className={`w-11 h-11 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                         <ChIcon size={22} className="text-white" />
                       </div>
@@ -359,12 +359,12 @@ export default function LandingPage() {
               </div>
 
               {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt */}
-              <div className="lg:col-span-2 flex justify-center lg:justify-end items-stretch z-10">
-                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[13rem] h-full flex flex-col justify-center gap-2 border border-white/5">
+              <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
+                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[18rem] h-full flex flex-col justify-center gap-2 border border-white/5">
                   {MOCK_HUB_FEATURES.map((f, i) => {
                     const FIcon = f.icon;
                     return (
-                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-300">
+                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-300 whitespace-nowrap">
                         <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
                           <FIcon size={14} className="text-white" />
                         </span>
