@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, PhoneCall, Settings, Clock, User, Hash, Phone, Instagram, MapPin, MessageSquare, StickyNote } from 'lucide-react';
+import { Search, AlertTriangle, Bot, CheckCircle2, ChevronRight, PhoneCall, Settings, Clock, User, Hash, Phone, Instagram, MapPin, MessageSquare, StickyNote, Package, Banknote, ShoppingBag, Shield, Sparkles, Crown, CalendarClock } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 
 const SEVERITY_CONFIG: Record<string, { label: string; gradient: string }> = {
@@ -32,9 +32,9 @@ const CHANNEL_GRADIENT: Record<string, string> = {
 
 // Hızlı yanıt şablonları — esnaf tek tıkla doldurabilir
 const QUICK_TEMPLATES = [
-  { label: '📦 Kargoya Verildi', text: 'Talebiniz işleme alındı, eksik/yeni ürününüz kargoya verilmiştir.' },
-  { label: '💰 İade/Ödeme Yapıldı', text: 'Ödemeniz/iadeniz kontrol edilip hesabınıza tanımlanmıştır.' },
-  { label: '📞 Müşteri Arandı', text: 'Müşterimizle telefon görüşmesi yapılarak detaylar iletilmiştir.' },
+  { label: 'Kargoya Verildi', text: 'Talebiniz işleme alındı, eksik/yeni ürününüz kargoya verilmiştir.', icon: Package, color: 'text-amber-600 dark:text-amber-400' },
+  { label: 'İade/Ödeme Yapıldı', text: 'Ödemeniz/iadeniz kontrol edilip hesabınıza tanımlanmıştır.', icon: Banknote, color: 'text-emerald-600 dark:text-emerald-400' },
+  { label: 'Müşteri Arandı', text: 'Müşterimizle telefon görüşmesi yapılarak detaylar iletilmiştir.', icon: PhoneCall, color: 'text-blue-600 dark:text-blue-400' },
 ];
 
 type FilterTab = 'all' | 'open' | 'high' | 'resolved';
@@ -59,8 +59,35 @@ interface Complaint {
   customer_phone: string;
   customer_address: string;
   customer_city: string;
+  customer_analysis?: {
+    order_count: number;
+    total_spent: number;
+    avg_basket: number;
+    last_order_days: number | null;
+    segment: string;
+    risk: string;
+  };
   created_at: string;
 }
+
+const SEGMENT_CONFIG: Record<string, { label: string; gradient: string }> = {
+  VIP: { label: 'VIP', gradient: 'from-amber-400 to-orange-500' },
+  SADIK: { label: 'Sadık', gradient: 'from-violet-500 to-purple-600' },
+  AKTİF: { label: 'Aktif', gradient: 'from-sky-400 to-blue-500' },
+  AKTIF: { label: 'Aktif', gradient: 'from-sky-400 to-blue-500' },
+  YENİ: { label: 'Yeni', gradient: 'from-emerald-400 to-teal-500' },
+  YENI: { label: 'Yeni', gradient: 'from-emerald-400 to-teal-500' },
+};
+
+const RISK_CONFIG: Record<string, { label: string; gradient: string }> = {
+  YÜKSEK: { label: 'Yüksek Risk', gradient: 'from-red-500 to-rose-600' },
+  YUKSEK: { label: 'Yüksek Risk', gradient: 'from-red-500 to-rose-600' },
+  ORTA: { label: 'Orta Risk', gradient: 'from-amber-400 to-orange-500' },
+  DÜŞÜK: { label: 'Düşük Risk', gradient: 'from-emerald-400 to-teal-500' },
+  DUSUK: { label: 'Düşük Risk', gradient: 'from-emerald-400 to-teal-500' },
+  BİLİNMİYOR: { label: 'Bilinmiyor', gradient: 'from-slate-400 to-slate-500' },
+  BILINMIYOR: { label: 'Bilinmiyor', gradient: 'from-slate-400 to-slate-500' },
+};
 
 export default function ComplaintsPage() {
   return (
@@ -330,16 +357,48 @@ function ComplaintsContent() {
                   </div>
 
                   {/* Müşteri kartı (kompakt) */}
-                  <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">{(customerName || '?')[0].toUpperCase()}</div>
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{customerName || 'Bilinmeyen'}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{customerPhone || '—'}</p>
-                        {(customerAddress || c.customer_city) && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><MapPin size={11} /> {[customerAddress, c.customer_city].filter(Boolean).join(', ')}</p>}
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 space-y-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">{(customerName || '?')[0].toUpperCase()}</div>
+                        <div className="min-w-0 space-y-0.5">
+                          <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{customerName || 'Bilinmeyen'}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{customerPhone || '—'}</p>
+                          {(customerAddress || c.customer_city) && <p className="text-[11px] text-slate-400 truncate flex items-center gap-1"><MapPin size={11} /> {[customerAddress, c.customer_city].filter(Boolean).join(', ')}</p>}
+                        </div>
                       </div>
+                      <a href={`/customers?phone=${encodeURIComponent(customerPhone)}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline shrink-0"><User size={12} /> Detay</a>
                     </div>
-                    <a href={`/customers`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline shrink-0"><User size={12} /> Detay</a>
+                    {c.customer_analysis && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        <div className="bg-white dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700 px-2 py-1.5 text-center">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wide">Sipariş</p>
+                          <p className="text-[11px] font-bold text-slate-800 dark:text-white mt-0.5">{c.customer_analysis.order_count}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700 px-2 py-1.5 text-center">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wide">Harcama</p>
+                          <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{c.customer_analysis.total_spent.toLocaleString('tr-TR')} ₺</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700 px-2 py-1.5 text-center">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wide">Ort. Sepet</p>
+                          <p className="text-[11px] font-bold text-violet-600 dark:text-violet-400 mt-0.5">{c.customer_analysis.avg_basket.toLocaleString('tr-TR')} ₺</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700 px-2 py-1.5 text-center">
+                          <p className="text-[9px] text-slate-400 uppercase tracking-wide">Son Sip.</p>
+                          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">{c.customer_analysis.last_order_days == null ? '—' : `${c.customer_analysis.last_order_days} gün`}</p>
+                        </div>
+                      </div>
+                    )}
+                    {c.customer_analysis && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${(SEGMENT_CONFIG[String(c.customer_analysis.segment).toUpperCase()] || { gradient: 'from-slate-500 to-slate-600' }).gradient} shadow-sm`}>
+                          <ShoppingBag size={10} /> {SEGMENT_CONFIG[String(c.customer_analysis.segment).toUpperCase()]?.label || c.customer_analysis.segment}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${(RISK_CONFIG[String(c.customer_analysis.risk).toUpperCase()] || { gradient: 'from-slate-500 to-slate-600' }).gradient} shadow-sm`}>
+                          <Shield size={10} /> {RISK_CONFIG[String(c.customer_analysis.risk).toUpperCase()]?.label || c.customer_analysis.risk}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -373,10 +432,10 @@ function ComplaintsContent() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0"><CheckCircle2 size={17} /></div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">Talebi Çözümlendi İşaretle</h3>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-200"><User size={10} /> {resolveTarget.customer_name || 'Bilinmiyor'}</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-300">#{resolveTarget.ticket_number || '—'}</span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[rch] || 'from-slate-500 to-slate-600'}`}><RIcon size={10} /> {CHANNEL_LABELS[rch] || rch}</span>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-slate-100"><User size={13} /> {resolveTarget.customer_name || 'Bilinmiyor'}</span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-sm font-mono font-bold text-indigo-600 dark:text-indigo-300">#{resolveTarget.ticket_number || '—'}</span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-bold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[rch] || 'from-slate-500 to-slate-600'}`}><RIcon size={13} /> {CHANNEL_LABELS[rch] || rch}</span>
                   </div>
                 </div>
               </div>
@@ -385,12 +444,15 @@ function ComplaintsContent() {
 
             {/* Hızlı yanıt pill'leri */}
             <div className="flex flex-wrap gap-1.5">
-              {QUICK_TEMPLATES.map((t) => (
-                <button key={t.label} onClick={() => setResolveNote(t.text)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:ring-1 hover:ring-emerald-300/50 transition-all">
-                  {t.label}
+              {QUICK_TEMPLATES.map((t) => {
+                const TIcon = t.icon;
+                return (
+                <button key={t.label} onClick={() => setResolveNote(t.text)} title={`Notu doldur: ${t.label}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm hover:ring-1 hover:ring-emerald-300/50 transition-all">
+                  <TIcon size={13} className={t.color} /> {t.label}
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             <div>

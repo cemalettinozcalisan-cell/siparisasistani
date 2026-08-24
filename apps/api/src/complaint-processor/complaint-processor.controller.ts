@@ -35,21 +35,65 @@ export class ComplaintProcessorController {
 
     const rows = (data || []) as Record<string, any>[];
 
-    // Telefon ile müşteri adres/şehir eşleştir
+    // Telefon ile müşteri adres/şehir + analiz eşleştir
     const phones = [...new Set(rows.map((r) => String(r.customer_phone || '').trim()).filter(Boolean))];
     let customerIndex: Record<string, Record<string, unknown>> = {};
     if (phones.length) {
       const { data: custRows } = await this.supabase.db
         .from('customers')
-        .select('phone, name, address, city')
+        .select('phone, id, name, address, city')
         .in('phone', phones);
       for (const row of custRows || []) {
         customerIndex[String((row as any).phone)] = row as Record<string, unknown>;
       }
     }
 
+    // Müşteri sipariş analizi — order_count, total_spent, avg_basket, last_order_days, segment, risk
+    const customerIds = [...new Set(Object.values(customerIndex).map((c) => String((c as any).id || '')).filter(Boolean))];
+    const orderAgg: Record<string, { count: number; total: number; lastAt: number }> = {};
+    if (customerIds.length) {
+      const { data: orderRows } = await this.supabase.db
+        .from('orders')
+        .select('customer_id, total_price, created_at')
+        .in('customer_id', customerIds)
+        .order('created_at', { ascending: false });
+      for (const o of orderRows || []) {
+        const cid = String((o as any).customer_id);
+        if (!orderAgg[cid]) orderAgg[cid] = { count: 0, total: 0, lastAt: 0 };
+        orderAgg[cid].count += 1;
+        orderAgg[cid].total += Number((o as any).total_price || 0);
+        if (!orderAgg[cid].lastAt) orderAgg[cid].lastAt = new Date((o as any).created_at).getTime() || 0;
+      }
+    }
+
+    const analyze = (phone: string) => {
+      const cust = customerIndex[phone] || {};
+      const agg = orderAgg[String((cust as any).id || '')];
+      const orderCount = agg?.count || 0;
+      const totalSpent = agg?.total || 0;
+      const avgBasket = orderCount > 0 ? Math.round(totalSpent / orderCount) : 0;
+      const lastOrderDays = agg?.lastAt
+        ? Math.floor((Date.now() - agg.lastAt) / (1000 * 60 * 60 * 24))
+        : null;
+
+      let segment = 'Yeni';
+      if (totalSpent >= 50000) segment = 'VIP';
+      else if (orderCount >= 10) segment = 'Sadık';
+      else if (orderCount <= 1) segment = 'Yeni';
+      else segment = 'Aktif';
+
+      let risk = 'Düşük';
+      if (lastOrderDays == null) risk = 'Bilinmiyor';
+      else if (lastOrderDays > 180) risk = 'Yüksek';
+      else if (lastOrderDays > 90) risk = 'Orta';
+
+      return { order_count: orderCount, total_spent: totalSpent, avg_basket: avgBasket, last_order_days: lastOrderDays, segment, risk };
+    };
+
     return rows.map((r) => {
-      const cust = customerIndex[String(r.customer_phone || '').trim()] || {};
+      const phone = String(r.customer_phone || '').trim();
+      const cust = customerIndex[phone] || {};
+      const analysis = analyze(phone);
       return {
         id: r.id,
         ticket_number: r.ticket_number || '',
@@ -63,6 +107,7 @@ export class ComplaintProcessorController {
         customer_phone: r.customer_phone || '',
         customer_address: String(cust.address || ''),
         customer_city: String(cust.city || ''),
+        customer_analysis: analysis,
         created_at: r.created_at,
         updated_at: r.updated_at,
       };

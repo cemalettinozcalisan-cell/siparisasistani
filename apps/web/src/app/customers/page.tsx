@@ -2,13 +2,22 @@
 
 import { getTenantId } from '@/lib/tenant';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CustomerDetail } from '@/components/customer-detail';
 import { Upload, FileSpreadsheet, Download, X, MapPin, PhoneCall, Instagram, MessageSquare, Globe, UserPlus, Users } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import * as XLSX from 'xlsx';
 
 export default function CustomersPage() {
+  return (
+    <Suspense fallback={null}>
+      <CustomersContent />
+    </Suspense>
+  );
+}
+
+function CustomersContent() {
   const [customers, setCustomers] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [timeline, setTimeline] = useState<Record<string, unknown>[]>([]);
@@ -17,6 +26,8 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [allTimeline, setAllTimeline] = useState<Record<string, unknown>[]>([]);
   const tid = getTenantId();
+  const searchParams = useSearchParams();
+  const phoneParam = searchParams.get('phone');
 
   // Bulk import states
   const [showImport, setShowImport] = useState(false);
@@ -42,6 +53,13 @@ export default function CustomersPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ?phone=X parametresiyle gelindiğinde ilgili müşteriyi otomatik seç
+  useEffect(() => {
+    if (!phoneParam || !customers.length) return;
+    const target = customers.find((c) => String((c as any).phone || '').replace(/\D/g, '') === String(phoneParam).replace(/\D/g, ''));
+    if (target) selectCustomer(target);
+  }, [phoneParam, customers]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
