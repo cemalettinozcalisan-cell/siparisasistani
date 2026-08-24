@@ -206,44 +206,94 @@ export default function LandingPage() {
           <a href="#demo" className="btn-secondary">Hemen Bilgi Al</a>
         </div>
 
-        {/* Mockup */}
-        <div className="mt-16 relative max-w-4xl mx-auto">
-          <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 bg-slate-800">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">SiparişAsistanı - Kontrol Paneli</span>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[
-                  { val: '12', label: 'Bugün Sipariş', icon: ShoppingBag },
-                  { val: '8.450 TL', label: 'Bugün Ciro', icon: TrendingUp },
-                  { val: '%98', label: 'AI Başarı', icon: Bot },
-                  { val: '3', label: 'Bekleyen', icon: AlertCircle },
-                ].map((item, i) => {
-                  const MIcon = item.icon;
-                  return (
-                  <div key={i} className="bg-slate-800/50 rounded-lg p-3 text-left border border-slate-700/50">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-1"><MIcon size={13} className="text-slate-400 dark:text-slate-500" /> {item.label}</div>
-                    <div className="text-xl font-bold text-white mt-0.5">{item.val}</div>
-                  </div>
-                )})}
+        {/* Browser Mockup — Dashboard Dark Mode canlı görünüm */}
+        <div className="mt-16 relative max-w-5xl mx-auto">
+          {/* Dış parıltı */}
+          <div className="absolute -inset-4 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-blue-600/20 rounded-3xl blur-2xl -z-10" />
+
+          <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.35)] border border-slate-800">
+            {/* Pencere çubuğu */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-slate-900 border-b border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
               </div>
-              <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
-                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-2">
-                  <span className="text-emerald-400 font-medium">🟢 AI Çalışıyor</span>
-                  <span>•</span>
-                  <span>Son Sipariş: 2 dk önce</span>
-                  <span>•</span>
-                  <span>Müşteri: Ahmet Y.</span>
+              <div className="flex-1 flex justify-center">
+                <span className="text-[11px] text-slate-500 bg-slate-800/70 rounded-md px-3 py-1 font-mono">app.siparisasistani.com/dashboard</span>
+              </div>
+              <div className="w-10" />
+            </div>
+
+            <div className="p-5 md:p-6 space-y-4">
+              {/* Üst: logo + başlık */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <img src="/logo2.png" alt="" className="w-7 h-7 object-contain" />
+                <span className="text-sm"><span className="font-bold text-white">Sipariş</span><span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Asistanı</span></span>
+                <span className="text-xs text-slate-400">— <span className="text-slate-200 font-medium">Müşterileriniz Nerede Olursa Olsun</span></span>
+              </div>
+
+              {/* Orta: AI çipi + kanal bağlantı şeması */}
+              <div className="bg-slate-950/50 rounded-2xl border border-slate-800 p-4 md:p-5">
+                <div className="relative flex items-center justify-center gap-2 md:gap-4">
+                  {/* sol kanallar */}
+                  <div className="flex-1 flex flex-col items-end gap-2.5">
+                    {OMNICHANNEL_FLOW.slice(0, 2).map((c, i) => {
+                      const Icon = c.icon;
+                      return (
+                        <div key={i} className="inline-flex items-center gap-2 bg-slate-800/70 border border-slate-700 rounded-full pl-1.5 pr-3 py-1 shadow-sm">
+                          <span className={`w-6 h-6 rounded-full bg-gradient-to-br ${c.color} flex items-center justify-center`}><Icon size={12} className="text-white" /></span>
+                          <span className="text-[11px] font-semibold text-slate-200">{c.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* orta AI çipi */}
+                  <div className="relative shrink-0 flex flex-col items-center px-1">
+                    <div className="absolute -inset-3 bg-violet-600/40 rounded-full blur-xl animate-pulse" />
+                    <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex flex-col items-center justify-center shadow-lg shadow-violet-500/40 ring-4 ring-violet-500/20">
+                      <Bot size={26} className="text-white" />
+                      <span className="text-[10px] font-bold text-white/90 mt-0.5">%97</span>
+                    </div>
+                    <span className="mt-2 text-[10px] font-bold text-emerald-400 inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> AI Aktif</span>
+                  </div>
+
+                  {/* sağ kanallar */}
+                  <div className="flex-1 flex flex-col items-start gap-2.5">
+                    {OMNICHANNEL_FLOW.slice(2, 5).map((c, i) => {
+                      const Icon = c.icon;
+                      return (
+                        <div key={i} className="inline-flex items-center gap-2 bg-slate-800/70 border border-slate-700 rounded-full pl-1.5 pr-3 py-1 shadow-sm">
+                          <span className={`w-6 h-6 rounded-full bg-gradient-to-br ${c.color} flex items-center justify-center`}><Icon size={12} className="text-white" /></span>
+                          <span className="text-[11px] font-semibold text-slate-200">{c.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-medium">✅ Onaylandı</span>
-                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[10px] font-medium">📞 Telefon</span>
-                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[10px] font-medium">💰 600 TL</span>
-                </div>
+              </div>
+
+              {/* Alt: 7'li KPI özet kartları */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                {[
+                  { val: '42', label: 'Bugünkü Sipariş', icon: ShoppingBag, color: 'text-indigo-400' },
+                  { val: '28.450 TL', label: 'Bugünkü Ciro', icon: TrendingUp, color: 'text-emerald-400' },
+                  { val: '14', label: 'Kargo Takibi', icon: Truck, color: 'text-cyan-400' },
+                  { val: '6', label: 'Talep & İstek', icon: AlertCircle, color: 'text-amber-400' },
+                  { val: '118', label: 'Müşteri', icon: Users, color: 'text-violet-400' },
+                  { val: '%97', label: 'AI Başarı', icon: Bot, color: 'text-emerald-400' },
+                  { val: '9', label: 'Görüşme', icon: PhoneCall, color: 'text-blue-400' },
+                ].map((k, i) => {
+                  const KIcon = k.icon;
+                  return (
+                    <div key={i} className="bg-slate-800/60 rounded-xl border border-slate-700/60 p-3 text-left">
+                      <KIcon size={15} className={k.color} />
+                      <div className="text-lg font-bold text-white mt-1.5">{k.val}</div>
+                      <div className="text-[10px] text-slate-400">{k.label}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
