@@ -428,7 +428,7 @@ function OrdersPageContent() {
                       <Package size={11} /> TOPTAN
                     </span>
                   )}
-                  {chCfg && (<span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-bold ${chCfg.cls}`}><ChIcon size={13} /> {chCfg.label}</span>)}
+                  {chCfg && (<span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${chCfg.cls}`}><ChIcon size={12} /> {chCfg.label}</span>)}
                   <span className="text-xs text-gray-700 dark:text-slate-200 truncate">{o.customer_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -436,22 +436,22 @@ function OrdersPageContent() {
                     const pb = paymentBadge(o.payment_method || o.payment);
                     const PbIcon = pb.icon;
                     return (
-                      <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${pb.gradient}`}>
-                        <PbIcon size={10} /> {pb.label}
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${pb.gradient}`}>
+                        <PbIcon size={9} /> {pb.label}
                       </span>
                     );
                   })()}
                   {o.payment_status && PAYMENT_STATUS_BADGE[o.payment_status] && (
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${PAYMENT_STATUS_BADGE[o.payment_status].gradient} shadow-sm shadow-amber-500/25`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${PAYMENT_STATUS_BADGE[o.payment_status].gradient} shadow-sm shadow-amber-500/25`}>{PAYMENT_STATUS_BADGE[o.payment_status].label}</span>
                   )}
-                  <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${badge.gradient} shadow-sm shadow-blue-500/25`}>{badge.label}</span>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${badge.gradient} shadow-sm shadow-blue-500/25`}>{badge.label}</span>
                   <span className="font-bold text-sm text-gray-900 dark:text-white">{Number(o.total_price).toLocaleString('tr-TR')} TL</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                 <TimerBadge date={o.created_at} />
                 {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
-                  <span className={`inline-flex items-center gap-1 text-xs font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${CARGO_STATUS_BADGE[o.cargo_status].gradient} shadow-sm shadow-cyan-500/25`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${CARGO_STATUS_BADGE[o.cargo_status].gradient} shadow-sm shadow-cyan-500/25`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
                 )}
                 {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
                 {o.customer_note && <span className="text-amber-500 truncate"><MapPin size={11} /> {o.customer_note.substring(0, 30)}</span>}

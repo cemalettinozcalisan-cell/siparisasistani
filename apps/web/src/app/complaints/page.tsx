@@ -292,7 +292,7 @@ function ComplaintsContent() {
                     {c.ticket_number && (
                       <div className="flex items-center gap-1.5">
                         <Hash size={12} className="text-slate-400" />
-                        <span className="text-[10px] font-mono text-slate-500">{c.ticket_number}</span>
+                        <span className="text-xs font-mono text-slate-600 dark:text-slate-400">{c.ticket_number}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
@@ -434,7 +434,7 @@ function ComplaintsContent() {
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white">Talebi Çözümlendi İşaretle</h3>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-slate-100"><User size={13} /> {resolveTarget.customer_name || 'Bilinmiyor'}</span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-sm font-mono font-bold text-indigo-600 dark:text-indigo-300">#{resolveTarget.ticket_number || '—'}</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-sm font-mono font-bold text-indigo-600 dark:text-indigo-300"><Hash size={12} /> {resolveTarget.ticket_number || '—'}</span>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-bold text-white bg-gradient-to-r ${CHANNEL_GRADIENT[rch] || 'from-slate-500 to-slate-600'}`}><RIcon size={13} /> {CHANNEL_LABELS[rch] || rch}</span>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ function ComplaintsContent() {
                 const TIcon = t.icon;
                 return (
                 <button key={t.label} onClick={() => setResolveNote(t.text)} title={`Notu doldur: ${t.label}`}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${t.bg} shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all`}>
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${t.bg} shadow-sm hover:brightness-110 transition-all`}>
                   <TIcon size={13} /> {t.label}
                 </button>
                 );
