@@ -32,9 +32,9 @@ const CHANNEL_GRADIENT: Record<string, string> = {
 
 // Hızlı yanıt şablonları — esnaf tek tıkla doldurabilir
 const QUICK_TEMPLATES = [
-  { label: 'Kargoya Verildi', text: 'Talebiniz işleme alındı, eksik/yeni ürününüz kargoya verilmiştir.', icon: Package, color: 'text-amber-600 dark:text-amber-400' },
-  { label: 'İade/Ödeme Yapıldı', text: 'Ödemeniz/iadeniz kontrol edilip hesabınıza tanımlanmıştır.', icon: Banknote, color: 'text-emerald-600 dark:text-emerald-400' },
-  { label: 'Müşteri Arandı', text: 'Müşterimizle telefon görüşmesi yapılarak detaylar iletilmiştir.', icon: PhoneCall, color: 'text-blue-600 dark:text-blue-400' },
+  { label: 'Kargoya Verildi', text: 'Talebiniz işleme alındı, eksik/yeni ürününüz kargoya verilmiştir.', icon: Package, bg: 'from-amber-400 to-orange-500 shadow-amber-500/20' },
+  { label: 'İade/Ödeme Yapıldı', text: 'Ödemeniz/iadeniz kontrol edilip hesabınıza tanımlanmıştır.', icon: Banknote, bg: 'from-emerald-400 to-emerald-600 shadow-emerald-500/20' },
+  { label: 'Müşteri Arandı', text: 'Müşterimizle telefon görüşmesi yapılarak detaylar iletilmiştir.', icon: PhoneCall, bg: 'from-blue-500 to-blue-600 shadow-blue-500/20' },
 ];
 
 type FilterTab = 'all' | 'open' | 'high' | 'resolved';
@@ -442,14 +442,14 @@ function ComplaintsContent() {
               <button onClick={() => setResolveTarget(null)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">✕</button>
             </div>
 
-            {/* Hızlı yanıt pill'leri */}
+            {/* Hızlı yanıt pill'leri — canlı gradient rozetler */}
             <div className="flex flex-wrap gap-1.5">
               {QUICK_TEMPLATES.map((t) => {
                 const TIcon = t.icon;
                 return (
                 <button key={t.label} onClick={() => setResolveNote(t.text)} title={`Notu doldur: ${t.label}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm hover:ring-1 hover:ring-emerald-300/50 transition-all">
-                  <TIcon size={13} className={t.color} /> {t.label}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${t.bg} shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all`}>
+                  <TIcon size={13} /> {t.label}
                 </button>
                 );
               })}
