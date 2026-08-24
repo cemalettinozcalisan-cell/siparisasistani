@@ -291,7 +291,7 @@ export default function LandingPage() {
         </div>
 
         {/* AI Scheme + Yetenek Paneli + KPI — koyu çerçeveli, ferah yapı */}
-        <div className="mt-20 relative max-w-5xl mx-auto">
+        <div className="mt-20 relative max-w-6xl mx-auto">
           <div className="relative bg-slate-950/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 md:p-8 shadow-[0_10px_35px_rgba(99,102,241,0.15)]">
             {/* Orkestrasyon — AI çipi + kanallar + yetenek paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
             <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative">
@@ -345,13 +345,13 @@ export default function LandingPage() {
                 {MOCK_HUB_RIGHT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[14rem]`}>
-                      <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                        <ChIcon size={20} className="text-white" />
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-64 max-w-[17rem]`}>
+                      <div className={`w-11 h-11 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <ChIcon size={22} className="text-white" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white whitespace-nowrap">{ch.name}</p>
-                        <p className="text-[10px] text-slate-400">{ch.sub}</p>
+                        <p className="text-sm font-bold text-white whitespace-nowrap">{ch.name}</p>
+                        <p className="text-[11px] text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
