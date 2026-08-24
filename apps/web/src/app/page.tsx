@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, Instagram, Globe, Printer, TrendingUp, AlertCircle, Phone, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 
@@ -16,6 +16,37 @@ const OMNICHANNEL_FLOW = [
   { icon: Printer, label: 'Yazıcı', desc: 'Fiş çıkar', color: 'from-amber-500 to-amber-600' },
   { icon: Truck, label: 'Kargo', desc: 'Kargo kodu iletilir', color: 'from-cyan-500 to-cyan-600' },
   { icon: ShoppingBag, label: 'Raporlar', desc: 'Analiz', color: 'from-indigo-500 to-indigo-600' },
+];
+
+// Hero mockup — dashboard AI şeması kanalları (bağlantı çizgisi rengiyle)
+const MOCK_HUB_LEFT = [
+  { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-500/40', lineStroke: '#3b82f6' },
+  { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-500/40', lineStroke: '#10b981' },
+  { name: 'Instagram', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-500/40', lineStroke: '#d946ef' },
+];
+
+const MOCK_HUB_RIGHT = [
+  { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-500/40', lineStroke: '#f59e0b' },
+  { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-cyan-500', cardBorder: 'border-cyan-500/40', lineStroke: '#06b6d4' },
+];
+
+const MOCK_HUB_FEATURES = [
+  { icon: ShoppingBag, text: 'Siparişleri alır', gradient: 'from-blue-500 to-cyan-600' },
+  { icon: UserCheck, text: 'Müşterileri tanır', gradient: 'from-emerald-500 to-green-600' },
+  { icon: HelpCircle, text: 'Soruları yanıtlar', gradient: 'from-violet-500 to-purple-600' },
+  { icon: CreditCard, text: 'Ödemeyi yönetir', gradient: 'from-amber-500 to-orange-600' },
+  { icon: Truck, text: 'Kargoyu takip eder', gradient: 'from-cyan-500 to-teal-600' },
+  { icon: TrendingUp, text: 'İşletmenizi büyütür', gradient: 'from-pink-500 to-rose-600' },
+];
+
+const MOCK_KPIS = [
+  { label: 'Bugünkü Sipariş', value: '42', icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', border: 'border-blue-500/40', trend: '↑ %19' },
+  { label: 'Kargo Takibi', value: '14', icon: Truck, gradient: 'from-amber-500 to-orange-600', border: 'border-amber-500/40', trend: '↑ %12' },
+  { label: 'Talep & İstek', value: '6', icon: AlertCircle, gradient: 'from-pink-500 to-rose-600', border: 'border-pink-500/40', trend: '↑ %14' },
+  { label: 'Bugünkü Ciro', value: '28.450 TL', icon: Wallet, gradient: 'from-emerald-500 to-green-600', border: 'border-emerald-500/40', trend: '↑ %22' },
+  { label: 'AI Müşteri', value: '118', icon: User, gradient: 'from-purple-500 to-violet-600', border: 'border-purple-500/40', trend: '↑ %33' },
+  { label: 'AI Satış', value: '8.450 TL', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600', border: 'border-blue-500/40', trend: '↑ %28' },
+  { label: 'AI Başarı', value: '%97', icon: Target, gradient: 'from-teal-500 to-emerald-600', border: 'border-emerald-500/40', trend: '↑ %4' },
 ];
 
 const FAQ = [
@@ -128,6 +159,55 @@ export default function LandingPage() {
   const [contactSending, setContactSending] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  // Hero mockup — AI şeması bağlantı çizgileri için ölçüm
+  const gridRef = useRef<HTMLDivElement>(null);
+  const coreRef = useRef<HTMLDivElement>(null);
+  const leftCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rightCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [hubLines, setHubLines] = useState<{ x0: number; y0: number; x1: number; y1: number; color: string }[]>([]);
+  const [gridSize, setGridSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const update = () => {
+      const grid = gridRef.current;
+      const coreEl = coreRef.current;
+      if (!grid || !coreEl) return;
+      const gr = grid.getBoundingClientRect();
+      const cr = coreEl.getBoundingClientRect();
+      const cx = cr.left + cr.width / 2 - gr.left;
+      const cy = cr.top + cr.height / 2 - gr.top;
+      const radius = cr.width / 2 + 20;
+      const next: { x0: number; y0: number; x1: number; y1: number; color: string }[] = [];
+      const connect = (el: HTMLDivElement | null, edgeFromLeft: boolean, color: string) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const x0 = (edgeFromLeft ? r.right : r.left) - gr.left;
+        const y0 = r.top + r.height / 2 - gr.top;
+        const dx = cx - x0;
+        const dy = cy - y0;
+        const dist = Math.hypot(dx, dy) || 1;
+        next.push({ x0, y0, x1: cx - (dx / dist) * radius, y1: cy - (dy / dist) * radius, color });
+      };
+      MOCK_HUB_LEFT.forEach((ch, i) => connect(leftCardRefs.current[i], true, ch.lineStroke));
+      MOCK_HUB_RIGHT.forEach((ch, i) => connect(rightCardRefs.current[i], false, ch.lineStroke));
+      setHubLines(next);
+      setGridSize({ w: gr.width, h: gr.height });
+    };
+    const t = setTimeout(update, 100);
+    update();
+    window.addEventListener('resize', update);
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && gridRef.current) {
+      ro = new ResizeObserver(update);
+      ro.observe(gridRef.current);
+    }
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', update);
+      ro?.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => setActiveStep((prev) => (prev + 1) % OMNICHANNEL_FLOW.length), 2500);
     return () => clearInterval(interval);
@@ -207,7 +287,7 @@ export default function LandingPage() {
         </div>
 
         {/* Browser Mockup — dark dashboard (AI çipi + kanallar + özellikler + KPI) */}
-        <div className="mt-16 relative max-w-4xl mx-auto max-h-[560px] overflow-hidden">
+        <div className="mt-16 relative max-w-6xl mx-auto">
           {/* Dış parıltı */}
           <div className="absolute -inset-4 bg-gradient-to-r from-indigo-600/20 via-purple-600/20 to-blue-600/20 rounded-3xl blur-2xl -z-10" />
 
@@ -240,40 +320,25 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Orkestrasyon — AI çipi + kanallar + özellik paneli (neon bağlantı hatlarıyla) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center relative">
+                {/* Orkestrasyon — AI çipi + kanallar + özellik paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
+                <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center relative">
                   {/* Neon SVG bağlantı hatları */}
-                  <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 300" preserveAspectRatio="none" fill="none">
-                    {[
-                      { x0: 180, y0: 60 }, { x0: 180, y0: 150 }, { x0: 180, y0: 240 },
-                    ].map((p, i) => (
-                      <g key={`l${i}`}>
-                        <path d={`M ${p.x0} ${p.y0} C 420 ${p.y0}, 420 150, 470 150`} stroke="#6366f1" strokeWidth="2" className="opacity-70" style={{ filter: 'drop-shadow(0 0 6px #818cf8)' }} />
-                        <circle cx={p.x0} cy={p.y0} r="4" fill="#818cf8" stroke="#0f172a" strokeWidth="1.5" />
-                        <circle cx="470" cy="150" r="4" fill="#818cf8" className="animate-pulse" />
-                      </g>
-                    ))}
-                    {[
-                      { x0: 820, y0: 80 }, { x0: 820, y0: 220 },
-                    ].map((p, i) => (
-                      <g key={`r${i}`}>
-                        <path d={`M ${p.x0} ${p.y0} C 580 ${p.y0}, 580 150, 530 150`} stroke="#6366f1" strokeWidth="2" className="opacity-70" style={{ filter: 'drop-shadow(0 0 6px #818cf8)' }} />
-                        <circle cx={p.x0} cy={p.y0} r="4" fill="#818cf8" stroke="#0f172a" strokeWidth="1.5" />
-                        <circle cx="530" cy="150" r="4" fill="#818cf8" className="animate-pulse" />
+                  <svg className="hidden lg:block absolute inset-0 w-full h-full pointer-events-none" width={gridSize.w} height={gridSize.h} viewBox={`0 0 ${gridSize.w} ${gridSize.h}`} fill="none">
+                    {hubLines.map((l, i) => (
+                      <g key={i}>
+                        <path d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`} stroke={l.color} strokeWidth="2" className="opacity-60" style={{ filter: `drop-shadow(0 0 5px ${l.color})` }} />
+                        <circle cx={l.x0} cy={l.y0} r="4" fill={l.color} stroke="#0f172a" strokeWidth="1.5" />
+                        <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} className="animate-pulse" />
                       </g>
                     ))}
                   </svg>
 
                   {/* Sol kanallar */}
                   <div className="lg:col-span-3 flex flex-row lg:flex-col gap-3 flex-wrap justify-center lg:justify-start lg:items-end z-10">
-                    {[
-                      { name: 'Telefon', sub: 'Arama alınıyor', icon: Phone, iconBg: 'bg-blue-500', cardBorder: 'border-blue-500/40' },
-                      { name: 'WhatsApp', sub: 'Mesaj alınıyor', icon: WhatsAppIcon, iconBg: 'bg-emerald-500', cardBorder: 'border-emerald-500/40' },
-                      { name: 'Instagram', sub: 'DM alınıyor', icon: Instagram, iconBg: 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600', cardBorder: 'border-pink-500/40' },
-                    ].map((ch, i) => {
+                    {MOCK_HUB_LEFT.map((ch, i) => {
                       const ChIcon = ch.icon;
                       return (
-                        <div key={i} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 max-w-[13rem]`}>
+                        <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 max-w-[13rem]`}>
                           <div className={`w-9 h-9 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                             <ChIcon size={18} className="text-white" />
                           </div>
@@ -291,7 +356,7 @@ export default function LandingPage() {
                     <div className="relative">
                       <div className="absolute inset-[-24px] rounded-full border border-fuchsia-400/10" />
                       <div className="absolute inset-[-12px] rounded-full border border-fuchsia-400/20" />
-                      <div className="relative w-32 h-32 md:w-36 md:h-36 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                      <div ref={coreRef} className="relative w-32 h-32 md:w-36 md:h-36 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
                         <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
                         <img src="/logo2.png" alt="AI Çekirdek" className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
                       </div>
@@ -304,13 +369,10 @@ export default function LandingPage() {
 
                   {/* Sağ kanallar */}
                   <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3 flex-wrap justify-center sm:justify-start z-10">
-                    {[
-                      { name: 'SMS', sub: 'Mesaj alınıyor', icon: MessageSquare, iconBg: 'bg-orange-500', cardBorder: 'border-orange-500/40' },
-                      { name: 'Web Siteniz', sub: 'Sipariş alınıyor', icon: Globe, iconBg: 'bg-cyan-500', cardBorder: 'border-cyan-500/40' },
-                    ].map((ch, i) => {
+                    {MOCK_HUB_RIGHT.map((ch, i) => {
                       const ChIcon = ch.icon;
                       return (
-                        <div key={i} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 sm:w-full max-w-[13rem]`}>
+                        <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-52 sm:w-full max-w-[13rem]`}>
                           <div className={`w-9 h-9 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                             <ChIcon size={18} className="text-white" />
                           </div>
@@ -326,14 +388,7 @@ export default function LandingPage() {
                   {/* Özellik Paneli */}
                   <div className="lg:col-span-4 flex justify-center lg:justify-end items-stretch z-10">
                     <div className="rounded-2xl bg-[#0C1027]/60 border border-violet-500/40 backdrop-blur-md shadow-2xl p-3.5 flex flex-col justify-center gap-2 w-full max-w-[15rem] h-full lg:min-h-[15rem]">
-                      {[
-                        { icon: ShoppingBag, text: 'Siparişleri alır', gradient: 'from-blue-500 to-cyan-600' },
-                        { icon: UserCheck, text: 'Müşterileri tanır', gradient: 'from-emerald-500 to-green-600' },
-                        { icon: HelpCircle, text: 'Soruları yanıtlar', gradient: 'from-violet-500 to-purple-600' },
-                        { icon: CreditCard, text: 'Ödemeyi yönetir', gradient: 'from-amber-500 to-orange-600' },
-                        { icon: Truck, text: 'Kargoyu takip eder', gradient: 'from-cyan-500 to-teal-600' },
-                        { icon: TrendingUp, text: 'İşletmenizi büyütür', gradient: 'from-pink-500 to-rose-600' },
-                      ].map((f, i) => {
+                      {MOCK_HUB_FEATURES.map((f, i) => {
                         const FIcon = f.icon;
                         return (
                           <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-300">
@@ -350,15 +405,7 @@ export default function LandingPage() {
 
                 {/* 7 KPI — tek sıra */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                  {[
-                    { label: 'Bugünkü Sipariş', value: '42', icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', border: 'border-blue-500/40', trend: '↑ %19' },
-                    { label: 'Kargo Takibi', value: '14', icon: Truck, gradient: 'from-amber-500 to-orange-600', border: 'border-amber-500/40', trend: '↑ %12' },
-                    { label: 'Talep & İstek', value: '6', icon: AlertCircle, gradient: 'from-pink-500 to-rose-600', border: 'border-pink-500/40', trend: '↑ %14' },
-                    { label: 'Bugünkü Ciro', value: '28.450 TL', icon: Wallet, gradient: 'from-emerald-500 to-green-600', border: 'border-emerald-500/40', trend: '↑ %22' },
-                    { label: 'AI Müşteri', value: '118', icon: User, gradient: 'from-purple-500 to-violet-600', border: 'border-purple-500/40', trend: '↑ %33' },
-                    { label: 'AI Satış', value: '8.450 TL', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600', border: 'border-blue-500/40', trend: '↑ %28' },
-                    { label: 'AI Başarı', value: '%97', icon: Target, gradient: 'from-teal-500 to-emerald-600', border: 'border-emerald-500/40', trend: '↑ %4' },
-                  ].map((k, i) => {
+                  {MOCK_KPIS.map((k, i) => {
                     const KIcon = k.icon;
                     return (
                       <div key={i} className={`group bg-[#0C1027]/40 border ${k.border} rounded-2xl p-3 shadow-2xl`}>
