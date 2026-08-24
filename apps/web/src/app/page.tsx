@@ -341,11 +341,11 @@ export default function LandingPage() {
               </div>
 
               {/* Sağ kanallar */}
-              <div className="lg:col-span-2 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
+              <div className="lg:col-span-3 flex flex-row sm:flex-col gap-3.5 flex-wrap justify-center sm:justify-start z-10">
                 {MOCK_HUB_RIGHT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-60 sm:w-full max-w-[15rem]`}>
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[14rem]`}>
                       <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                         <ChIcon size={20} className="text-white" />
                       </div>
@@ -359,8 +359,8 @@ export default function LandingPage() {
               </div>
 
               {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt */}
-              <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
-                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[16rem] h-full flex flex-col justify-center gap-2 border border-white/5">
+              <div className="lg:col-span-2 flex justify-center lg:justify-end items-stretch z-10">
+                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[13rem] h-full flex flex-col justify-center gap-2 border border-white/5">
                   {MOCK_HUB_FEATURES.map((f, i) => {
                     const FIcon = f.icon;
                     return (
