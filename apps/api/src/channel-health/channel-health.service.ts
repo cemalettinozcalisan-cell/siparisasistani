@@ -1,14 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
+import { AiProviderFactory } from '../ai/providers/ai-provider.factory';
 
 export type HealthChannel = 'phone' | 'sms' | 'whatsapp' | 'instagram' | 'website' | 'ai' | 'webhook';
 
 @Injectable()
 export class ChannelHealthService {
   private readonly logger = new Logger(ChannelHealthService.name);
+  private lastProbeAt = new Map<string, number>();
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly aiFactory: AiProviderFactory,
+  ) {}
 
   /**
    * Bir kanal işleminin sonucunu kaydeder.
@@ -378,8 +383,8 @@ export class ChannelHealthService {
 
   @Cron('*/5 * * * *')
   async scanStaleChannels() {
-    // Sessizlik eşiği: 30 dakika. Yalnızca "hiç işlem yapılmamış 30+ dk" bir kanal degraded sayılır.
-    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Sessizlik eşiği: 15 dakika. Uyarı vermeden önce sağlayıcı health check (probe) yapılır.
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: stale } = await this.supabase.db
       .from('channel_health')
       .select('*')
@@ -387,11 +392,73 @@ export class ChannelHealthService {
       .lt('last_success_at', cutoff);
 
     for (const row of stale || []) {
-      await this.supabase.db
-        .from('channel_health')
-        .update({ status: 'degraded', updated_at: new Date().toISOString() })
-        .eq('id', row.id);
-      await this.raiseAlert(row.tenant_id, row.channel, { error: 'Son başarılı işlemden 30 dakikadan uzun süre geçti' });
+      const ok = await this.probeChannel(row.tenant_id as string, row.channel as HealthChannel);
+      if (ok) {
+        // Kanal aslında çalışıyor — sadece trafik yok (örn. gece). Ok kalır, bildirim yok.
+        await this.supabase.db
+          .from('channel_health')
+          .update({ last_success_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq('id', row.id);
+        this.logger.log(`Probe OK: ${row.channel} for tenant ${row.tenant_id} (idle, no alert)`);
+      } else {
+        await this.supabase.db
+          .from('channel_health')
+          .update({ status: 'degraded', updated_at: new Date().toISOString() })
+          .eq('id', row.id);
+        await this.raiseAlert(row.tenant_id, row.channel, { error: 'Son başarılı işlemden 15 dakikadan uzun süre geçti, sağlayıcı kontrolü başarısız' });
+      }
+    }
+  }
+
+  /**
+   * Kanala göre sağlayıcı health check (probe). Başarılıysa kanal çalışıyor demektir.
+   * Throttle: aynı kanal için saatte en fazla 1 probe (AI maliyetini sınırlar).
+   */
+  private async probeChannel(tenantId: string, channel: HealthChannel): Promise<boolean> {
+    const now = Date.now();
+    const key = `${tenantId}:${channel}`;
+    const last = this.lastProbeAt.get(key) || 0;
+    if (now - last < 60 * 60 * 1000) {
+      // Saat içinde zaten probe edildi — varsayılan olarak "çalışıyor" kabul et (tekrar yükleme yok)
+      return true;
+    }
+    this.lastProbeAt.set(key, now);
+
+    try {
+      if (channel === 'ai') {
+        // AI: minimal düşük maliyetli ping çağrısı
+        const provider = this.aiFactory.getProvider();
+        const res = await provider.complete({
+          messages: [{ role: 'user', content: 'ping' }],
+          maxTokens: 1,
+        });
+        return !!res.content;
+      }
+
+      // Diğer kanallar: sağlayıcı anahtarının yapılandırılmış olup olmadığını kontrol et (pasif health check)
+      // Gerçek healthCheck() çağrıları dış sağlayıcıya bağlanır; burada basit + güvenli kontrol yapılır.
+      const providerMap: Record<string, string[]> = {
+        phone: ['netgsm'],
+        sms: ['netgsm'],
+        whatsapp: ['meta_whatsapp'],
+        instagram: ['meta_instagram'],
+        website: ['woocommerce', 'shopify', 'ideasoft', 'ticimax', 'custom'],
+      };
+      const providers = providerMap[channel] || [];
+      if (providers.length === 0) return true;
+
+      const { data } = await this.supabase.db
+        .from('api_keys')
+        .select('provider, api_key')
+        .eq('tenant_id', tenantId)
+        .in('provider', providers)
+        .eq('active', true);
+      const rows = data as { provider: string; api_key: string | null }[] | null;
+      // En az bir sağlayıcı anahtarı varsa kanal çalışıyor kabul et
+      return !!rows && rows.length > 0;
+    } catch (e) {
+      this.logger.warn(`Probe failed for ${channel} tenant ${tenantId}: ${(e as Error).message}`);
+      return false;
     }
   }
 }
