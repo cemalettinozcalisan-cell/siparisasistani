@@ -18,6 +18,18 @@ interface HealthData {
 
 interface LicenseInfo { plan: string; used: number; limit: number; remaining: number; usagePercent: number; }
 
+interface RetentionData {
+  total_deleted: number;
+  total_failed: number;
+  last_run: string | null;
+  logs: Array<{ id: string; scope: string; deleted_count: number; failed_count: number; ran_at: string; cutoff: string | null; message: string | null; }>;
+}
+
+const RETENTION_SCOPE: Record<string, string> = {
+  recording: 'Ses Kaydı', transcript: 'Konuşma Metni', audit_log: 'AI Denetim Logu',
+  activity_log: 'Aktivite Logu', order: 'Sipariş', global: 'Global',
+};
+
 const SERVICE_ICONS: Record<string, ChannelIconType> = {
   aiBrain: Brain,
   netgsm: PhoneCall,
@@ -62,6 +74,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; color: strin
 export default function HealthPage() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [license, setLicense] = useState<LicenseInfo | null>(null);
+  const [retention, setRetention] = useState<RetentionData | null>(null);
   const [usage, setUsageState] = useState<{ ordersUsed: number; orderLimit: number; usagePercent: number; remaining: number; planName?: string } | null>(null);
   const [now, setNow] = useState(new Date());
   const [userRole, setUserRole] = useState('owner');
@@ -73,11 +86,14 @@ export default function HealthPage() {
   }, []);
 
   const load = async () => {
-    const [h, l, u] = await Promise.all([
+    const [h, l, u, r] = await Promise.all([
       fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => null),
       fetch(`/api/license/${tid}`).then(r => r.json()).catch(() => null),
       fetch(`/api/saas/usage/${tid}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/kvkk/retention/${tid}`).then(r => r.json()).catch(() => null),
     ]);
+
+    if (r && Array.isArray(r.logs)) setRetention(r);
 
     if (u && typeof u.ordersUsed === 'number') {
       setUsageState(u);
@@ -316,6 +332,44 @@ export default function HealthPage() {
                 ➕ Ek Kota Al
               </a>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* KVKK Retention Monitor (3D) */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+          <Database size={15} className="text-emerald-500" /> KVKK Veri Saklama (Retention)
+        </h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{retention?.total_deleted ?? 0}</div>
+              <div className="text-[10px] text-emerald-500">Toplam Silinen</div>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{retention?.total_failed ?? 0}</div>
+              <div className="text-[10px] text-red-500">Başarısız</div>
+            </div>
+            <div className="col-span-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 text-center">
+              <div className="text-sm font-bold text-slate-700 dark:text-slate-200">{retention?.last_run ? new Date(retention.last_run).toLocaleString('tr-TR') : '-'}</div>
+              <div className="text-[10px] text-slate-400">Son Temizlik</div>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {(retention?.logs || []).slice(0, 8).map((l) => (
+              <div key={l.id} className="flex items-center gap-3 text-[11px]">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${l.failed_count > 0 ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                <span className="font-semibold text-slate-600 dark:text-slate-300 w-28 shrink-0">{RETENTION_SCOPE[l.scope] || l.scope}</span>
+                <span className="text-slate-500 dark:text-slate-400 flex-1">
+                  {l.deleted_count} kayıt silindi{l.cutoff ? ` (kriter: ${new Date(l.cutoff).toLocaleDateString('tr-TR')} öncesi)` : ''}
+                </span>
+                <span className="text-[10px] text-slate-400">{new Date(l.ran_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            ))}
+            {(!retention || retention.logs.length === 0) && (
+              <p className="text-xs text-slate-400 text-center py-4">Henüz otomatik temizlik çalıştırılmadı. Her gün 03:00'te çalışır.</p>
+            )}
           </div>
         </div>
       </div>

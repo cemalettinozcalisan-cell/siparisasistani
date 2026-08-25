@@ -9,7 +9,7 @@ import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
-import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Clock, Phone } from 'lucide-react';
+import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Clock, Phone, LifeBuoy } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
@@ -58,6 +58,7 @@ const navItems = [
   { href: '/calls', label: 'Görüşmeler', icon: Phone, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/complaints', label: 'Talep & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/support', label: 'Destek', icon: LifeBuoy, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
   // Pazarlama

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
+import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 
 @Injectable()
 export class InstagramService {
@@ -9,6 +10,7 @@ export class InstagramService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly brain: AiBrainService,
+    private readonly dedup: WebhookDedupService,
   ) {}
 
   async handleWebhook(tenantId: string, body: Record<string, unknown>) {
@@ -20,6 +22,16 @@ export class InstagramService {
         const sender = event.sender as Record<string, unknown>;
         const message = event.message as Record<string, unknown>;
         if (!sender || !message) continue;
+
+        // Idempotency: Meta aynı mesajı retry ederse çift işleme engelle
+        const messageId = String((message as any).mid || '');
+        if (messageId) {
+          const isDuplicate = await this.dedup.claim(tenantId, 'instagram', messageId);
+          if (isDuplicate) {
+            this.logger.log(`Instagram duplicate message ${messageId} ignored`);
+            continue;
+          }
+        }
 
         const igUserId = String(sender.id);
         const text = String(message.text || '');

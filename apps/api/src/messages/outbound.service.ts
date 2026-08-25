@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { OutboundChannelFactory } from './outbound.factory';
 import { OutboundChannelName, OutboundMessage, OutboundSendResult } from './outbound-channel.interface';
+import { ChannelHealthService } from '../channel-health/channel-health.service';
 
 @Injectable()
 export class OutboundService {
@@ -10,6 +11,7 @@ export class OutboundService {
   constructor(
     private readonly factory: OutboundChannelFactory,
     private readonly supabase: SupabaseService,
+    private readonly channelHealth: ChannelHealthService,
   ) {}
 
   /**
@@ -28,6 +30,12 @@ export class OutboundService {
     await this.log(message, 'sending');
     const result = await channel.send(message);
     await this.log(message, result.success ? 'sent' : 'failed', result);
+    await this.channelHealth.record(
+      message.tenantId,
+      this.mapChannel(message.channel),
+      result.success,
+      { error: result.error || undefined, errorCode: result.success ? undefined : `${message.channel.toUpperCase()}_SEND` },
+    );
 
     if (!result.success) {
       this.logger.warn(`[${message.channel}] send failed: ${result.error}`);
@@ -43,6 +51,20 @@ export class OutboundService {
 
   async isConfigured(channel: OutboundChannelName, tenantId: string): Promise<boolean> {
     return this.factory.isConfigured(channel, tenantId);
+  }
+
+  private mapChannel(channel: OutboundChannelName): 'phone' | 'sms' | 'whatsapp' | 'instagram' {
+    switch (channel) {
+      case 'whatsapp':
+      case 'whatsapp_group':
+        return 'whatsapp';
+      case 'sms':
+        return 'sms';
+      case 'instagram':
+        return 'instagram';
+      default:
+        return 'sms';
+    }
   }
 
   private async log(

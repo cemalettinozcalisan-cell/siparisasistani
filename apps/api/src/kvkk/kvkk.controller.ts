@@ -26,4 +26,10 @@ export class KvkkController {
     this.logger.log(`Manual cleanup triggered for tenant ${tenantId}`);
     return { status: 'triggered' };
   }
+
+  // Retention Monitor — son temizlik işlemleri ve silinen kayıtlar
+  @Get('retention/:tenantId?')
+  async retentionOverview(@Param('tenantId') tenantId?: string) {
+    return this.service.retentionOverview(tenantId);
+  }
 }

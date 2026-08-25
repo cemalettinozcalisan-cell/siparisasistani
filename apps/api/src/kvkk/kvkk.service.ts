@@ -27,33 +27,86 @@ export class KvkkService {
         const cutoffRecord = new Date(Date.now() - recordDays * 86400000).toISOString();
         const cutoffAudit = new Date(Date.now() - auditDays * 86400000).toISOString();
 
-        // Delete old recordings
-        const { data: delRec } = await this.supabase.db
+        // Delete old recordings (kısa retention — ses kaydı)
+        const { data: delRec, error: errRec } = await this.supabase.db
           .from('call_recordings')
           .delete()
+          .select('id')
           .eq('tenant_id', tid)
           .lt('created_at', cutoffRecord);
-        if (delRec) this.logger.log(`Tenant ${tid}: deleted ${(delRec as any[]).length} old recordings`);
+        const recCount = (delRec as unknown as any[])?.length || 0;
 
-        // Delete old audit logs
-        const { data: delAudit } = await this.supabase.db
+        // Delete old audit logs (AI denetim — ayrı retention)
+        const { data: delAudit, error: errAudit } = await this.supabase.db
           .from('ai_audit_logs')
           .delete()
+          .select('id')
           .eq('tenant_id', tid)
           .lt('created_at', cutoffAudit);
-        if (delAudit) this.logger.log(`Tenant ${tid}: deleted ${(delAudit as any[]).length} old audit logs`);
+        const auditCount = (delAudit as unknown as any[])?.length || 0;
 
-        // Delete old activity logs
-        const { data: delAct } = await this.supabase.db
+        // Delete old activity logs (transcript/metadata — ayrı retention)
+        const { data: delAct, error: errAct } = await this.supabase.db
           .from('activity_logs')
           .delete()
+          .select('id')
           .eq('tenant_id', tid)
           .lt('created_at', cutoffAudit);
-        if (delAct) this.logger.log(`Tenant ${tid}: deleted ${(delAct as any[]).length} old activity logs`);
+        const actCount = (delAct as unknown as any[])?.length || 0;
+
+        if (recCount || auditCount || actCount || errRec || errAudit || errAct) {
+          this.logger.log(`Tenant ${tid}: recordings=${recCount}, audit=${auditCount}, activity=${actCount}`);
+        }
+
+        // Retention Monitor — işlem sonucunu logla
+        await this.logRetention(tid, 'recording', recCount, errRec ? 1 : 0, cutoffRecord, errRec?.message);
+        await this.logRetention(tid, 'audit_log', auditCount, errAudit ? 1 : 0, cutoffAudit, errAudit?.message);
+        await this.logRetention(tid, 'activity_log', actCount, errAct ? 1 : 0, cutoffAudit, errAct?.message);
       }
     } catch (e) {
       this.logger.error(`KVKK cleanup failed: ${e}`);
+      await this.logRetention(null, 'global', 0, 1, null, `Cleanup hatası: ${e}`);
     }
+  }
+
+  private async logRetention(
+    tenantId: string | null,
+    scope: string,
+    deletedCount: number,
+    failedCount: number,
+    cutoff: string | null,
+    message?: string,
+  ) {
+    try {
+      await this.supabase.db.from('retention_logs').insert({
+        tenant_id: tenantId || null,
+        scope,
+        deleted_count: deletedCount,
+        failed_count: failedCount,
+        cutoff: cutoff || null,
+        message: message || null,
+      });
+    } catch (e) {
+      this.logger.error(`retention log insert failed: ${e}`);
+    }
+  }
+
+  /** Retention Monitor özeti — son çalıştırmalar ve toplam silinen kayıt. */
+  async retentionOverview(tenantId?: string) {
+    let q = this.supabase.db.from('retention_logs').select('*').order('ran_at', { ascending: false }).limit(50);
+    if (tenantId) q = q.eq('tenant_id', tenantId);
+
+    const { data: logs } = await q;
+
+    const total = (logs || []).reduce((s: number, l: Record<string, unknown>) => s + Number(l.deleted_count || 0), 0);
+    const failed = (logs || []).reduce((s: number, l: Record<string, unknown>) => s + Number(l.failed_count || 0), 0);
+
+    return {
+      total_deleted: total,
+      total_failed: failed,
+      last_run: (logs || [])[0]?.ran_at || null,
+      logs: logs || [],
+    };
   }
 
   async eraseCustomerData(tenantId: string, customerId: string) {

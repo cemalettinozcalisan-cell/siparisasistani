@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap } from 'lucide-react';
+import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity } from 'lucide-react';
 import { getUserRole, setTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,9 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [stats, setStats] = useState<Record<string, unknown>>({});
   const [tenants, setTenants] = useState<Record<string, unknown>[]>([]);
+  const [tenantHealth, setTenantHealth] = useState<Record<string, unknown>[]>([]);
+  const [selectedHealth, setSelectedHealth] = useState<Record<string, unknown> | null>(null);
+  const [costs, setCosts] = useState<Record<string, unknown>[]>([]);
   const [search, setSearch] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
@@ -18,6 +21,8 @@ export default function AdminPage() {
   const reload = () => {
     fetch('/api/admin/stats').then(r => r.json()).then(d => setStats(d)).catch(() => {});
     fetch('/api/admin/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
+    fetch('/api/admin/tenants/health').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenantHealth(d); }).catch(() => {});
+    fetch('/api/admin/costs').then(r => r.json()).then(d => { if (Array.isArray(d)) setCosts(d); }).catch(() => {});
   };
 
   useEffect(() => {
@@ -82,6 +87,26 @@ export default function AdminPage() {
   const topByRevenue = [...tenants]
     .sort((a, b) => Number(b.revenue || 0) - Number(a.revenue || 0))
     .slice(0, 3);
+
+  const CHANNEL_COLS = [
+    { key: 'phone', label: 'Telefon' },
+    { key: 'whatsapp', label: 'WhatsApp' },
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'sms', label: 'SMS' },
+    { key: 'website', label: 'Web' },
+  ];
+
+  const channelDot = (status: string) => {
+    if (status === 'ok') return 'bg-emerald-500 shadow-sm shadow-emerald-500/40';
+    if (status === 'degraded') return 'bg-amber-500 shadow-sm shadow-amber-500/40';
+    if (status === 'down') return 'bg-red-500 shadow-sm shadow-red-500/40';
+    return 'bg-slate-300 dark:bg-slate-600';
+  };
+
+  const hasProblem = (t: Record<string, unknown>) => {
+    const ch = (t.channels as Record<string, string>) || {};
+    return Object.values(ch).some((s) => s === 'degraded' || s === 'down');
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-5 w-full">
@@ -234,9 +259,154 @@ export default function AdminPage() {
             <Zap size={18} className="text-indigo-500 mx-auto mb-1.5" />
             <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Toplam {tenants.length} Firma</p>
             <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-0.5">
-              {tenants.filter(t => t.status === 'active').length} aktif · {Number(stats.revenue || 0).toLocaleString('tr-TR')} TL ciro
+              {tenants.filter(t => t.status === 'active').length} aktif {Number(stats.revenue || 0).toLocaleString('tr-TR')} TL ciro
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Esnaf Kanal Sağlığı (1B) — proaktif arıza tespiti */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <Activity size={15} className="text-emerald-500" />
+            Esnaf Kanal Sağlığı
+          </h2>
+          <div className="flex items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Çalışıyor</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Arızalı</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Kesinti</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" /> Veri Yok</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="text-left px-4 py-2.5">Esnaf</th>
+                {CHANNEL_COLS.map((c) => (
+                  <th key={c.key} className="text-center px-3 py-2.5">{c.label}</th>
+                ))}
+                <th className="text-right px-4 py-2.5">Detay</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/30">
+              {(tenantHealth as any[]).map((t) => {
+                const ch = (t.channels as Record<string, string>) || {};
+                const problem = hasProblem(t);
+                return (
+                  <tr key={t.tenant_id as string} onClick={() => setSelectedHealth(selectedHealth?.tenant_id === t.tenant_id ? null : t)}
+                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors cursor-pointer ${problem ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${problem ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t.company_name as string}</p>
+                      </div>
+                    </td>
+                    {CHANNEL_COLS.map((c) => (
+                      <td key={c.key} className="px-3 py-2.5 text-center">
+                        <span className={`inline-block w-3 h-3 rounded-full ${channelDot(ch[c.key] || 'unknown')}`} />
+                      </td>
+                    ))}
+                    <td className="px-4 py-2.5 text-right">
+                      <button className="text-indigo-500 hover:text-indigo-700 text-[11px] font-medium">Görüntüle</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {tenantHealth.length === 0 && (
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-400">
+                  Henüz kanal sağlık verisi yok. Kanallar aktif kullanıldığında otomatik dolar.
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Kanal Detay Paneli */}
+        {selectedHealth && (() => {
+          const t = selectedHealth;
+          const detail = (t.detail as Record<string, any>) || {};
+          return (
+            <div className="border-t border-slate-100 dark:border-slate-700 p-4 space-y-3 bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <Building2 size={15} className="text-indigo-500" /> {t.company_name as string}
+                </h3>
+                <button onClick={() => setSelectedHealth(null)} className="text-[11px] text-slate-400 hover:text-slate-600">Kapat</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {CHANNEL_COLS.map((c) => {
+                  const d = detail[c.key] || {};
+                  const st = d.status || 'unknown';
+                  return (
+                    <div key={c.key} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{c.label}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${st === 'ok' ? 'bg-emerald-100 text-emerald-700' : st === 'degraded' ? 'bg-amber-100 text-amber-700' : st === 'down' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {st === 'ok' ? 'Çalışıyor' : st === 'degraded' ? 'Arızalı' : st === 'down' ? 'Kesinti' : 'Veri Yok'}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <p>Son başarı: {d.last_success_at ? new Date(d.last_success_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                        <p>Son hata: {d.last_error_at ? new Date(d.last_error_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                        {d.last_error && <p className="text-red-500 truncate" title={String(d.last_error)}>Hata: {String(d.last_error)}</p>}
+                        <p>Son 1 saat: {Number(d.success_count_1h || 0)} başarılı / {Number(d.error_count_1h || 0)} hata</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Per-Esnaf Maliyet & Katkı (3E) */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <Banknote size={15} className="text-emerald-500" />
+            Esnaf Başına Maliyet & Katkı (Son 30 Gün)
+          </h2>
+          <span className="text-[10px] text-slate-400">AI API maliyeti, paket fiyatıyla karşılaştırılır</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="text-left px-4 py-2.5">Esnaf</th>
+                <th className="text-left px-3 py-2.5">Plan</th>
+                <th className="text-right px-3 py-2.5">AI Maliyet</th>
+                <th className="text-right px-3 py-2.5">Görüşme</th>
+                <th className="text-right px-3 py-2.5">Paket</th>
+                <th className="text-right px-4 py-2.5">Katkı</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/30">
+              {(costs as any[]).map((c) => (
+                <tr key={c.tenant_id as string} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                  <td className="px-4 py-2.5">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{c.company_name as string}</p>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400">{c.plan as string}</td>
+                  <td className="px-3 py-2.5 text-right text-xs font-semibold text-slate-600 dark:text-slate-300">{(c.ai_cost_30d as number || 0).toFixed(2)} TL</td>
+                  <td className="px-3 py-2.5 text-right text-xs text-slate-500 dark:text-slate-400">{c.calls_30d as number || 0}</td>
+                  <td className="px-3 py-2.5 text-right text-xs text-slate-500 dark:text-slate-400">{(c.package_price as number || 0).toLocaleString('tr-TR')} TL</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <span className={`text-xs font-bold ${(c.contribution as number || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {(c.contribution as number || 0).toLocaleString('tr-TR')} TL
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {costs.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-xs text-slate-400">
+                  Maliyet verisi yok. AI görüşmeleri yapıldıkça otomatik dolar.
+                </td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

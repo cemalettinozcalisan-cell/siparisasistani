@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
 import { OutboundChannelFactory } from './outbound.factory';
 import { OutboundChannelName } from './outbound-channel.interface';
+import { ChannelHealthService } from '../channel-health/channel-health.service';
 
 /**
  * Outbound Worker — kuyruğa yazılan mesajları tüketip gerçek kanallara iletir.
@@ -22,6 +23,7 @@ export class OutboundWorker implements OnModuleInit {
   constructor(
     private readonly factory: OutboundChannelFactory,
     private readonly supabase: SupabaseService,
+    private readonly channelHealth: ChannelHealthService,
   ) {}
 
   onModuleInit() {
@@ -84,7 +86,9 @@ export class OutboundWorker implements OnModuleInit {
           .from('whatsapp_messages')
           .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() })
           .eq('id', row.id);
+        await this.channelHealth.record(tenantId, 'whatsapp', true);
       } else {
+        await this.channelHealth.record(tenantId, 'whatsapp', false, { error: result.error || undefined, errorCode: 'WA_SEND' });
         const retryCount = Number(row.retry_count || 0);
         if (retryCount < 3) {
           await this.supabase.db

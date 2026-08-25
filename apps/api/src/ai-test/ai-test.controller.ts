@@ -4,6 +4,7 @@ import { PromptEngineService } from '../ai/prompt-engine/prompt-engine.service';
 import { AiParserService } from '../ai/conversation/parser/ai-parser';
 import { AiAuditService } from '../ai/audit/ai-audit.service';
 import { SupabaseService } from '../common/supabase.client';
+import { PromptVersionService } from './prompt-version.service';
 
 @Controller('ai-test')
 export class AiTestController {
@@ -13,6 +14,7 @@ export class AiTestController {
     private readonly parser: AiParserService,
     private readonly audit: AiAuditService,
     private readonly supabase: SupabaseService,
+    private readonly promptVersions: PromptVersionService,
   ) {}
 
   @Post('simulate')
@@ -175,6 +177,30 @@ export class AiTestController {
       .eq('tenant_id', body.tenantId);
 
     return { success: true, key };
+  }
+
+  /** Prompt sürümleme & onay kapısı (3B) */
+
+  @Post('prompt-version/save-draft')
+  async savePromptDraft(@Body() body: { tenantId: string; channel: string; state: string; prompt: string }) {
+    const data = await this.promptVersions.saveDraft(body.tenantId, body.channel, body.state, body.prompt);
+    return { success: !!data, version: data?.version || null };
+  }
+
+  @Post('prompt-version/approve')
+  async approvePrompt(@Body() body: { tenantId: string; channel: string; state: string; version: number }) {
+    return this.promptVersions.approve(body.tenantId, body.channel, body.state, body.version);
+  }
+
+  @Post('prompt-version/activate')
+  async activatePrompt(@Body() body: { tenantId: string; channel: string; state: string; version: number }) {
+    const data = await this.promptVersions.activate(body.tenantId, body.channel, body.state, body.version);
+    return { success: !!data };
+  }
+
+  @Get('prompt-version/history/:tenantId/:channel/:state')
+  async promptHistory(@Param('tenantId') tenantId: string, @Param('channel') channel: string, @Param('state') state: string) {
+    return this.promptVersions.history(tenantId, channel, state);
   }
 
   private detectState(messages: { role: string; content: string }[]): string {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Copy, Loader2, Phone, Instagram, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown, FileText } from 'lucide-react';
+import { Brain, Copy, Loader2, Phone, Instagram, MessageSquare, RefreshCw, Save, FlaskConical, Undo2, ChevronDown, FileText, History, CheckCircle2, PlayCircle } from 'lucide-react';
 import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { getTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
@@ -43,6 +43,46 @@ export default function PromptsPage() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [versions, setVersions] = useState<Record<string, unknown>[]>([]);
+  const [showVersions, setShowVersions] = useState(false);
+
+  const loadVersions = () => {
+    fetch(`/api/ai-test/prompt-version/history/${tenantId}/${channel}/${state}`)
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setVersions(d); })
+      .catch(() => setVersions([]));
+  };
+
+  const approveVersion = async (v: number) => {
+    await fetch('/api/ai-test/prompt-version/approve', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, channel, state, version: v }),
+    });
+    loadVersions();
+  };
+
+  const activateVersion = async (v: number) => {
+    await fetch('/api/ai-test/prompt-version/activate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, channel, state, version: v }),
+    });
+    loadVersions();
+    // Aktif promptu editöre yansıt
+    const row = versions.find(x => x.version === v);
+    if (row) { setPrompt(String(row.prompt)); setOriginalPrompt(String(row.prompt)); }
+  };
+
+  const saveAsDraft = async () => {
+    setSaving(true);
+    await fetch('/api/ai-test/prompt-version/save-draft', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId, channel, state, prompt }),
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setSaving(false);
+    loadVersions();
+  };
 
   // Load custom prompts map on mount
   useEffect(() => {
@@ -105,6 +145,7 @@ export default function PromptsPage() {
     if (st) setState(st);
     setPrompt('');
     setOriginalPrompt('');
+    setVersions([]);
   };
 
   const testPrompt = () => {
@@ -192,7 +233,11 @@ export default function PromptsPage() {
                 className="w-full h-[450px] p-4 bg-slate-950 text-green-400 text-xs font-mono leading-relaxed resize-none outline-none border-0"
                 spellCheck={false} />
               <div className="flex items-center gap-2 px-4 py-2.5 border-t border-slate-100 dark:border-slate-700">
-                <button onClick={savePrompt} disabled={saving || prompt === originalPrompt}
+                <button onClick={saveAsDraft} disabled={saving || !prompt}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-sm disabled:opacity-30 transition-all">
+                  <History size={13} /> Sürüm Oluştur
+                </button>
+                <button onClick={() => { savePrompt(); loadVersions(); }} disabled={saving || prompt === originalPrompt}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all shadow-sm ${
                     saved ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white'
                   } disabled:opacity-30`}>
@@ -201,6 +246,10 @@ export default function PromptsPage() {
                 <button onClick={testPrompt}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
                   <FlaskConical size={13} /> AI Sohbet'te Test Et
+                </button>
+                <button onClick={() => { setShowVersions(!showVersions); if (!versions.length) loadVersions(); }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all ml-auto">
+                  <History size={13} /> Sürümler {versions.length ? `(${versions.length})` : ''}
                 </button>
               </div>
             </>
@@ -236,6 +285,64 @@ export default function PromptsPage() {
           </div>
         </div>
       </div>
+
+      {/* Sürüm Geçmişi & Onay Kapısı (3B) */}
+      {showVersions && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+              <History size={15} className="text-violet-500" />
+              Sürüm Geçmişi — {CHANNELS.find(c => c.key === channel)?.label} · {STATE_TR[state] || state}
+            </h3>
+            <button onClick={() => setShowVersions(false)} className="text-[11px] text-slate-400 hover:text-slate-600">Kapat</button>
+          </div>
+          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            {versions.map((v) => {
+              const status = String(v.status || 'draft');
+              const statusCfg: Record<string, { label: string; cls: string }> = {
+                draft: { label: 'Taslak', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
+                testing: { label: 'Test', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+                approved: { label: 'Onaylı', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+                active: { label: 'Aktif', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+              };
+              const cfg = statusCfg[status] || statusCfg.draft;
+              const active = status === 'active';
+              return (
+                <div key={v.id as string} className="px-4 py-3 flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200">v{v.version as number}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.label}</span>
+                      <span className="text-[10px] text-slate-400">{new Date(v.created_at as string).toLocaleString('tr-TR')}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 font-mono">{String(v.prompt).substring(0, 140)}...</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {!active && (
+                      <>
+                        <button onClick={() => approveVersion(v.version as number)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all">
+                          <CheckCircle2 size={11} /> Onayla
+                        </button>
+                        <button onClick={() => activateVersion(v.version as number)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all">
+                          <PlayCircle size={11} /> Aktif Et
+                        </button>
+                      </>
+                    )}
+                    {active && <span className="text-[10px] text-emerald-500 font-semibold">Kullanımda</span>}
+                  </div>
+                </div>
+              );
+            })}
+            {versions.length === 0 && (
+              <div className="px-4 py-8 text-center text-xs text-slate-400">
+                Henüz sürüm yok. "Sürüm Oluştur" ile bu promptu taslak olarak kaydedin.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

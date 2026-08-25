@@ -66,6 +66,8 @@ import { CargoTrackingModule } from './cargo-tracking/cargo-tracking.module';
 import { MessagesModule } from './messages/messages.module';
 import { IysModule } from './iys/iys.module';
 import { WhatsappTemplatesModule } from './whatsapp-templates/whatsapp-templates.module';
+import { ChannelHealthModule } from './channel-health/channel-health.module';
+import { SupportModule } from './support/support.module';
 
 
 
@@ -131,6 +133,8 @@ import { WhatsappTemplatesModule } from './whatsapp-templates/whatsapp-templates
     MessagesModule,
     IysModule,
     WhatsappTemplatesModule,
+    ChannelHealthModule,
+    SupportModule,
   ],
   controllers: [
     DashboardController,
