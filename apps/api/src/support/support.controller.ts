@@ -1,9 +1,31 @@
 import { Controller, Get, Post, Patch, Param, Query, Body } from '@nestjs/common';
 import { SupportService } from './support.service';
+import { SupportChatService } from './support-chat.service';
 
 @Controller('support')
 export class SupportController {
-  constructor(private readonly service: SupportService) {}
+  constructor(
+    private readonly service: SupportService,
+    private readonly chat: SupportChatService,
+  ) {}
+
+  /** Chat: sohbet geçmişi (oturumlar) */
+  @Get(':tenantId/chat/sessions')
+  async chatSessions(@Param('tenantId') tenantId: string) {
+    return this.chat.listSessions(tenantId);
+  }
+
+  /** Chat: bir oturumun mesajları */
+  @Get(':tenantId/chat/sessions/:sessionId')
+  async chatMessages(@Param('tenantId') tenantId: string, @Param('sessionId') sessionId: string) {
+    return this.chat.getSessionMessages(sessionId);
+  }
+
+  /** Chat: yeni mesaj gönder (oturum yoksa oluşturur) */
+  @Post(':tenantId/chat')
+  async chatMessage(@Param('tenantId') tenantId: string, @Body() body: { sessionId?: string; message: string }) {
+    return this.chat.handleMessage(tenantId, body.sessionId, body.message);
+  }
 
   @Get(':tenantId')
   async list(@Param('tenantId') tenantId: string, @Query('status') status?: string) {

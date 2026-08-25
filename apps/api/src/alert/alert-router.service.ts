@@ -177,6 +177,7 @@ export class AlertRouterService {
       WA_SEND: 'WhatsApp bağlantısını / API anahtarını kontrol edin.',
       SMS_SEND: 'NetGSM / SMS bağlantısını kontrol edin.',
       PHONE_SEND: 'NetGSM / telefon bağlantısını kontrol edin.',
+      SUPPORT_URGENT: 'Esnaf acil destek talebi bildirdi. En kısa sürede esnafa dönüş yapın.',
     };
     if (map[code]) return map[code];
     if (code === 'degraded') return 'İlgili kanal bağlantısını kontrol edin.';

@@ -1,5 +1,5 @@
 # SiparişAsistanı — Ölçekleme & Güvenilirlik Rehberi
-### Proaktif Arıza İzleme, Destek Sistemi, Sağlamlaştırma ve Dış Bildirim (Faz 1+2+3+4+5)
+### Proaktif Arıza İzleme, Destek Sistemi, Sağlamlaştırma, Dış Bildirim ve Akıllı Destek Asistanı (Faz 1+2+3+4+5+6)
 
 Bu rehber, sistemi **10 → 100 esnafa** taşırken kurulan tüm yeni özelliklerin nasıl çalıştığını, hangi ekranlarda göründüğünü ve nasıl test edileceğini **basit ve adım adım** anlatır.
 
@@ -33,9 +33,14 @@ Bu rehber, sistemi **10 → 100 esnafa** taşırken kurulan tüm yeni özellikle
    - [7.1 İzlenen Tüm Akışlar](#71-izlenen-tüm-akışlar)
    - [7.2 Eşik Tabanlı Otomatik Taramalar](#72-eşik-tabanlı-otomatik-taramalar)
    - [7.3 Çözüm Önerileri](#73-çözüm-önerileri)
-8. [Teknik Altyapı (Veritabanı & Kod)](#8-teknik-altyapı-veritabanı--kod)
-9. [Test Rehberi — Adım Adım](#9-test-rehberi--adım-adım)
-10. [Sık Sorulan Sorular (SSS)](#10-sık-sorulan-sorular-sss)
+8. [Faz 6 — Akıllı Destek Asistanı (Chatbot + Telefon)](#8-faz-6--akıllı-destek-asistanı-chatbot--telefon)
+   - [8.1 İç Destek Chatbot](#81-iç-destek-chatbot)
+   - [8.2 Canlı Veri Erişimi](#82-canlı-veri-erişimi)
+   - [8.3 Telefonla Owner Destek Hattı](#83-telefonla-owner-destek-hattı)
+   - [8.4 Acil Destek Bildirimi](#84-acil-destek-bildirimi)
+9. [Teknik Altyapı (Veritabanı & Kod)](#9-teknik-altyapı-veritabanı--kod)
+10. [Test Rehberi — Adım Adım](#10-test-rehberi--adım-adım)
+11. [Sık Sorulan Sorular (SSS)](#11-sık-sorulan-sorular-sss)
 
 ---
 
@@ -405,7 +410,56 @@ Her tespit edilen arıza, bildirim içinde **otomatik çözüm önerisi** ile ge
 
 ---
 
-## 8. Teknik Altyapı (Veritabanı & Kod)
+## 8. Faz 6 — Akıllı Destek Asistanı (Chatbot + Telefon)
+
+### 8.1 İç Destek Chatbot
+
+**Nerede:** `/support` (Destek Asistanı)
+
+Artık bu sayfa bir **sohbet arayüzü**dür (eski bilet sistemi yerine):
+
+- **Sol üst:** sohbet konu başlığı (AI ilk mesajdan otomatik oluşturur)
+- **Sağ üst:** geçmiş sohbetler (tarih + başlık, sıralı) — esnaf eski sohbete dönebilir
+- **Alt:** soru yazma alanı
+
+Esnaf, sistemle ilgili her soruyu sorabilir: "Sipariş ekleyemiyorum", "Müşteriye özel fiyat nasıl verilir?", "Kampanya mesajları ulaştı mı?", "Sipariş hakkım doluyor ne yapayım?" vb.
+
+**Temel kural:** AI **yalnızca sistem konularında** cevap verir. Sistem dışı sorularda kibarca reddeder: *"Ben SiparişAsistanı'nın destek asistanıyım, yalnızca sistemle ilgili sorularınıza cevap verebilirim."*
+
+### 8.2 Canlı Veri Erişimi
+
+AI, esnafın **kendi işletme verisine** erişir (siparişler, müşteriler, ürünler, görüşmeler, kota):
+
+- **Tenant izolasyonu:** Her esnaf yalnızca **kendi** verisini görür (RLS ile güvende). Esnaflar birbirinin verisini asla göremez.
+- **Okuma-yalnızca:** AI yalnızca **okur** (listeler, sorgular); sipariş silme, durum değiştirme gibi **yazma işlemleri YAPMAZ.**
+- **Onay mekanizması:** AI veriye bakmadan önce kibarca izin ister: *"Siparişlerinize ulaşmam gerekiyor, onay veriyor musunuz?"* Esnaf "evet" derse erişir.
+
+Örnek: Esnaf "Siparişim kayboldu nereye gitti?" derse AI, canlı sipariş özetine bakıp son siparişleri sıralar.
+
+### 8.3 Telefonla Owner Destek Hattı
+
+- **Owner destek numarası:** `admin_alert_settings.support_phone` — esnafın müşteri sipariş numarasından **tamamen ayrı** bir hattır.
+- Esnaf bu numarayı arar → NetGSM gelen çağrı → hedef numara `support_phone` ile eşleşirse → **destek modu** başlar.
+- AI: *"Merhaba [esnaf] Bey, SiparişAsistanı destek hattına hoş geldiniz. Sistemle ilgili sorununuzu anlatır mısınız?"*
+- AI, rehber + canlı veriyle çözüm üretir, esnafı yönlendirir.
+- Esnaf çok ısrar ederse: *"Anlıyorum efendim, notunuzu aldım. Sistem yetkilimiz en kısa sürede size dönüş sağlayacaktır."*
+
+> **NetGSM kurulumu (test aşamasında):** `support_phone` alanına destek hattı numarasını gir; NetGSM'de bu numara için webhook ayarlanır. Gerçek çağrı testi o zaman yapılır.
+
+### 8.4 Acil Destek Bildirimi
+
+AI, esnafın sözlerinden aciliyet tespit eder (örn. "çalışmıyor", "kayboldu", "bozuldu", "düşmüyor") → **yüksek öncelikli** işaretler → sana **bildirim + e-posta + WhatsApp + SMS** (AlertRouter üzerinden) gönderir.
+
+```
+🔴 Acil Destek: [esnaf] "WhatsApp mesajları gitmiyor"
+Çözüm: Esnaf acil destek talebi bildirdi. En kısa sürede dönüş yapın.
+```
+
+Ayrıca `/admin` sayfasında **Destek Metrikleri** kartı vardır: bugün kaç sohbet, kaç telefon görüşmesi, kaç acil talep olduğunu gösterir.
+
+---
+
+## 9. Teknik Altyapı (Veritabanı & Kod)
 
 Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 
@@ -421,6 +475,7 @@ Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 | `052_token_expiry.sql` | (`api_keys`'e kolon) | Token ömür izleme |
 | `053_retention_logs.sql` | `retention_logs` | KVKK retention takibi |
 | `054_admin_alert_settings.sql` | `admin_alert_settings` + `channel_health_alerts.external_notified` | Owner dış bildirim ayarları |
+| `055_support_chat.sql` | `support_knowledge`, `support_chat_sessions`, `support_chat_messages` + `admin_alert_settings.support_phone` | Akıllı destek asistanı |
 
 ### Kod dosyaları
 
@@ -432,7 +487,9 @@ Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 | `apps/api/src/ai/brain/ai-brain.service.ts` | AI cevap + gelen mesaj sağlığı (Faz 5) |
 | `apps/api/src/instagram/instagram.service.ts` | Instagram DM sağlığı (Faz 5) |
 | `apps/api/src/messages/outbound.worker.ts` | WhatsApp grubu + gönderim sağlığı (Faz 5) |
-| `apps/api/src/support/` | Destek/ticket API'si + AI tanı |
+| `apps/api/src/support/` | Destek/ticket API'si + AI tanı + destek chatbot (rehber + canlı veri) |
+| `apps/api/src/support/support-guide.ts` | Kapsamlı SiparişAsistanı kullanım rehberi (AI bağlamı) |
+| `apps/api/src/netgsm/call-flow.service.ts` | Telefon destek hattı yönlendirmesi (Madde 2) |
 | `apps/api/src/ai-test/prompt-version.service.ts` | Prompt sürümleme |
 | `apps/api/src/kvkk/kvkk.service.ts` | KVKK cleanup + retention log |
 | `apps/api/src/alert/` | AlertRouter — dış bildirim (e-posta/WA/SMS) + toplulaştırma |
@@ -461,7 +518,7 @@ Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 
 ---
 
-## 9. Test Rehberi — Adım Adım
+## 10. Test Rehberi — Adım Adım
 
 Aşağıdaki adımlarla tüm özellikleri test edebilirsin. Sistem `localhost:3000`'de çalışıyor.
 
@@ -516,9 +573,18 @@ Aşağıdaki adımlarla tüm özellikleri test edebilirsin. Sistem `localhost:30
 4. Bir metrik eşiği aşılırsa (örn. AI yanıt > 15 sn) otomatik uyarı oluşur.
 5. Tüm bu uyarılar, e-posta/WhatsApp/SMS kanalları açıksa size **dışarıdan** da bildirilir (çözüm önerisiyle).
 
+### Test 8: Akıllı Destek Asistanı (Faz 6)
+1. **`/support`** sayfasına git → artık bir sohbet arayüzüdür.
+2. Bir soru yaz (örn. "Müşteriye özel fiyat nasıl veririm?") → AI adım adım, kibar cevap verir.
+3. **Canlı veri:** "Siparişim kayboldu" gibi bir soru sor → AI önce izin ister, sonra canlı sipariş özetine bakar.
+4. **Geçmiş:** Sağ üstteki listeden eski sohbetine dön.
+5. **Sistem dışı soru:** "Hava nasıl?" gibi sor → AI kibarca reddeder.
+6. **Telefon destek hattı:** `admin_alert_settings.support_phone` alanına destek numaranı gir (test aşamasında NetGSM kurulunca gerçek çağrı test edilir).
+7. **Acil durum:** "WhatsApp çalışmıyor" gibi kritik kelime içeren mesaj yaz → sana bildirim (panel + dış kanallar) gider.
+
 ---
 
-## 10. Sık Sorulan Sorular (SSS)
+## 11. Sık Sorulan Sorular (SSS)
 
 **S: "Esnaf Kanal Sağlığı" tablosunda neden her şey gri?**
 C: Kanal henüz kullanılmamış demektir. Sağlık verisi, gerçek WhatsApp/SMS/Instagram işlemleri yapıldığında otomatik dolar.

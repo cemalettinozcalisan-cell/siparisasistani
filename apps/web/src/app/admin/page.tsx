@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity, Bell } from 'lucide-react';
+import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity, Bell, LifeBuoy, MessageSquare, Phone, AlertTriangle } from 'lucide-react';
 import { getUserRole, setTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [costs, setCosts] = useState<Record<string, unknown>[]>([]);
   const [alertSettings, setAlertSettings] = useState<Record<string, any> | null>(null);
   const [alertSaved, setAlertSaved] = useState(false);
+  const [supportMetrics, setSupportMetrics] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
@@ -26,6 +27,7 @@ export default function AdminPage() {
     fetch('/api/admin/tenants/health').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenantHealth(d); }).catch(() => {});
     fetch('/api/admin/costs').then(r => r.json()).then(d => { if (Array.isArray(d)) setCosts(d); }).catch(() => {});
     fetch('/api/alert/settings').then(r => r.json()).then(d => { if (d) setAlertSettings(d); }).catch(() => {});
+    fetch('/api/admin/support-metrics').then(r => r.json()).then(d => { if (d) setSupportMetrics(d); }).catch(() => {});
   };
 
   const saveAlertSettings = async () => {
@@ -156,6 +158,26 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      {/* Destek Metrikleri (Ek E) */}
+      {supportMetrics && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Bugün Sohbet', value: supportMetrics.chats_today || 0, icon: LifeBuoy, gradient: 'from-emerald-500 to-teal-600' },
+            { label: 'Bugün Telefon Desteği', value: supportMetrics.phone_calls_today || 0, icon: Phone, gradient: 'from-blue-500 to-cyan-600' },
+            { label: 'Bugün Bilet', value: supportMetrics.tickets_today || 0, icon: MessageSquare, gradient: 'from-violet-500 to-purple-600' },
+            { label: 'Bugün Acil Talep', value: supportMetrics.urgent_today || 0, icon: AlertTriangle, gradient: 'from-red-500 to-rose-600' },
+          ].map((m) => (
+            <div key={m.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${m.gradient} flex items-center justify-center mb-2 shadow-sm`}>
+                <m.icon size={17} className="text-white" />
+              </div>
+              <div className="text-xl font-bold text-slate-900 dark:text-white">{m.value}</div>
+              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{m.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tenant Table + Top Firms */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

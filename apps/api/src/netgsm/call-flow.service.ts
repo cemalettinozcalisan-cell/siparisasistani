@@ -4,6 +4,7 @@ import { NetgsmXmlBuilder } from './xml/xml-builder';
 import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { VoiceService } from '../voice/voice.service';
+import { SupportChatService } from '../support/support-chat.service';
 
 @Injectable()
 export class CallFlowService {
@@ -15,9 +16,28 @@ export class CallFlowService {
     private readonly supabase: SupabaseService,
     private readonly brain: AiBrainService,
     private readonly voice: VoiceService,
+    private readonly supportChat: SupportChatService,
   ) {}
 
-  async handleIncomingCall(tenantId: string, phone: string, callId: string): Promise<string> {
+  async handleIncomingCall(tenantId: string, phone: string, callId: string, opts: { isSupport?: boolean } = {}): Promise<string> {
+    const isSupport = !!opts.isSupport;
+
+    // Destek hattı: mesai/servis kontrolü atlanır, doğrudan destek asistanı karşılar
+    if (isSupport) {
+      const sessionId = await this.createSession(tenantId, phone, callId, 'support');
+      const welcomeAudio = await this.voice.generateSpeech(
+        'Merhaba, SiparişAsistanı destek hattına hoş geldiniz. Sistemle ilgili sorununuzu kısaca anlatır mısınız?', tenantId,
+      );
+      await this.updateCallStatus(sessionId, 'AI_SPEAKING');
+      const audioUrl = await this.storeAudio(tenantId, welcomeAudio.audio);
+      return this.xml.buildConversationGather({
+        audioUrl,
+        actionUrl: `${process.env.API_URL}/api/netgsm/webhook/conversation/${sessionId}`,
+        speechTimeout: 3,
+        maxSilence: 5,
+      });
+    }
+
     const settings = await this.getSettings(tenantId);
 
     if (settings?.maintenance_mode) {
@@ -58,6 +78,22 @@ export class CallFlowService {
 
     const session = await this.getSession(sessionId);
     if (!session) return this.xml.buildHangup();
+
+    // Destek hattı: AI, rehber + canlı veriyle destek cevabı üretir
+    if (session.channel_source === 'support') {
+      const reply = await this.supportChat.generateReply(session.tenant_id, '', userMessage);
+      // Aciliyet tespiti: kritik kelime varsa owner'a bildirim
+      await this.supportChat.detectUrgency(session.tenant_id, userMessage, sessionId);
+      const responseAudio = await this.voice.generateSpeech(reply, session.tenant_id);
+      const audioUrl = await this.storeAudio(session.tenant_id, responseAudio.audio);
+      await this.updateCallStatus(sessionId, 'AI_SPEAKING');
+      return this.xml.buildConversationGather({
+        audioUrl,
+        actionUrl: `${process.env.API_URL}/api/netgsm/webhook/conversation/${sessionId}`,
+        speechTimeout: 3,
+        maxSilence: 5,
+      });
+    }
 
     const brainInput = {
       tenantId: session.tenant_id,
@@ -151,11 +187,11 @@ export class CallFlowService {
     return this.xml.buildHangup();
   }
 
-  private async createSession(tenantId: string, phone: string, callId: string): Promise<string> {
+  private async createSession(tenantId: string, phone: string, callId: string, channelSource = 'netgsm'): Promise<string> {
     const { data, error } = await this.supabase.db
       .from('conversation_sessions')
       .insert({
-        tenant_id: tenantId, channel: 'phone', channel_source: 'netgsm',
+        tenant_id: tenantId, channel: 'phone', channel_source: channelSource,
         phone, status: 'active', call_status: 'RINGING',
       })
       .select('id')

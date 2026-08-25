@@ -14,6 +14,7 @@ import { AiBrainModule } from '../ai/brain/ai-brain.module';
 import { VoiceModule } from '../voice/voice.module';
 import { OrderEngineModule } from '../order-engine/order-engine.module';
 import { SupabaseService } from '../common/supabase.client';
+import { SupportChatService } from '../support/support-chat.service';
 
 @Module({
   imports: [AiModule, AiBrainModule, VoiceModule, OrderEngineModule],
@@ -28,6 +29,7 @@ import { SupabaseService } from '../common/supabase.client';
     NetgsmXmlBuilder,
     TelephonyProviderFactory,
     NetgsmProvider,
+    SupportChatService,
     SupabaseService,
   ],
   exports: [TelephonyProviderFactory, CallFlowService, NetgsmProvider],

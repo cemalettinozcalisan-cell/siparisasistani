@@ -165,6 +165,29 @@ export class AdminController {
     });
   }
 
+  /** Ek E: Destek metrikleri (bugün X sohbet, Y telefon, Z bilet) */
+  @Roles('owner')
+  @Get('support-metrics')
+  async supportMetrics() {
+    const today = new Date().toISOString().slice(0, 10);
+    const gte = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+    const [chatCount, phoneCount, ticketCount, urgentCount] = await Promise.all([
+      this.supabase.db.from('support_chat_sessions').select('id', { count: 'exact', head: true }).gte('created_at', gte),
+      this.supabase.db.from('conversation_sessions').select('id', { count: 'exact', head: true }).eq('channel', 'phone').gte('created_at', gte).eq('channel_source', 'support'),
+      this.supabase.db.from('support_tickets').select('id', { count: 'exact', head: true }).gte('created_at', gte),
+      this.supabase.db.from('notifications').select('id', { count: 'exact', head: true }).eq('type', 'support_urgent').gte('created_at', gte),
+    ]);
+
+    return {
+      date: today,
+      chats_today: chatCount.count || 0,
+      phone_calls_today: phoneCount.count || 0,
+      tickets_today: ticketCount.count || 0,
+      urgent_today: urgentCount.count || 0,
+    };
+  }
+
   @Roles('owner')
   @Put('tenants/:id/status')
   async toggleStatus(@Param('id') id: string, @Body() body: { status: string }) {
