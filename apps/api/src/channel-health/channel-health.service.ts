@@ -378,7 +378,8 @@ export class ChannelHealthService {
 
   @Cron('*/5 * * * *')
   async scanStaleChannels() {
-    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    // Sessizlik eşiği: 30 dakika. Yalnızca "hiç işlem yapılmamış 30+ dk" bir kanal degraded sayılır.
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: stale } = await this.supabase.db
       .from('channel_health')
       .select('*')
@@ -390,7 +391,7 @@ export class ChannelHealthService {
         .from('channel_health')
         .update({ status: 'degraded', updated_at: new Date().toISOString() })
         .eq('id', row.id);
-      await this.raiseAlert(row.tenant_id, row.channel, { error: 'Son başarılı işlemden uzun süre geçti' });
+      await this.raiseAlert(row.tenant_id, row.channel, { error: 'Son başarılı işlemden 30 dakikadan uzun süre geçti' });
     }
   }
 }
