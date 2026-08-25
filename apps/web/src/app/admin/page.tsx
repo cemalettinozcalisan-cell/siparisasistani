@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity } from 'lucide-react';
+import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity, Bell } from 'lucide-react';
 import { getUserRole, setTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +14,8 @@ export default function AdminPage() {
   const [tenantHealth, setTenantHealth] = useState<Record<string, unknown>[]>([]);
   const [selectedHealth, setSelectedHealth] = useState<Record<string, unknown> | null>(null);
   const [costs, setCosts] = useState<Record<string, unknown>[]>([]);
+  const [alertSettings, setAlertSettings] = useState<Record<string, any> | null>(null);
+  const [alertSaved, setAlertSaved] = useState(false);
   const [search, setSearch] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
@@ -23,6 +25,16 @@ export default function AdminPage() {
     fetch('/api/admin/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
     fetch('/api/admin/tenants/health').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenantHealth(d); }).catch(() => {});
     fetch('/api/admin/costs').then(r => r.json()).then(d => { if (Array.isArray(d)) setCosts(d); }).catch(() => {});
+    fetch('/api/alert/settings').then(r => r.json()).then(d => { if (d) setAlertSettings(d); }).catch(() => {});
+  };
+
+  const saveAlertSettings = async () => {
+    if (!alertSettings) return;
+    await fetch('/api/alert/settings', {
+      method: 'PUT', headers, body: JSON.stringify(alertSettings),
+    });
+    setAlertSaved(true);
+    setTimeout(() => setAlertSaved(false), 2000);
   };
 
   useEffect(() => {
@@ -361,6 +373,86 @@ export default function AdminPage() {
           );
         })()}
       </div>
+
+      {/* Arıza Bildirim Ayarları (Faz 4) */}
+      {alertSettings && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+              <Bell size={15} className="text-red-500" />
+              Arıza Bildirimleri (E-posta / WhatsApp / SMS)
+            </h2>
+            <span className="text-[10px] text-slate-400">Arıza tespit edilince size dış bildirim gider</span>
+          </div>
+          <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* İletişim */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">İletişim Bilgileri</h3>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">E-posta</label>
+                <input type="email" value={alertSettings.owner_email || ''}
+                  onChange={(e) => setAlertSettings({ ...alertSettings, owner_email: e.target.value })}
+                  placeholder="ornek@sirket.com" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">WhatsApp numarası</label>
+                <input type="tel" value={alertSettings.whatsapp_phone || ''}
+                  onChange={(e) => setAlertSettings({ ...alertSettings, whatsapp_phone: e.target.value })}
+                  placeholder="05321234567" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">SMS numarası (WhatsApp yedek)</label>
+                <input type="tel" value={alertSettings.sms_phone || ''}
+                  onChange={(e) => setAlertSettings({ ...alertSettings, sms_phone: e.target.value })}
+                  placeholder="05321234567" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20" />
+              </div>
+            </div>
+
+            {/* Kanallar + Toplulaştırma */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Bildirim Kanalları</h3>
+              <div className="space-y-2">
+                {[
+                  { key: 'email_enabled', label: 'E-posta', desc: 'Arıza e-postası gönderilir' },
+                  { key: 'whatsapp_enabled', label: 'WhatsApp', desc: 'WhatsApp mesajı gönderilir (yapılandırılmışsa)' },
+                  { key: 'sms_enabled', label: 'SMS', desc: 'WhatsApp çalışmazsa SMS yedek gönderilir' },
+                ].map((c) => (
+                  <label key={c.key} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{c.label}</p>
+                      <p className="text-[11px] text-slate-400">{c.desc}</p>
+                    </div>
+                    <input type="checkbox" checked={!!alertSettings[c.key]}
+                      onChange={(e) => setAlertSettings({ ...alertSettings, [c.key]: e.target.checked })}
+                      className="w-5 h-5 accent-red-500" />
+                  </label>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">Toplulaştırma eşiği</label>
+                  <input type="number" min="2" value={alertSettings.aggregation_threshold ?? 2}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, aggregation_threshold: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none" />
+                  <p className="text-[10px] text-slate-400 mt-1">Aynı sorun bu kadar esnafta olursa tek bildirim</p>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">Pencere (dakika)</label>
+                  <input type="number" min="1" value={alertSettings.aggregation_window_min ?? 5}
+                    onChange={(e) => setAlertSettings({ ...alertSettings, aggregation_window_min: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end">
+            <button onClick={saveAlertSettings}
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-sm transition-all ${alertSaved ? 'bg-emerald-500' : 'bg-red-600 hover:bg-red-700'}`}>
+              <Bell size={13} /> {alertSaved ? 'Kaydedildi!' : 'Bildirim Ayarlarını Kaydet'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Per-Esnaf Maliyet & Katkı (3E) */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">

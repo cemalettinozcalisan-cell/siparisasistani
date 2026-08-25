@@ -68,6 +68,7 @@ import { IysModule } from './iys/iys.module';
 import { WhatsappTemplatesModule } from './whatsapp-templates/whatsapp-templates.module';
 import { ChannelHealthModule } from './channel-health/channel-health.module';
 import { SupportModule } from './support/support.module';
+import { AlertModule } from './alert/alert.module';
 
 
 
@@ -135,6 +136,7 @@ import { SupportModule } from './support/support.module';
     WhatsappTemplatesModule,
     ChannelHealthModule,
     SupportModule,
+    AlertModule,
   ],
   controllers: [
     DashboardController,
