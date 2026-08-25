@@ -106,6 +106,7 @@ export default function AdminPage() {
     { key: 'instagram', label: 'Instagram' },
     { key: 'sms', label: 'SMS' },
     { key: 'website', label: 'Web' },
+    { key: 'ai', label: 'AI' },
   ];
 
   const channelDot = (status: string) => {
@@ -327,7 +328,7 @@ export default function AdminPage() {
                 );
               })}
               {tenantHealth.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-10 text-center text-xs text-slate-400">
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-xs text-slate-400">
                   Henüz kanal sağlık verisi yok. Kanallar aktif kullanıldığında otomatik dolar.
                 </td></tr>
               )}

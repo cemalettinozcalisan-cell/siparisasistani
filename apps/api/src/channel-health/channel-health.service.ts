@@ -240,6 +240,142 @@ export class ChannelHealthService {
     await this.scanTokenExpiry();
   }
 
+  /**
+   * Kapsamlı sistem sağlık taraması (Grup 2): her tenant için
+   * AI latency, AI güven, insana devir, kuyruk birikmesi, retry tükenmesi,
+   * kota ve bakiye eşiklerini kontrol eder. Her 5 dakikada bir çalışır.
+   */
+  @Cron('*/5 * * * *')
+  async scanSystemHealth() {
+    const { data: tenants } = await this.supabase.db.from('tenants').select('id');
+    for (const t of tenants || []) {
+      const tid = t.id as string;
+      await Promise.all([
+        this.scanAiLatency(tid),
+        this.scanAiConfidence(tid),
+        this.scanHumanTransfers(tid),
+        this.scanQueueBacklog(tid),
+        this.scanRetryExhaustion(tid),
+        this.scanQuota(tid),
+      ]);
+    }
+  }
+
+  private async scanAiLatency(tenantId: string) {
+    const since = new Date(Date.now() - 15 * 60000).toISOString();
+    const { data } = await this.supabase.db
+      .from('ai_audit_logs')
+      .select('latency_ms')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', since);
+    const rows = data || [];
+    if (!rows.length) return;
+    const avg = rows.reduce((s: number, r) => s + Number(r.latency_ms || 0), 0) / rows.length;
+    if (avg > 15000) {
+      await this.raiseMetricAlert(tenantId, 'ai', 'AI_YANIT_GECIKMESI', `AI ortalama yanıt süresi yüksek (${Math.round(avg / 1000)} sn / 15 sn eşik)`);
+    }
+  }
+
+  private async scanAiConfidence(tenantId: string) {
+    const since = new Date(Date.now() - 60 * 60000).toISOString();
+    const { data } = await this.supabase.db
+      .from('ai_audit_logs')
+      .select('confidence')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', since);
+    const rows = data || [];
+    if (!rows.length) return;
+    const avg = rows.reduce((s: number, r) => s + Number(r.confidence || 0), 0) / rows.length;
+    if (avg < 70) {
+      await this.raiseMetricAlert(tenantId, 'ai', 'AI_GUVEN_DUSUK', `AI ortalama anlama güveni düşük (${Math.round(avg)} / 70 eşik)`);
+    }
+  }
+
+  private async scanHumanTransfers(tenantId: string) {
+    const since = new Date(Date.now() - 60 * 60000).toISOString();
+    const { data } = await this.supabase.db
+      .from('conversation_sessions')
+      .select('session_data, status')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', since);
+    const rows = data || [];
+    if (!rows.length) return;
+    const needsHuman = rows.filter((r) => {
+      const sd = r.session_data;
+      if (typeof sd === 'string') { try { return JSON.parse(sd)?.needsHuman === true; } catch { return false; } }
+      return (sd as Record<string, unknown>)?.needsHuman === true;
+    }).length;
+    const rate = needsHuman / rows.length;
+    if (rate > 0.3) {
+      await this.raiseMetricAlert(tenantId, 'ai', 'COK_INSANA_DEVIR', `AI konuşmaların %${Math.round(rate * 100)}'ü insana devrediliyor (eşik %30)`);
+    }
+  }
+
+  private async scanQueueBacklog(tenantId: string) {
+    const { count } = await this.supabase.db
+      .from('whatsapp_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .in('status', ['queued', 'pending']);
+    if ((count || 0) > 20) {
+      await this.raiseMetricAlert(tenantId, 'whatsapp', 'KUYRUK_BIRIKMESI', `${count} WhatsApp mesajı kuyrukta bekliyor (eşik 20)`);
+    }
+  }
+
+  private async scanRetryExhaustion(tenantId: string) {
+    const since = new Date(Date.now() - 60 * 60000).toISOString();
+    const { count } = await this.supabase.db
+      .from('outbound_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'failed')
+      .gte('created_at', since);
+    if ((count || 0) > 5) {
+      await this.raiseMetricAlert(tenantId, 'whatsapp', 'RETRY_TUKENMESI', `Son 1 saatte ${count} mesaj kalıcı başarısız oldu (eşik 5)`);
+    }
+  }
+
+  private async scanQuota(tenantId: string) {
+    const { data: sub } = await this.supabase.db
+      .from('subscriptions')
+      .select('order_limit')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    const limit = Number(sub?.order_limit || 500);
+    const { count } = await this.supabase.db
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null);
+    const used = count || 0;
+    const percent = Math.min(100, Math.round((used / limit) * 100));
+    if (percent >= 90) {
+      await this.raiseMetricAlert(tenantId, 'website', 'KOTA_DOLUYOR', `Sipariş kotası %${percent} doldu (${used}/${limit})`);
+    }
+  }
+
+  /** Metrik kaynaklı arıza uyarısı oluşturur (tekrarını önler). */
+  private async raiseMetricAlert(tenantId: string, channel: HealthChannel, code: string, message: string) {
+    const { data: existing } = await this.supabase.db
+      .from('channel_health_alerts')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('channel', channel)
+      .eq('alert_type', code)
+      .is('resolved_at', null)
+      .maybeSingle();
+    if (existing) return;
+
+    await this.supabase.db.from('channel_health_alerts').insert({
+      tenant_id: tenantId, channel, alert_type: code, message,
+    });
+    await this.supabase.db.from('notifications').insert({
+      tenant_id: tenantId, type: 'channel_health',
+      title: `⚠️ ${channel} kanalı: ${code.replace(/_/g, ' ')}`,
+      message, status: 'unread',
+    });
+  }
+
   @Cron('*/5 * * * *')
   async scanStaleChannels() {
     const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();

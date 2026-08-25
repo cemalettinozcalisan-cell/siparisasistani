@@ -1,15 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
+import { ChannelHealthService } from '../channel-health/channel-health.service';
 
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly channelHealth: ChannelHealthService,
+  ) {}
 
   async receiveOrder(tenantId: string, platform: string, payload: Record<string, unknown>) {
     this.logger.log(`Webhook order from ${platform} for tenant ${tenantId}`);
 
+    try {
     // Normalize common order fields from various platforms
     const orderData = this.normalizeOrder(platform, payload);
     if (!orderData) {
@@ -69,7 +74,15 @@ export class WebhookService {
       );
     }
 
+    // Kanal sağlığı: web'den sipariş başarıyla düştü
+    await this.channelHealth.record(tenantId, 'website', true);
     return { status: 'created', order_id: order?.id, order_number: orderData.orderNumber };
+    } catch (err) {
+      this.logger.error(`Webhook order failed for ${platform} tenant ${tenantId}: ${(err as Error).message}`);
+      // Kanal sağlığı: web'den sipariş düşmedi (kritik)
+      await this.channelHealth.record(tenantId, 'website', false, { error: (err as Error).message, errorCode: 'WEBHOOK_FAILED' });
+      return { error: (err as Error).message };
+    }
   }
 
   private normalizeOrder(platform: string, payload: Record<string, unknown>): Record<string, unknown> | null {

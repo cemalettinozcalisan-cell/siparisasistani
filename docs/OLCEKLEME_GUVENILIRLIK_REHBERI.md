@@ -1,5 +1,5 @@
 # SiparişAsistanı — Ölçekleme & Güvenilirlik Rehberi
-### Proaktif Arıza İzleme, Destek Sistemi, Sağlamlaştırma ve Dış Bildirim (Faz 1+2+3+4)
+### Proaktif Arıza İzleme, Destek Sistemi, Sağlamlaştırma ve Dış Bildirim (Faz 1+2+3+4+5)
 
 Bu rehber, sistemi **10 → 100 esnafa** taşırken kurulan tüm yeni özelliklerin nasıl çalıştığını, hangi ekranlarda göründüğünü ve nasıl test edileceğini **basit ve adım adım** anlatır.
 
@@ -29,9 +29,13 @@ Bu rehber, sistemi **10 → 100 esnafa** taşırken kurulan tüm yeni özellikle
    - [6.1 Nasıl Çalışır](#61-nasıl-çalışır)
    - [6.2 Owner Bildirim Ayarları](#62-owner-bildirim-ayarları)
    - [6.3 Toplulaştırma (Ortak Sorun)](#63-toplulaştırma-ortak-sorun)
-7. [Teknik Altyapı (Veritabanı & Kod)](#7-teknik-altyapı-veritabanı--kod)
-8. [Test Rehberi — Adım Adım](#8-test-rehberi--adım-adım)
-9. [Sık Sorulan Sorular (SSS)](#9-sık-sorulan-sorular-sss)
+7. [Faz 5 — Kapsamlı Arıza İzleme (Tüm Akışlar)](#7-faz-5--kapsamlı-arıza-izleme-tüm-akışlar)
+   - [7.1 İzlenen Tüm Akışlar](#71-izlenen-tüm-akışlar)
+   - [7.2 Eşik Tabanlı Otomatik Taramalar](#72-eşik-tabanlı-otomatik-taramalar)
+   - [7.3 Çözüm Önerileri](#73-çözüm-önerileri)
+8. [Teknik Altyapı (Veritabanı & Kod)](#8-teknik-altyapı-veritabanı--kod)
+9. [Test Rehberi — Adım Adım](#9-test-rehberi--adım-adım)
+10. [Sık Sorulan Sorular (SSS)](#10-sık-sorulan-sorular-sss)
 
 ---
 
@@ -350,7 +354,58 @@ Detay: /admin > Esnaf Kanal Sağlığı
 
 ---
 
-## 7. Teknik Altyapı (Veritabanı & Kod)
+## 7. Faz 5 — Kapsamlı Arıza İzleme (Tüm Akışlar)
+
+### 7.1 İzlenen Tüm Akışlar
+
+Faz 4'te yalnızca **dışa giden mesaj gönderimi** izleniyordu. Faz 5'te bu, **tüm kritik akışlara** genişletildi. Artık sistem şunların hepsini izler:
+
+| Akış | Ne zaman hata sayılır |
+|---|---|
+| **AI cevap** | AI müşteriye cevap üretemezse |
+| **Gelen mesaj** | Telefon/SMS/Instagram'dan gelen mesaj işlenemezse |
+| **WhatsApp grubu** | Esnafın WhatsApp grubuna mesaj düşmezse |
+| **Web siparişi** | Web sitesinden sipariş düşmezse (webhook) |
+| **Instagram DM** | DM işlenmezse / AI cevap vermezse |
+| **WhatsApp gönderimi** | Müşteriye mesaj gidemezse |
+| **SMS gönderimi** | SMS gidemezse |
+
+Hepsi mevcut **kanal sağlığı + eşik + uyarı + toplulaştırma** sistemine bağlanır. Yani bir tanesinde bile 3+ ardışık hata olursa size bildirim gelir.
+
+### 7.2 Eşik Tabanlı Otomatik Taramalar
+
+Bunlar gönderim anında değil, **her 5 dakikada bir** otomatik kontrol edilir:
+
+| Tarama | Veri | Eşik | Ne anlama gelir |
+|---|---|---|---|
+| **AI yanıt süresi** | `ai_audit_logs.latency_ms` | son 15 dk ort. > 15 sn | AI yavaş — müşteri bekliyor |
+| **AI güveni** | `ai_audit_logs.confidence` | son 1 sa ort. < 70 | AI müşteriyi yanlış anlıyor |
+| **İnsana devir** | `conversation_sessions` | son 1 sa oranı > %30 | AI çok konuşmayı insana düşürüyor |
+| **Kuyruk birikmesi** | `whatsapp_messages` | pending > 20 | Mesajlar işlenmiyor (tıkanıklık) |
+| **Retry tükenmesi** | `outbound_logs` | son 1 sa > 5 kalıcı hata | Mesajlar düzeltilemiyor |
+| **Kota** | `subscriptions` + `orders` | %90+ | Sipariş kotası doluyor |
+
+> **Eşikler:** Kod içinde tanımlı varsayılanlar (latency 15 sn, güven 70, kuyruk 20, insana devir %30, kota %90). İsterseniz sonradan değiştirilebilir.
+
+### 7.3 Çözüm Önerileri
+
+Her tespit edilen arıza, bildirim içinde **otomatik çözüm önerisi** ile gelir:
+
+| Arıza | Bildirimdeki çözüm |
+|---|---|
+| AI cevap vermiyor | "AI sağlayıcı durumunu kontrol edin; api-keys → DeepSeek/OpenAI anahtarını test edin." |
+| Web siparişi düşmüyor | "Webhook bağlantısını kontrol edin; Entegrasyonlar → Web sitesi." |
+| WhatsApp grubuna düşmüyor | "Ayarlar → WhatsApp Grubu → grup ID'yi kontrol edin." |
+| Instagram | "Instagram token'ını yenileyin." |
+| AI yanıt gecikmesi | "AI sağlayıcı yoğun olabilir; model/sağlayıcıyı gözden geçirin." |
+| Düşük AI güven | "Prompt ve ürün adlarını kontrol edin." |
+| Kota doluyor | "Sipariş kotası %90 doldu; paket yükseltmeyi düşünün." |
+
+Çözüm önerileri tek yerden (`solutionFor`) yönetilir; yeni arıza türleri eklemek kolaydır.
+
+---
+
+## 8. Teknik Altyapı (Veritabanı & Kod)
 
 Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 
@@ -371,8 +426,12 @@ Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 
 | Dosya | Görev |
 |---|---|
-| `apps/api/src/channel-health/` | Kanal sağlığı servisi + controller + cron taramaları |
+| `apps/api/src/channel-health/` | Kanal sağlığı servisi + controller + cron taramaları (sessizlik, token, latency, güven, insana devir, kuyruk, retry, kota) |
 | `apps/api/src/webhook/webhook-dedup.service.ts` | Webhook tekilleştirme |
+| `apps/api/src/webhook/webhook.service.ts` | Web sipariş akışı sağlığı (Faz 5) |
+| `apps/api/src/ai/brain/ai-brain.service.ts` | AI cevap + gelen mesaj sağlığı (Faz 5) |
+| `apps/api/src/instagram/instagram.service.ts` | Instagram DM sağlığı (Faz 5) |
+| `apps/api/src/messages/outbound.worker.ts` | WhatsApp grubu + gönderim sağlığı (Faz 5) |
 | `apps/api/src/support/` | Destek/ticket API'si + AI tanı |
 | `apps/api/src/ai-test/prompt-version.service.ts` | Prompt sürümleme |
 | `apps/api/src/kvkk/kvkk.service.ts` | KVKK cleanup + retention log |
@@ -402,7 +461,7 @@ Bu rehberi okurken teknik ayrıntıya ihtiyaç duyarsan:
 
 ---
 
-## 8. Test Rehberi — Adım Adım
+## 9. Test Rehberi — Adım Adım
 
 Aşağıdaki adımlarla tüm özellikleri test edebilirsin. Sistem `localhost:3000`'de çalışıyor.
 
@@ -450,9 +509,16 @@ Aşağıdaki adımlarla tüm özellikleri test edebilirsin. Sistem `localhost:30
 
 > **Not:** E-posta için `.env`'de SMTP bilgileri girilmelidir. WhatsApp/SMS için ilgili API anahtarları (api-keys) yapılandırılmış olmalıdır.
 
+### Test 7: Kapsamlı Arıza İzleme (Faz 5)
+1. **`/admin` → Esnaf Kanal Sağlığı** tablosunda artık **AI** kanalı da görünür (6 kanal: Telefon, WhatsApp, Instagram, SMS, Web, AI).
+2. AI yanıt süresi, AI güveni, kuyruk birikmesi gibi metrikler **her 5 dakikada** otomatik kontrol edilir.
+3. Bir kanalda **3+ ardışık hata** olursa sistem anında `degraded` yapar + uyarı üretir.
+4. Bir metrik eşiği aşılırsa (örn. AI yanıt > 15 sn) otomatik uyarı oluşur.
+5. Tüm bu uyarılar, e-posta/WhatsApp/SMS kanalları açıksa size **dışarıdan** da bildirilir (çözüm önerisiyle).
+
 ---
 
-## 9. Sık Sorulan Sorular (SSS)
+## 10. Sık Sorulan Sorular (SSS)
 
 **S: "Esnaf Kanal Sağlığı" tablosunda neden her şey gri?**
 C: Kanal henüz kullanılmamış demektir. Sağlık verisi, gerçek WhatsApp/SMS/Instagram işlemleri yapıldığında otomatik dolar.

@@ -103,6 +103,7 @@ export class AdminController {
         instagram: byTenant[t.id]?.instagram?.status || 'unknown',
         sms: byTenant[t.id]?.sms?.status || 'unknown',
         website: byTenant[t.id]?.website?.status || 'unknown',
+        ai: byTenant[t.id]?.ai?.status || 'unknown',
       },
       detail: byTenant[t.id] || {},
     }));

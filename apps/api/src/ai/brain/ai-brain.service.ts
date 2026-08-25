@@ -7,6 +7,7 @@ import { AiAuditService } from '../audit/ai-audit.service';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
 import { ComplaintProcessorService } from '../../complaint-processor/complaint-processor.service';
 import { SupabaseService } from '../../common/supabase.client';
+import { ChannelHealthService } from '../../channel-health/channel-health.service';
 
 export interface BrainInput {
   tenantId: string;
@@ -70,6 +71,7 @@ export class AiBrainService {
     private readonly orderEngine: OrderEngineService,
     private readonly supabase: SupabaseService,
     private readonly complaintProcessor: ComplaintProcessorService,
+    private readonly channelHealth: ChannelHealthService,
   ) {}
 
   async process(input: BrainInput): Promise<BrainOutput> {
@@ -159,6 +161,8 @@ export class AiBrainService {
         systemPrompt: fullPrompt, userMessage: lastMessage,
         success: false, errorMessage: (err as Error).message,
       });
+      // Kanal sağlığı: AI cevap üretemedi (en kritik arıza)
+      await this.channelHealth.record(input.tenantId, 'ai', false, { error: (err as Error).message, errorCode: 'AI_FAILED' });
       await this.endSession(sessionId, 'error');
       return {
         reply: 'Şu anda teknik bir sorun yaşıyorum. Lütfen kısa süre sonra tekrar arayın.',
@@ -169,6 +173,9 @@ export class AiBrainService {
     }
 
     const latency = Date.now() - start;
+
+    // Kanal sağlığı: AI başarılı cevap üretti (sessizlik tespiti için son başarı zamanı)
+    await this.channelHealth.record(input.tenantId, 'ai', true);
 
     // Step 7: Parse
     const parsed = this.parser.parseAiResponse(response.content);

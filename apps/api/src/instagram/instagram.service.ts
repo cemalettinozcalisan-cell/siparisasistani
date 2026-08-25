@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { WebhookDedupService } from '../webhook/webhook-dedup.service';
+import { ChannelHealthService } from '../channel-health/channel-health.service';
 
 @Injectable()
 export class InstagramService {
@@ -11,6 +12,7 @@ export class InstagramService {
     private readonly supabase: SupabaseService,
     private readonly brain: AiBrainService,
     private readonly dedup: WebhookDedupService,
+    private readonly channelHealth: ChannelHealthService,
   ) {}
 
   async handleWebhook(tenantId: string, body: Record<string, unknown>) {
@@ -113,9 +115,11 @@ export class InstagramService {
             await this.sendMessage(conv.id, tenantId, aiReply);
 
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
+            await this.channelHealth.record(tenantId, 'instagram', true);
           }
         } catch (e) {
           this.logger.error(`Instagram DM brain processing failed: ${(e as Error).message}`);
+          await this.channelHealth.record(tenantId, 'instagram', false, { error: (e as Error).message, errorCode: 'INSTAGRAM_PROCESS' });
         }
       }
     }

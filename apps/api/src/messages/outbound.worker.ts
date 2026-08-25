@@ -144,7 +144,9 @@ export class OutboundWorker implements OnModuleInit {
           .from('ai_events')
           .update({ event_data: { ...eventData, status: 'sent', provider: result.provider } })
           .eq('id', row.id);
+        await this.channelHealth.record(tenantId, 'whatsapp', true);
       } else {
+        await this.channelHealth.record(tenantId, 'whatsapp', false, { error: result.error || undefined, errorCode: 'WA_GROUP_SEND' });
         await this.markGroupEventFailed(row.id, tenantId, eventData, result.error || 'Bilinmeyen hata');
         if (result.error?.startsWith('META_GROUP_UNSUPPORTED')) {
           await this.notifySetup(tenantId, 'whatsapp_group', result.error.replace('META_GROUP_UNSUPPORTED: ', ''));

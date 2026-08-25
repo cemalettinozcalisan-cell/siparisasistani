@@ -159,12 +159,32 @@ export class AlertRouterService {
   }
 
   private solutionFor(channel: string, code: string): string {
-    if (code === 'TOKEN_EXPIRED' || code === 'expired') return "API anahtarını/token'ı yenileyin.";
-    if (code === 'expiring_soon') return "Token'ı yenilemeyi planlayın (süresi yaklaşıyor).";
+    // Genişletilmiş arıza türü → çözüm eşlemesi
+    const map: Record<string, string> = {
+      TOKEN_EXPIRED: "API anahtarını/token'ı yenileyin.",
+      expired: "API anahtarını/token'ı yenileyin.",
+      expiring_soon: "Token'ı yenilemeyi planlayın (süresi yaklaşıyor).",
+      AI_FAILED: 'AI sağlayıcı durumunu kontrol edin; api-keys → DeepSeek/OpenAI anahtarını test edin.',
+      AI_YANIT_GECIKMESI: 'AI sağlayıcı yoğun olabilir; model yapılandırmasını veya sağlayıcıyı gözden geçirin.',
+      AI_GUVEN_DUSUK: 'Prompt ve ürün adlarını kontrol edin; müşteriyi yanlış anlama oranı yüksek.',
+      COK_INSANA_DEVIR: 'AI yapılandırmasını/promptu gözden geçirin; çok fazla konuşma insana düşüyor.',
+      KUYRUK_BIRIKMESI: 'Sunucu yoğun; gönderim işleyicisi yavaş. Kuyruğu inceleyin.',
+      RETRY_TUKENMESI: 'Mesajlar kalıcı başarısız; sağlayıcı bağlantısını ve mesaj içeriğini kontrol edin.',
+      KOTA_DOLUYOR: 'Sipariş kotası %90 doldu; paket yükseltmeyi düşünün.',
+      WEBHOOK_FAILED: 'Webhook bağlantısını kontrol edin; Entegrasyonlar → Web sitesi webhook URL/anahtarını doğrulayın.',
+      WA_GROUP_SEND: 'Ayarlar → WhatsApp Grubu → grup ID ve üyelik izinlerini kontrol edin.',
+      INSTAGRAM_PROCESS: "Instagram token'ını yenileyin; api-keys → Instagram bağlantısını test edin.",
+      WA_SEND: 'WhatsApp bağlantısını / API anahtarını kontrol edin.',
+      SMS_SEND: 'NetGSM / SMS bağlantısını kontrol edin.',
+      PHONE_SEND: 'NetGSM / telefon bağlantısını kontrol edin.',
+    };
+    if (map[code]) return map[code];
+    if (code === 'degraded') return 'İlgili kanal bağlantısını kontrol edin.';
     if (channel === 'whatsapp') return 'WhatsApp bağlantısını / API anahtarını kontrol edin.';
     if (channel === 'phone' || channel === 'sms') return 'NetGSM / SMS bağlantısını kontrol edin.';
     if (channel === 'instagram') return "Instagram bağlantısını / token'ı kontrol edin.";
     if (channel === 'ai') return 'AI sağlayıcı durumunu kontrol edin.';
+    if (channel === 'website') return 'Web sitesi / webhook bağlantısını kontrol edin.';
     return 'İlgili bağlantıyı kontrol edin.';
   }
 
