@@ -290,9 +290,9 @@ export default function LandingPage() {
           <a href="#demo" className="btn-secondary">Hemen Bilgi Al</a>
         </div>
 
-        {/* AI Scheme + Yetenek Paneli + KPI — koyu çerçeveli, ferah yapı */}
+        {/* AI Scheme + Yetenek Paneli + KPI — açık, dashboard ile birebir (çerçevesiz) */}
         <div className="mt-20 relative max-w-6xl mx-auto">
-          <div className="relative bg-slate-950/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 md:p-8 shadow-[0_10px_35px_rgba(99,102,241,0.15)]">
+          <div className="relative">
             {/* Orkestrasyon — AI çipi + kanallar + yetenek paneli (ölçüme dayalı neon bağlantı hatlarıyla) */}
             <div ref={gridRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative">
               {/* Neon SVG bağlantı hatları */}
@@ -300,8 +300,8 @@ export default function LandingPage() {
                 {hubLines.map((l, i) => (
                   <g key={i}>
                     <path d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`} stroke={l.color} strokeWidth="2" className="opacity-60" style={{ filter: `drop-shadow(0 0 5px ${l.color})` }} />
-                    <circle cx={l.x0} cy={l.y0} r="4" fill={l.color} stroke="#0f172a" strokeWidth="1.5" />
-                    <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} className="animate-pulse" />
+                    <circle cx={l.x0} cy={l.y0} r="4.5" fill={l.color} stroke="white" strokeWidth="2" />
+                    <circle cx={l.x1} cy={l.y1} r="4.5" fill={l.color} className="animate-pulse" />
                   </g>
                 ))}
               </svg>
@@ -311,13 +311,13 @@ export default function LandingPage() {
                 {MOCK_HUB_LEFT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[14rem]`}>
-                      <div className={`w-10 h-10 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
-                        <ChIcon size={20} className="text-white" />
+                    <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[15rem]`}>
+                      <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <ChIcon size={22} className="text-white" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{ch.name}</p>
-                        <p className="text-[10px] text-slate-400">{ch.sub}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
@@ -327,16 +327,16 @@ export default function LandingPage() {
               {/* Merkez AI Çekirdek */}
               <div className="lg:col-span-4 flex flex-col items-center justify-center gap-4 z-10 py-4">
                 <div className="relative">
-                  <div className="absolute inset-[-28px] rounded-full border border-fuchsia-400/10" />
-                  <div className="absolute inset-[-14px] rounded-full border border-fuchsia-400/20" />
-                  <div ref={coreRef} className="relative w-36 h-36 md:w-44 md:h-44 rounded-full bg-[#0C1027] border border-indigo-500/40 shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
-                    <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
-                    <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
+                  <div className="absolute inset-[-28px] rounded-full border border-fuchsia-200/70 dark:border-fuchsia-400/10" />
+                  <div className="absolute inset-[-15px] rounded-full border border-fuchsia-300/50 dark:border-fuchsia-400/20" />
+                  <div ref={coreRef} className="relative w-40 h-40 md:w-48 md:h-48 rounded-full bg-white dark:bg-[#0C1027] border border-slate-100/80 dark:border-indigo-500/40 shadow-[0_4px_40px_rgba(99,102,241,0.12)] dark:shadow-[0_0_40px_rgba(168,85,247,0.35)] flex items-center justify-center">
+                    <div className="absolute inset-[-8px] rounded-full border-2 border-fuchsia-400 dark:border-fuchsia-500/40 animate-ping [animation-duration:3s]" />
+                    <img src="/logo2.png" alt="AI Çekirdek" className="w-20 h-20 md:w-24 md:h-24 object-contain dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.85)]" />
                   </div>
                 </div>
-                <div className="rounded-full bg-[#0C1027]/80 border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
-                  <span className="text-sm font-bold text-cyan-400 tracking-wide">AI Aktif</span>
-                  <span className="text-lg font-extrabold text-indigo-400 tabular-nums">%98</span>
+                <div className="rounded-full bg-white/95 dark:bg-[#0C1027]/80 border border-indigo-500/50 dark:border-indigo-400/60 shadow-md dark:shadow-[0_0_20px_rgba(99,102,241,0.3)] px-6 py-2 flex items-baseline gap-2">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-cyan-400 tracking-wide">AI Aktif</span>
+                  <span className="text-lg font-extrabold text-indigo-700 dark:text-indigo-400 tabular-nums">%98</span>
                 </div>
               </div>
 
@@ -345,13 +345,13 @@ export default function LandingPage() {
                 {MOCK_HUB_RIGHT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_0_15px_rgba(99,102,241,0.1)] w-60 sm:w-full max-w-[15rem]`}>
-                      <div className={`w-11 h-11 rounded-lg ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 sm:w-full max-w-[15rem]`}>
+                      <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
                         <ChIcon size={22} className="text-white" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-white whitespace-nowrap">{ch.name}</p>
-                        <p className="text-[11px] text-slate-400">{ch.sub}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
@@ -360,13 +360,13 @@ export default function LandingPage() {
 
               {/* Yetenek Paneli (Right Panel) — şık, şeffaf, kompakt */}
               <div className="lg:col-span-3 flex justify-center lg:justify-end items-stretch z-10">
-                <div className="rounded-xl bg-slate-900/50 backdrop-blur-md p-4 w-full max-w-[18rem] h-full flex flex-col justify-center gap-2 border border-white/5">
+                <div className="rounded-2xl bg-white/90 dark:bg-[#0C1027]/60 border border-violet-200/80 dark:border-violet-500/40 backdrop-blur-md shadow-[0_4px_25px_rgba(0,0,0,0.04)] dark:shadow-2xl p-4 flex flex-col justify-center gap-3 w-full max-w-[15rem] h-full">
                   {MOCK_HUB_FEATURES.map((f, i) => {
                     const FIcon = f.icon;
                     return (
-                      <div key={i} className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-300 whitespace-nowrap">
-                        <span className={`w-7 h-7 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                          <FIcon size={14} className="text-white" />
+                      <div key={i} className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                          <FIcon size={15} className="text-white" />
                         </span>
                         {f.text}
                       </div>
@@ -381,16 +381,16 @@ export default function LandingPage() {
               {MOCK_KPIS.map((k, i) => {
                 const KIcon = k.icon;
                 return (
-                  <div key={i} className={`group bg-slate-900/60 backdrop-blur-sm border ${k.border} rounded-2xl p-3.5 shadow-2xl`}>
-                    <div className="flex items-center gap-2 mb-2.5">
+                  <div key={i} className={`group bg-white dark:bg-[#0C1027]/40 border ${k.border} rounded-2xl p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] dark:shadow-2xl hover:shadow-md transition-all`}>
+                    <div className="flex items-center gap-2 mb-4">
                       <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
-                        <KIcon size={18} className="text-white" />
+                        <KIcon size={17} className="text-white" />
                       </span>
-                      <span className="text-xs font-bold text-slate-200 leading-tight">{k.label}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{k.label}</span>
                     </div>
-                    <div className="text-lg font-extrabold text-white text-center mb-2 tabular-nums">{k.value}</div>
+                    <div className="text-xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">{k.value}</div>
                     <div className="flex items-center justify-center">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{k.trend}</span>
                     </div>
                   </div>
                 );
