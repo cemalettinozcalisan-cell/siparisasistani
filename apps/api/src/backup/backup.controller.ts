@@ -9,6 +9,11 @@ export class BackupController {
 
   constructor(private readonly service: BackupService) {}
 
+  @Get('restore-test/:filename')
+  async restoreTest(@Param('filename') filename: string) {
+    return this.service.runRestoreTest(filename);
+  }
+
   @Get('run')
   async runBackup() {
     return this.service.runBackup();

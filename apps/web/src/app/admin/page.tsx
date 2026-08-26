@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity, Bell, LifeBuoy, MessageSquare, Phone, AlertTriangle } from 'lucide-react';
+import { Shield, Building2, Package, Users, Banknote, UserCheck, Bot, Search, Loader2, Plus, Eye, CreditCard, Settings, Ban, TrendingUp, Zap, Activity, Bell, LifeBuoy, MessageSquare, Phone, AlertTriangle, Database, RotateCcw } from 'lucide-react';
 import { getUserRole, setTenantId } from '@/lib/tenant';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,8 @@ export default function AdminPage() {
   const [alertSettings, setAlertSettings] = useState<Record<string, any> | null>(null);
   const [alertSaved, setAlertSaved] = useState(false);
   const [supportMetrics, setSupportMetrics] = useState<Record<string, any> | null>(null);
+  const [backups, setBackups] = useState<{ filename: string; size: number; created_at: string }[]>([]);
+  const [recoveryLogs, setRecoveryLogs] = useState<Record<string, any>[]>([]);
   const [search, setSearch] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
@@ -28,6 +30,16 @@ export default function AdminPage() {
     fetch('/api/admin/costs').then(r => r.json()).then(d => { if (Array.isArray(d)) setCosts(d); }).catch(() => {});
     fetch('/api/alert/settings').then(r => r.json()).then(d => { if (d) setAlertSettings(d); }).catch(() => {});
     fetch('/api/admin/support-metrics').then(r => r.json()).then(d => { if (d) setSupportMetrics(d); }).catch(() => {});
+    fetch('/api/backup/list').then(r => r.json()).then(d => { if (Array.isArray(d)) setBackups(d); }).catch(() => {});
+  };
+
+  const runBackup = async () => {
+    await fetch('/api/backup/run').then(() => reload());
+  };
+
+  const runRestoreTest = async (filename: string) => {
+    const res = await fetch(`/api/backup/restore-test/${encodeURIComponent(filename)}`).then(r => r.json());
+    setRecoveryLogs(prev => [res, ...prev].slice(0, 20));
   };
 
   const saveAlertSettings = async () => {
@@ -522,6 +534,57 @@ export default function AdminPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Yedekleme & Kurtarma (DR) */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <Database size={15} className="text-indigo-500" />
+            Yedekleme & Kurtarma (DR)
+          </h2>
+          <button
+            onClick={runBackup}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+          >
+            <RotateCcw size={13} /> Yedek Oluştur
+          </button>
+        </div>
+        <div className="p-4 space-y-3">
+          <p className="text-[11px] text-slate-400">
+            Tüm tablolar AES-256 şifreli olarak yedeklenir. Restore testi esnaf sistemine dokunmadan veriyi doğrular.
+          </p>
+          {backups.length === 0 ? (
+            <p className="text-xs text-slate-400">Henüz yedek yok.</p>
+          ) : (
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/30">
+              {backups.map((b) => (
+                <div key={b.filename} className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-200">{b.filename}</p>
+                    <p className="text-[10px] text-slate-400">{new Date(b.created_at).toLocaleString('tr-TR')} • {(b.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <button
+                    onClick={() => runRestoreTest(b.filename)}
+                    className="px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Restore Test
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {recoveryLogs.length > 0 && (
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Son Restore Test Sonuçları</p>
+              {recoveryLogs.map((r, i) => (
+                <p key={i} className={`text-[11px] ${r.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {r.filename}: {r.success ? 'OK' : 'HATA'} — tenant {r.checks?.tenants?.found ?? '-'}, sipariş {r.checks?.orders?.found ?? '-'}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
