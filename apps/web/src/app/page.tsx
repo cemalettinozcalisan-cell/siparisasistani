@@ -325,7 +325,7 @@ export default function LandingPage() {
               </div>
 
               {/* Merkez AI Çekirdek */}
-              <div className="lg:col-span-4 flex flex-col items-center justify-center gap-4 z-10 py-4">
+              <div className="lg:col-span-4 flex flex-col items-center justify-center gap-12 z-10 py-4">
                 <div className="relative">
                   <div className="absolute inset-[-28px] rounded-full border border-fuchsia-200/70 dark:border-fuchsia-400/10" />
                   <div className="absolute inset-[-15px] rounded-full border border-fuchsia-300/50 dark:border-fuchsia-400/20" />
@@ -386,7 +386,7 @@ export default function LandingPage() {
                       <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
                         <KIcon size={17} className="text-white" />
                       </span>
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{k.label}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight whitespace-normal">{k.label}</span>
                     </div>
                     <div className="text-xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tabular-nums">{k.value}</div>
                     <div className="flex items-center justify-center">

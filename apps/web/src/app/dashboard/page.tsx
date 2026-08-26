@@ -474,7 +474,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Merkez AI Çekirdek */}
-          <div className="lg:col-span-4 flex flex-col items-center justify-center gap-6 z-10 py-6">
+          <div className="lg:col-span-4 flex flex-col items-center justify-center gap-12 z-10 py-6">
             <div className="relative">
               <div className="absolute inset-[-28px] rounded-full border border-fuchsia-200/70 dark:border-fuchsia-400/10" />
               <div className="absolute inset-[-15px] rounded-full border border-fuchsia-300/50 dark:border-fuchsia-400/20" />
