@@ -84,7 +84,7 @@ export class CallFlowService {
       const reply = await this.supportChat.generateReply(session.tenant_id, '', userMessage);
       // Aciliyet tespiti: kritik kelime varsa owner'a bildirim
       await this.supportChat.detectUrgency(session.tenant_id, userMessage, sessionId);
-      const responseAudio = await this.voice.generateSpeech(reply, session.tenant_id);
+      const responseAudio = await this.voice.generateSpeech(reply, session.tenant_id, session.language);
       const audioUrl = await this.storeAudio(session.tenant_id, responseAudio.audio);
       await this.updateCallStatus(sessionId, 'AI_SPEAKING');
       return this.xml.buildConversationGather({
@@ -111,7 +111,7 @@ export class CallFlowService {
     // AiBrainService içinde birleşik olarak oluşturulur (complaintCreated).
     if (result.intent === 'COMPLAINT' && !result.orderCreated) {
       const complaintAudio = await this.voice.generateSpeech(
-        'Talebinizi not aldık. En kısa sürede size dönüş yapacağız.', session.tenant_id,
+        'Talebinizi not aldık. En kısa sürede size dönüş yapacağız.', session.tenant_id, session.language
       );
       const url = await this.storeAudio(session.tenant_id, complaintAudio.audio);
       await this.updateCallStatus(sessionId, 'COMPLAINT_CREATED');
@@ -125,7 +125,7 @@ export class CallFlowService {
 
     if (result.intent === 'LEGAL' || (result.escalationLevel && result.escalationLevel >= 4)) {
       const legalAudio = await this.voice.generateSpeech(
-        'Bu konuda sizi yetkiliyle görüştürmem gerekiyor. Kısa süre sonra sizi arayacağız.', session.tenant_id,
+        'Bu konuda sizi yetkiliyle görüştürmem gerekiyor. Kısa süre sonra sizi arayacağız.', session.tenant_id, session.language
       );
       const url = await this.storeAudio(session.tenant_id, legalAudio.audio);
       await this.updateCallStatus(sessionId, 'LEGAL_ESCALATION');
@@ -148,7 +148,7 @@ export class CallFlowService {
 
     if (result.orderCreated) {
       const responseAudio = await this.voice.generateSpeech(
-        `Siparişiniz oluşturuldu. Sipariş numaranız ${result.orderNumber}. Teşekkür ederiz.`, session.tenant_id,
+        `Siparişiniz oluşturuldu. Sipariş numaranız ${result.orderNumber}. Teşekkür ederiz.`, session.tenant_id, session.language
       );
       const audioUrl = await this.storeAudio(session.tenant_id, responseAudio.audio);
       await this.updateCallStatus(sessionId, 'COMPLETED');
@@ -158,7 +158,7 @@ export class CallFlowService {
     if (result.needsHuman) {
       await this.updateCallStatus(sessionId, 'HUMAN_TRANSFER');
       const humanAudio = await this.voice.generateSpeech(
-        'Sizi yetkili arkadaşımıza aktarıyorum.', session.tenant_id,
+        'Sizi yetkili arkadaşımıza aktarıyorum.', session.tenant_id, session.language
       );
       const url = await this.storeAudio(session.tenant_id, humanAudio.audio);
       return this.xml.buildPlayAudio(url);
@@ -168,7 +168,7 @@ export class CallFlowService {
       return this.xml.buildHangup();
     }
 
-    const responseAudio = await this.voice.generateSpeech(result.reply, session.tenant_id);
+      const responseAudio = await this.voice.generateSpeech(result.reply, session.tenant_id, session.language);
     const audioUrl = await this.storeAudio(session.tenant_id, responseAudio.audio);
     await this.updateCallStatus(sessionId, 'AI_SPEAKING');
 

@@ -43,6 +43,8 @@ export interface ParsedResponse {
   channel?: string;
   needHuman?: boolean;
   nextAction?: string;
+  notes?: string;
+  language?: string;
 }
 
 @Injectable()
@@ -103,6 +105,8 @@ export class AiParserService {
       channel: j.channel as string,
       needHuman: j.need_human as boolean,
       nextAction: j.next_action as string,
+      notes: j.notes as string,
+      language: j.language as string,
     };
   }
 
@@ -143,6 +147,7 @@ export class AiParserService {
       confirmed: parsed.confirmed || false,
       confidence: parsed.orderConfidence || parsed.confidence || 0,
       channel,
+      notes: parsed.notes || undefined,
     };
   }
 

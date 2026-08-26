@@ -34,7 +34,7 @@ export class VoiceService {
     private readonly supabase: SupabaseService,
   ) {}
 
-  async generateSpeech(text: string, tenantId?: string): Promise<GenerateSpeechResult> {
+  async generateSpeech(text: string, tenantId?: string, language?: string): Promise<GenerateSpeechResult> {
     const settings = tenantId ? await this.getVoiceSettings(tenantId) : null;
     const persona = settings?.voicePersona || 'zeynep';
     const providerName = settings?.voiceProvider || this.factory.listProviders()[0];
@@ -46,7 +46,7 @@ export class VoiceService {
       style: settings?.style ?? 0.5,
       similarity: settings?.similarity ?? 0.75,
       pitch: settings?.pitch ?? 1.0,
-      language: 'tr',
+      language: language || 'tr',
     };
 
     const normalized = this.normalizer.normalize(text);

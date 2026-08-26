@@ -6,6 +6,7 @@ import { ConversationRulesComponent } from './components/conversation-rules.comp
 import { CustomerContextComponent } from './components/customer-context.component';
 import { TaskDefinitionComponent } from './components/task-definition.component';
 import { SalesCoachComponent } from './components/sales-coach.component';
+import { ScopeRulesComponent } from './components/scope-rules.component';
 import { CampaignsService } from '../../campaigns/campaigns.service';
 import { AiMemoryService } from '../memory/ai-memory.service';
 
@@ -33,6 +34,7 @@ export class PromptEngineService {
     private readonly customerCtx: CustomerContextComponent,
     private readonly taskDef: TaskDefinitionComponent,
     private readonly salesCoach: SalesCoachComponent,
+    private readonly scopeRules: ScopeRulesComponent,
     private readonly memory: AiMemoryService,
     private readonly campaigns: CampaignsService,
   ) {}
@@ -44,6 +46,7 @@ export class PromptEngineService {
       this.paymentMethods.render(ctx),
       this.campaigns.renderCampaignPrompt(ctx.tenantId),
       this.salesCoach.render(ctx),
+      this.scopeRules.render(ctx),
       this.memory.buildContext(ctx.tenantId, ctx.customerPhone),
       this.rules.render(ctx),
       this.customerCtx.render(ctx),
@@ -103,6 +106,8 @@ export class PromptEngineService {
       '  "campaign_id": null,',
       '  "total_price": 2980,',
       '  "confirmed": false,',
+      '  "notes": "Mağazadan alacak ve/veya ek sipariş notu | null",',
+      '  "language": "tr|en|de|ar|es|pt|ru|zh",',
       '  "reasoning_summary": "customer identified, products matched, address complete, payment missing, campaign applicable",',
       '  "emotion": "HAPPY|NEUTRAL|HESITANT|ANGRY|VERY_ANGRY|SAD",',
       '  "emotion_confidence": 90,',

@@ -225,6 +225,17 @@ export class AiBrainService {
     // Step 10: Session Update
     await this.updateSession(sessionId, input.messages, response.content, effectiveProvider, parsed.confidence);
 
+    // M1 çok dil: algılanan dili oturuma kaydet (sesli kanal dahil sonraki adımlar kullanır)
+    if (parsed.language && parsed.language !== 'tr') {
+      try {
+        await this.supabase.db.from('conversation_sessions')
+          .update({ language: parsed.language })
+          .eq('id', sessionId);
+      } catch (e) {
+        this.logger.warn(`Session language update failed: ${(e as Error).message}`);
+      }
+    }
+
     const routingFields = {
       intent: parsed.intent,
       complaintType: parsed.complaintType,
