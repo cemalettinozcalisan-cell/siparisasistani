@@ -14,6 +14,16 @@ export class BackupController {
     return this.service.runRestoreTest(filename);
   }
 
+  @Get('restore/:filename')
+  async restore(@Param('filename') filename: string) {
+    return this.service.restore(filename);
+  }
+
+  @Get('status')
+  async status() {
+    return this.service.getBackupStatus();
+  }
+
   @Get('run')
   async runBackup() {
     return this.service.runBackup();

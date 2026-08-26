@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { createClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../common/supabase.client';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -200,20 +201,31 @@ export class BackupService {
     // 7) Storage dosyaları
     checks.storage_files = { found: (backup.storage_files || []).length };
 
-    // 8) RLS: backup dosyası içinde tenant izolasyonu (her tabloda tenant_id kontrolü)
+    // 8) RLS: tenant izolasyonu — tenant_id taşıyan tablolarda tenant_id'siz satır olmamalı
     const rlsIssues: string[] = [];
     for (const [table, rows] of Object.entries(data)) {
-      if (rows && (rows as any[]).length > 0) {
-        const sample = (rows as any[])[0];
-        if (sample && 'tenant_id' in sample) {
-          const distinct = new Set((rows as any[]).map((r) => r.tenant_id).filter(Boolean)).size;
-          if (distinct < 1) rlsIssues.push(`${table}: tenant_id yok`);
-        }
+      const arr = (rows as any[]);
+      if (arr && arr.length > 0 && arr[0] && 'tenant_id' in arr[0]) {
+        const missing = arr.filter((r) => !r.tenant_id).length;
+        if (missing > 0) rlsIssues.push(`${table}: ${missing} satır tenant_id'siz`);
       }
     }
     checks.rls = { issue_count: rlsIssues.length, issues: rlsIssues };
 
-    const passed = checks.tenants.found > 0 && checks.customers.found >= 0 && checks.orders.found >= 0;
+    // 9) Sipariş veri bütünlüğü (zorunlu alan + geçerli fiyat) — "AI sipariş akışı" veri-düzeyinde doğrulanır
+    const badOrders = orders.filter((o: any) => {
+      const hasRequired = o && o.id && o.customer_id;
+      const priceOk = o.total_price == null || !isNaN(Number(o.total_price));
+      return !hasRequired || !priceOk;
+    });
+    checks.order_integrity = { total: orders.length, invalid: badOrders.length };
+
+    const passed =
+      checks.tenants.found > 0 &&
+      checks.customers.found >= 0 &&
+      checks.orders.found >= 0 &&
+      checks.order_integrity.invalid === 0 &&
+      checks.rls.issue_count === 0;
 
     // recovery_logs'a yaz
     try {
@@ -230,5 +242,116 @@ export class BackupService {
     }
 
     return { success: passed, filename, checks };
+  }
+
+  /**
+   * Yedek verisini HEDEF ortama geri yazar (restore).
+   *
+   * Güvenlik sözleşmesi (esnaf sistemine asla zarar vermez):
+   * - Hedef DR_TARGET_URL + DR_TARGET_KEY env ile ayrı bir test projesine işaret eder.
+   * - Env tanımlı değilse yazma YAPILMAZ → dry-run sonucu döner.
+   * - Hedef URL production (SUPABASE_URL) ile aynıysa işlem İPTAL edilir.
+   */
+  async restore(
+    filename: string,
+    opts: { targetUrl?: string; targetKey?: string } = {},
+  ): Promise<Record<string, unknown>> {
+    const backup = await this.readBackup(filename);
+    if (!backup) return { success: false, error: 'Backup okunamadı' };
+
+    const targetUrl = (opts.targetUrl || process.env.DR_TARGET_URL || '').trim();
+    const targetKey = opts.targetKey || process.env.DR_TARGET_KEY || '';
+
+    if (!targetUrl || !targetKey) {
+      return {
+        success: false,
+        mode: 'dry-run',
+        error: 'DR_TARGET_URL/DR_TARGET_KEY tanımlı değil. Gerçek restore için ayrı bir test projesi gerekir.',
+      };
+    }
+
+    const prodUrl = (process.env.SUPABASE_URL || '').trim();
+    if (prodUrl && targetUrl.replace(/\/$/, '') === prodUrl.replace(/\/$/, '')) {
+      return { success: false, mode: 'blocked', error: 'Hedef URL production ile aynı. Restore iptal edildi.' };
+    }
+
+    const target = createClient(targetUrl, targetKey);
+    const data = backup.data || {};
+    const written: Record<string, number> = {};
+    const errors: string[] = [];
+
+    for (const table of this.insertionOrder(data)) {
+      const rows = (data[table] || []) as any[];
+      if (!rows.length) continue;
+      try {
+        await target.from(table).upsert(rows, { onConflict: 'id' });
+        written[table] = rows.length;
+      } catch (e) {
+        errors.push(`${table}: ${(e as any).message}`);
+      }
+    }
+
+    const ok = errors.length === 0;
+    return {
+      success: ok,
+      mode: 'restored',
+      filename,
+      tables_written: written,
+      row_total: Object.values(written).reduce((a, b) => a + b, 0),
+      errors,
+    };
+  }
+
+  /** FK bağımlılığına göre yazma sırası: üst (parent) tablolar önce. */
+  private insertionOrder(data: Record<string, unknown[]>): string[] {
+    const parents = [
+      'tenant_settings', 'tenants', 'users', 'products', 'customer_prices',
+      'subscriptions', 'campaigns', 'channel_health', 'prompt_versions',
+      'api_keys', 'conversation_sessions',
+    ];
+    const known = new Set(Object.keys(data));
+    return [...parents.filter((t) => known.has(t)), ...Object.keys(data).filter((t) => !parents.includes(t))];
+  }
+
+  /** Admin paneli için backup sağlık özeti: son yedek, son restore testi, RPO/RTO hedefleri. */
+  async getBackupStatus(): Promise<Record<string, unknown>> {
+    const backups = await this.listBackups();
+    const latest = backups[0] || null;
+
+    // Son restore testini recovery_logs'tan çek
+    let latestTest: Record<string, any> | null = null;
+    try {
+      const { data } = await this.supabase.db
+        .from('recovery_logs')
+        .select('*')
+        .eq('type', 'restore_test')
+        .order('ran_at', { ascending: false })
+        .limit(1);
+      if (data && data[0]) latestTest = data[0] as Record<string, any>;
+    } catch (e) {
+      this.logger.warn(`recovery_logs okuma hatası: ${e}`);
+    }
+
+    const now = Date.now();
+    const backupAgeMs = latest ? now - new Date(latest.created_at).getTime() : null;
+    const rpoHours = 24; // hedef: günlük yedek
+    const rtoHours = 2; // hedef: restore + doğrulama süresi
+
+    return {
+      latest_backup: latest,
+      backup_healthy: latest ? backupAgeMs !== null && backupAgeMs <= rpoHours * 3600000 : false,
+      backup_age_ms: backupAgeMs,
+      latest_restore_test: latestTest
+        ? {
+            filename: latestTest.backup_file,
+            status: latestTest.status,
+            ran_at: latestTest.ran_at,
+            result: latestTest.result,
+          }
+        : null,
+      rpo_hours: rpoHours,
+      rto_hours: rtoHours,
+      targets: { backup: 'daily', restore_test: 'monthly' },
+    };
   }
 }

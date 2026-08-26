@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [supportMetrics, setSupportMetrics] = useState<Record<string, any> | null>(null);
   const [backups, setBackups] = useState<{ filename: string; size: number; created_at: string }[]>([]);
   const [recoveryLogs, setRecoveryLogs] = useState<Record<string, any>[]>([]);
+  const [backupStatus, setBackupStatus] = useState<Record<string, any> | null>(null);
   const [search, setSearch] = useState('');
 
   const headers = { 'Content-Type': 'application/json' };
@@ -31,6 +32,7 @@ export default function AdminPage() {
     fetch('/api/alert/settings').then(r => r.json()).then(d => { if (d) setAlertSettings(d); }).catch(() => {});
     fetch('/api/admin/support-metrics').then(r => r.json()).then(d => { if (d) setSupportMetrics(d); }).catch(() => {});
     fetch('/api/backup/list').then(r => r.json()).then(d => { if (Array.isArray(d)) setBackups(d); }).catch(() => {});
+    fetch('/api/backup/status').then(r => r.json()).then(d => { if (d) setBackupStatus(d); }).catch(() => {});
   };
 
   const runBackup = async () => {
@@ -40,6 +42,7 @@ export default function AdminPage() {
   const runRestoreTest = async (filename: string) => {
     const res = await fetch(`/api/backup/restore-test/${encodeURIComponent(filename)}`).then(r => r.json());
     setRecoveryLogs(prev => [res, ...prev].slice(0, 20));
+    reload();
   };
 
   const saveAlertSettings = async () => {
@@ -552,6 +555,28 @@ export default function AdminPage() {
           </button>
         </div>
         <div className="p-4 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-700/20 px-3 py-2">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Son Backup</p>
+              <p className={`text-sm font-bold mt-0.5 ${backupStatus?.backup_healthy ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                {backupStatus?.backup_healthy ? '🟢 Sağlıklı' : backupStatus?.latest_backup ? '🟡 Gecikmiş' : '🔴 Yok'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-700/20 px-3 py-2">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Son Restore Testi</p>
+              <p className={`text-sm font-bold mt-0.5 ${backupStatus?.latest_restore_test?.status === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                {backupStatus?.latest_restore_test ? (backupStatus.latest_restore_test.status === 'success' ? '✅ OK' : '⚠️ Test edilmedi') : '—'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-700/20 px-3 py-2">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">RPO Hedefi</p>
+              <p className="text-sm font-bold mt-0.5 text-slate-700 dark:text-slate-200">≤ {backupStatus?.rpo_hours ?? 24} saat</p>
+            </div>
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-700/20 px-3 py-2">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">RTO Hedefi</p>
+              <p className="text-sm font-bold mt-0.5 text-slate-700 dark:text-slate-200">≤ {backupStatus?.rto_hours ?? 2} saat</p>
+            </div>
+          </div>
           <p className="text-[11px] text-slate-400">
             Tüm tablolar AES-256 şifreli olarak yedeklenir. Restore testi esnaf sistemine dokunmadan veriyi doğrular.
           </p>
