@@ -58,7 +58,7 @@ const navItems = [
   { href: '/calls', label: 'Görüşmeler', icon: Phone, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/products', label: 'Ürünler', icon: Package, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/complaints', label: 'Talep & İstek', icon: AlertTriangle, roles: ['owner', 'manager', 'staff'], group: 'main' },
-  { href: '/support', label: 'Destek', icon: LifeBuoy, roles: ['owner', 'manager', 'staff'], group: 'main' },
+  { href: '/support', label: 'Destek Asistanı', icon: LifeBuoy, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/notifications', label: 'Bildirimler', icon: BellRing, roles: ['owner', 'manager', 'staff'], group: 'main' },
   { href: '/reports', label: 'Raporlar', icon: BarChart3, roles: ['owner', 'manager', 'staff'], group: 'main' },
   // Pazarlama

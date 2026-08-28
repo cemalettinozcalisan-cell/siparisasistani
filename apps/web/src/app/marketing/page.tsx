@@ -24,6 +24,11 @@ const TEMPLATE_STATUS: Record<string, { label: string; cls: string }> = {
   rejected: { label: 'Reddedildi', cls: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
 };
 
+const TEMPLATE_CATEGORY: Record<string, string> = {
+  MARKETING: 'Pazarlama',
+  UTILITY: 'Bilgilendirme',
+};
+
 const DISCOUNT_TYPES = [
   { key: 'gift', label: 'Hediye Ürün', icon: Gift, gradient: 'from-pink-500 to-rose-600' },
   { key: 'percent', label: '% İndirim', icon: Tags, gradient: 'from-amber-500 to-orange-500' },
@@ -483,13 +488,15 @@ export default function MarketingPage() {
                 className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
               <select value={wtCategory} onChange={(e) => setWtCategory(e.target.value)}
                 className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                <option value="MARKETING">MARKETING</option>
-                <option value="UTILITY">UTILITY</option>
+                <option value="MARKETING">Pazarlama</option>
+                <option value="UTILITY">Bilgilendirme</option>
               </select>
             </div>
+            <p className="text-[10px] text-slate-400 -mt-1">Pazarlama = indirim/kampanya/yeni ürün mesajı · Bilgilendirme = sipariş/ödeme/kargo bildirimi</p>
             <textarea value={wtBody} onChange={(e) => setWtBody(e.target.value)}
-              placeholder={'Mesaj içeriği — değişkenler için {{1}}, {{2}} kullanın. Örn: "Merhaba {{1}}, bu hafta özel indirimlerimiz var!"'}
+              placeholder={'Mesajınızı yazın. Müşterinin adı otomatik yazılsın isterseniz {{1}} kullanın. Örn: "Merhaba {{1}}, bu hafta sucukta özel indirim var!"'}
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white min-h-[80px]" />
+            <p className="text-[10px] text-slate-400 -mt-1">{'İpucu: {{1}} = müşterinin adı (gönderimde otomatik dolar) · {{2}}, {{3}}... = ek bilgi için yer tutucu (örn. indirim oranı)'}</p>
             <button onClick={createTemplate}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md">
               <Save size={14} /> Şablon Oluştur
@@ -505,7 +512,7 @@ export default function MarketingPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-gray-900 dark:text-white text-sm">{t.name}</span>
-                        <span className="text-[10px] text-slate-400">{t.language} · {t.category}</span>
+                        <span className="text-[10px] text-slate-400">{t.language} · {TEMPLATE_CATEGORY[t.category] || t.category}</span>
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${st.cls}`}>{st.label}</span>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5 whitespace-pre-wrap">{t.body}</p>

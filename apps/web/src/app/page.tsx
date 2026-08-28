@@ -185,7 +185,7 @@ export default function LandingPage() {
       const connect = (el: HTMLDivElement | null, edgeFromLeft: boolean, color: string) => {
         if (!el) return;
         const r = el.getBoundingClientRect();
-        const x0 = (edgeFromLeft ? r.right : r.left) - gr.left;
+        const x0 = (edgeFromLeft ? r.right - 44 : r.left) - gr.left;
         const y0 = r.top + r.height / 2 - gr.top;
         const dx = cx - x0;
         const dy = cy - y0;
@@ -300,8 +300,6 @@ export default function LandingPage() {
                 {hubLines.map((l, i) => (
                   <g key={i}>
                     <path d={`M ${l.x0} ${l.y0} C ${(l.x0 + l.x1) / 2} ${l.y0}, ${(l.x0 + l.x1) / 2} ${l.y1}, ${l.x1} ${l.y1}`} stroke={l.color} strokeWidth="2" className="opacity-60" style={{ filter: `drop-shadow(0 0 5px ${l.color})` }} />
-                    <circle cx={l.x0} cy={l.y0} r="4.5" fill={l.color} stroke="white" strokeWidth="2" />
-                    <circle cx={l.x1} cy={l.y1} r="4.5" fill={l.color} className="animate-pulse" />
                   </g>
                 ))}
               </svg>
@@ -311,13 +309,12 @@ export default function LandingPage() {
                 {MOCK_HUB_LEFT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 max-w-[15rem]`}>
-                      <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <div key={ch.name} ref={(el) => { leftCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 w-56 max-w-[15rem]`}>
+                      <div className={`w-11 h-11 rounded-full ${ch.iconBg} flex items-center justify-center shrink-0`} style={{ border: '2px solid ' + ch.lineStroke, boxShadow: '0 0 12px ' + ch.lineStroke }}>
                         <ChIcon size={22} className="text-white" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
@@ -345,13 +342,12 @@ export default function LandingPage() {
                 {MOCK_HUB_RIGHT.map((ch, i) => {
                   const ChIcon = ch.icon;
                   return (
-                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white dark:bg-indigo-950/40 border ${ch.cardBorder} shadow-[0_4px_25px_rgba(0,0,0,0.03)] dark:shadow-[0_0_15px_rgba(99,102,241,0.1)] w-56 sm:w-full max-w-[15rem]`}>
-                      <div className={`w-11 h-11 rounded-xl ${ch.iconBg} flex items-center justify-center shrink-0 shadow-sm`}>
+                    <div key={ch.name} ref={(el) => { rightCardRefs.current[i] = el; }} className={`relative flex items-center gap-3 px-4 py-3.5 w-56 max-w-[15rem]`}>
+                      <div className={`w-11 h-11 rounded-full ${ch.iconBg} flex items-center justify-center shrink-0`} style={{ border: '2px solid ' + ch.lineStroke, boxShadow: '0 0 12px ' + ch.lineStroke }}>
                         <ChIcon size={22} className="text-white" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{ch.name}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ch.sub}</p>
                       </div>
                     </div>
                   );
@@ -595,7 +591,7 @@ export default function LandingPage() {
               { icon: Bot, title: '%98 Yapay Zekâ Başarısı', desc: 'Yoğun zamanlarda manuel not alırken yapılan hatalı adres, ürün ve telaffuz kayıtlarına son verin.', gradient: 'from-violet-500 to-purple-600' },
               { icon: Clock, title: '7/24 Kesintisiz Asistan', desc: 'Mesai saatleri dışında ve gece gelen hiçbir siparişi veya müşteri talebini kaçırmayın.', gradient: 'from-indigo-500 to-blue-600' },
               { icon: Truck, title: 'Otomatik Kargo & Takip', desc: 'Müşterilerinize kargo durum güncellemelerini ve takip kodlarını otomatik iletin.', gradient: 'from-amber-500 to-orange-600' },
-              { icon: Globe, title: 'Tüm Kanallar Tek Panelde', desc: 'WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri tek ekrandan yönetin.', gradient: 'from-cyan-500 to-teal-600' },
+              { icon: Globe, title: 'Tüm Kanallar Tek Panelde', desc: 'Telefon, WhatsApp, Instagram, SMS ve Web sitenizden gelen siparişleri tek ekrandan yönetin.', gradient: 'from-cyan-500 to-teal-600' },
               { icon: Users, title: 'Müşteri Sadakati & CRM', desc: 'Müşterilerinizin geçmiş siparişlerini, özel isteklerini ve alışkanlıklarını hafızada tutun.', gradient: 'from-emerald-500 to-green-600' },
               { icon: TrendingUp, title: 'Zaman & Maliyet Tasarrufu', desc: 'Telefona bakma yükünü azaltın; hem personelden hem zamandan tasarruf ederek bütçenizi koruyun.', gradient: 'from-rose-500 to-pink-600' },
             ].map((card, i) => {
