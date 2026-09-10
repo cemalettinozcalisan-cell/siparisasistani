@@ -124,6 +124,13 @@ export class VoiceNotificationService {
     try {
       const result = await this.voice.generateSpeech(text, tenantId);
       const fileName = `voice/ai-employee/${tenantId}/${Date.now()}.mp3`;
+
+      // voice-cache bucket yoksa oluştur (kendini idare et)
+      const bucketCheck = await this.supabase.db.storage.getBucket('voice-cache');
+      if (bucketCheck.error) {
+        await this.supabase.db.storage.createBucket('voice-cache', { public: true });
+      }
+
       await this.supabase.db.storage.from('voice-cache').upload(fileName, result.audio, {
         contentType: 'audio/mpeg',
         upsert: true,
