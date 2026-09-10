@@ -16,7 +16,12 @@ export class HealthController {
     return {
       status: supabaseStatus === 'ok' ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
-      services: { supabase: supabaseStatus, deepseek: 'not_configured', openai: 'not_configured', elevenlabs: 'not_configured' },
+      services: {
+        supabase: supabaseStatus,
+        deepseek: process.env.DEEPSEEK_API_KEY ? 'ok' : 'not_configured',
+        openai: process.env.OPENAI_API_KEY ? 'ok' : 'not_configured',
+        elevenlabs: process.env.ELEVENLABS_API_KEY ? 'ok' : 'not_configured',
+      },
       uptime: process.uptime(),
       memory: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
     };
