@@ -5,9 +5,12 @@ import { OrderCreatedHandler } from './handlers/order-created.handler';
 import { ComplaintHandler } from './handlers/complaint.handler';
 import { PaymentHandler } from './handlers/payment.handler';
 import { ShipmentHandler } from './handlers/shipment.handler';
+import { VoiceHandler } from './handlers/voice.handler';
 import { SupabaseService } from '../common/supabase.client';
+import { AiEmployeeModule } from '../ai-employee/ai-employee.module';
 
 @Module({
+  imports: [AiEmployeeModule],
   controllers: [NotificationEngineController],
   providers: [
     NotificationEngineService,
@@ -15,6 +18,7 @@ import { SupabaseService } from '../common/supabase.client';
     ComplaintHandler,
     PaymentHandler,
     ShipmentHandler,
+    VoiceHandler,
     SupabaseService,
   ],
 })

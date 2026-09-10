@@ -517,6 +517,18 @@ export default function SettingsPage() {
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
           </div>
         </div>
+
+        {/* Sesli test */}
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">AI Çalışanımı Test Et</p>
+            <p className="text-[11px] text-slate-400">Seçtiğiniz isim, ses, ton ve hitap ile kısa bir örnek seslendirilir.</p>
+          </div>
+          <button onClick={async () => { try { const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' }).then(res => res.json()); if (r?.audioUrl) new Audio(r.audioUrl).play().catch(() => {}); } catch {} }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all">
+            <Mic size={13} /> Test Et
+          </button>
+        </div>
       </div>
       ) : null}
 

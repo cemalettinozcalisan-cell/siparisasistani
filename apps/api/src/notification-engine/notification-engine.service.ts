@@ -4,6 +4,7 @@ import { OrderCreatedHandler } from './handlers/order-created.handler';
 import { ComplaintHandler } from './handlers/complaint.handler';
 import { PaymentHandler } from './handlers/payment.handler';
 import { ShipmentHandler } from './handlers/shipment.handler';
+import { VoiceHandler } from './handlers/voice.handler';
 import { NotificationHandler } from './handlers/base.handler';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class NotificationEngineService implements OnModuleInit {
     complaint: ComplaintHandler,
     payment: PaymentHandler,
     shipment: ShipmentHandler,
+    voice: VoiceHandler,
   ) {
     this.register(orderCreated);
     this.register(complaint);
@@ -26,6 +28,10 @@ export class NotificationEngineService implements OnModuleInit {
     this.handlers.set(SystemEvents.ORDER_SHIPPED, shipment);
     // Ödeme onayı (dekont / link) geldiğinde de sipariş bildirimi düşer — aynı handler
     this.handlers.set(SystemEvents.ORDER_PAYMENT_CONFIRMED, orderCreated);
+    // AI Çalışanım sesli bildirim kanalı — birden çok event dinler
+    for (const evt of [SystemEvents.ORDER_CREATED, SystemEvents.COMPLAINT_CREATED, SystemEvents.REQUEST_CREATED, SystemEvents.SUBSCRIPTION_THRESHOLD, SystemEvents.SYSTEM_HEALTH_FAILED]) {
+      this.handlers.set(evt, voice);
+    }
   }
 
   private register(handler: NotificationHandler) {

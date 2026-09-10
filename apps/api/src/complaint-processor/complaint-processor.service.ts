@@ -133,6 +133,15 @@ export class ComplaintProcessorService {
       priority: severityKey === 'CRITICAL' ? 'VERY_URGENT' : severityKey === 'HIGH' ? 'URGENT' : 'NORMAL',
     }, input.orderId);
 
+    // 4) AI Çalışanım sesli bildirim (şikâyet / talep)
+    const isRequest = /talep|istek|ric[a|e]|haber/i.test(input.description || '');
+    this.eventBus.emit(
+      isRequest ? SystemEvents.REQUEST_CREATED : SystemEvents.COMPLAINT_CREATED,
+      input.tenantId,
+      { entityType: 'complaint', ticketId, ticketNumber, severity: severityKey, description: input.description, customerName: input.customer?.name },
+      ticketId,
+    );
+
     this.logger.log(`Ticket created: ${ticketId} (${severityKey}) via ${channel}`);
     const finalId = (complaint?.id as string) || ticketId;
 
