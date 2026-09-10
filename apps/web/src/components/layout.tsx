@@ -200,10 +200,12 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
   const inner = (
     <>
       <div className="px-4 pt-4 pb-2 flex items-center gap-3">
-        <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0 brightness-0 invert" />
-        {!collapsed && (
-          <span className="font-semibold text-sm text-white">SiparişAsistanı</span>
-        )}
+        <Link href="/" className="flex items-center gap-3 shrink-0">
+          <img src="/logo2.png" alt="SiparişAsistanı" className="w-8 h-8 object-contain shrink-0 brightness-0 invert" />
+          {!collapsed && (
+            <span className="font-semibold text-sm text-white">SiparişAsistanı</span>
+          )}
+        </Link>
         {mobileOpen && (
           <button onClick={onClose} className="ml-auto text-slate-400 hover:text-white lg:hidden shrink-0"><X className="w-5 h-5" /></button>
         )}

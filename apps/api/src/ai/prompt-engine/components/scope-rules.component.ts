@@ -27,6 +27,10 @@ export class ScopeRulesComponent {
       '- Müşteri Türkçe konuşuyorsa Türkçe cevap ver.',
       '- Müşteri İngilizce, Almanca, Arapça, İspanyolca, Portekizce, Rusça veya Çince konuşuyorsa AYNI dilde cevap ver; siparişi/şikayeti/isteği/notu o dilde al.',
       '- Müşteri dil değiştirirse ona uyum sağla.',
+      '',
+      '=== SERTİFİKA KURALI ===',
+      '- Helal, Kosher, BRCGS, ISO, HACCP gibi sertifika/akreditasyon iddiasında SADECE [FİRMA BİLGİSİ] bölümünde "Sertifikalar" satırı varsa bulunabilirsin.',
+      '- [FİRMA BİLGİSİ]nde sertifika listelenmemişse bu konuda HİÇBİR iddiada bulunma, "sertifikalıdır" deme; gerekirse "bu konuda bilgi için işletmeyle iletişime geçebilirsiniz" de.',
     ].join('\n');
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, Truck, Send, MessageSquare, BarChart3, LineChart, FileText, Megaphone, HandCoins, Instagram, Globe, Printer, TrendingUp, AlertCircle, Phone, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
+import { Bot, PhoneCall, ShoppingBag, ShoppingCart, Users, User, UserCheck, HelpCircle, CreditCard, Wallet, Target, ArrowRight, CheckCircle2, Sparkles, BellRing, ChevronDown, ChevronUp, Truck, Send, MessageSquare, BarChart3, LineChart, FileText, Megaphone, HandCoins, Instagram, Globe, Printer, TrendingUp, AlertCircle, Phone, Clock, Store, Flame, Gift, ChefHat, Layers, Zap, ShieldCheck, X, Sun, Moon } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 
 const OMNICHANNEL_FLOW = [
@@ -162,6 +162,13 @@ export default function LandingPage() {
   const [contactSent, setContactSent] = useState(false);
   const [contactSending, setContactSending] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Hero mockup — AI şeması bağlantı çizgileri için ölçüm
   const gridRef = useRef<HTMLDivElement>(null);
@@ -783,6 +790,15 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* Scroll-to-Top */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Yukarı çık"
+        className={`fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 shadow-lg hover:bg-white/70 dark:hover:bg-slate-700/60 hover:shadow-xl transition-all duration-300 flex items-center justify-center ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}
+      >
+        <ChevronUp size={20} />
+      </button>
 
       {/* Legal Text Modal */}
       {showLegalModal && (

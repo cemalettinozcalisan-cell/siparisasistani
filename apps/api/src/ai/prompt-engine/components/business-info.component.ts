@@ -15,19 +15,27 @@ export class BusinessInfoComponent {
 
     if (!tenant) return '';
 
-    return [
+    const lines = [
       `[FİRMA BİLGİSİ]`,
       `Firma: ${tenant['company_name'] || ''}`,
       `Telefon: ${tenant['phone'] || ''}`,
       `Adres: ${tenant['city'] || ''} - ${tenant['address'] || ''}`,
       `Vergi No: ${tenant['tax_number'] || ''}`,
-    ].join('\n');
+    ];
+
+    const certs = tenant['certificates'] as unknown;
+    if (Array.isArray(certs) && certs.length > 0) {
+      lines.push(`Sertifikalar: ${certs.join(', ')}`);
+      lines.push('KURAL: Yalnızca yukarıda listelenen sertifikaları söyleyebilirsin. Bunların dışında Helal/Kosher/ISO/BRCGS vb. HİÇBİR sertifika iddiasında bulunma.');
+    }
+
+    return lines.join('\n');
   }
 
   private async loadTenant(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenants')
-      .select('company_name, phone, address, city, tax_number')
+      .select('company_name, phone, address, city, tax_number, certificates')
       .eq('id', tenantId)
       .single();
 

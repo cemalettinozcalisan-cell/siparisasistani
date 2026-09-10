@@ -25,7 +25,7 @@ export class SettingsController {
 
     const { data: tenant } = await this.supabase.db
       .from('tenants')
-      .select('company_name, address, city, phone, email, created_at')
+      .select('company_name, address, city, phone, email, certificates, created_at')
       .eq('id', tenantId)
       .maybeSingle();
 
@@ -43,6 +43,7 @@ export class SettingsController {
       city: tenant?.city || '',
       phone: tenant?.phone || '',
       email: tenant?.email || '',
+      certificates: tenant?.certificates || [],
       created_at: tenant?.created_at || null,
       owner_name: owner?.name || '',
     };
@@ -80,6 +81,28 @@ export class SettingsController {
     });
 
     return data;
+  }
+
+  @Roles('owner', 'manager')
+  @Put(':tenantId/certificates')
+  async updateCertificates(@Param('tenantId') tenantId: string, @Body() body: { certificates?: string[] }) {
+    const certs = Array.isArray(body.certificates) ? body.certificates.map((c) => String(c).trim()).filter(Boolean) : [];
+    const { error } = await this.supabase.db
+      .from('tenants')
+      .update({ certificates: certs })
+      .eq('id', tenantId);
+    if (error) throw new Error(error.message);
+
+    await this.timeline.logEvent({
+      tenantId,
+      entityType: 'settings',
+      entityId: tenantId,
+      eventType: 'SETTINGS_UPDATED',
+      description: `Sertifikalar güncellendi (${certs.join(', ') || 'yok'})`,
+      actorType: 'STAFF',
+    });
+
+    return { certificates: certs };
   }
 
   @Roles('owner', 'manager')

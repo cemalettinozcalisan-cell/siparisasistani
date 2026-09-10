@@ -136,6 +136,8 @@ export default function SettingsPage() {
   const [countryInput, setCountryInput] = useState('');
   const [deliveryRules, setDeliveryRules] = useState<string[]>([]);
   const [ruleInput, setRuleInput] = useState('');
+  const [certSaved, setCertSaved] = useState(false);
+  const [certificateOther, setCertificateOther] = useState('');
   const tid = getTenantId();
 
   useEffect(() => {
@@ -160,6 +162,24 @@ export default function SettingsPage() {
   const update = (key: string, value: unknown) => {
     if (!settings) return;
     setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const toggleCert = (name: string) => {
+    if (!settings) return;
+    const cur = Array.isArray(settings.certificates) ? (settings.certificates as string[]) : [];
+    const next = cur.includes(name) ? cur.filter((c) => c !== name) : [...cur, name];
+    update('certificates', next);
+  };
+
+  const saveCertificates = async () => {
+    const certs = Array.isArray(settings?.certificates) ? (settings.certificates as string[]) : [];
+    try {
+      await fetch(`/api/settings/${tid}/certificates`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ certificates: certs }),
+      });
+      setCertSaved(true); setTimeout(() => setCertSaved(false), 2000);
+    } catch { /* sessiz */ }
   };
 
   const changePassword = async () => {
@@ -1023,6 +1043,38 @@ export default function SettingsPage() {
 
           <div className="flex justify-end pt-1">
             <span className="text-[10px] text-slate-400">Kurulum tarihi: {settings?.created_at ? new Date(settings.created_at as string).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
+          </div>
+
+          {/* Sertifikalar */}
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-5">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                  <BadgeCheck size={15} className="text-emerald-500" /> Sertifikalar
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Doldurulursa AI, ürünlerinizin sertifikalı olduğunu söyler. Boş bırakılırsa hiçbir sertifika iddiasında bulunmaz.</p>
+              </div>
+              <button onClick={saveCertificates} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${certSaved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'}`}>
+                {certSaved ? 'Kaydedildi!' : 'Kaydet'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              {(['Helal Gıda', 'Kosher', 'BRCGS', 'ISO 22000', 'HACCP'] as string[]).map((name) => {
+                const on = Array.isArray(settings?.certificates) && (settings.certificates as string[]).includes(name);
+                return (
+                  <button key={name} onClick={() => toggleCert(name)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${on ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/50' : 'bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-emerald-300'}`}>
+                    {on ? '✓ ' : '+ '}{name}
+                  </button>
+                );
+              })}
+              <input
+                value={certificateOther}
+                onChange={(e) => setCertificateOther(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { const v = certificateOther.trim(); if (v) { toggleCert(v); setCertificateOther(''); } } }}
+                placeholder="Diğer sertifika ekle +"
+                className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/30 w-44 placeholder:text-slate-400" />
+            </div>
           </div>
 
           {/* Security Section */}
