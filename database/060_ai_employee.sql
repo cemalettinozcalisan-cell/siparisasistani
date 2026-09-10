@@ -34,3 +34,7 @@ create table if not exists ai_employee_usage (
 );
 
 create index if not exists idx_ai_usage_tenant on ai_employee_usage(tenant_id, created_at desc);
+
+-- RLS: yalnızca service_role erişir (anon/authenticated deny) — uygulama service key kullanır, bozulmaz.
+alter table tenant_ai_employee enable row level security;
+alter table ai_employee_usage enable row level security;

@@ -20,3 +20,6 @@ create index if not exists idx_voice_notif_pending on ai_voice_notifications(ten
 
 -- Aynı olayın iki kez kuyruğa düşmesini engelle (idempotency)
 create unique index if not exists uq_voice_notif_dedup on ai_voice_notifications(dedup_key) where dedup_key is not null;
+
+-- RLS: yalnızca service_role erişir (anon/authenticated deny) — uygulama service key kullanır, bozulmaz.
+alter table ai_voice_notifications enable row level security;
