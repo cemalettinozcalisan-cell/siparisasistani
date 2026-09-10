@@ -1,17 +1,18 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getTenantId } from '@/lib/tenant';
 
 /**
  * AI Çalışanım — sesli bildirim istemcisi (panel açıkken).
  * - Bekleyen sesli bildirimleri toplar, özeti TTS ile hoparlörden çalar.
- * - Çaldıktan sonra acknowledged yapar (tekrar seslendirilmez).
- * - Panel kapatılırken uyarı gösterir (AI aktifse).
+ * - Yalnızca başarıyla çalınca acknowledged yapar (tekrar seslendirilmez).
+ * - Tarayıcı otomatik oynatmayı engellerse ipucu gösterir, bildirim kaybolmaz (sonraki turda tekrar denenir).
  */
 export function AiEmployeeVoice() {
   const tid = getTenantId();
   const playing = useRef(false);
+  const [hint, setHint] = useState(false);
 
   useEffect(() => {
     if (!tid) return;
@@ -30,23 +31,32 @@ export function AiEmployeeVoice() {
         const res = await fetch(`/api/ai-employee/${tid}/voice/pending`).then((r) => r.json());
         if (!alive) return;
         if (res?.quiet || !res?.summary) { playing.current = false; return; }
+
         const sp = await fetch(`/api/ai-employee/${tid}/voice/speak`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: res.summary }),
         }).then((r) => r.json());
         if (sp?.audioUrl) {
           const audio = new Audio(sp.audioUrl);
-          await new Promise<void>((resolve) => {
-            audio.onended = () => resolve();
-            audio.onerror = () => resolve();
-            audio.play().catch(() => resolve());
+          const played = await new Promise<boolean>((resolve) => {
+            audio.onended = () => resolve(true);
+            audio.onerror = () => resolve(false);
+            audio.play()
+              .then(() => { /* oynuyor */ })
+              .catch(() => resolve(false));
           });
-        }
-        for (const it of (res.items || [])) {
-          fetch(`/api/ai-employee/${tid}/voice/ack`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: it.id }),
-          }).catch(() => {});
+          if (played) {
+            // Başarıyla çalındı → acknowledged (tekrar seslendirilmez)
+            for (const it of (res.items || [])) {
+              fetch(`/api/ai-employee/${tid}/voice/ack`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: it.id }),
+              }).catch(() => {});
+            }
+          } else {
+            // Autoplay engellendi → bildirim bekler, kullanıcıya ipucu
+            setHint(true);
+          }
         }
       } catch { /* sessiz */ }
       playing.current = false;
@@ -74,5 +84,11 @@ export function AiEmployeeVoice() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [tid]);
 
-  return null;
+  if (!hint) return null;
+  return (
+    <div className="fixed bottom-20 left-4 z-50 max-w-xs bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 shadow-lg text-xs text-indigo-800 dark:text-indigo-200">
+      Sesli bildirimler için tarayıcının sese izin vermesi gerekiyor. Lütfen sayfada bir yere tıklayın — yeni bildirimler otomatik okunacaktır.
+      <button onClick={() => setHint(false)} className="ml-2 font-bold hover:underline">Kapat</button>
+    </div>
+  );
 }

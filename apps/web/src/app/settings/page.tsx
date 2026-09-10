@@ -140,6 +140,7 @@ export default function SettingsPage() {
   const [certificateOther, setCertificateOther] = useState('');
   const [aiEmp, setAiEmp] = useState<Record<string, any> | null>(null);
   const [aiEmpSaved, setAiEmpSaved] = useState(false);
+  const [aiEmpTest, setAiEmpTest] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
   const tid = getTenantId();
 
   useEffect(() => {
@@ -202,6 +203,22 @@ export default function SettingsPage() {
       });
       setAiEmpSaved(true); setTimeout(() => setAiEmpSaved(false), 2000);
     } catch { /* sessiz */ }
+  };
+
+  const testAiEmp = async () => {
+    setAiEmpTest('loading');
+    try {
+      const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' }).then((res) => res.json());
+      if (!r?.audioUrl) { setAiEmpTest('error'); return; }
+      const a = new Audio(r.audioUrl);
+      a.onended = () => setAiEmpTest('idle');
+      a.onerror = () => setAiEmpTest('error');
+      const ok = await new Promise<boolean>((resolve) => {
+        a.play().then(() => resolve(true)).catch(() => resolve(false));
+      });
+      if (ok) setAiEmpTest('playing');
+      else setAiEmpTest('error');
+    } catch { setAiEmpTest('error'); }
   };
 
   const changePassword = async () => {
@@ -522,11 +539,11 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
           <div>
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">AI Çalışanımı Test Et</p>
-            <p className="text-[11px] text-slate-400">Seçtiğiniz isim, ses, ton ve hitap ile kısa bir örnek seslendirilir.</p>
+            <p className="text-[11px] text-slate-400">{aiEmpTest === 'error' ? 'Ses oynatılamadı — tarayıcı otomatik oynatmayı engelleyebilir. Sayfada bir yere tıklayıp tekrar deneyin.' : 'Seçtiğiniz isim, ses, ton ve hitap ile kısa bir örnek seslendirilir.'}</p>
           </div>
-          <button onClick={async () => { try { const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' }).then(res => res.json()); if (r?.audioUrl) new Audio(r.audioUrl).play().catch(() => {}); } catch {} }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all">
-            <Mic size={13} /> Test Et
+          <button onClick={testAiEmp} disabled={aiEmpTest === 'loading'}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
+            <Mic size={13} /> {aiEmpTest === 'loading' ? 'Seslendiriliyor...' : aiEmpTest === 'playing' ? 'Çalıyor...' : 'Test Et'}
           </button>
         </div>
       </div>

@@ -83,7 +83,8 @@ export class VoiceNotificationService {
       .from('ai_voice_notifications')
       .select('*')
       .eq('tenant_id', tenantId)
-      .eq('status', 'pending')
+      .or('status.eq.pending,status.eq.delivered')
+      .is('acknowledged_at', null)
       .order('created_at', { ascending: true })
       .limit(50);
 
