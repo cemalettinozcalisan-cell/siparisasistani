@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getTenantId } from '@/lib/tenant';
+import { unlockAudio, playUrl } from '@/lib/voice-playback';
 
 /**
  * AI Çalışanım — sesli bildirim istemcisi (panel açıkken).
- * - Bekleyen sesli bildirimleri toplar, özeti TTS ile hoparlörden çalar.
+ * - Kullanıcı jestinde (tıklama/klavye) AudioContext'i açar → sonraki bildirimler otomatik çalar.
+ * - Bekleyen bildirimleri toplar, özeti TTS ile hoparlörden çalar.
  * - Yalnızca başarıyla çalınca acknowledged yapar (tekrar seslendirilmez).
- * - Tarayıcı otomatik oynatmayı engellerse ipucu gösterir, bildirim kaybolmaz (sonraki turda tekrar denenir).
+ * - Autoplay hâlâ engelliyse ipucu gösterir; bildirim kaybolmaz (sonraki turda tekrar denenir).
  */
 export function AiEmployeeVoice() {
   const tid = getTenantId();
@@ -18,6 +20,11 @@ export function AiEmployeeVoice() {
     if (!tid) return;
     let alive = true;
     let enabled = false;
+
+    // İlk kullanıcı jestinde ses kilidini aç
+    const unlock = () => unlockAudio();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
 
     fetch(`/api/ai-employee/${tid}`)
       .then((r) => r.json())
@@ -37,14 +44,7 @@ export function AiEmployeeVoice() {
           body: JSON.stringify({ text: res.summary }),
         }).then((r) => r.json());
         if (sp?.audioUrl) {
-          const audio = new Audio(sp.audioUrl);
-          const played = await new Promise<boolean>((resolve) => {
-            audio.onended = () => resolve(true);
-            audio.onerror = () => resolve(false);
-            audio.play()
-              .then(() => { /* oynuyor */ })
-              .catch(() => resolve(false));
-          });
+          const played = await playUrl(sp.audioUrl);
           if (played) {
             // Başarıyla çalındı → acknowledged (tekrar seslendirilmez)
             for (const it of (res.items || [])) {
@@ -54,7 +54,7 @@ export function AiEmployeeVoice() {
               }).catch(() => {});
             }
           } else {
-            // Autoplay engellendi → bildirim bekler, kullanıcıya ipucu
+            // Autoplay engellendi → bildirim bekler, ipucu göster
             setHint(true);
           }
         }
@@ -64,7 +64,12 @@ export function AiEmployeeVoice() {
 
     playSummary();
     const iv = setInterval(playSummary, 15000);
-    return () => { alive = false; clearInterval(iv); };
+    return () => {
+      alive = false;
+      clearInterval(iv);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
   }, [tid]);
 
   // Panel kapatma uyarısı (AI aktifken)

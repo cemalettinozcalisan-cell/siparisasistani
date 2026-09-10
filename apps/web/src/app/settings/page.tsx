@@ -2,6 +2,7 @@
 
 import { getTenantId } from '@/lib/tenant';
 import { getToken } from '@/lib/auth';
+import { unlockAudio, playUrl } from '@/lib/voice-playback';
 
 import { useEffect, useState, useRef } from 'react';
 import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail, Settings } from 'lucide-react';
@@ -207,17 +208,13 @@ export default function SettingsPage() {
 
   const testAiEmp = async () => {
     setAiEmpTest('loading');
+    unlockAudio(); // kullanıcı jestiyle AudioContext kilidini aç
     try {
       const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' }).then((res) => res.json());
       if (!r?.audioUrl) { setAiEmpTest('error'); return; }
-      const a = new Audio(r.audioUrl);
-      a.onended = () => setAiEmpTest('idle');
-      a.onerror = () => setAiEmpTest('error');
-      const ok = await new Promise<boolean>((resolve) => {
-        a.play().then(() => resolve(true)).catch(() => resolve(false));
-      });
-      if (ok) setAiEmpTest('playing');
-      else setAiEmpTest('error');
+      const ok = await playUrl(r.audioUrl);
+      setAiEmpTest(ok ? 'playing' : 'error');
+      setTimeout(() => setAiEmpTest('idle'), 4000);
     } catch { setAiEmpTest('error'); }
   };
 
