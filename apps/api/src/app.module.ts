@@ -58,6 +58,7 @@ import { InstagramModule } from './instagram/instagram.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { KvkkModule } from './kvkk/kvkk.module';
 import { BackupModule } from './backup/backup.module';
+import { AiEmployeeModule } from './ai-employee/ai-employee.module';
 import { ContactModule } from './contact/contact.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { QueueMonitorModule } from './queue-monitor/queue-monitor.module';
@@ -137,6 +138,7 @@ import { AlertModule } from './alert/alert.module';
     ChannelHealthModule,
     SupportModule,
     AlertModule,
+    AiEmployeeModule,
   ],
   controllers: [
     DashboardController,

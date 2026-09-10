@@ -138,6 +138,8 @@ export default function SettingsPage() {
   const [ruleInput, setRuleInput] = useState('');
   const [certSaved, setCertSaved] = useState(false);
   const [certificateOther, setCertificateOther] = useState('');
+  const [aiEmp, setAiEmp] = useState<Record<string, any> | null>(null);
+  const [aiEmpSaved, setAiEmpSaved] = useState(false);
   const tid = getTenantId();
 
   useEffect(() => {
@@ -156,6 +158,11 @@ export default function SettingsPage() {
     fetch(`/api/settings/${tid}/logo`)
       .then(r => r.json())
       .then(d => { if (d.logoUrl) setLogoPreview(d.logoUrl); })
+      .catch(() => {});
+
+    fetch(`/api/ai-employee/${tid}`)
+      .then(r => r.json())
+      .then(d => { if (d) setAiEmp(d); })
       .catch(() => {});
   }, []);
 
@@ -179,6 +186,21 @@ export default function SettingsPage() {
         body: JSON.stringify({ certificates: certs }),
       });
       setCertSaved(true); setTimeout(() => setCertSaved(false), 2000);
+    } catch { /* sessiz */ }
+  };
+
+  const updateAiEmp = (key: string, value: unknown) => {
+    setAiEmp((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const saveAiEmp = async () => {
+    if (!aiEmp) return;
+    try {
+      await fetch(`/api/ai-employee/${tid}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiEmp),
+      });
+      setAiEmpSaved(true); setTimeout(() => setAiEmpSaved(false), 2000);
     } catch { /* sessiz */ }
   };
 
@@ -360,6 +382,7 @@ export default function SettingsPage() {
           { key: 'payment', label: 'Ödeme & Kargo', icon: Truck },
           { key: 'invoice', label: 'Fatura & Vergi', icon: Clock },
           { key: 'identity', label: 'İşletme Kimliği', icon: Shield },
+          { key: 'aiEmployee', label: 'AI Çalışanım', icon: Bot },
         ].map((t) => {
           const Icon = t.icon;
           const active = activeTab === t.key;
@@ -371,6 +394,131 @@ export default function SettingsPage() {
           );
         })}
       </div>
+
+      {/* 0. AI Çalışanım */}
+      {activeTab === "all" || activeTab === "aiEmployee" ? (
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <SectionHeader icon={Bot} gradient="from-indigo-500 to-violet-600" title="AI Çalışanım" />
+          <button onClick={saveAiEmp} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${aiEmpSaved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'}`}>
+            {aiEmpSaved ? 'Kaydedildi!' : 'Kaydet'}
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-400 -mt-2">Esnaf tarafındaki sesli dijital çalışanınız. Sipariş/müşteri/talep/rapor/abonelik işlerinde size yardımcı olur.</p>
+
+        {/* Adı */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">AI Çalışanın Adı</label>
+          <div className="flex flex-wrap gap-1.5">
+            {['Bilge','Alparslan','Kağan','Göktuğ','Metehan','Alp','Batu','Börü','Tunga','Aybar','Umay','Aybike','Asena','Aydilge','Kayra','Gökçe'].map((n) => (
+              <button key={n} onClick={() => updateAiEmp('name', n)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${aiEmp?.name === n ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600/50' : 'bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300'}`}>
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Cinsiyet */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Ses (Cinsiyet)</label>
+            <select value={String(aiEmp?.gender || 'female')} onChange={(e) => updateAiEmp('gender', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              <option value="female">Kadın</option>
+              <option value="male">Erkek</option>
+            </select>
+          </div>
+          {/* Ton */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Konuşma Tarzı</label>
+            <select value={String(aiEmp?.tone || 'samimi')} onChange={(e) => updateAiEmp('tone', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              <option value="samimi">Samimi</option>
+              <option value="profesyonel">Profesyonel</option>
+              <option value="kisa_net">Kısa ve Net</option>
+            </select>
+          </div>
+          {/* Hitap */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Size Hitap Şekli</label>
+            <select value={String(aiEmp?.salutation || 'patron')} onChange={(e) => updateAiEmp('salutation', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              <option value="patron">Patron</option>
+              <option value="usta">Usta</option>
+              <option value="bey">Bey</option>
+              <option value="hanim">Hanım</option>
+              <option value="abi">Abi</option>
+              <option value="kardesim">Kardeşim</option>
+              <option value="ozel">Özel</option>
+            </select>
+          </div>
+          {/* Özel hitap */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Özel Hitap {String(aiEmp?.salutation) === 'ozel' ? '' : '(opsiyonel)'}</label>
+            <input value={String(aiEmp?.custom_salutation || '')} onChange={(e) => updateAiEmp('custom_salutation', e.target.value)} placeholder="örn. İsmail Bey"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+          </div>
+          {/* Wake word */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Wake Word</label>
+            <input value={String(aiEmp?.wake_word || 'bilge')} onChange={(e) => updateAiEmp('wake_word', e.target.value)} placeholder="bilge"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+          </div>
+        </div>
+
+        {/* Aktif */}
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">AI Çalışanım {aiEmp?.enabled ? '🟢 Aktif' : '⚪ Pasif'}</p>
+            <p className="text-[11px] text-slate-400">Kapalıyken sesli bildirimler ve sesli komutlar devre dışı kalır.</p>
+          </div>
+          <Toggle enabled={!!aiEmp?.enabled} onChange={(v) => updateAiEmp('enabled', v)} />
+        </div>
+
+        {/* Bildirim tercihleri */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Sesli Bildirimler</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {([
+              ['order_voice', 'Sipariş', '📦'],
+              ['request_voice', 'Talep', '💬'],
+              ['complaint_voice', 'Şikâyet', '⚠️'],
+              ['subscription_voice', 'Abonelik', '📈'],
+              ['stock_voice', 'Stok', '🏷️'],
+            ] as [string, string, string][]).map(([key, label, emoji]) => {
+              const prefs = aiEmp?.notification_preferences || {};
+              const on = prefs[key] !== false;
+              return (
+                <button key={key} onClick={() => updateAiEmp('notification_preferences', { ...prefs, [key]: !on })}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${on ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-700/40 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600'}`}>
+                  <span>{emoji} {label}</span><span>{on ? '✓' : '✕'}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bütçe + sessiz saatler */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Günlük Konuşma Bütçesi (dk)</label>
+            <input type="number" min={0} value={Number(aiEmp?.daily_realtime_budget_min ?? 20)} onChange={(e) => updateAiEmp('daily_realtime_budget_min', Number(e.target.value))}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Sessiz Saat Başlangıcı</label>
+            <input value={String(aiEmp?.quiet_hours_start || '')} onChange={(e) => updateAiEmp('quiet_hours_start', e.target.value || null)} placeholder="20:00"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Sessiz Saat Bitişi</label>
+            <input value={String(aiEmp?.quiet_hours_end || '')} onChange={(e) => updateAiEmp('quiet_hours_end', e.target.value || null)} placeholder="08:00"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
+          </div>
+        </div>
+      </div>
+      ) : null}
 
       {/* 1. AI Ayarları */}
       {activeTab === "all" || activeTab === "ai" ? (<>
