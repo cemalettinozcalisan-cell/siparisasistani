@@ -41,7 +41,7 @@ export function AiEmployeeVoice() {
 
         const sp = await fetch(`/api/ai-employee/${tid}/voice/speak`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: res.summary }),
+          body: JSON.stringify({ text: (res.items && res.items.length === 1) ? res.items[0].voice_text : res.summary }),
         }).then((r) => r.json());
         if (sp?.audioUrl) {
           const played = await playUrl(sp.audioUrl);
