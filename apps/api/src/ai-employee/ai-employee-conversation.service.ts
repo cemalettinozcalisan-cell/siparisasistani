@@ -73,7 +73,7 @@ const TOOL_ROLES: Record<string, string[]> = {
   CREATE_SHIPPING: ['owner', 'manager'],
   DELETE_ORDER: ['owner', 'manager'],
   SEND_MESSAGE: ['owner', 'manager'],
-  CREATE_CAMPAIGN: ['owner', 'manager'],
+  CREATE_CAMPAIGN: ['owner'],            // kritik — onaysız asla
   SEND_CAMPAIGN: ['owner'],            // kritik — toplu mesaj
   UPGRADE_SUBSCRIPTION: ['owner'],     // kritik — para
   DELETE_PRODUCT: ['owner'],           // kritik
