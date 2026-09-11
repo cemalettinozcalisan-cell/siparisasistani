@@ -5,6 +5,7 @@ import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { VoiceService } from '../voice/voice.service';
 import { SupportChatService } from '../support/support-chat.service';
+import { OutboundService } from '../messages/outbound.service';
 
 @Injectable()
 export class CallFlowService {
@@ -17,6 +18,7 @@ export class CallFlowService {
     private readonly brain: AiBrainService,
     private readonly voice: VoiceService,
     private readonly supportChat: SupportChatService,
+    private readonly outbound: OutboundService,
   ) {}
 
   async handleIncomingCall(tenantId: string, phone: string, callId: string, opts: { isSupport?: boolean } = {}): Promise<string> {
@@ -134,15 +136,35 @@ export class CallFlowService {
     // ---- /Faz 3 routing ----
 
     // Faz 4: Görüşme içi WhatsApp/Belge gönderimi
+    // WhatsApp Business API yapılandırılmışsa WhatsApp, değilse SMS yedeği.
     if (result.sendWhatsapp && session.phone) {
+      const content = result.whatsappMessage || result.reply || '';
+      let sentViaWhatsapp = false;
       try {
-        const telephony = this.telephony.getProvider('netgsm');
-        await (telephony as any).sendSms(session.phone,
-          `SiparisAsistani - Istediginiz bilgi:\n\n${result.whatsappMessage || result.reply}`
-        );
-        this.logger.log(`In-call document sent to customer ${session.phone} via SMS`);
+        const waConfigured = await this.outbound.isConfigured('whatsapp', session.tenant_id);
+        if (waConfigured) {
+          const res = await this.outbound.send({
+            tenantId: session.tenant_id,
+            channel: 'whatsapp',
+            to: session.phone,
+            body: content,
+          });
+          sentViaWhatsapp = res.success;
+          this.logger.log(`In-call document sent to customer ${session.phone} via WhatsApp${res.success ? '' : ' (' + (res.error || 'fail') + ')'}`);
+        }
       } catch (e) {
-        this.logger.warn(`In-call document send failed: ${(e as Error).message}`);
+        this.logger.warn(`In-call WhatsApp send failed: ${(e as Error).message}`);
+      }
+      if (!sentViaWhatsapp) {
+        try {
+          const telephony = this.telephony.getProvider('netgsm');
+          await (telephony as any).sendSms(session.phone,
+            `SiparisAsistani - Istediginiz bilgi:\n\n${content}`
+          );
+          this.logger.log(`In-call document sent to customer ${session.phone} via SMS`);
+        } catch (e) {
+          this.logger.warn(`In-call document send failed: ${(e as Error).message}`);
+        }
       }
     }
 

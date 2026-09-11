@@ -42,7 +42,7 @@ const COMMAND_SCHEMA = [
   'SEND_CAMPAIGN {"channel":"whatsapp|sms","message":"..."}',
   'UPGRADE_SUBSCRIPTION {"plan_code":"pro|ultra|mega"}',
   'SUBSCRIPTION_STATUS {}',
-  'DAILY_BRIEFING {}',
+  'DAILY_BRIEFING {}  — "Günaydın / günaydın [isim]" denince günlük özet ver',
   '',
   'ÇIKTI (KESİNLİKLE JSON):',
   'Bilgi/sohbet: {"type":"answer","reply":"kısa Türkçe cevap"}',
@@ -174,7 +174,7 @@ export class AiEmployeeConversationService {
     }
 
     // İşlem komutu → onay bekle (önizlemedeki çift "Onaylıyor musunuz?"u temizle)
-    const cleanPreview = (preview || '').replace(/\s*[Oo]nayl[ıi]yor musunuz[?]?\s*$/g, '');
+    const cleanPreview = (preview || '').replace(/\s*[Oo]nayl[ıi]yor musunu?z?[?]?\s*$/g, '');
     const auditId = await this.logAudit(undefined, 'pending', cleanPreview, tenantId, intent, params);
     this.pending.set(tenantId, {
       intent, params, preview: cleanPreview, role,

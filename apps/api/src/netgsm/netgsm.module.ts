@@ -15,9 +15,10 @@ import { VoiceModule } from '../voice/voice.module';
 import { OrderEngineModule } from '../order-engine/order-engine.module';
 import { SupabaseService } from '../common/supabase.client';
 import { SupportChatService } from '../support/support-chat.service';
+import { MessagesModule } from '../messages/messages.module';
 
 @Module({
-  imports: [AiModule, AiBrainModule, VoiceModule, OrderEngineModule],
+  imports: [AiModule, AiBrainModule, VoiceModule, OrderEngineModule, MessagesModule],
   controllers: [NetgsmController],
   providers: [
     IncomingCallWebhook,
