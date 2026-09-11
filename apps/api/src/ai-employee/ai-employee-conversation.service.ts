@@ -291,7 +291,8 @@ export class AiEmployeeConversationService {
         if (!rows.length) return 'Henüz görüşme yok.';
         return 'Son görüşmeler: ' + rows.map((r) => {
           const sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
-          return `${sd.customer_name || r.phone} (${r.channel || '-'}): ${sd.shortSummary || 'özet yok'}`;
+          const sum = sd.summary || sd.shortSummary || '';
+          return `${sd.customer_name || r.phone} (${r.channel || '-'}): ${sum || 'özet yok'}`;
         }).join(' | ');
       }
       case 'SEND_MESSAGE': {

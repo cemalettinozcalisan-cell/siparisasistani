@@ -464,6 +464,13 @@ export class AiBrainService {
         ended_at: new Date().toISOString(),
       })
       .eq('id', sessionId);
+
+    // Görüşme özeti: her tamamlanan görüşmede üret (kanaldan bağımsız; zaten varsa atlar).
+    if (endReason === 'completed') {
+      this.generateCallSummary(sessionId).catch((err) => {
+        this.logger.warn(`Call summary (endSession) failed: ${(err as Error).message}`);
+      });
+    }
   }
 
   private detectState(messages: { role: string; content: string }[]): string {
@@ -513,11 +520,16 @@ export class AiBrainService {
     try {
       const { data: session } = await this.supabase.db
         .from('conversation_sessions')
-        .select('tenant_id, phone, messages, created_at, ended_at, status, call_recording_url')
+        .select('tenant_id, phone, messages, session_data, created_at, ended_at, status, call_recording_url')
         .eq('id', sessionId)
         .single();
 
       if (!session || !session.messages) return null;
+
+      // Zaten özet üretildiyse tekrar üretme (idempotent)
+      const existingData = typeof session.session_data === 'string'
+        ? JSON.parse(session.session_data) : (session.session_data || {});
+      if (existingData && existingData.summary) return null;
 
       const messages: { role: string; content: string }[] =
         typeof session.messages === 'string' ? JSON.parse(session.messages) : session.messages;
