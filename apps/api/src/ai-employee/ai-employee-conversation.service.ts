@@ -336,9 +336,18 @@ export class AiEmployeeConversationService {
         return `Paketiniz ${target.name || planCode} olarak yükseltildi.`;
       }
       case 'SUBSCRIPTION_STATUS': {
-        const sub = await this.saas.getSubscription(tenantId);
-        const remaining = (sub as any)?.remaining_orders ?? (sub as any)?.orders_remaining ?? '?';
-        return `Mevcut paket: ${(sub as any)?.plan_name || '-'}, kalan sipariş hakkı: ${remaining}.`;
+        const sub = await this.saas.getSubscription(tenantId) as any;
+        const limit = Number(sub?.order_limit) || 0;
+        const today = new Date(); const dayOfMonth = today.getDate();
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const used = Number(sub?.orders_used ?? 0);
+        const remaining = limit > 0 ? Math.max(0, limit - used) : (sub?.remaining_orders ?? '?');
+        if (limit <= 0) return `Mevcut paket: ${sub?.plan_name || '-'}, kalan sipariş hakkı: ${remaining}.`;
+        const pace = remaining / Math.max(1, daysInMonth - dayOfMonth + 1);
+        const willLast = pace > 0 && dayOfMonth > 1;
+        const warn = willLast && remaining <= Math.round((limit / daysInMonth) * (daysInMonth - dayOfMonth + 1) * 0.8);
+        const plan = sub?.plan_name || 'mevcut paket';
+        return `Mevcut paket: ${plan} (${limit} sipariş). Kalan: ${remaining}. Ayın ${dayOfMonth}. günündeyiz; mevcut kullanım hızıyla paket ${warn ? 'ay sonuna yetmeyebilir — yükseltmeyi düşünmelisiniz' : 'ay sonuna yetecek gibi görünüyor'}. İsterseniz paket yükseltme komutu verebilirsiniz.`;
       }
       case 'DAILY_BRIEFING': {
         const sal = this.salutation(await this.aiEmployee.get(tenantId));

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { SupabaseService } from '../common/supabase.client';
 import { AiProviderFactory } from '../ai/providers/ai-provider.factory';
+import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 
 export type HealthChannel = 'phone' | 'sms' | 'whatsapp' | 'instagram' | 'website' | 'ai' | 'webhook';
 
@@ -13,6 +14,7 @@ export class ChannelHealthService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly aiFactory: AiProviderFactory,
+    private readonly eventBus: EventBusService,
   ) {}
 
   /**
@@ -343,7 +345,7 @@ export class ChannelHealthService {
   private async scanQuota(tenantId: string) {
     const { data: sub } = await this.supabase.db
       .from('subscriptions')
-      .select('order_limit')
+      .select('order_limit, last_threshold_notified')
       .eq('tenant_id', tenantId)
       .maybeSingle();
     const limit = Number(sub?.order_limit || 500);
@@ -356,6 +358,20 @@ export class ChannelHealthService {
     const percent = Math.min(100, Math.round((used / limit) * 100));
     if (percent >= 90) {
       await this.raiseMetricAlert(tenantId, 'website', 'KOTA_DOLUYOR', `Sipariş kotası %${percent} doldu (${used}/${limit})`);
+    }
+
+    // AI Çalışanım: kalan hakkı eşiklere (30/20/10/5) düştüğünde bir kez sesli bildirim
+    const remaining = Math.max(0, limit - used);
+    const lastNotified = Number(sub?.last_threshold_notified || 999);
+    for (const thr of [30, 20, 10, 5]) {
+      if (remaining <= thr && thr < lastNotified) {
+        try {
+          await this.eventBus.emit(SystemEvents.SUBSCRIPTION_THRESHOLD, tenantId, { remaining, threshold: thr, used, limit }, String(thr));
+          await this.supabase.db.from('subscriptions').update({ last_threshold_notified: thr }).eq('tenant_id', tenantId);
+        } catch (e) {
+          this.logger.warn(`Subscription threshold emit failed: ${(e as Error).message}`);
+        }
+      }
     }
   }
 
