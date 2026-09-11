@@ -8,5 +8,6 @@ import { TimelineModule } from '../timeline/timeline.module';
   imports: [TimelineModule],
   controllers: [SaasController],
   providers: [SaasService, SupabaseService],
+  exports: [SaasService],
 })
 export class SaasModule {}

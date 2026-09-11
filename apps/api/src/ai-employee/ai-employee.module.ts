@@ -6,9 +6,12 @@ import { AiEmployeeConversationService } from './ai-employee-conversation.servic
 import { SupabaseService } from '../common/supabase.client';
 import { VoiceModule } from '../voice/voice.module';
 import { CargoTrackingModule } from '../cargo-tracking/cargo-tracking.module';
+import { MessagesModule } from '../messages/messages.module';
+import { CampaignsModule } from '../campaigns/campaigns.module';
+import { SaasModule } from '../saas/saas.module';
 
 @Module({
-  imports: [VoiceModule, CargoTrackingModule],
+  imports: [VoiceModule, CargoTrackingModule, MessagesModule, CampaignsModule, SaasModule],
   controllers: [AiEmployeeController],
   providers: [AiEmployeeService, VoiceNotificationService, AiEmployeeConversationService, SupabaseService],
   exports: [AiEmployeeService, VoiceNotificationService],
