@@ -202,12 +202,13 @@ EVENT → Notification Orchestrator
 | Aşama | İçerik | Durum |
 |---|---|---|
 | 1 | Mevcut sistem analizi + entegrasyon haritası (bu belge) | ✅ |
-| 2 | `tenant_ai_employee` migration + AI Çalışanım paneli + `ai-employee` backend | 🔄 |
-| 3 | Notification Queue + VoiceHandler (TTS) + pending/ack + reconnect özeti + panel kapatma uyarısı | ⏳ |
-| 4a | Konuşma kanalı: ConversationProvider (DeepSeek) + wake word/push-to-talk + state machine + tool gateway + onay/audit + metrikler | ⏳ |
+| 2 | `tenant_ai_employee` migration + AI Çalışanım paneli + `ai-employee` backend | ✅ |
+| 3 | Notification Queue + VoiceHandler (TTS) + pending/ack + reconnect özeti + panel kapatma uyarısı | ✅ |
+| 4a | Konuşma kanalı: ConversationProvider (DeepSeek) + Bas-ve-Konuş/toggle + tool gateway + doğal onay (evet/hayır + tekrar sor) + audit + rol matrisi + 18 komut | ✅ |
+| 4a.2 | İşlem komutları (ürün/müşteri/özel fiyat/sipariş/kargo/mesaj/rapor/kampanya/abonelik/günaydın) — onay garantisi (Anayasa m.9 + execTool confirmed kilidi) | ✅ |
 | 4b | OpenAI Realtime geçişi (metrikler doğrulayınca) | ⏳ |
-| 5 | Abonelik + trend + eşik uyarıları | ⏳ |
-| 6 | Sistem sağlığı → sahibine | ⏳ |
+| 5 | Abonelik + trend + eşik uyarıları (kalan 30/20/10/5 → sesli bildirim, migration 063) | ✅ |
+| 6 | Sistem sağlığı → sahibine (mevcut `channel_health_alerts` → `alert-router` → owner email; esnafa teknik alarm yok) | ✅ (mevcut altyapı) |
 | 7 | E2E + felaket testi + gerçek maliyet modeli | ⏳ |
 
 ---
