@@ -1,4 +1,5 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AiEmployeeService, AiEmployeeConfig } from './ai-employee.service';
@@ -57,7 +58,8 @@ export class AiEmployeeController {
 
   @Roles('owner', 'manager')
   @Post(':tenantId/conversation')
-  async converse(@Param('tenantId') tenantId: string, @Body() body: { text: string }) {
-    return this.conversation.converse(tenantId, String(body?.text || '').trim());
+  async converse(@Param('tenantId') tenantId: string, @Body() body: { text: string }, @Req() req: Request) {
+    const role = ((req as any).user as any)?.role || 'staff';
+    return this.conversation.converse(tenantId, String(body?.text || '').trim(), role);
   }
 }

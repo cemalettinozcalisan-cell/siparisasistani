@@ -20,6 +20,7 @@ export function AiEmployeeChat() {
   const [unsupported, setUnsupported] = useState(false);
   const [typed, setTyped] = useState('');
   const [rec, setRec] = useState<any>(null);
+  const [pendingCode, setPendingCode] = useState('');
 
   const SR: any = (typeof window !== 'undefined') && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
@@ -39,6 +40,7 @@ export function AiEmployeeChat() {
       }).then((res) => res.json());
       const reply = r?.reply || 'Anlayamadım, tekrar eder misiniz?';
       setLastReply(reply);
+      setPendingCode(r?.pending?.code ? String(r.pending.code) : '');
       const sp = await fetch(`/api/ai-employee/${tid}/voice/speak`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: reply }),
@@ -48,6 +50,13 @@ export function AiEmployeeChat() {
       setError('Cevaplayamadım, bağlantı hatası.');
     }
     setState('idle');
+  };
+
+  const quickSend = (v: string) => {
+    if (state === 'processing') return;
+    setPendingCode('');
+    setLastText(v);
+    ask(v);
   };
 
   const toggleMic = () => {
@@ -139,6 +148,13 @@ export function AiEmployeeChat() {
           {lastText && <p className="text-[11px] text-slate-500 dark:text-slate-400">Sen: {lastText}</p>}
           {lastReply && <p className="text-[11px] text-slate-800 dark:text-slate-200 font-medium">{lastReply}</p>}
           {error && <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>}
+
+          {pendingCode && (
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => quickSend(pendingCode)} className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold">Onayla ({pendingCode})</button>
+              <button onClick={() => quickSend('iptal')} className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[11px] font-semibold">İptal</button>
+            </div>
+          )}
 
           <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-700">
             <input

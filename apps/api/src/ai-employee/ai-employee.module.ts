@@ -5,9 +5,10 @@ import { VoiceNotificationService } from './voice-notification.service';
 import { AiEmployeeConversationService } from './ai-employee-conversation.service';
 import { SupabaseService } from '../common/supabase.client';
 import { VoiceModule } from '../voice/voice.module';
+import { CargoTrackingModule } from '../cargo-tracking/cargo-tracking.module';
 
 @Module({
-  imports: [VoiceModule],
+  imports: [VoiceModule, CargoTrackingModule],
   controllers: [AiEmployeeController],
   providers: [AiEmployeeService, VoiceNotificationService, AiEmployeeConversationService, SupabaseService],
   exports: [AiEmployeeService, VoiceNotificationService],
