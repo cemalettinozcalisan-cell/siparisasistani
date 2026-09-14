@@ -5,7 +5,7 @@ import { getToken } from '@/lib/auth';
 import { unlockAudio, playUrl } from '@/lib/voice-playback';
 
 import { useEffect, useState, useRef } from 'react';
-import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail, Settings } from 'lucide-react';
+import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail, Settings, ShoppingBag, MessageSquare, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
 const DAYS = [
@@ -424,7 +424,7 @@ export default function SettingsPage() {
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">AI Çalışanın Adı</label>
           <div className="flex flex-wrap gap-1.5">
-            {['Bilge','Alparslan','Kağan','Göktuğ','Metehan','Alp','Batu','Börü','Tunga','Aybar','Umay','Aybike','Asena','Aydilge','Kayra','Gökçe'].map((n) => (
+            {['Bilge','Alparslan','Kağan','Göktuğ','Metehan','Alp','Batu','Börü','Tunga','Aybar','Umay','Aybike','Asena','Aydilge','Kayra','Gökçe','Ayperi','Ece'].map((n) => (
               <button key={n} onClick={() => updateAiEmp('name', n)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${aiEmp?.name === n ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600/50' : 'bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300'}`}>
                 {n}
@@ -490,24 +490,56 @@ export default function SettingsPage() {
           <Toggle enabled={!!aiEmp?.enabled} onChange={(v) => updateAiEmp('enabled', v)} />
         </div>
 
+        {/* Uyandırma modları */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block">Uyandırma</label>
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+            <div className="flex items-start gap-2.5">
+              <span className={`w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 shadow-sm`}><Sparkles size={16} className="text-white" /></span>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">2 Alkış + İsimle Uyandır</p>
+                <p className="text-[11px] text-slate-400">👏👏 + "{String(aiEmp?.name || 'Bilge')}" deyince uyanır. Açıkken mikrofon sürekli açıktır (algılama cihazda, buluta gitmez).</p>
+              </div>
+            </div>
+            <Toggle enabled={!!aiEmp?.wake_enabled} onChange={(v) => updateAiEmp('wake_enabled', v)} />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+            <div className="flex items-start gap-2.5">
+              <span className={`w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shrink-0 shadow-sm`}><Mic size={16} className="text-white" /></span>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Bas-ve-Konuş (Opsiyonel)</p>
+                <p className="text-[11px] text-slate-400">Butona basıp konuşursunuz. Gürültülü ortamda alkış yerine tercih edilir.</p>
+              </div>
+            </div>
+            <Toggle enabled={!!aiEmp?.push_to_talk_enabled} onChange={(v) => updateAiEmp('push_to_talk_enabled', v)} />
+          </div>
+        </div>
+
         {/* Bildirim tercihleri */}
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Sesli Bildirimler</label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="space-y-1.5">
             {([
-              ['order_voice', 'Sipariş', '📦'],
-              ['request_voice', 'Talep', '💬'],
-              ['complaint_voice', 'Şikâyet', '⚠️'],
-              ['subscription_voice', 'Abonelik', '📈'],
-              ['stock_voice', 'Stok', '🏷️'],
-            ] as [string, string, string][]).map(([key, label, emoji]) => {
+              ['order_voice', 'Sipariş', 'Yeni sipariş geldiğinde', ShoppingBag, 'from-blue-500 to-cyan-600'],
+              ['request_voice', 'Talep', 'Müşteri talep/istek iletirse', MessageSquare, 'from-violet-500 to-purple-600'],
+              ['complaint_voice', 'Şikâyet', 'Şikâyet kaydı oluşursa', AlertTriangle, 'from-rose-500 to-red-600'],
+              ['subscription_voice', 'Abonelik', 'Sipariş hakkı eşiğe düşünce', TrendingUp, 'from-amber-500 to-orange-600'],
+              ['stock_voice', 'Stok', 'Stok uyarısı', Package, 'from-teal-500 to-emerald-600'],
+            ] as [string, string, string, any, string][]).map(([key, label, desc, Icon, grad]) => {
               const prefs = aiEmp?.notification_preferences || {};
               const on = prefs[key] !== false;
               return (
-                <button key={key} onClick={() => updateAiEmp('notification_preferences', { ...prefs, [key]: !on })}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${on ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40' : 'bg-slate-50 dark:bg-slate-700/40 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-600'}`}>
-                  <span>{emoji} {label}</span><span>{on ? '✓' : '✕'}</span>
-                </button>
+                <div key={key} onClick={() => updateAiEmp('notification_preferences', { ...prefs, [key]: !on })}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${on ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm' : 'bg-slate-50 dark:bg-slate-700/20 border-slate-200 dark:border-slate-700 opacity-70'}`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${grad} flex items-center justify-center shrink-0 shadow-sm`}><Icon size={15} className="text-white" /></span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</p>
+                      <p className="text-[11px] text-slate-400">{desc}</p>
+                    </div>
+                  </div>
+                  <Toggle enabled={on} onChange={() => updateAiEmp('notification_preferences', { ...prefs, [key]: !on })} />
+                </div>
               );
             })}
           </div>

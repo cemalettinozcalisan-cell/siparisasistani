@@ -16,6 +16,8 @@ export interface AiEmployeeConfig {
   monthly_realtime_budget_min: number | null;
   quiet_hours_start: string | null;
   quiet_hours_end: string | null;
+  wake_enabled: boolean;
+  push_to_talk_enabled: boolean;
 }
 
 const DEFAULTS: Partial<AiEmployeeConfig> = {
@@ -31,6 +33,8 @@ const DEFAULTS: Partial<AiEmployeeConfig> = {
   monthly_realtime_budget_min: null,
   quiet_hours_start: null,
   quiet_hours_end: null,
+  wake_enabled: true,
+  push_to_talk_enabled: false,
 };
 
 @Injectable()
