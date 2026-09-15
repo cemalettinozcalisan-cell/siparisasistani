@@ -54,6 +54,16 @@ export function AiEmployeeChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tid]);
 
+  // Üst bar "AI Çalışanım" butonundan gelen aç/kapa — mikrofon anında tepki verir
+  useEffect(() => {
+    const onConfig = (e: Event) => {
+      const d = (e as CustomEvent)?.detail;
+      if (d && typeof d.enabled === 'boolean') setCfg((p) => (p ? { ...p, enabled: d.enabled } : p));
+    };
+    window.addEventListener('ai-employee-config', onConfig);
+    return () => window.removeEventListener('ai-employee-config', onConfig);
+  }, []);
+
   useEffect(() => {
     if (!cfg?.enabled || !cfg.wake_enabled) return;
     if (sleeping) startClap();

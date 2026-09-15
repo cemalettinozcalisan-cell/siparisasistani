@@ -301,6 +301,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [usage, setUsage] = useState<Record<string, unknown> | null>(null);
+  const [aiEnabled, setAiEnabled] = useState<boolean | null>(null);
   const pathname = usePathname();
   const isDashboard = pathname === '/dashboard';
 
@@ -312,6 +313,26 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
     fetch(`/api/saas/usage/${getTenantId()}`).then(r => r.json()).catch(() => null).then(u => { if (active && u) setUsage(u); });
     return () => { active = false; };
   }, [isDashboard]);
+
+  useEffect(() => {
+    const tid = getTenantId();
+    if (!tid) return;
+    let active = true;
+    fetch(`/api/ai-employee/${tid}`).then(r => r.json()).catch(() => null).then(d => { if (active && d) setAiEnabled(!!d.enabled); });
+    return () => { active = false; };
+  }, []);
+
+  const toggleAi = async () => {
+    const tid = getTenantId();
+    if (!tid || aiEnabled === null) return;
+    const next = !aiEnabled;
+    try {
+      const res = await fetch(`/api/ai-employee/${tid}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: next }) });
+      if (!res.ok) return;
+      setAiEnabled(next);
+      window.dispatchEvent(new CustomEvent('ai-employee-config', { detail: { enabled: next } }));
+    } catch { /* sessiz */ }
+  };
 
   if (!mounted) return <div className="flex min-h-screen bg-[#F8FAFC] dark:bg-slate-900">{children}</div>;
 
@@ -334,7 +355,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
               <NotificationBell />
               {isDashboard && usage && (
-                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-xs shadow-md shadow-indigo-500/25">
+                <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-xs shadow-md shadow-orange-500/25">
                   <BarChart3 size={13} className="text-white/90" />
                   <span className="font-medium text-white">Sipariş Hakkı:</span>
                   <span className="font-bold text-white tabular-nums">{remaining} / {orderLimit}</span>
@@ -347,6 +368,12 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
                 </span>
                 <span className="text-xs font-medium text-white">Sistem Aktif</span>
               </div>
+              <button onClick={toggleAi} disabled={aiEnabled === null}
+                className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shadow-md transition-all ${aiEnabled ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-500/25' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-sm'}`}>
+                <Mic size={13} className={aiEnabled ? 'text-white' : 'text-slate-400 dark:text-slate-500'} />
+                <span>AI Çalışanım</span>
+                <span className={`font-semibold ${aiEnabled ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`}>{aiEnabled ? 'Aktif' : 'Kapalı'}</span>
+              </button>
             </div>
           </div>
         </header>
