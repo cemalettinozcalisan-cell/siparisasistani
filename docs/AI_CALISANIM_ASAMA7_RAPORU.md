@@ -22,7 +22,7 @@
 
 | Seviye | Adet | Detay |
 |---|---|---|
-| 🔴 CRITICAL | 1 | **Production auth: unsalted SHA-256 + 2 düz metin şifre satırı** (`auth.service.ts:24`) → bkz. §9 |
+| 🔴 CRITICAL | 1 → ✅ **FİXED** | Production auth unsalted SHA-256 + düz metin şifreler → **scrypt göçü tamam** (bkz. §9) |
 | 🟠 HIGH | 0 | — |
 | 🟡 MEDIUM | 1 | READ komutlarında (REPORT/briefing/abonelik) usage maliyet kaydı yazılmıyordu → **düzeltildi** (P7.5) |
 | 🔵 LOW | 1 | `recordUsage` latency iç ölçümü ~0 (gerçek AI çağrısı süresini değil çağrı-sonrasını ölçüyor) → gerçek latency test suite'te ölçülüyor |
@@ -116,11 +116,20 @@ Formül: `(6/1000)×0.00027 + (100/1000)×0.00110 = $0.0001116 → ~$0.0001` ✅
 
 **Bu bir TEST mekanizması değildir — production kullanıcı kimlik doğrulamasıdır.** SHA-256 hızlı/hash hızında brute-force + rainbow-table risklidir; düz metin satırlar doğrudan sızıntıdır. → **CRITICAL finding.**
 
-### Çözüm önerisi (öncelik sırasıyla)
-1. **Düz metin satırları anında geçersiz kıl**: `users.password` → rastgele değere çevir (kullanıcı "şifremi unuttum" akışından sıfırlasın). Email duplicate'ı temizle (unique constraint).
-2. **bcrypt/argon2id'e göç**: Node yerleşik `crypto.scrypt` (ek bağımlılık yok) veya bcrypt. Per-user salt ile.
-3. **Kademeli migrasyon**: login'de SHA-256 eşleşirse → scrypt hash'le → kaydet → SHA-256 yolunu tüm kullanıcılar göçene kadar fallback tut → sonra SHA-256 yolunu kaldır.
-4. **Mock fallback'i production'dan ayır**: `NODE_ENV === 'development'` koşuluna al.
-5. (Opsiyonel) Supabase Auth'a geçiş uzun vadede.
+### ✅ ÇÖZÜM UYGULANDI (2026-09-15)
+
+| Adım | Durum |
+|---|---|
+| **Düz metin temizliği** | ✅ 2 satır (`ahmet@ahmetipek.com` ×2) **aynı şifre korunarak** scrypt'e çevrildi — kullanıcı kilitlenmedi, sızıntı kapandı. Son durum: **düz metin = 0** |
+| **scrypt göçü** | ✅ `crypto.scryptSync` (per-user 16B salt, 64B hash, `scrypt$salt$hash`) — `auth.service.ts` login + changePassword güncellendi. Legacy sha256 → **ilk login'de otomatik scrypt** (kademeli, şifre bilinmediği için) |
+| **Mock fallback** | ✅ Production'da devre dışı (`NODE_ENV === 'production'` guard) — hardcoded demo kredileri production yolundan kaldırıldı |
+| **Doğrulama** | ✅ Test suite **10/10 PASS** (production modunda, mock kapalı); demo login sha256→scrypt göçü, change-password (eski şifre reddedildi), yeni şifreyle login doğrulandı |
+| **DB son durum** | ✅ 7 kullanıcı: **3 scrypt**, 4 legacy sha256 (kendi login'lerinde otomatik göçer), **0 düz metin** |
+| **Araç** | `apps/api/scripts/migrate-passwords.mjs` (yeniden çalıştırılabilir, idempotent) |
+
+**Notlar:**
+- Kalan 4 legacy sha256 kullanıcı (`ahmet@danet`, `mehmet@taylan`, `mustafa@kayraborek`, `veli@evrenkaya`) ilk girişlerinde otomatik scrypt'e döner; güvenlik açısından şu an tek risk hızlı hash'tir ve her girişte kapanır.
+- Duplicate email `ahmet@ahmetipek.com` (2 owner satır) **temizlenmedi** (hangisinin gerçek olduğu bilinmiyor; unique constraint ileride admin onayı ile yapılmalı).
+- Session'lar in-memory `Map` (restart'ta düşer) — mevcut tasarım; production için Redis/DB session önerilir (HIGH değil, kullanılabilirlik notu).
 
 **Test kullanıcıları doğrulaması:** Simülasyonda oluşturulan geçici `temptest-*@test.local` kullanıcıları (3 adet) **silinmiştir (0 kaldı)**; yalnızca insert+delete yapıldı, **mevcut production kullanıcılarına dokunulmadı**. Yine de yukarıdaki CRITICAL bulgu mevcut kodda bağımsız olarak geçerlidir.

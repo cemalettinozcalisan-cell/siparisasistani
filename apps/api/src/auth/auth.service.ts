@@ -13,7 +13,7 @@ export class AuthService {
     try {
       const { data: user } = await this.supabase.db
         .from('users')
-        .select('id, tenant_id, name, email, role, active')
+        .select('id, tenant_id, name, email, role, active, password')
         .eq('email', email)
         .maybeSingle();
 
@@ -21,16 +21,15 @@ export class AuthService {
         throw new UnauthorizedException('Gecersiz email veya sifre');
       }
 
-      const hash = crypto.createHash('sha256').update(password).digest('hex');
-      const { data: userWithPwd } = await this.supabase.db
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .eq('password', hash)
-        .maybeSingle();
-
-      if (!userWithPwd) {
+      const verified = await this.verifyPassword(password, user.password || '');
+      if (!verified) {
         throw new UnauthorizedException('Gecersiz email veya sifre');
+      }
+
+      // Legacy şifre (sha256 / düz metin) → scrypt'e kademeli göç (first login'de)
+      if (!user.password?.startsWith('scrypt$')) {
+        const newHash = await this.hashPassword(password);
+        await this.supabase.db.from('users').update({ password: newHash }).eq('id', user.id);
       }
 
       const token = crypto.randomBytes(32).toString('hex');
@@ -53,7 +52,10 @@ export class AuthService {
         },
       };
     } catch {
-      // Fallback mock login when Supabase is unavailable
+      // Fallback mock login — yalnızca DEVELOPMENT'da; production'da devre dışı (hardcoded demo kredileri production yolundan kaldırıldı)
+      if (process.env.NODE_ENV === 'production') {
+        throw new UnauthorizedException('Gecersiz email veya sifre');
+      }
       if (email === 'demo@siparisasistani.com' && password === 'demo123') {
         const token = crypto.randomBytes(32).toString('hex');
         const mockUser = { id: 'demo-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'owner', name: 'Demo Kullanici', email: 'demo@siparisasistani.com' };
@@ -95,15 +97,13 @@ export class AuthService {
     const session = this.sessions.get(token);
     if (!session) throw new UnauthorizedException('Gecersiz token');
 
-    const oldHash = crypto.createHash('sha256').update(oldPassword).digest('hex');
     const { data: user } = await this.supabase.db
       .from('users')
-      .select('id')
+      .select('id, password')
       .eq('id', session.userId)
-      .eq('password', oldHash)
       .maybeSingle();
 
-    if (!user) {
+    if (!user || !(await this.verifyPassword(oldPassword, user.password || ''))) {
       // Fallback for demo accounts
       if (session.email === 'demo@siparisasistani.com' && oldPassword === 'demo123') {
         return { success: true, message: 'Sifre demo ortaminda degistirildi' };
@@ -113,9 +113,36 @@ export class AuthService {
 
     if (newPassword.length < 6) throw new UnauthorizedException('Yeni sifre en az 6 karakter olmali');
 
-    const newHash = crypto.createHash('sha256').update(newPassword).digest('hex');
+    const newHash = await this.hashPassword(newPassword);
     await this.supabase.db.from('users').update({ password: newHash }).eq('id', session.userId);
 
     return { success: true };
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `scrypt$${salt}$${hash}`;
+  }
+
+  private async verifyPassword(password: string, stored: string): Promise<boolean> {
+    if (!stored) return false;
+    if (stored.startsWith('scrypt$')) {
+      const parts = stored.split('$');
+      if (parts.length !== 3) return false;
+      const [, salt, hash] = parts;
+      try {
+        const candidate = crypto.scryptSync(password, salt, 64);
+        return crypto.timingSafeEqual(candidate, Buffer.from(hash, 'hex'));
+      } catch {
+        return false;
+      }
+    }
+    // Legacy: unsalted sha256 hex → doğrula, ilk login'de scrypt'e göç edilir
+    if (/^[0-9a-f]{64}$/.test(stored)) {
+      return crypto.createHash('sha256').update(password).digest('hex') === stored;
+    }
+    // Legacy: düz metin (göç script'i + login upgrade ile scrypt'e çevrilir; geçici güvenlik riski login'de kapanır)
+    return password === stored;
   }
 }
