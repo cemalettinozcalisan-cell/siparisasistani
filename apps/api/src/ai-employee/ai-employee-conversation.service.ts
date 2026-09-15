@@ -174,6 +174,7 @@ private readonly campaigns: CampaignsService,
     if (READ_COMMANDS.has(intent)) {
       try {
         const result = await this.execTool(tenantId, intent, params, false);
+        await this.recordUsage(tenantId, `read:${intent}`, 'conversation');
         return { reply: result };
       } catch (e) {
         return { reply: `${sal}, ${(e as Error).message}` };
