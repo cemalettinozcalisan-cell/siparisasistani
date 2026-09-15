@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { VoiceService } from '../voice/voice.service';
 import { AiEmployeeService, AiEmployeeConfig } from './ai-employee.service';
+import { AiPricingService } from './ai-pricing.service';
 
 const SALUTATION_MAP: Record<string, string> = {
   patron: 'Patron',
@@ -35,6 +36,7 @@ export class VoiceNotificationService {
     private readonly supabase: SupabaseService,
     private readonly voice: VoiceService,
     private readonly aiEmployee: AiEmployeeService,
+    private readonly pricing: AiPricingService,
   ) {}
 
   /** Bir event'i sesli bildirim kuyruğuna ekler (idempotent). */
@@ -136,6 +138,23 @@ export class VoiceNotificationService {
         contentType: 'audio/mpeg',
         upsert: true,
       });
+
+      // Notification TTS maliyeti (konuşma bütçesinden AYRI kayıt)
+      try {
+        const chars = text.length;
+        const cost = await this.pricing.costFor('elevenlabs', 'tts', chars, 0);
+        await this.supabase.db.from('ai_employee_usage').insert({
+          tenant_id: tenantId,
+          kind: 'notification',
+          duration_sec: 0,
+          input_tokens: chars,
+          output_tokens: 0,
+          provider: 'elevenlabs',
+          cost_estimate: cost,
+          note: text.slice(0, 120),
+        });
+      } catch { /* sessiz */ }
+
       return `${process.env.SUPABASE_URL}/storage/v1/object/public/voice-cache/${fileName}`;
     } catch (e) {
       this.logger.warn(`Voice speak failed: ${(e as Error).message}`);

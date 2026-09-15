@@ -7,6 +7,7 @@ import { CargoTrackingService } from '../cargo-tracking/cargo-tracking.service';
 import { OutboundService } from '../messages/outbound.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { SaasService } from '../saas/saas.service';
+import { AiPricingService } from './ai-pricing.service';
 
 const ANAYASA = [
   'AI ÇALIŞANIM ANAYASASI',
@@ -102,8 +103,9 @@ export class AiEmployeeConversationService {
     private readonly aiEmployee: AiEmployeeService,
     private readonly cargo: CargoTrackingService,
     private readonly outbound: OutboundService,
-    private readonly campaigns: CampaignsService,
-    private readonly saas: SaasService,
+private readonly campaigns: CampaignsService,
+  private readonly saas: SaasService,
+  private readonly pricing: AiPricingService,
   ) {}
 
   async converse(tenantId: string, text: string, role = 'staff'): Promise<{ reply: string; pending?: boolean }> {
@@ -132,7 +134,12 @@ export class AiEmployeeConversationService {
       }
       return { reply: `${sal}, tam anlayamadım. ${pend.preview} Onaylıyor musunuz?`, pending: true };
     }
-    if (pend) this.pending.delete(tenantId);
+    // Bekleyen onay varsa süresi dolmuştur → geçersiz kıl, kullanıcıya bildir
+    if (pend) {
+      this.pending.delete(tenantId);
+      await this.logAudit(pend.auditId, 'cancelled', 'Onay süresi doldu');
+      return { reply: `${sal}, önceki onayınızın süresi doldu. İşlemi yeniden söyleyip onaylamanız gerekiyor.` };
+    }
 
     // 2) DeepSeek
     const parsed = await this.askAI(cfg, tenantId, text);
@@ -142,7 +149,7 @@ export class AiEmployeeConversationService {
       return this.handleCommand(tenantId, role, sal, parsed.intent, parsed.params, parsed.reply || '');
     }
 
-    await this.logUsage(tenantId, text);
+    await this.recordUsage(tenantId, text, 'conversation');
     return { reply: parsed.reply || `${sal}, anlayamadım.` };
   }
 
@@ -190,6 +197,7 @@ export class AiEmployeeConversationService {
     try {
       const result = await this.execTool(tenantId, act.intent, act.params, true);
       await this.logAudit(act.auditId, 'confirmed', act.preview, tenantId, act.intent, act.params, result);
+      await this.recordUsage(tenantId, `executed:${act.intent}`, 'command');
       return { reply: result };
     } catch (e) {
       const msg = `İşlem sırasında hata: ${(e as Error).message}`;
@@ -475,8 +483,26 @@ export class AiEmployeeConversationService {
     } catch { return undefined; }
   }
 
-  private async logUsage(tenantId: string, text: string): Promise<void> {
-    try { await this.supabase.db.from('ai_employee_usage').insert({ tenant_id: tenantId, kind: 'conversation', duration_sec: 0, cost_estimate: 0, note: text.slice(0, 120) }); } catch { /* sessiz */ }
+  /** Kullanım metriği kaydı (latency, token, maliyet) — 065 kolonları + ai_pricing config. */
+  private async recordUsage(tenantId: string, text: string, kind: 'conversation' | 'command' | 'notification'): Promise<void> {
+    try {
+      const startedAt = Date.now();
+      const inputTokens = Math.max(1, Math.ceil(text.length / 4)); // ~4 karakter/token
+      const outputTokens = 100; // tahmini çıktı
+      const latencyMs = Date.now() - startedAt;
+      const cost = await this.pricing.costFor('deepseek', 'deepseek-chat', inputTokens, outputTokens);
+      await this.supabase.db.from('ai_employee_usage').insert({
+        tenant_id: tenantId,
+        kind,
+        duration_sec: 0,
+        latency_ms: latencyMs,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        provider: 'deepseek',
+        cost_estimate: cost,
+        note: text.slice(0, 120),
+      });
+    } catch { /* sessiz */ }
   }
 
   private salutation(cfg: AiEmployeeConfig): string {
