@@ -14,8 +14,10 @@ export class RateLimiterMiddleware implements NestMiddleware {
   constructor() {
     // Default: 100 req/min for general endpoints
     this.endpoints.set('default', { windowMs: 60000, maxRequests: 100 });
-    // Auth endpoints: 10 req/min (brute force protection)
-    this.endpoints.set('/api/auth', { windowMs: 60000, maxRequests: 10 });
+    // AI Çalışanım (sesli asistan): yoğun konuşma/bildirim trafiği — 300 req/min
+    this.endpoints.set('/api/ai-employee', { windowMs: 60000, maxRequests: 300 });
+    // Auth: 30 req/min — re-login fırtınası (oturum yenileme) 10/dk'yı aşıyordu; brute-force koruması yine de korunur
+    this.endpoints.set('/api/auth', { windowMs: 60000, maxRequests: 30 });
     // Webhook endpoints: 50 req/min
     this.endpoints.set('/api/webhook', { windowMs: 60000, maxRequests: 50 });
     // Instagram webhook: 30 req/min

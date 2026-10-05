@@ -87,7 +87,7 @@ export class CargoTrackingService {
       const { data, error } = await this.supabase.db
         .from('orders')
         .select('*, customer:customer_id(name, phone)')
-        .in('status', ['shipped', 'SHIPPED', 'PACKAGING', 'PACKAGED'])
+        .in('status', ['shipped'])
         .gte('created_at', cutoff)
         .limit(50);
 
@@ -232,7 +232,7 @@ export class CargoTrackingService {
           tracking_number: result.trackingNumber,
           cargo_status: 'pending',
           cargo_status_updated_at: new Date().toISOString(),
-          status: 'SHIPPED',
+          status: 'shipped',
           payment_status: isCod ? (o.payment_status || 'waiting') : 'paid',
         })
         .eq('tenant_id', tenantId)

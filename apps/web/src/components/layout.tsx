@@ -14,6 +14,29 @@ import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, Sho
 // Sync fetch interceptor — must run before any component renders
 if (typeof window !== 'undefined') {
   const originalFetch = window.fetch;
+  let reloginPromise: Promise<string | null> | null = null;
+  let lastReloginAt = 0;
+  const doRelogin = async (): Promise<string | null> => {
+    // Cooldown: başarısız/429 durumunda fırtına oluşmasın; 1.5sn sonra tekrar dene
+    if (Date.now() - lastReloginAt < 1500) return null;
+    lastReloginAt = Date.now();
+    try {
+      const reAuth = await originalFetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'demo@siparisasistani.com', password: 'demo123' }),
+      });
+      if (reAuth.ok) {
+        const data = await reAuth.json();
+        if (data?.token) {
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('auth_user', JSON.stringify(data.user));
+          return data.token;
+        }
+      }
+    } catch {}
+    return null;
+  };
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
     const isApi = url.startsWith('/api/');
@@ -25,22 +48,19 @@ if (typeof window !== 'undefined') {
         const headers = new Headers(init?.headers);
         if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
         const res = await originalFetch(input, { ...init, headers });
-        // Auto re-login on 401 (backend restart clears in-memory sessions)
+        // Auto re-login on 401 (backend restart clears in-memory sessions) — tek-uçuş + kısa backoff ile 401 fırtınasını önler
         if (res.status === 401) {
-          try {
-            const reAuth = await originalFetch('/api/auth/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: 'demo@siparisasistani.com', password: 'demo123' }),
-            });
-            if (reAuth.ok) {
-              const data = await reAuth.json();
-              localStorage.setItem('auth_token', data.token);
-              localStorage.setItem('auth_user', JSON.stringify(data.user));
-              headers.set('Authorization', `Bearer ${data.token}`);
-              return originalFetch(input, { ...init, headers });
-            }
-          } catch {}
+          if (!reloginPromise) reloginPromise = doRelogin().finally(() => { reloginPromise = null; });
+          let newToken = await reloginPromise;
+          if (!newToken) {
+            await new Promise((r) => setTimeout(r, 800)); // backoff
+            if (!reloginPromise) reloginPromise = doRelogin().finally(() => { reloginPromise = null; });
+            newToken = await reloginPromise;
+          }
+          if (newToken) {
+            headers.set('Authorization', `Bearer ${newToken}`);
+            return originalFetch(input, { ...init, headers });
+          }
         }
         return res;
       }

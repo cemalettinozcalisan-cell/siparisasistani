@@ -28,6 +28,79 @@ const EVENT_LABEL: Record<string, string> = {
   SUBSCRIPTION_THRESHOLD: 'abonelik uyarısı',
 };
 
+const TR_BIRLER = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz'];
+const TR_ONLAR = ['', 'on', 'yirmi', 'otuz', 'kırk', 'elli', 'altmış', 'yetmiş', 'seksen', 'doksan'];
+
+function trNumber(n: number): string {
+  if (!isFinite(n)) return '';
+  if (n === 0) return 'sıfır';
+  if (n < 0) return 'eksi ' + trNumber(-n);
+  const units = ['', 'bin', 'milyon', 'milyar', 'trilyon'];
+  let out = '';
+  let g = 0;
+  while (n > 0) {
+    const part = n % 1000;
+    if (part > 0) {
+      const yuz = Math.floor(part / 100);
+      const onbir = part % 100;
+      let p = '';
+      if (yuz === 1) p = 'yüz';
+      else if (yuz > 1) p = TR_BIRLER[yuz] + ' yüz';
+      if (onbir > 0) {
+        const on = Math.floor(onbir / 10);
+        const bir = onbir % 10;
+        if (on) p += (p ? ' ' : '') + TR_ONLAR[on];
+        if (bir) p += (p ? ' ' : '') + TR_BIRLER[bir];
+      }
+      // "bir bin" değil "bin" (1000); ama "bir milyon" korunur
+      const prefix = units[g] === 'bin' && part === 1 ? '' : p;
+      out = (prefix + (units[g] ? ' ' + units[g] : '')) + (out ? ' ' + out : '');
+    }
+    n = Math.floor(n / 1000);
+    g++;
+  }
+  return out.trim();
+}
+
+/** TTS öncesi sayı→Türkçe kelime normalizasyonu ("34" → "otuz dört", "TL" → "lira"). */
+function trDigit(ch: string): string {
+  if (ch === '0') return 'sıfır';
+  return TR_BIRLER[Number(ch)] || ch;
+}
+
+function normalizeTrNumbers(text: string): string {
+  // Telefon numaraları: para gibi değil, rakam rakam okunur (9-13 hane)
+  text = text.replace(/(\+?\d[\d\s-]{9,16})/g, (m) => {
+    const digits = m.replace(/[^\d]/g, '');
+    if (digits.length >= 9 && digits.length <= 13) return digits.split('').map(trDigit).join(' ');
+    return m;
+  });
+  return text
+    .replace(/TL/gi, 'lira')
+    .replace(/-?\d[\d.,]*/g, (m) => {
+      const neg = m.startsWith('-');
+      const body = m.replace('-', '');
+      if (body.includes(',')) {
+        const [i, d] = body.split(',');
+        const int = trNumber(parseInt(i.replace(/\./g, ''), 10) || 0);
+        const dec = d.split('').map(trDigit).join(' ');
+        return (neg ? 'eksi ' : '') + `${int} virgül ${dec}`.trim();
+      }
+      // nokta-ondalık (1-2 hane) → "X virgül Y"; 3 hane → binlik ayracı
+      const lastDot = body.lastIndexOf('.');
+      const afterDot = lastDot >= 0 ? body.slice(lastDot + 1) : '';
+      if (body.includes('.') && (afterDot.length === 1 || afterDot.length === 2)) {
+        const int = trNumber(parseInt(body.slice(0, lastDot).replace(/\./g, ''), 10) || 0);
+        const dec = afterDot.split('').map(trDigit).join(' ');
+        return (neg ? 'eksi ' : '') + `${int} virgül ${dec}`.trim();
+      }
+      const clean = body.replace(/\./g, ''); // "1.500" → 1500 (tr binlik ayracı)
+      const n = parseInt(clean, 10);
+      if (!isFinite(n)) return m;
+      return (neg ? 'eksi ' : '') + trNumber(n);
+    });
+}
+
 @Injectable()
 export class VoiceNotificationService {
   private readonly logger = new Logger(VoiceNotificationService.name);
@@ -125,7 +198,8 @@ export class VoiceNotificationService {
   /** Metni seslendirir ve oynatılabilir URL döner. */
   async speak(tenantId: string, text: string): Promise<string | null> {
     try {
-      const result = await this.voice.generateSpeech(text, tenantId);
+      const normalized = normalizeTrNumbers(text);
+      const result = await this.voice.generateSpeech(normalized, tenantId);
       const fileName = `voice/ai-employee/${tenantId}/${Date.now()}.mp3`;
 
       // voice-cache bucket yoksa oluştur (kendini idare et)

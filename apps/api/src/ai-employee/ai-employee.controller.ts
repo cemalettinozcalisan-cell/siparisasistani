@@ -1,4 +1,5 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -61,5 +62,13 @@ export class AiEmployeeController {
   async converse(@Param('tenantId') tenantId: string, @Body() body: { text: string }, @Req() req: Request) {
     const role = ((req as any).user as any)?.role || 'staff';
     return this.conversation.converse(tenantId, String(body?.text || '').trim(), role);
+  }
+
+  @Roles('owner', 'manager')
+  @UseInterceptors(FileInterceptor('audio'))
+  @Post(':tenantId/transcribe')
+  async transcribe(@Param('tenantId') tenantId: string, @UploadedFile() file: any) {
+    const text = await this.conversation.transcribeAudio(tenantId, file);
+    return { text };
   }
 }
