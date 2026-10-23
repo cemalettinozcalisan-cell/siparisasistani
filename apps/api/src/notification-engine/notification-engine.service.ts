@@ -29,7 +29,7 @@ export class NotificationEngineService implements OnModuleInit {
     // Ödeme onayı (dekont / link) geldiğinde de sipariş bildirimi düşer — aynı handler
     this.handlers.set(SystemEvents.ORDER_PAYMENT_CONFIRMED, orderCreated);
     // AI Çalışanım sesli bildirim kanalı — birden çok event dinler
-    for (const evt of [SystemEvents.ORDER_CREATED, SystemEvents.COMPLAINT_CREATED, SystemEvents.REQUEST_CREATED, SystemEvents.SUBSCRIPTION_THRESHOLD, SystemEvents.SYSTEM_HEALTH_FAILED]) {
+    for (const evt of [SystemEvents.ORDER_CREATED, SystemEvents.ORDER_UPDATED, SystemEvents.COMPLAINT_CREATED, SystemEvents.REQUEST_CREATED, SystemEvents.SUBSCRIPTION_THRESHOLD, SystemEvents.SYSTEM_HEALTH_FAILED]) {
       this.handlers.set(evt, voice);
     }
   }

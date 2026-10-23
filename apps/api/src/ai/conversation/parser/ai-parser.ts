@@ -137,6 +137,8 @@ export class AiParserService {
         name: parsed.customer?.name || '',
         phone: parsed.customer?.phone || '',
         address: parsed.address,
+        city: (parsed as { city?: string }).city || (parsed.customer as { city?: string } | undefined)?.city,
+        district: (parsed as { district?: string }).district || (parsed.customer as { district?: string } | undefined)?.district,
       },
       products: (parsed.products || []).map((p) => ({
         product_name: p.product_name || '',

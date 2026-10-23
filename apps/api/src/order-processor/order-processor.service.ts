@@ -41,13 +41,19 @@ export class OrderProcessorService {
     // 1. Find or create customer
     const customerId = await this.resolveCustomer(input.tenantId, input.customer, input.phone);
 
-    // 1.5 Save birthday if provided
+    // 1.5 Save birthday if provided (GG-AA veya GG.AA / GG/AA formatı; yıl yoksa 2000 varsayılır)
     if (input.customer?.birthday) {
       try {
-        await this.supabase.db.from('customers')
-          .update({ birth_date: `2000-${input.customer.birthday}` })
-          .eq('id', customerId)
-          .is('birth_date', null);
+        const m = String(input.customer.birthday).trim().match(/^(\d{1,2})[-./](\d{1,2})$/);
+        const iso = m
+          ? `2000-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+          : null;
+        if (iso) {
+          await this.supabase.db.from('customers')
+            .update({ birth_date: iso })
+            .eq('id', customerId)
+            .is('birth_date', null);
+        }
       } catch (e) { this.logger.error('Failed to update customer birthday', e); }
     }
 

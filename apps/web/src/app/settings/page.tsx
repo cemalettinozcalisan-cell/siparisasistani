@@ -3,6 +3,7 @@
 import { getTenantId } from '@/lib/tenant';
 import { getToken } from '@/lib/auth';
 import { unlockAudio, playUrl } from '@/lib/voice-playback';
+import { createAudioPlayer, primeRealtimeAudio } from '@/lib/gemini-realtime';
 
 import { useEffect, useState, useRef } from 'react';
 import { Save, Plus, X, Clock, Bell, CreditCard, MapPin, Truck, Brain, Package, Info, Shield, Upload, Smile, Briefcase, Store, Heart, Gem, Building2, BadgeCheck, Headset, CircleDot, Bot, Mic, User, Sparkles, ShieldCheck, Landmark, Phone, Mail, Settings, ShoppingBag, MessageSquare, AlertTriangle, TrendingUp } from 'lucide-react';
@@ -71,6 +72,40 @@ const VOICE_GENDER_OPTIONS = [
   { value: 'female', label: 'Kadın', desc: 'Yumuşak, sıcak', icon: User },
   { value: 'male', label: 'Erkek', desc: 'Güvenilir, tok', icon: Mic },
   { value: 'custom', label: 'Özel', desc: 'Manuel ses ID', icon: Sparkles },
+];
+
+// Sipariş AI — Konuşma Tarzı kategorileri + Gemini Live sesleri
+const ORDER_AI_CATEGORIES = [
+  { value: 'samimi', label: 'Samimi', desc: 'Günlük, sıcak', icon: Smile },
+  { value: 'resmi', label: 'Resmi', desc: 'Profesyonel', icon: Briefcase },
+];
+
+const ORDER_AI_VOICES: Record<string, { value: string; label: string; desc: string; icon: React.ElementType }[]> = {
+  samimi: [
+    { value: 'Aoede', label: 'Aoede', desc: 'Kadın · sıcak', icon: Heart },
+    { value: 'Zephyr', label: 'Zephyr', desc: 'Kadın · neşeli', icon: Smile },
+    { value: 'Leda', label: 'Leda', desc: 'Kadın · genç', icon: Sparkles },
+    { value: 'Achird', label: 'Achird', desc: 'Erkek · sıcak', icon: Mic },
+    { value: '', label: 'Varsayılan', desc: 'Gemini varsayılan ses', icon: Bot },
+  ],
+  resmi: [
+    { value: 'Kore', label: 'Kore', desc: 'Kadın · net', icon: User },
+    { value: 'Charon', label: 'Charon', desc: 'Erkek · net', icon: Mic },
+    { value: 'Orus', label: 'Orus', desc: 'Erkek · net', icon: Mic },
+    { value: 'Iapetus', label: 'Iapetus', desc: 'Erkek · net', icon: Mic },
+  ],
+};
+
+// AI Çalışanım (esnaf asistanı) ses seçenekleri (Gemini Live)
+const AI_EMP_VOICES = [
+  { value: '', label: 'Varsayılan', desc: 'Gemini varsayılan ses' },
+  { value: 'Aoede', label: 'Aoede', desc: 'Kadın · sıcak' },
+  { value: 'Zephyr', label: 'Zephyr', desc: 'Kadın · neşeli' },
+  { value: 'Leda', label: 'Leda', desc: 'Kadın · genç' },
+  { value: 'Kore', label: 'Kore', desc: 'Kadın · net' },
+  { value: 'Achird', label: 'Achird', desc: 'Erkek · sıcak' },
+  { value: 'Charon', label: 'Charon', desc: 'Erkek · net' },
+  { value: 'Orus', label: 'Orus', desc: 'Erkek · net' },
 ];
 
 function OptionGroup({ label, options, selectedKey, onSelect, color }: {
@@ -142,7 +177,15 @@ export default function SettingsPage() {
   const [aiEmp, setAiEmp] = useState<Record<string, any> | null>(null);
   const [aiEmpSaved, setAiEmpSaved] = useState(false);
   const [aiEmpTest, setAiEmpTest] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
+  const [orderAiCategory, setOrderAiCategory] = useState('samimi');
+  const [orderAiTest, setOrderAiTest] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
   const tid = getTenantId();
+
+  // Kayıtlı sese göre Konuşma Tarzı kategorisini belirle
+  useEffect(() => {
+    const v = String((settings?.order_ai_voice as string) || '');
+    if (['Kore', 'Charon', 'Orus', 'Iapetus'].includes(v)) setOrderAiCategory('resmi');
+  }, [settings?.order_ai_voice]);
 
   useEffect(() => {
     fetch(`/api/settings/${tid}`)
@@ -206,16 +249,34 @@ export default function SettingsPage() {
     } catch { /* sessiz */ }
   };
 
-  const testAiEmp = async () => {
-    setAiEmpTest('loading');
-    unlockAudio(); // kullanıcı jestiyle AudioContext kilidini aç
+  // P64: Sunucu-taraflı ses önizleme — seçilen Gemini sesini çalar (mikrofon gerekmez)
+  const previewVoice = async (voice: string | undefined, setState: (s: 'idle' | 'loading' | 'playing' | 'error') => void) => {
+    if (!tid) { setState('error'); return; }
+    unlockAudio();
+    primeRealtimeAudio();
+    setState('loading');
     try {
-      const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' }).then((res) => res.json());
-      if (!r?.audioUrl) { setAiEmpTest('error'); return; }
-      const ok = await playUrl(r.audioUrl);
-      setAiEmpTest(ok ? 'playing' : 'error');
-      setTimeout(() => setAiEmpTest('idle'), 4000);
-    } catch { setAiEmpTest('error'); }
+      const r = await fetch(`/api/order-ai/${tid}/voice-preview`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: voice || '' }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!j?.ok || !j?.audioBase64) { setState('error'); return; }
+      const player = createAudioPlayer();
+      player.push(String(j.audioBase64));
+      setState('playing');
+      setTimeout(() => { try { player.close(); } catch {} setState('idle'); }, 6000);
+    } catch { setState('error'); }
+  };
+
+  const testAiEmp = () => {
+    if (aiEmpTest === 'loading') return;
+    void previewVoice(String(aiEmp?.voice || ''), setAiEmpTest);
+  };
+
+  const testOrderAi = () => {
+    if (orderAiTest === 'loading') return;
+    void previewVoice(String(settings?.order_ai_voice || ''), setOrderAiTest);
   };
 
   const changePassword = async () => {
@@ -443,6 +504,14 @@ export default function SettingsPage() {
               <option value="male">Erkek</option>
             </select>
           </div>
+          {/* Ses (Gemini Live) */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Ses (Gemini)</label>
+            <select value={String(aiEmp?.voice || '')} onChange={(e) => updateAiEmp('voice', e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+              {AI_EMP_VOICES.map((v) => (<option key={v.value} value={v.value}>{v.label} — {v.desc}</option>))}
+            </select>
+          </div>
           {/* Ton */}
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1.5">Konuşma Tarzı</label>
@@ -568,7 +637,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
           <div>
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">AI Çalışanımı Test Et</p>
-            <p className="text-[11px] text-slate-400">{aiEmpTest === 'error' ? 'Ses oynatılamadı — tarayıcı otomatik oynatmayı engelleyebilir. Sayfada bir yere tıklayıp tekrar deneyin.' : 'Seçtiğiniz isim, ses, ton ve hitap ile kısa bir örnek seslendirilir.'}</p>
+            <p className="text-[11px] text-slate-400">{aiEmpTest === 'error' ? 'Ses oluşturulamadı — sayfada bir yere tıklayıp tekrar deneyin.' : 'Seçtiğiniz ses ile kısa bir örnek seslendirilir (AI Çalışanım kapalı olsa da çalışır).'}</p>
           </div>
           <button onClick={testAiEmp} disabled={aiEmpTest === 'loading'}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
@@ -578,22 +647,64 @@ export default function SettingsPage() {
       </div>
       ) : null}
 
-      {/* 1. AI Ayarları */}
+      {/* 1. Sipariş AI Ayarları */}
       {activeTab === "all" || activeTab === "ai" ? (<>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-        <SectionHeader icon={Brain} gradient="from-violet-500 to-purple-600" title="AI Ayarları" />
-        <OptionGroup label="Konuşma Tarzı" color="violet" options={TONE_OPTIONS} selectedKey={String(settings.ai_style || 'yoresel')} onSelect={(v) => saveAndKeep('ai_style', v)} />
-        <OptionGroup label="Marka Sesi" color="blue" options={BRAND_VOICE_OPTIONS} selectedKey={String(settings.brand_voice || 'yoresel')} onSelect={(v) => saveAndKeep('brand_voice', v)} />
-        <OptionGroup label="Karşılama Stili" color="emerald" options={GREETING_OPTIONS} selectedKey={String(settings.greeting_style || 'firma_ad')} onSelect={(v) => saveAndKeep('greeting_style', v)} />
-        <div>
-          <OptionGroup label="AI Ses Cinsiyeti" color="rose" options={VOICE_GENDER_OPTIONS} selectedKey={String(settings.voice_gender || 'male')} onSelect={(v) => saveAndKeep('voice_gender', v)} />
-          {String(settings.voice_gender || 'male') === 'custom' && (
-            <div className="mt-3"><input value={String(settings.custom_voice_id || '')} onChange={(e) => saveAndKeep('custom_voice_id', e.target.value)} placeholder="ElevenLabs Voice ID veya OpenAI ses adı" className="w-full px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" /></div>
-          )}
+        <SectionHeader icon={Brain} gradient="from-violet-500 to-purple-600" title="Sipariş AI Ayarları" />
+        <p className="text-[11px] text-slate-400">Sipariş alan AI'nın konuşma tarzı ve sesi. (Esnaf asistanı "AI Çalışanım" ayarları yukarıdadır.)</p>
+        <OptionGroup label="Konuşma Tarzı" color="violet" options={ORDER_AI_CATEGORIES} selectedKey={orderAiCategory} onSelect={setOrderAiCategory} />
+        <OptionGroup label="Ses" color="blue" options={ORDER_AI_VOICES[orderAiCategory] || ORDER_AI_VOICES.samimi} selectedKey={String(settings.order_ai_voice ?? '')} onSelect={(v) => saveAndKeep('order_ai_voice', v)} />
+        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3 bg-slate-50/50 dark:bg-slate-700/20">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Karşılama & KVKK</p>
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">AI Asistan Adı</label>
+            <input value={String(settings.ai_assistant_name ?? 'Bilge')}
+              onChange={(e) => update('ai_assistant_name', e.target.value)}
+              onBlur={(e) => saveAndKeep('ai_assistant_name', e.target.value)}
+              placeholder="Örn: Bilge"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">KVKK Aydınlatma Linki <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+            <input value={String(settings.kvkk_url ?? '')}
+              onChange={(e) => update('kvkk_url', e.target.value)}
+              onBlur={(e) => saveAndKeep('kvkk_url', e.target.value)}
+              placeholder="https://firma.com/kvkk"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">Aydınlatma Metni <span className="text-slate-400 font-normal">(IVR'de "2"ye basınca dinlenir)</span></label>
+            <textarea value={String(settings.kvkk_disclosure_text ?? '')}
+              onChange={(e) => update('kvkk_disclosure_text', e.target.value)}
+              onBlur={(e) => saveAndKeep('kvkk_disclosure_text', e.target.value)}
+              rows={4}
+              placeholder="Kişisel verilerinizin işlenmesine ilişkin aydınlatma metni..."
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white resize-y" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">Karşılama Metni <span className="text-slate-400 font-normal">(değişkenler: firma, asistan, kvkk_link)</span></label>
+            <textarea value={String(settings.greeting_template ?? '')}
+              onChange={(e) => update('greeting_template', e.target.value)}
+              onBlur={(e) => saveAndKeep('greeting_template', e.target.value)}
+              rows={4}
+              placeholder="Gastronomi şehri Afyonkarahisar'dan sevgiler saygılar, firma; ben yapay zeka asistanı asistan. KVKK kapsamında görüşmelerimiz kaydedilmektedir; aydınlatma metnine kvkk_link adresinden ulaşabilirsiniz. Size nasıl yardımcı olabilirim?"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white resize-y" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sipariş AI Test Et</p>
+            <p className="text-[11px] text-slate-400">{orderAiTest === 'error' ? 'Ses oluşturulamadı — sayfada bir yere tıklayıp tekrar deneyin.' : 'Seçtiğiniz sesle kısa bir canlı örnek oynatılır.'}</p>
+          </div>
+          <button onClick={testOrderAi} disabled={orderAiTest === 'loading'}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
+            <Mic size={13} /> {orderAiTest === 'loading' ? 'Bağlanıyor...' : orderAiTest === 'playing' ? 'Çalıyor...' : 'Test Et'}
+          </button>
         </div>
       </div>
       </>):null}
+
 
       {/* 2. Çalışma Saatleri */}
       {activeTab === "all" || activeTab === "hours" ? (<>

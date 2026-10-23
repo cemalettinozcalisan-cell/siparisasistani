@@ -14,7 +14,7 @@ export class CustomersController {
     try {
       let query = this.supabase.db
         .from('customers')
-        .select('id, name, phone, city, address, created_at, balance, credit_limit, payment_term')
+        .select('id, name, phone, city, address, created_at, balance, credit_limit, payment_term, birth_date')
         .eq('tenant_id', tenantId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })

@@ -87,8 +87,10 @@ export function primeRealtimeAudio() {
   getCtx('player', 24000);
 }
 
-export function openRealtime(tid: string, token: string, events: RealtimeEvents): RealtimeHandle {
-  const ws = new WebSocket(`${wsBase()}/api/ai-employee/realtime?tid=${encodeURIComponent(tid)}&token=${encodeURIComponent(token)}`);
+export function openRealtime(tid: string, token: string, events: RealtimeEvents, opts: { voice?: string } = {}): RealtimeHandle {
+  const qs = new URLSearchParams({ tid, token });
+  if (opts.voice) qs.set('voice', opts.voice);
+  const ws = new WebSocket(`${wsBase()}/api/ai-employee/realtime?${qs.toString()}`);
   const state = { closed: false };
 
   let micStream: MediaStream | null = null;

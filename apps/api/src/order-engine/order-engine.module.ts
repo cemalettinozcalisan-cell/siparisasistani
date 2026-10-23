@@ -4,8 +4,10 @@ import { OrderEngineController } from './order-engine.controller';
 import { SupabaseService } from '../common/supabase.client';
 import { EventBusService } from '../event-bus/event-bus.service';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
+import { MessagesModule } from '../messages/messages.module';
 
 @Module({
+  imports: [MessagesModule],
   controllers: [OrderEngineController],
   providers: [OrderEngineService, SupabaseService, EventBusService, WhatsAppConversationsService],
   exports: [OrderEngineService],

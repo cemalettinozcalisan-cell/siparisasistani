@@ -9,6 +9,7 @@ import { TaskDefinitionComponent } from './components/task-definition.component'
 import { CampaignsService } from '../../campaigns/campaigns.service';
 import { SalesCoachComponent } from './components/sales-coach.component';
 import { ScopeRulesComponent } from './components/scope-rules.component';
+import { SpeechStyleComponent } from './components/speech-style.component';
 import { AiMemoryService } from '../memory/ai-memory.service';
 import { SupabaseService } from '../../common/supabase.client';
 
@@ -23,6 +24,7 @@ import { SupabaseService } from '../../common/supabase.client';
     TaskDefinitionComponent,
     SalesCoachComponent,
     ScopeRulesComponent,
+    SpeechStyleComponent,
     CampaignsService,
     AiMemoryService,
     SupabaseService,

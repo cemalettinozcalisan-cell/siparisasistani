@@ -3,6 +3,7 @@ import { SupabaseService } from '../common/supabase.client';
 import { AiOrderInput, OrderResult } from '@siparis/types';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
+import { OutboundService } from '../messages/outbound.service';
 
 const PREPAID_METHODS = ['iban', 'paytr', 'iyzico', 'website'];
 
@@ -18,6 +19,7 @@ export class OrderEngineService {
     private readonly supabase: SupabaseService,
     private readonly eventBus: EventBusService,
     private readonly whatsapp: WhatsAppConversationsService,
+    private readonly outbound: OutboundService,
   ) {}
 
   async process(input: AiOrderInput, tenantId: string): Promise<OrderResult> {
@@ -46,6 +48,13 @@ export class OrderEngineService {
 
     if (existing) {
       this.logger.log(`Existing customer: ${existing.id}`);
+      // Fatura bilgisi verilmişse mevcut müşteriyi güncelle (P63)
+      const patch: Record<string, unknown> = {};
+      if (input.customer.company_name) patch.company_name = input.customer.company_name;
+      if (input.customer.identity_number) patch.identity_number = input.customer.identity_number;
+      if (Object.keys(patch).length) {
+        await this.supabase.db.from('customers').update(patch).eq('id', existing.id);
+      }
       return existing;
     }
 
@@ -55,8 +64,10 @@ export class OrderEngineService {
         tenant_id: tenantId,
         name: input.customer.name,
         phone: input.customer.phone,
-        address: input.customer.address || null,
+        address: [input.customer.address, input.customer.district].filter(Boolean).join(', ') || null,
         city: input.customer.city || null,
+        company_name: input.customer.company_name || null,
+        identity_number: input.customer.identity_number || null,
       })
       .select('id, name, phone')
       .single();
@@ -93,7 +104,7 @@ export class OrderEngineService {
         payment_method: this.normalizePayment(input.payment),
         payment_status: this.normalizePayment(input.payment) === 'iban' ? 'awaiting_dekont' : 'waiting',
         total_price: totalPrice,
-        notes: input.notes || null,
+        customer_note: input.notes || null,
       })
       .select()
       .single();
@@ -151,6 +162,74 @@ export class OrderEngineService {
     };
   }
 
+  /**
+   * Onaylanmış bir siparişi günceller (ürün/miktar/ödeme/not değişikliği).
+   * Kalemleri yeniden yazar, toplamı yeniden hesaplar ve ORDER_UPDATED yayar.
+   */
+  async updateOrder(orderId: string, input: AiOrderInput, tenantId: string): Promise<OrderResult> {
+    const totalPrice = await this.calculateTotal(input, tenantId);
+
+    // Düzenleme notu (FAZ 4): mevcut müşteri notunu koru + yeni not + zaman damgası
+    const editNote = `Müşteri ${new Date().toLocaleString('tr-TR')} tarihinde siparişi düzenledi`;
+    let prevNote = '';
+    try {
+      const { data: prev } = await this.supabase.db.from('orders').select('customer_note').eq('id', orderId).maybeSingle();
+      prevNote = String((prev as Record<string, unknown> | null)?.customer_note || '').trim();
+    } catch { /* yoksay */ }
+    const customerNote = [prevNote, input.notes, editNote].filter(Boolean).join(' | ');
+
+    const { data: order, error } = await this.supabase.db
+      .from('orders')
+      .update({
+        total_price: totalPrice,
+        payment_method: this.normalizePayment(input.payment),
+        customer_note: customerNote,
+      })
+      .eq('id', orderId)
+      .eq('tenant_id', tenantId)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Order update failed: ${error.message}`);
+      throw new Error(`Order update failed: ${error.message}`);
+    }
+
+    await this.supabase.db.from('order_items').delete().eq('order_id', orderId);
+    await this.createOrderItems(orderId, input.products, tenantId);
+
+    const o = order as Record<string, unknown>;
+    const orderNumber = String(o.order_number);
+    const paymentMethod = this.normalizePayment(input.payment);
+
+    await this.logAiEvent(tenantId, orderId, 'order_updated', {
+      channel: input.channel,
+      products: input.products.length,
+      payment_method: paymentMethod,
+      total_price: totalPrice,
+    });
+
+    this.eventBus.emit(SystemEvents.ORDER_UPDATED, tenantId, {
+      entityType: 'order',
+      orderId,
+      orderNumber,
+      totalPrice,
+      paymentMethod,
+      productCount: input.products.length,
+      description: `#${orderNumber} güncellendi - ${totalPrice.toLocaleString('tr-TR')} TL`,
+    }, orderId);
+
+    return {
+      order_id: orderId,
+      order_number: orderNumber,
+      tenant_id: tenantId,
+      customer_id: String(o.customer_id),
+      total_price: totalPrice,
+      status: (o.status ? String(o.status) : 'new') as OrderResult['status'],
+      confidence: input.confidence,
+    };
+  }
+
   private async createOrderItems(
     orderId: string,
     products: AiOrderInput['products'],
@@ -190,6 +269,18 @@ export class OrderEngineService {
   private async generateOrderNumber(tenantId: string): Promise<string> {
     const yearPrefix = new Date().getFullYear().toString().slice(-2);
 
+    // FAZ 5: atomik sayaç (race-free) — aynı anda gelen siparişler aynı numarayı almaz.
+    // Sayaç tablosu/fonksiyonu yoksa (migration uygulanmadıysa) eski mantığa düşer.
+    try {
+      const { data, error } = await this.supabase.db.rpc('next_order_seq', {
+        p_tenant: tenantId,
+        p_year_prefix: yearPrefix,
+      });
+      if (!error && data != null) {
+        return `${yearPrefix}-${Number(data).toString().padStart(5, '0')}`;
+      }
+    } catch { /* fallback */ }
+
     const { data: lastOrder } = await this.supabase.db
       .from('orders')
       .select('order_number')
@@ -208,7 +299,7 @@ export class OrderEngineService {
     return `${yearPrefix}-${seq.toString().padStart(5, '0')}`;
   }
 
-  private async calculateTotal(
+  async calculateTotal(
     input: AiOrderInput,
     tenantId: string,
   ): Promise<number> {
@@ -262,8 +353,9 @@ export class OrderEngineService {
     const map: Record<string, string> = {
       IBAN: 'iban', iban: 'iban', 'IBAN (Havale/EFT)': 'iban', HAVALE: 'iban', EFT: 'iban',
       CASH_ON_DELIVERY: 'cod', cash_on_delivery: 'cod', COD: 'cod', cod: 'cod',
+      kapida_kart: 'kapida_kart', KAPIDA_KART: 'kapida_kart',
       'KAPIDA NAKİT': 'cod', 'Kapıda Nakit': 'cod', KAPIDA_NAKIT: 'cod', 'KAPIDA ODEME': 'cod', 'Kapıda Ödeme': 'cod',
-      'KAPIDA KREDI KARTI': 'kapida_kart', 'Kapıda Kredi Kartı': 'kapida_kart', KAPIDA_KART: 'kapida_kart', 'Kapıda Kart': 'kapida_kart',
+      'KAPIDA KREDI KARTI': 'kapida_kart', 'Kapıda Kredi Kartı': 'kapida_kart', 'Kapıda Kart': 'kapida_kart',
       CASH: 'cod', CARD: 'website', WEBSITE: 'website', website: 'website',
       PAYTR: 'paytr', paytr: 'paytr', PAYMENT_LINK: 'paytr', LINK: 'paytr',
       IYZICO: 'iyzico', iyzico: 'iyzico',
@@ -439,10 +531,20 @@ export class OrderEngineService {
       const message = `Merhaba ${customerName}, #${orderData.order_number} nolu siparişiniz kargoya verilmiştir.\nKargo Firması: ${cargoCompany}\nTakip No: ${trackingNumber}\n\nSiparişAsistanı`;
 
       if (customerPhone) {
+        // WhatsApp dene; başarısızsa SMS (FAZ 4).
+        let sent = false;
+        try {
+          const res = await this.outbound.send({ tenantId, channel: 'whatsapp', to: customerPhone, body: message, orderId });
+          sent = res.success;
+        } catch { /* yoksay */ }
+        if (!sent) {
+          try { await this.outbound.send({ tenantId, channel: 'sms', to: customerPhone, body: message, orderId }); } catch { /* yoksay */ }
+        }
+        // Panel konuşma kaydı (best effort)
         try {
           const convId = await this.whatsapp.findOrCreate(tenantId, customerPhone);
           await this.whatsapp.addMessage({ tenantId, conversationId: convId, direction: 'outgoing', body: message });
-        } catch {}
+        } catch { /* yoksay */ }
       }
     }
 

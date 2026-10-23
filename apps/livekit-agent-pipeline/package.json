@@ -1,0 +1,30 @@
+{
+  "name": "@siparis/livekit-agent-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pipeline PoC: Verimor SIP -> LiveKit -> STT + LLM + TTS -> order-ai (telefon sesli sipariş asistanı)",
+  "scripts": {
+    "dev": "tsx src/agent.ts dev",
+    "start": "tsx src/agent.ts start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@livekit/agents": "^1.9.3",
+    "@livekit/agents-plugin-cartesia": "^1.9.3",
+    "@livekit/agents-plugin-deepgram": "^1.9.3",
+    "@livekit/agents-plugin-elevenlabs": "^1.9.3",
+    "@livekit/agents-plugin-fishaudio": "^1.9.3",
+    "@livekit/agents-plugin-google": "^1.9.3",
+    "@livekit/agents-plugin-openai": "^1.9.3",
+    "@livekit/agents-plugin-silero": "^1.9.3",
+    "@livekit/noise-cancellation-node": "^0.3.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.0"
+  }
+}

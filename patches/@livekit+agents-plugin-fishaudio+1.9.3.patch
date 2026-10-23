@@ -1,0 +1,150 @@
+diff --git a/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.cjs b/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.cjs
+index fd75030..676702a 100644
+--- a/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.cjs
++++ b/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.cjs
+@@ -261,6 +261,12 @@ class ChunkedStream extends import_agents.tts.ChunkedStream {
+   #logger = (0, import_agents.log)();
+   #opts;
+   #text;
++  #safePut(value) {
++    try {
++      if (!this.queue.closed) this.queue.put(value);
++    } catch {
++    }
++  }
+   constructor(tts2, text, opts, connOptions, abortSignal) {
+     super(text, tts2, connOptions, abortSignal);
+     this.#text = text;
+@@ -324,7 +330,7 @@ class ChunkedStream extends import_agents.tts.ChunkedStream {
+         }
+         res.on("data", (chunk) => {
+           for (const frame of bstream.write(chunk)) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame,
+@@ -334,7 +340,7 @@ class ChunkedStream extends import_agents.tts.ChunkedStream {
+         });
+         res.on("close", () => {
+           for (const frame of bstream.flush()) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame,
+@@ -377,6 +383,12 @@ class SynthesizeStream extends import_agents.tts.SynthesizeStream {
+   #logger = (0, import_agents.log)();
+   #pool;
+   #opts;
++  #safePut(value) {
++    try {
++      if (!this.queue.closed) this.queue.put(value);
++    } catch {
++    }
++  }
+   constructor(tts2, opts, connOptions) {
+     super(tts2, connOptions);
+     const pool = connectionPools.get(tts2);
+@@ -441,7 +453,7 @@ class SynthesizeStream extends import_agents.tts.SynthesizeStream {
+           const audio = parsed.audio;
+           if (audio && audio.byteLength > 0) {
+             for (const frame2 of bstream.write(audio)) {
+-              this.queue.put({ requestId, segmentId: requestId, frame: frame2, final: false });
++              this.#safePut({ requestId, segmentId: requestId, frame: frame2, final: false });
+             }
+           }
+         } else if (event === "finish") {
+@@ -457,7 +469,7 @@ class SynthesizeStream extends import_agents.tts.SynthesizeStream {
+           }
+           const remainingFrames = [...bstream.flush()];
+           for (const [idx, frame2] of remainingFrames.entries()) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame: frame2,
+@@ -465,7 +477,7 @@ class SynthesizeStream extends import_agents.tts.SynthesizeStream {
+             });
+           }
+           if (!this.queue.closed) {
+-            this.queue.put(SynthesizeStream.END_OF_STREAM);
++            this.#safePut(SynthesizeStream.END_OF_STREAM);
+           }
+           if (!finished.done) finished.resolve();
+         } else {
+diff --git a/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.js b/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.js
+index 6b1bd4d..8ccbda6 100644
+--- a/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.js
++++ b/node_modules/@livekit/agents-plugin-fishaudio/dist/tts.js
+@@ -246,6 +246,12 @@ class ChunkedStream extends tts.ChunkedStream {
+   #logger = log();
+   #opts;
+   #text;
++  #safePut(value) {
++    try {
++      if (!this.queue.closed) this.queue.put(value);
++    } catch {
++    }
++  }
+   constructor(tts2, text, opts, connOptions, abortSignal) {
+     super(text, tts2, connOptions, abortSignal);
+     this.#text = text;
+@@ -309,7 +315,7 @@ class ChunkedStream extends tts.ChunkedStream {
+         }
+         res.on("data", (chunk) => {
+           for (const frame of bstream.write(chunk)) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame,
+@@ -319,7 +325,7 @@ class ChunkedStream extends tts.ChunkedStream {
+         });
+         res.on("close", () => {
+           for (const frame of bstream.flush()) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame,
+@@ -362,6 +368,12 @@ class SynthesizeStream extends tts.SynthesizeStream {
+   #logger = log();
+   #pool;
+   #opts;
++  #safePut(value) {
++    try {
++      if (!this.queue.closed) this.queue.put(value);
++    } catch {
++    }
++  }
+   constructor(tts2, opts, connOptions) {
+     super(tts2, connOptions);
+     const pool = connectionPools.get(tts2);
+@@ -426,7 +438,7 @@ class SynthesizeStream extends tts.SynthesizeStream {
+           const audio = parsed.audio;
+           if (audio && audio.byteLength > 0) {
+             for (const frame2 of bstream.write(audio)) {
+-              this.queue.put({ requestId, segmentId: requestId, frame: frame2, final: false });
++              this.#safePut({ requestId, segmentId: requestId, frame: frame2, final: false });
+             }
+           }
+         } else if (event === "finish") {
+@@ -442,7 +454,7 @@ class SynthesizeStream extends tts.SynthesizeStream {
+           }
+           const remainingFrames = [...bstream.flush()];
+           for (const [idx, frame2] of remainingFrames.entries()) {
+-            this.queue.put({
++            this.#safePut({
+               requestId,
+               segmentId: requestId,
+               frame: frame2,
+@@ -450,7 +462,7 @@ class SynthesizeStream extends tts.SynthesizeStream {
+             });
+           }
+           if (!this.queue.closed) {
+-            this.queue.put(SynthesizeStream.END_OF_STREAM);
++            this.#safePut(SynthesizeStream.END_OF_STREAM);
+           }
+           if (!finished.done) finished.resolve();
+         } else {

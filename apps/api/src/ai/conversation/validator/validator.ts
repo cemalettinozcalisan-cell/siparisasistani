@@ -7,9 +7,15 @@ const OrderSchema = z.object({
     name: z.string().min(2, 'Müşteri adı en az 2 karakter olmalı'),
     phone: z.string().min(10, 'Geçersiz telefon numarası'),
     address: z.string().optional(),
+    city: z.string().optional(),
+    district: z.string().optional(),
+    company_name: z.string().optional(),
     identity_number: z.string().optional()
       .refine(v => !v || /^\d{10,11}$/.test(v), 'TCKN 11 haneli, VKN 10 haneli olmalıdır'),
-  }),
+  }).refine(
+    (c) => !c.address || !!(c.district && c.district.trim().length >= 2),
+    { message: 'Adres için İLÇE zorunlu; müşteriden ilçe bilgisini isteyin', path: ['district'] },
+  ),
   products: z
     .array(
       z.object({
@@ -19,7 +25,7 @@ const OrderSchema = z.object({
       }),
     )
     .min(1, 'En az bir ürün gerekli'),
-  payment: z.enum(['iban', 'website', 'paytr', 'iyzico', 'cash_on_delivery']),
+  payment: z.enum(['iban', 'website', 'paytr', 'iyzico', 'cash_on_delivery', 'kapida_kart']),
   confirmed: z.literal(true, {
     errorMap: () => ({ message: 'Sipariş onaylanmamış' }),
   }),

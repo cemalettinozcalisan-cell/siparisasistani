@@ -94,6 +94,7 @@ const navItems = [
   { href: '/health', label: 'Sistem Durumu', icon: Activity, roles: ['owner', 'manager', 'staff'], group: 'settings' },
   { href: '/settings/audit-logs', label: 'Sistem Logları', icon: BarChart3, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/ai-test', label: 'AI Sohbet', icon: Bot, roles: ['owner'], group: 'settings' },
+  { href: '/settings/order-ai', label: 'Sipariş AI', icon: Bot, roles: ['owner', 'manager'], group: 'settings' },
   { href: '/prompts', label: 'Promptlar', icon: FileText, roles: ['owner'], group: 'settings' },
   // Geliştirici
   { href: '/admin', label: 'Geliştirici', icon: Shield, roles: ['owner'], group: 'admin' },

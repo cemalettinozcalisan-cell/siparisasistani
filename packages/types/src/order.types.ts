@@ -1,7 +1,7 @@
 export type OrderChannel = 'phone' | 'whatsapp' | 'manual' | 'sms' | 'instagram';
 export type OrderSource = 'PHONE' | 'WHATSAPP' | 'PANEL' | 'WEBSITE';
 export type OrderStatus = 'new' | 'approved' | 'preparing' | 'shipped' | 'completed' | 'cancelled';
-export type PaymentMethod = 'iban' | 'website' | 'paytr' | 'iyzico' | 'cash_on_delivery';
+export type PaymentMethod = 'iban' | 'website' | 'paytr' | 'iyzico' | 'cash_on_delivery' | 'kapida_kart';
 export type PaymentStatus = 'waiting' | 'paid' | 'failed';
 
 export interface AiOrderInput {
@@ -10,6 +10,9 @@ export interface AiOrderInput {
     phone: string;
     address?: string;
     city?: string;
+    district?: string;
+    company_name?: string;
+    identity_number?: string;
   };
   products: AiOrderProduct[];
   payment: PaymentMethod;

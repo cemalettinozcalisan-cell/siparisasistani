@@ -34,8 +34,8 @@ export class CampaignsService {
     for (const c of campaigns) {
       lines.push(`- ${c['title']}: ${c['condition']} → ${c['offer']}`);
     }
-    lines.push('KAMPANYA KURALI: Müşteri siparişini verdikten sonra, sipariş özetini okurken uygun kampanya varsa nazikçe belirt.');
-    lines.push('Önce siparişi al, sonra kampanyayı öner. Asla müşteri daha siparişini söylemeden kampanya anlatma.');
+    lines.push('KAMPANYA KURALI (SADECE BİLGİ): Ürün ve miktar söylenir söylenmez, uygun kampanya varsa HEMEN ve TEK CÜMLE bilgi olarak söyle (ör. "Bu arada 3 kilo ve üzeri alımlarda 500 gram kavurma hediyemiz var.").');
+    lines.push('Müşteri istemedikçe kampanyayı siparişe EKLEME, reddederse ısrar etme. Kampanyayı ödeme/onay SONRASINA BIRAKMA. Müşteri siparişini hiç söylemeden kampanya anlatma.');
 
     return lines.join('\n');
   }

@@ -109,6 +109,12 @@ interface Order {
   payment_method?: string; payment_status?: string;
 }
 
+function fmtDateTime(date: string): string {
+  try {
+    return new Date(date).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+
 function TimerBadge({ date }: { date: string }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -117,6 +123,8 @@ function TimerBadge({ date }: { date: string }) {
     const interval = setInterval(update, 30000);
     return () => clearInterval(interval);
   }, [date]);
+  // 24 saatten eski siparişlerde göreli süre anlamsız ("1587 sa") → gizle (tarih-saat ayrıca gösterilir).
+  if (elapsed >= 86400) return null;
   if (elapsed < 60) return <span>{elapsed}s</span>;
   if (elapsed < 3600) return <span>{Math.floor(elapsed / 60)}dk</span>;
   return <span>{Math.floor(elapsed / 3600)}sa</span>;
@@ -449,6 +457,7 @@ function OrdersPageContent() {
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                <span className="font-mono text-gray-500 dark:text-slate-400">{fmtDateTime(o.created_at)}</span>
                 <TimerBadge date={o.created_at} />
                 {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${CARGO_STATUS_BADGE[o.cargo_status].gradient} shadow-sm shadow-cyan-500/25`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>

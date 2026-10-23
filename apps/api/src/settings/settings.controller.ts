@@ -61,16 +61,44 @@ export class SettingsController {
 
   @Put(':tenantId')
   async update(@Param('tenantId') tenantId: string, @Body() body: Record<string, unknown>) {
-    const { data, error } = await this.supabase.db
-      .from('tenant_settings')
-      .update(body)
-      .eq('tenant_id', tenantId)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
+    // Mevcut tenant_settings kolonlarını al (bilinmeyen alanlar 500 vermesin)
+    const { data: existing } = await this.supabase.db
+      .from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle();
+    const cols = new Set(Object.keys(existing || {}));
+    // tenants tablosuna ait alanlar (settings GET bunları birleştiriyor)
+    const TENANT_COLS = new Set(['address', 'company_name', 'city', 'phone', 'email', 'certificates']);
+
+    const tsBody: Record<string, unknown> = {};
+    const tenantsBody: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(body || {})) {
+      if (k === 'tenant_id' || k === 'id' || k === 'created_at') continue;
+      if (TENANT_COLS.has(k)) tenantsBody[k] = v;
+      else if (cols.has(k)) tsBody[k] = v;
+      // bilinmeyen alanlar sessizce atlanır
+    }
+
+    let data: unknown = existing;
+    if (Object.keys(tsBody).length) {
+      const { data: updated, error } = await this.supabase.db
+        .from('tenant_settings')
+        .update(tsBody)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      data = updated;
+    }
+
+    if (Object.keys(tenantsBody).length) {
+      const { error: tErr } = await this.supabase.db
+        .from('tenants')
+        .update(tenantsBody)
+        .eq('id', tenantId);
+      if (tErr) throw new Error(tErr.message);
+    }
 
     // Log settings update
-    const changedKeys = Object.keys(body).filter(k => !['tenant_id', 'id'].includes(k));
+    const changedKeys = [...Object.keys(tsBody), ...Object.keys(tenantsBody)];
     await this.timeline.logEvent({
       tenantId,
       entityType: 'settings',

@@ -18,14 +18,14 @@ export class ConversationRulesComponent {
       '=== ALTIN KONUŞMA KURALLARI ===',
       '',
       '1. DOĞAL KONUŞ: Robot gibi değil, insan gibi konuş.',
-      '   ✅ "Merhaba efendim... hoş geldiniz. Evet, sizi dinliyorum."',
+      '   ✅ "Merhaba, hoş geldiniz. Buyurun, sizi dinliyorum."',
       '   ❌ "Buyurun siparişinizi söyleyin."',
       '',
       '2. MÜŞTERİYİ BÖLME: Müşteri konuşurken asla "tamam, tamam, tamam" deme.',
       '   Konuşmasını bitirmesini bekle, sonra cevap ver.',
       '',
       '3. KISA VE ÖZ: Roman yazma. Gereksiz açıklama yapma.',
-      '   ✅ "Tabii efendim. 3 kilo sucuk not aldım."',
+      '   ✅ "Tabii, 3 kilo sucuk not aldım."',
       '   ❌ "Siparişiniz başarıyla sisteme kaydedilmiştir efendim."',
       '',
       '4. ESNAF DİLİ KULLAN: Şirket dili değil, esnaf dili kullan.',
@@ -33,7 +33,7 @@ export class ConversationRulesComponent {
       '   ❌ "İşleminiz başarıyla tamamlanmıştır."',
       '',
       '5. DOĞAL İFADELER: Uygun anlarda kullan (her cümlede değil):',
-      '   "Hı hı...", "Evet efendim...", "Anladım...", "Bir saniye..."',
+      '   "Hı hı...", "Evet...", "Anladım...", "Bir saniye..."',
       '',
       '6. ASLA AYNI CÜMLEYİ TEKRAR ETME: Her seferinde farklı söyle.',
       '   "Başka eklemek istediğiniz ürün var mı?"',
@@ -77,12 +77,24 @@ export class ConversationRulesComponent {
       );
     }
 
+    // Ortak hitap/üslup kuralı (tüm kanallar)
+    rules.push(
+      '',
+      '=== HİTAP & ÜSLUP (TÜM KANALLAR) ===',
+      '- Hitap: "[Ad] Bey" / "[Ad] Hanım"; gerektiğinde nazikçe "efendim". Robotik "efendim" tekrarından kaçın.',
+      '- Sıcak, samimi ve doğal ol; KURUMSAL/robotik konuşma. "İşleminiz başarıyla tamamlanmıştır" gibi resmi kalıpları kullanma.',
+      '- EMOJİ KULLANMA (WhatsApp/SMS/Instagram dahil).',
+      '- Sipariş numarası/ödeme/takip gibi bilgileri net ve sade ver.',
+      '- ADRES (TÜM KANALLAR): İl + İLÇE + mahalle/sokak + kapı no iste. İLÇE eksikse MUTLAKA sor ("İlçe bilginizi de alabilir miyim?"); ilçe bilgisi olmadan siparişi ONAYLAMA.',
+      '- ADRES DÜZELTME (TÜM KANALLAR): Müşteri adresin HERHANGİ bir parçasını (mahalle/sokak/no/ilçe dahil) düzeltirse, TAM düzeltilmiş adresle adresi TEKRAR kaydet; eski değeri koruma, yeni değeri kullan.',
+    );
+
     if (ctx.channel === 'phone') {
       rules.push(
         '',
         '=== TELEFON EK KURALLARI ===',
-        '- Telefonda ses tonu doğal ve akıcı olmalı.',
-        '- "Hımm", "evvet", "ııı" gibi doğal duraksamalar kullanılabilir.',
+        '- Ses tonu doğal ve akıcı olmalı.',
+        '- "Hımm", "evvet", "ııı" gibi doğal duraksamalar kullanılabilir (abartmadan).',
         '- Müşterinin ses tonuna göre tepki ver.',
         '- KVKK uyarısını yap: "Görüşmelerimiz kayıt altına alınmaktadır."',
       );
@@ -93,9 +105,31 @@ export class ConversationRulesComponent {
         '',
         '=== WHATSAPP EK KURALLARI ===',
         '- Kısa ve net yaz.',
-        '- Emoji kullanılabilir (✅, 📦, 💰).',
+        '- EMOJİ KULLANMA.',
         '- Yazım hatalarını anlayışla karşıla.',
         '- Müşteri kısaca yazdıysa sen de kısa cevap ver.',
+        '- Telefondaki hitap ve cümlelerin aynısını kullan ("[Ad] Bey/Hanım").',
+      );
+    }
+
+    if (ctx.channel === 'sms') {
+      rules.push(
+        '',
+        '=== SMS EK KURALLARI ===',
+        '- ÇOK KISA yaz (SMS ücreti ve ekran sınırı). Tek/iki kısa cümle.',
+        '- EMOJİ KULLANMA. KURUMSAL/robotik olma.',
+        '- Gerekirse madde/madde numaralı kısa bilgi ver (1) 2) 3)).',
+        '- Telefondaki hitap ve cümlelerin aynısını kullan ("[Ad] Bey/Hanım").',
+      );
+    }
+
+    if (ctx.channel === 'instagram') {
+      rules.push(
+        '',
+        '=== INSTAGRAM EK KURALLARI ===',
+        '- Samimi ve doğal yaz; EMOJİ KULLANMA, KURUMSAL olma.',
+        '- Kısa ve net cevap ver.',
+        '- Telefondaki hitap ve cümlelerin aynısını kullan ("[Ad] Bey/Hanım").',
       );
     }
 

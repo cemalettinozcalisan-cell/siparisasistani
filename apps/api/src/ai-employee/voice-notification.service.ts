@@ -16,6 +16,7 @@ const SALUTATION_MAP: Record<string, string> = {
 
 const EVENT_PREF_KEY: Record<string, string> = {
   ORDER_CREATED: 'order_voice',
+  ORDER_UPDATED: 'order_voice',
   REQUEST_CREATED: 'request_voice',
   COMPLAINT_CREATED: 'complaint_voice',
   SUBSCRIPTION_THRESHOLD: 'subscription_voice',
@@ -23,6 +24,7 @@ const EVENT_PREF_KEY: Record<string, string> = {
 
 const EVENT_LABEL: Record<string, string> = {
   ORDER_CREATED: 'yeni sipariş',
+  ORDER_UPDATED: 'güncellenen sipariş',
   REQUEST_CREATED: 'müşteri talebi',
   COMPLAINT_CREATED: 'müşteri şikâyeti',
   SUBSCRIPTION_THRESHOLD: 'abonelik uyarısı',
@@ -243,6 +245,11 @@ export class VoiceNotificationService {
       const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
       const chan = payload.channel ? ` (${String(payload.channel).toUpperCase()})` : '';
       return `${sal}, yeni siparişiniz var${num ? ' ' + num : ''}${chan}.${price ? ' Tutar ' + price : ''}`;
+    }
+    if (eventType === 'ORDER_UPDATED') {
+      const num = payload.orderNumber ? `#${payload.orderNumber}` : '';
+      const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
+      return `${sal}, ${num ? num + ' nolu ' : ''}bir sipariş güncellendi.${price ? ' Yeni tutar ' + price : ''}`;
     }
     if (eventType === 'COMPLAINT_CREATED') {
       return `${sal}, bir müşterimiz şikâyet kaydı oluşturdu. Detaylarını panelden inceleyebilirsiniz.`;

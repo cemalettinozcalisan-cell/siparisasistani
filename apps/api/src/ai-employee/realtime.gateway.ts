@@ -99,7 +99,8 @@ export class RealtimeGateway implements OnApplicationBootstrap {
       const model = this.config.get<string>('REALTIME_MODEL', 'gemini-3.8-live');
       const ai = new GoogleGenAI({ apiKey });
       const systemInstruction = await this.conversation.buildRealtimeSystem(tid, cfg);
-      this.logger.log(`[rt] connect tid=${tid} role=${role} model=${model}`);
+      const voiceName = (url.searchParams.get('voice') || (cfg as any).voice || '').trim();
+      this.logger.log(`[rt] connect tid=${tid} role=${role} model=${model} voice=${voiceName || 'default'}`);
 
       const gemini = await ai.live.connect({
         model,
@@ -107,7 +108,7 @@ export class RealtimeGateway implements OnApplicationBootstrap {
           responseModalities: [Modality.AUDIO],
           systemInstruction,
           tools: [{ functionDeclarations: [BUSINESS_TOOL] }],
-          speechConfig: { languageCode: 'tr-TR' } as any,
+          speechConfig: { languageCode: 'tr-TR', ...(voiceName ? { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } : {}) } as any,
           // Teşhis: giriş/çıkış transkriptlerini al (kullanıcı ne dedi / model ne dedi)
           inputAudioTranscription: { languageCodes: ['tr-TR'] } as any,
           outputAudioTranscription: {} as any,

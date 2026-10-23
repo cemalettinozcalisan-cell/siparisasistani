@@ -14,7 +14,7 @@ export class VoiceHandler implements NotificationHandler {
   constructor(private readonly voice: VoiceNotificationService) {}
 
   async handle(event: SystemEvent): Promise<void> {
-    const supported = ['ORDER_CREATED', 'COMPLAINT_CREATED', 'REQUEST_CREATED', 'SUBSCRIPTION_THRESHOLD', 'SYSTEM_HEALTH_FAILED'];
+    const supported = ['ORDER_CREATED', 'ORDER_UPDATED', 'COMPLAINT_CREATED', 'REQUEST_CREATED', 'SUBSCRIPTION_THRESHOLD', 'SYSTEM_HEALTH_FAILED'];
     if (!supported.includes(event.type)) return;
 
     const p = event.payload as Record<string, unknown>;
