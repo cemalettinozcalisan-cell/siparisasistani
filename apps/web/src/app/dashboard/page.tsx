@@ -360,6 +360,9 @@ export default function DashboardPage() {
   useEffect(() => {
     setMounted(true);
     loadDashboard();
+    const onRefresh = () => { void loadDashboard(); };
+    window.addEventListener('data-refresh', onRefresh);
+    return () => window.removeEventListener('data-refresh', onRefresh);
   }, []);
 
   useEffect(() => {

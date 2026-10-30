@@ -451,9 +451,9 @@ private readonly campaigns: CampaignsService,
       case 'ORDER_DETAIL': {
         const o = await this.findOrder(tenantId, String(params.order_number));
         if (!o) throw new Error(`#${params.order_number} siparişi bulunamadı. Sipariş numarasını tekrar söyler misiniz? Örneğin 25-00099 şeklinde.`);
-        const custName = (o as any).customer?.name || 'Müşteri';
-        const custPhone = (o as any).customer?.phone || '';
-        const custCity = (o as any).customer?.city || '';
+        const custName = (o as any).customer_name || (o as any).customer?.name || 'Müşteri';
+        const custPhone = (o as any).customer_phone || (o as any).customer?.phone || '';
+        const custCity = (o as any).customer_city || (o as any).customer?.city || '';
         const chanLabel = sourceLabel((o as any).source);
         const payLabel = String(o.payment_status || '');
         const items = ((o as any).order_items || []) as any[];
@@ -466,7 +466,7 @@ private readonly campaigns: CampaignsService,
         const scope = String(params.scope || 'active').toLowerCase();
         const count = Math.min(Number(params.count) || 15, 30);
         let q = this.supabase.db.from('orders')
-          .select('order_number,status,total_price,source,payment_method,created_at,customer:customer_id(name, city)')
+          .select('order_number,status,total_price,source,payment_method,created_at,customer_name,customer_city,customer:customer_id(name, city)')
           .eq('tenant_id', tenantId).is('deleted_at', null)
           .order('created_at', { ascending: false }).limit(count);
         if (scope === 'active') q = q.in('status', ['new', 'PAYMENT_WAITING']);
@@ -475,7 +475,7 @@ private readonly campaigns: CampaignsService,
         const rows = (data || []) as any[];
         if (!rows.length) return scope === 'active' ? 'Aktif (bekleyen) sipariş yok.' : scope === 'today' ? 'Bugün sipariş yok.' : 'Sipariş bulunamadı.';
         const label = scope === 'active' ? 'Aktif (bekleyen) siparişler' : scope === 'today' ? 'Bugünkü siparişler' : scope === 'all' ? 'Son siparişler' : 'Siparişler';
-        return `${label} (${rows.length}): ` + rows.map((r) => `#${r.order_number} - ${r.customer?.name || 'Müşteri'}${r.customer?.city ? ' (' + r.customer.city + ')' : ''} - ${Number(r.total_price).toLocaleString('tr-TR')} TL (${r.status}${sourceLabel(r.source) ? ', ' + sourceLabel(r.source) : ''})`).join(' | ');
+        return `${label} (${rows.length}): ` + rows.map((r) => `#${r.order_number} - ${r.customer_name || r.customer?.name || 'Müşteri'}${(r.customer_city || r.customer?.city) ? ' (' + (r.customer_city || r.customer?.city) + ')' : ''} - ${Number(r.total_price).toLocaleString('tr-TR')} TL (${r.status}${sourceLabel(r.source) ? ', ' + sourceLabel(r.source) : ''})`).join(' | ');
       }
       case 'CANCEL_ORDER': {
         const o = await this.findOrder(tenantId, String(params.order_number));
@@ -605,7 +605,20 @@ private readonly campaigns: CampaignsService,
           rows = ((all || []) as any[]).filter((c) => asciiFold(String(c.name || '').toLowerCase()).includes(fq))
             .filter((c) => { const k = `${c.name}|${c.phone || ''}`; if (seen2.has(k)) return false; seen2.add(k); return true; });
         }
-        if (!rows.length) return `"${nameOrPhone}" müşterisi bulunamadı.`;
+        if (!rows.length) {
+          // Sipariş snapshot'ında ara (müşteri tablosu eski kalabilir; testte aynı numara)
+          const { data: ords } = await this.supabase.db.from('orders')
+            .select('customer_name, customer_phone, customer_city, customer_district, customer_address')
+            .eq('tenant_id', tenantId).is('deleted_at', null)
+            .or(phone && phone.length >= 9 ? `customer_phone.eq.${phone},customer_name.ilike.%${nameOrPhone}%` : `customer_name.ilike.%${nameOrPhone}%`)
+            .order('created_at', { ascending: false }).limit(1);
+          const so = (ords || [])[0] as any;
+          if (so?.customer_name) {
+            const bits = [so.customer_name, so.customer_phone ? `telefon: ${so.customer_phone}` : '', so.customer_city ? `şehir: ${so.customer_city}` : '', so.customer_district ? `ilçe: ${so.customer_district}` : '', so.customer_address ? `adres: ${so.customer_address}` : ''].filter(Boolean);
+            return bits.join(', ');
+          }
+          return `"${nameOrPhone}" müşterisi bulunamadı.`;
+        }
         if (rows.length > 1) {
           return `Bu isimde ${rows.length} müşteri var: ` + rows.map((c, i) => `${i + 1}) ${c.name}${c.phone ? ' - ' + c.phone : ''}`).join(' | ') + '. Hangisini istersiniz?';
         }
@@ -637,7 +650,7 @@ private readonly campaigns: CampaignsService,
         };
         const { data } = await this.supabase.db
           .from('orders')
-          .select('order_number, cargo_status, cargo_company, tracking_number, customer:customer_id(name, city)')
+          .select('order_number, cargo_status, cargo_company, tracking_number, customer_name, customer_city, customer:customer_id(name, city)')
           .eq('tenant_id', tenantId).is('deleted_at', null)
           .not('cargo_status', 'is', null)
           .order('created_at', { ascending: false }).limit(30);
@@ -646,7 +659,7 @@ private readonly campaigns: CampaignsService,
         const byStatus: Record<string, string[]> = {};
         for (const r of rows) { 
           const k = statusMap[r.cargo_status] || r.cargo_status; 
-          (byStatus[k] = byStatus[k] || []).push(`${r.customer?.name || 'Müşteri'} #${r.order_number}${r.customer?.city ? ' — İl: ' + r.customer.city : ''}${r.cargo_company ? ' (' + r.cargo_company + ')' : ''}`); 
+          (byStatus[k] = byStatus[k] || []).push(`${r.customer_name || r.customer?.name || 'Müşteri'} #${r.order_number}${(r.customer_city || r.customer?.city) ? ' — İl: ' + (r.customer_city || r.customer?.city) : ''}${r.cargo_company ? ' (' + r.cargo_company + ')' : ''}`); 
         }
         return Object.entries(byStatus).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' | ');
       }
@@ -1079,6 +1092,14 @@ private readonly campaigns: CampaignsService,
     const q = String(nameOrPhone || '').trim();
     if (!q) return null;
     const phone = q.replace(/\D/g, '');
+    // Önce sipariş snapshot'ında ara (müşteri tablosu eski kalabilir; testte aynı numara)
+    const { data: ords } = await this.supabase.db.from('orders')
+      .select('customer_id, customer_name, customer_phone, customer_city')
+      .eq('tenant_id', tenantId).is('deleted_at', null)
+      .or(phone && phone.length >= 9 ? `customer_phone.eq.${phone},customer_name.ilike.%${q}%` : `customer_name.ilike.%${q}%`)
+      .order('created_at', { ascending: false }).limit(1);
+    const so = (ords || [])[0] as any;
+    if (so?.customer_name) return { id: so.customer_id, name: so.customer_name, phone: so.customer_phone, city: so.customer_city };
     const nameQ = `name.ilike.%${q}%`;
     const orQ = phone && phone.length >= 9 ? `phone.eq.${phone},${nameQ}` : nameQ;
     const { data } = await this.supabase.db.from('customers').select('id, name, phone, city').eq('tenant_id', tenantId).is('deleted_at', null).or(orQ).order('created_at', { ascending: true }).limit(5);
@@ -1119,7 +1140,7 @@ private readonly campaigns: CampaignsService,
     const tail5 = digits.slice(-5); // son 5 hane (ör. 00099)
     const tail4 = digits.slice(-4);
     const { data } = await this.supabase.db.from('orders')
-      .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
+        .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
       .eq('tenant_id', tenantId).is('deleted_at', null)
       .or(`order_number.ilike.%${tail5}%,order_number.ilike.%${digits}%,order_number.ilike.%${tail4}%`)
       .limit(30);

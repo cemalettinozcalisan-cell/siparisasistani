@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/notification-bell';
 import { CommandPalette } from '@/components/command-palette';
 import { TenantSwitcher } from '@/components/tenant-switcher';
 import { PrinterSoundToggle, usePrinterSound } from '@/components/printer-sound';
+import { RealtimeEventsProvider } from '@/components/realtime-events';
 import { Search, Moon, Sun, ChevronRight, LogOut, LayoutDashboard, BellRing, ShoppingBag, AlertTriangle, Users, Package, Tags, Settings, Shield, BarChart3, Mic, Activity, TestTube, FileText, Menu, X, Webhook, Key, Bot, CreditCard, ChevronDown, ChevronUp, Clock, Phone, LifeBuoy } from 'lucide-react';
 
 // Sync fetch interceptor — must run before any component renders
@@ -313,6 +314,7 @@ function PrinterSoundToggleEnabled() {
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <RealtimeEventsProvider />
       <LayoutInner>{children}</LayoutInner>
     </ThemeProvider>
   );

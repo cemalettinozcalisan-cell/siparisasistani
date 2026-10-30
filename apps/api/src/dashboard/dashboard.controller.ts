@@ -66,9 +66,10 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
         hasWebsiteOrders
       );
 
-      // Gerçek sipariş verisi varsa hepsini hesapla; yoksa mock fallback
+      // Gerçek veri varsa hesapla; yoksa SADECE demo kiracıda mock (gerçek esnafta 0 gösterilir)
       let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], complaints, todayIso, websiteEnabled);
-      if (!hasRealOrders) data = this.getMockStats();
+      const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+      if (!hasRealOrders && (tenantId === DEMO_TENANT_ID || String(tenantId).startsWith('demo'))) data = this.getMockStats();
 
       return data;
     }

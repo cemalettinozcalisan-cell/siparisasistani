@@ -282,7 +282,12 @@ function CallsContent() {
     } catch (e) { console.error(e); }
   }, [tid]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const onRefresh = () => { void load(); };
+    window.addEventListener('data-refresh', onRefresh);
+    return () => window.removeEventListener('data-refresh', onRefresh);
+  }, [load]);
 
   // ?session=X parametresiyle gelindiğinde ilgili görüşmeyi otomatik aç
   // Filtreyi 'all' yap — görüşme kanal filtresiyle elenmesin

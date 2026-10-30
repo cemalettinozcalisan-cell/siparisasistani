@@ -31,7 +31,9 @@ export function NotificationBell({ size = 'text-lg' }: { size?: string }) {
     };
     load();
     const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
+    const onRefresh = () => { void load(); };
+    window.addEventListener('data-refresh', onRefresh);
+    return () => { clearInterval(interval); window.removeEventListener('data-refresh', onRefresh); };
   }, []);
 
   useEffect(() => {

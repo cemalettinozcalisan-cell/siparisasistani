@@ -1,13 +1,42 @@
-import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+﻿import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import * as crypto from 'crypto';
+
+type Session = { userId: string; tenantId: string; role: string; name: string; email: string };
+
+// Stateless, HMAC imzalÄ± oturum token'Ä± (JWT benzeri). API yeniden baÅŸlasa da geÃ§erli kalÄ±r.
+const TOKEN_SECRET = process.env.JWT_SECRET || process.env.AGENT_API_SECRET || 'siparis-asistani-dev-secret-change-me';
+const TOKEN_TTL_MS = 7 * 24 * 3600 * 1000;
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private sessions = new Map<string, { userId: string; tenantId: string; role: string; name: string; email: string }>();
+  // Geriye dÃ¶nÃ¼k uyum (iptal/logout) iÃ§in; asÄ±l doÄŸrulama stateless imza ile yapÄ±lÄ±r.
+  private sessions = new Map<string, Session>();
 
   constructor(private readonly supabase: SupabaseService) {}
+
+  private signToken(session: Session): string {
+    const payload = Buffer.from(JSON.stringify({ ...session, exp: Date.now() + TOKEN_TTL_MS }), 'utf8').toString('base64url');
+    const sig = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+    return `${payload}.${sig}`;
+  }
+
+  private verifyToken(token: string): Session | null {
+    try {
+      const [payload, sig] = String(token || '').split('.');
+      if (!payload || !sig) return null;
+      const expected = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+      if (sig.length !== expected.length) return null;
+      if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+      const obj = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+      if (!obj?.exp || Number(obj.exp) < Date.now() || !obj.tenantId || !obj.userId) return null;
+      const { exp: _exp, ...session } = obj;
+      return session as Session;
+    } catch {
+      return null;
+    }
+  }
 
   async login(email: string, password: string) {
     const emailNorm = String(email || '').trim().toLowerCase();
@@ -27,20 +56,15 @@ export class AuthService {
         throw new UnauthorizedException('Gecersiz email veya sifre');
       }
 
-      // Legacy şifre (sha256 / düz metin) → scrypt'e kademeli göç (first login'de)
+      // Legacy ÅŸifre (sha256 / dÃ¼z metin) â†’ scrypt'e kademeli gÃ¶Ã§ (first login'de)
       if (!user.password?.startsWith('scrypt$')) {
         const newHash = await this.hashPassword(password);
         await this.supabase.db.from('users').update({ password: newHash }).eq('id', user.id);
       }
 
-      const token = crypto.randomBytes(32).toString('hex');
-      this.sessions.set(token, {
-        userId: user.id,
-        tenantId: user.tenant_id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-      });
+      const session = { userId: user.id, tenantId: user.tenant_id, role: user.role, name: user.name, email: user.email };
+      const token = this.signToken(session);
+      this.sessions.set(token, session);
 
       return {
         token,
@@ -53,47 +77,44 @@ export class AuthService {
         },
       };
     } catch (err) {
-      // Gerçek hata ile kimlik hatasını AYIR: geçici DB hatası "yanlış şifre" gibi görünmesin.
+      // GerÃ§ek hata ile kimlik hatasÄ±nÄ± AYIR: geÃ§ici DB hatasÄ± "yanlÄ±ÅŸ ÅŸifre" gibi gÃ¶rÃ¼nmesin.
       if (!(err instanceof UnauthorizedException)) {
-        this.logger.error(`login hatası (email=${emailNorm}): ${(err as Error)?.message || String(err)}`);
+        this.logger.error(`login hatasÄ± (email=${emailNorm}): ${(err as Error)?.message || String(err)}`);
       }
-      // Fallback mock login — yalnızca DEVELOPMENT'da; production'da devre dışı (hardcoded demo kredileri production yolundan kaldırıldı)
+      // Fallback mock login â€” yalnÄ±zca DEVELOPMENT'da; production'da devre dÄ±ÅŸÄ± (hardcoded demo kredileri production yolundan kaldÄ±rÄ±ldÄ±)
       if (process.env.NODE_ENV === 'production') {
         throw new UnauthorizedException('Gecersiz email veya sifre');
       }
       if (email === 'demo@siparisasistani.com' && password === 'demo123') {
-        const token = crypto.randomBytes(32).toString('hex');
         const mockUser = { id: 'demo-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'owner', name: 'Demo Kullanici', email: 'demo@siparisasistani.com' };
-        this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
+        const token = this.signToken({ userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
         return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
       }
       if (email === 'demo2@siparisasistani.com' && password === 'demo123') {
-        const token = crypto.randomBytes(32).toString('hex');
-        const mockUser = { id: 'demo2-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'manager', name: 'Yönetici Kullanici', email: 'demo2@siparisasistani.com' };
-        this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
+        const mockUser = { id: 'demo2-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'manager', name: 'YÃ¶netici Kullanici', email: 'demo2@siparisasistani.com' };
+        const token = this.signToken({ userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
         return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
       }
       if (email === 'demo3@siparisasistani.com' && password === 'demo123') {
-        const token = crypto.randomBytes(32).toString('hex');
         const mockUser = { id: 'demo3-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'staff', name: 'Personel Kullanici', email: 'demo3@siparisasistani.com' };
-        this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
+        const token = this.signToken({ userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
         return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
       }
       if (!(err instanceof UnauthorizedException)) {
-        throw new ServiceUnavailableException('Giriş sırasında bir sorun oluştu, lütfen tekrar deneyin');
+        throw new ServiceUnavailableException('GiriÅŸ sÄ±rasÄ±nda bir sorun oluÅŸtu, lÃ¼tfen tekrar deneyin');
       }
       throw new UnauthorizedException('Gecersiz email veya sifre');
     }
   }
 
   async me(token: string) {
-    const session = this.sessions.get(token);
+    const session = this.validateToken(token);
     if (!session) throw new UnauthorizedException('Gecersiz token');
     return session;
   }
 
-  validateToken(token: string): { userId: string; tenantId: string; role: string; name: string; email: string } | null {
-    return this.sessions.get(token) || null;
+  validateToken(token: string): Session | null {
+    return this.sessions.get(token) || this.verifyToken(token);
   }
 
   logout(token: string) {
@@ -102,7 +123,7 @@ export class AuthService {
   }
 
   async changePassword(token: string, oldPassword: string, newPassword: string) {
-    const session = this.sessions.get(token);
+    const session = this.validateToken(token);
     if (!session) throw new UnauthorizedException('Gecersiz token');
 
     const { data: user } = await this.supabase.db
@@ -146,11 +167,11 @@ export class AuthService {
         return false;
       }
     }
-    // Legacy: unsalted sha256 hex → doğrula, ilk login'de scrypt'e göç edilir
+    // Legacy: unsalted sha256 hex â†’ doÄŸrula, ilk login'de scrypt'e gÃ¶Ã§ edilir
     if (/^[0-9a-f]{64}$/.test(stored)) {
       return crypto.createHash('sha256').update(password).digest('hex') === stored;
     }
-    // Legacy: düz metin (göç script'i + login upgrade ile scrypt'e çevrilir; geçici güvenlik riski login'de kapanır)
+    // Legacy: dÃ¼z metin (gÃ¶Ã§ script'i + login upgrade ile scrypt'e Ã§evrilir; geÃ§ici gÃ¼venlik riski login'de kapanÄ±r)
     return password === stored;
   }
 }

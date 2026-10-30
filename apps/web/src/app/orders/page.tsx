@@ -222,7 +222,9 @@ function OrdersPageContent() {
   useEffect(() => {
     loadOrders();
     const interval = setInterval(loadOrders, 10000);
-    return () => clearInterval(interval);
+    const onRefresh = () => { void loadOrders(); };
+    window.addEventListener('data-refresh', onRefresh);
+    return () => { clearInterval(interval); window.removeEventListener('data-refresh', onRefresh); };
   }, [loadOrders]);
 
   // Sync tab from sidebar clicks (URL changes but component doesn't re-mount)
