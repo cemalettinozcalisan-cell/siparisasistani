@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Query, Body, Headers, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Headers, Param, Res, UnauthorizedException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../common/supabase.client';
 import { PromptEngineService } from '../ai/prompt-engine/prompt-engine.service';
@@ -70,6 +73,52 @@ export class OrderAiAgentController {
     this.guard(secret);
     if (!tenantId) throw new UnauthorizedException('tenantId gerekli');
     return { ok: true, draft: this.tools.getDraftSummary(tenantId, sessionId || 'livekit') };
+  }
+
+  /** Çağrı kapanınca ajan çağırır: sipariş oluşmadıysa/onaylanmadıysa kaydeder. */
+  @Post('session-end')
+  async sessionEnd(
+    @Headers('x-agent-secret') secret: string,
+    @Body() body: { tenantId?: string; sessionId?: string },
+  ) {
+    this.guard(secret);
+    const tenantId = String(body?.tenantId || '');
+    if (!tenantId) throw new UnauthorizedException('tenantId gerekli');
+    const result = await this.tools.recordSessionEnd(tenantId, String(body?.sessionId || 'livekit'));
+    return result;
+  }
+
+  /** Görüşmenin gerçek transkriptini kaydet (detay sayfası için). */
+  @Post('transcript')
+  async transcript(
+    @Headers('x-agent-secret') secret: string,
+    @Body() body: { tenantId?: string; sessionId?: string; messages?: Array<{ role: string; text: string }> },
+  ) {
+    this.guard(secret);
+    const tenantId = String(body?.tenantId || '');
+    if (!tenantId) throw new UnauthorizedException('tenantId gerekli');
+    return this.tools.recordTranscript(tenantId, String(body?.sessionId || 'livekit'), body?.messages || []);
+  }
+
+  /** Ses kaydını call_recordings'e yaz (ajan çağırır). */
+  @Post('recording')
+  async recording(
+    @Headers('x-agent-secret') secret: string,
+    @Body() body: { tenantId?: string; sessionId?: string; phone?: string; file?: string },
+  ) {
+    this.guard(secret);
+    const tenantId = String(body?.tenantId || '');
+    if (!tenantId) throw new UnauthorizedException('tenantId gerekli');
+    return this.tools.recordRecording(tenantId, String(body?.sessionId || ''), String(body?.phone || ''), String(body?.file || ''));
+  }
+
+  /** Ses kaydı dosyasını sun (esnaf dinler). */
+  @Get('recordings/:file')
+  async serveRecording(@Param('file') file: string, @Res() res: Response) {
+    const safe = path.basename(file);
+    const full = path.join('C:\\SiparisAsistani\\apps\\api\\backups\\recordings', safe);
+    if (!fs.existsSync(full)) throw new NotFoundException('kayıt bulunamadı');
+    res.sendFile(full);
   }
 
   @Post('tool')

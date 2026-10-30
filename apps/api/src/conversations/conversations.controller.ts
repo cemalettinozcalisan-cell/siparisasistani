@@ -39,7 +39,10 @@ export class ConversationsController {
         .eq('id', sessionId)
         .maybeSingle();
 
-      if (!session) return this.getMockDetail(sessionId);
+      if (!session) {
+        if (/^(mock-|wa-|ig-|3333)/.test(sessionId)) return this.getMockDetail(sessionId);
+        return { session: null, recording: null, transcript: [], whatsappMessages: [] };
+      }
 
       // Get recording (from call_recordings or session fallback)
       const { data: recordings } = await this.supabase.db
@@ -58,8 +61,8 @@ export class ConversationsController {
         .select('user_message, raw_response, system_prompt, confidence, parsed_json, created_at')
         .eq('tenant_id', tenantId)
         .eq('session_id', sessionId)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: true })
+        .limit(50);
 
       // Build transcript from session.messages when no audit logs exist (seed/test data)
       let transcript = audits || [];
@@ -97,13 +100,7 @@ export class ConversationsController {
         }
       }
 
-      // If database has no data, use mock for demo experience
-      const hasRealData = recording || (transcript && transcript.length > 0) || waMessages.length > 0;
-      if (!hasRealData) {
-        this.logger.warn('No real data found for session, returning mock');
-        return this.getMockDetail(sessionId);
-      }
-
+      // Gerçek oturumda ASLA mock dönme; veri yoksa boş dön (mock yalnız mock id'lerde).
       return {
         session,
         recording: recording ? { ...recording, recording_url: recordingUrl } : recordingUrl ? { recording_url: recordingUrl } : null,

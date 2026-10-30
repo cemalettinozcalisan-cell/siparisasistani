@@ -158,7 +158,7 @@ function TranscriptView({ transcript, channel, whatsappMessages }: { transcript?
   if (channel === 'WHATSAPP') {
     const messages = whatsappMessages && whatsappMessages.length > 0
       ? whatsappMessages.map(m => ({ role: m.direction === 'outgoing' ? 'ai' : 'customer', content: m.body, time: m.createdAt }))
-      : (transcript || []).map(t => ({ role: t.raw_response ? 'customer' : 'ai', content: t.user_message, time: t.created_at }));
+      : (transcript || []).map(t => ({ role: t.raw_response ? 'ai' : 'customer', content: t.raw_response || t.user_message, time: t.created_at }));
 
     return (
       <div className="rounded-xl p-4 space-y-2 max-h-96 overflow-y-auto" style={{ backgroundColor: '#efeae2' }}>
@@ -179,7 +179,7 @@ function TranscriptView({ transcript, channel, whatsappMessages }: { transcript?
 
   /* Instagram */
   if (channel === 'INSTAGRAM') {
-    const messages = (transcript || []).map(t => ({ role: t.raw_response ? 'customer' : 'ai', content: t.user_message, time: t.created_at }));
+    const messages = (transcript || []).map(t => ({ role: t.raw_response ? 'ai' : 'customer', content: t.raw_response || t.user_message, time: t.created_at }));
     return (
       <div className="bg-white dark:bg-slate-850 rounded-xl p-4 space-y-3 max-h-96 overflow-y-auto">
         {messages.length === 0 ? <p className="text-xs text-slate-400 text-center py-4">Konuşma metni bulunamadı</p> : messages.map((m, i) => (
@@ -205,7 +205,7 @@ function TranscriptView({ transcript, channel, whatsappMessages }: { transcript?
 
   /* SMS */
   if (channel === 'SMS') {
-    const messages = (transcript || []).map(t => ({ role: t.raw_response ? 'customer' : 'ai', content: t.user_message, time: t.created_at }));
+    const messages = (transcript || []).map(t => ({ role: t.raw_response ? 'ai' : 'customer', content: t.raw_response || t.user_message, time: t.created_at }));
     return (
       <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 space-y-3 max-h-96 overflow-y-auto">
         {messages.length === 0 ? <p className="text-xs text-slate-400 text-center py-4">Konuşma metni bulunamadı</p> : messages.map((m, i) => (
@@ -222,8 +222,8 @@ function TranscriptView({ transcript, channel, whatsappMessages }: { transcript?
 
   /* VOICE / Telefon — timestamp dialogları */
   const messages = (transcript || []).map((t, i) => ({
-    role: t.raw_response ? 'customer' : 'assistant',
-    content: t.user_message,
+    role: t.raw_response ? 'assistant' : 'customer',
+    content: t.raw_response || t.user_message,
     time: t.created_at,
     index: i,
   }));
@@ -452,13 +452,20 @@ function CallsContent() {
                         {activeTab === 'list' ? (
                           <>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {summary?.products && summary.products.length > 0 && (
-                                <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
-                                  <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm shadow-blue-500/20 mb-2"><ShoppingBag size={14} className="text-white" /></div>
-                                  <p className="text-[10px] text-slate-400">Ürünler</p>
-                                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{summary.products.join(', ')}</p>
-                                </div>
-                              )}
+                              {(() => {
+                                const items = Array.isArray((summary as any)?.items) ? ((summary as any).items as Array<Record<string, unknown>>) : [];
+                                const list = items.length
+                                  ? items.map((it) => `${it.quantity} ${it.unit || ''} ${it.product_name}${Number(it.unit_price) === 0 ? ' (ücretsiz / kampanya)' : ''}`.trim())
+                                  : (Array.isArray((summary as any)?.products) ? ((summary as any).products as string[]) : []);
+                                if (!list.length) return null;
+                                return (
+                                  <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm shadow-blue-500/20 mb-2"><ShoppingBag size={14} className="text-white" /></div>
+                                    <p className="text-[10px] text-slate-400">Ürünler</p>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{list.join(', ')}</p>
+                                  </div>
+                                );
+                              })()}
                               {summary?.payment_method && summary.payment_method !== 'BELIRSIZ' && (
                                 <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
                                   <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-sm shadow-purple-500/20 mb-2"><CreditCard size={14} className="text-white" /></div>
@@ -466,13 +473,19 @@ function CallsContent() {
                                   <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{summary.payment_method}</p>
                                 </div>
                               )}
-                              {summary?.address && (
-                                <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
-                                  <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center shadow-sm shadow-rose-500/20 mb-2"><MapPin size={14} className="text-white" /></div>
-                                  <p className="text-[10px] text-slate-400">Adres</p>
-                                  <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{summary.address}</p>
-                                </div>
-                              )}
+                              {(() => {
+                                const addr = String((summary as any)?.address || '').trim();
+                                const loc = [String((summary as any)?.district || ''), String((summary as any)?.city || '')].filter(Boolean).join(' / ');
+                                const full = [addr, loc].filter(Boolean).join(', ');
+                                if (!full) return null;
+                                return (
+                                  <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
+                                    <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center shadow-sm shadow-rose-500/20 mb-2"><MapPin size={14} className="text-white" /></div>
+                                    <p className="text-[10px] text-slate-400">Adres</p>
+                                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{full}</p>
+                                  </div>
+                                );
+                              })()}
                               {summary?.sentiment_score && (
                                 <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 hover:shadow-sm transition-shadow">
                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-sm mb-2 ${sentimentCfg.bg}`}>

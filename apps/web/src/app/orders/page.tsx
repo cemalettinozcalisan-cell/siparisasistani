@@ -4,7 +4,7 @@ import { getTenantId } from '@/lib/tenant';
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { PhoneCall, Instagram, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock, Banknote, CreditCard, Wallet, CheckCircle2, Ban, Package, Sparkles, BellRing, Pencil, Phone } from 'lucide-react';
+import { PhoneCall, Instagram, Globe, MessageSquare, Search, X, Edit3, Trash2, Truck, Eye, AlertTriangle, Volume2, VolumeX, RefreshCw, Printer, Filter, MapPin, ShoppingBag, Clock, Banknote, CreditCard, Wallet, CheckCircle2, Ban, Package, Sparkles, BellRing, Pencil, Phone, ArrowDownUp } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/channel-icons';
 import { ChatHistoryDrawer } from '@/components/chat-history-drawer';
 
@@ -102,7 +102,7 @@ type OrderItem = { product_name: string; quantity: number; unit: string; unit_pr
 interface Order {
   id: string; order_number: string; total_price: number; status: string; channel: string; source: string;
   notes: string; customer_note: string; created_at: string; customer_name: string; customer_phone: string;
-  customer_city: string; customer_address: string; customer_birthday: string; customer_identity: string;
+  customer_city: string; customer_district?: string; customer_address: string; customer_birthday: string; customer_identity: string;
   customer_company: string; tax_office?: string; payment?: string; items?: OrderItem[];
   cargo_company?: string; cargo_status?: string;
   tracking_number?: string;
@@ -147,6 +147,7 @@ function OrdersPageContent() {
   const [filterChannel, setFilterChannel] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selected, setSelected] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -233,11 +234,15 @@ function OrdersPageContent() {
       setItems(order.items);
       return;
     }
-    // Fetch items from API
+    // Fetch items from API (sipariş yeni oluştuysa kalemler birkaç sn gecikebilir → retry)
     try {
-      const res = await fetch(`/api/order-items/${order.id}`, { headers: authHeaders() });
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const res = await fetch(`/api/order-items/${order.id}`, { headers: authHeaders() });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) { setItems(data); return; }
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+      setItems([]);
     } catch { setItems([]); }
   };
 
@@ -342,9 +347,10 @@ function OrdersPageContent() {
     return true;
   });
 
-  const displayOrders = activeTab === 'active'
-    ? filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-    : filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const displayOrders = [...filtered].sort((a, b) => {
+    const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return sortOrder === 'asc' ? diff : -diff;
+  });
 
   return (
     <div className="p-4 space-y-3 h-[calc(100vh-2rem)] flex flex-col">
@@ -402,7 +408,11 @@ function OrdersPageContent() {
             </div>
           )}
         </div>
-        <div className="relative flex-1 min-w-[140px]">
+        <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} title="Sıralama"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+          <ArrowDownUp size={12} /> Sırala: {sortOrder === 'desc' ? 'Yeni→Eski' : 'Eski→Yeni'}
+        </button>
+        <div className="relative w-[170px] sm:w-[230px]">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="No veya isim ara..."
             className="w-full pl-8 pr-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-full text-xs bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-400 outline-none" />
@@ -462,7 +472,7 @@ function OrdersPageContent() {
                 {o.cargo_status && CARGO_STATUS_BADGE[o.cargo_status] && (
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full bg-gradient-to-r ${CARGO_STATUS_BADGE[o.cargo_status].gradient} shadow-sm shadow-cyan-500/25`}>{CARGO_STATUS_BADGE[o.cargo_status].label}</span>
                 )}
-                {o.customer_city && <span className="flex items-center gap-0.5"><MapPin size={11} /> {o.customer_city}</span>}
+                {([o.customer_district, o.customer_city].filter(Boolean).join(' / ')) && <span className="flex items-center gap-0.5"><MapPin size={11} /> {[o.customer_district, o.customer_city].filter(Boolean).join(' / ')}</span>}
                 {o.customer_note && <span className="text-amber-500 truncate"><MapPin size={11} /> {o.customer_note.substring(0, 30)}</span>}
               </div>
             </div>
@@ -491,8 +501,8 @@ function OrdersPageContent() {
                   <div className="space-y-2 text-xs">
                     <div className="font-bold text-gray-900 dark:text-white text-lg">{selected.customer_name || '—'}</div>
                     {selected.customer_phone && <div className="text-gray-500"><Phone size={14} className="inline mr-1" />{selected.customer_phone}</div>}
-                    {selected.customer_address && <div className="text-gray-500"><MapPin size={14} className="inline mr-1" />{selected.customer_address}</div>}
-                    {selected.customer_city && <div className="text-gray-500"><MapPin size={14} className="inline mr-1 text-blue-400" />{selected.customer_city}</div>}
+                {selected.customer_address && <div className="text-gray-500"><MapPin size={14} className="inline mr-1" />{selected.customer_address}</div>}
+                {([selected.customer_district, selected.customer_city].filter(Boolean).join(' / ')) && <div className="text-gray-500"><MapPin size={14} className="inline mr-1 text-blue-400" />{[selected.customer_district, selected.customer_city].filter(Boolean).join(' / ')}</div>}
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                     {selected.customer_company && <div><span className="text-gray-400">Firma:</span> <span className="text-gray-700 dark:text-slate-300">{selected.customer_company}</span></div>}

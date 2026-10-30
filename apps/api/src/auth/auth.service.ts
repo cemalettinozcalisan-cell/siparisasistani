@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import * as crypto from 'crypto';
 
@@ -10,14 +10,15 @@ export class AuthService {
   constructor(private readonly supabase: SupabaseService) {}
 
   async login(email: string, password: string) {
+    const emailNorm = String(email || '').trim().toLowerCase();
     try {
       const { data: user } = await this.supabase.db
         .from('users')
         .select('id, tenant_id, name, email, role, active, password')
-        .eq('email', email)
+        .ilike('email', emailNorm)
         .maybeSingle();
 
-      if (!user || !user.active) {
+      if (!user || user.active === false) {
         throw new UnauthorizedException('Gecersiz email veya sifre');
       }
 
@@ -51,7 +52,11 @@ export class AuthService {
           tenantId: user.tenant_id,
         },
       };
-    } catch {
+    } catch (err) {
+      // Gerçek hata ile kimlik hatasını AYIR: geçici DB hatası "yanlış şifre" gibi görünmesin.
+      if (!(err instanceof UnauthorizedException)) {
+        this.logger.error(`login hatası (email=${emailNorm}): ${(err as Error)?.message || String(err)}`);
+      }
       // Fallback mock login — yalnızca DEVELOPMENT'da; production'da devre dışı (hardcoded demo kredileri production yolundan kaldırıldı)
       if (process.env.NODE_ENV === 'production') {
         throw new UnauthorizedException('Gecersiz email veya sifre');
@@ -73,6 +78,9 @@ export class AuthService {
         const mockUser = { id: 'demo3-user-id', tenantId: '00000000-0000-0000-0000-000000000001', role: 'staff', name: 'Personel Kullanici', email: 'demo3@siparisasistani.com' };
         this.sessions.set(token, { userId: mockUser.id, tenantId: mockUser.tenantId, role: mockUser.role, name: mockUser.name, email: mockUser.email });
         return { token, user: { id: mockUser.id, name: mockUser.name, email: mockUser.email, role: mockUser.role, tenantId: mockUser.tenantId } };
+      }
+      if (!(err instanceof UnauthorizedException)) {
+        throw new ServiceUnavailableException('Giriş sırasında bir sorun oluştu, lütfen tekrar deneyin');
       }
       throw new UnauthorizedException('Gecersiz email veya sifre');
     }

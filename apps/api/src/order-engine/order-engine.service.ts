@@ -105,6 +105,11 @@ export class OrderEngineService {
         payment_status: this.normalizePayment(input.payment) === 'iban' ? 'awaiting_dekont' : 'waiting',
         total_price: totalPrice,
         customer_note: input.notes || null,
+        customer_name: input.customer.name || null,
+        customer_phone: input.customer.phone || null,
+        customer_address: [input.customer.address, input.customer.district].filter(Boolean).join(', ') || null,
+        customer_city: input.customer.city || null,
+        customer_district: input.customer.district || null,
       })
       .select()
       .single();
@@ -230,21 +235,56 @@ export class OrderEngineService {
     };
   }
 
+  /** Aktif kampanyalardan, miktar koşulu sağlanan hediye ürünlerini döndürür (0 TL kalem). */
+  private async resolveCampaignGifts(
+    products: AiOrderInput['products'],
+    tenantId: string,
+  ): Promise<Array<{ product: string; qty: number; unit: string }>> {
+    try {
+      const { data } = await this.supabase.db
+        .from('campaigns')
+        .select('gift_product, gift_quantity, gift_unit, target_product, min_quantity, active')
+        .eq('tenant_id', tenantId)
+        .eq('active', true);
+      const gifts: Array<{ product: string; qty: number; unit: string }> = [];
+      const seen = new Set<string>();
+      for (const c of (data || []) as Array<Record<string, unknown>>) {
+        const gift = String(c.gift_product || '').trim();
+        if (!gift) continue;
+        const minQ = Number(c.min_quantity) || 0;
+        // Eşik girilmemişse (0/boş) hediye verme — yanlış hediye eklenmesin.
+        if (minQ <= 0) continue;
+        const target = String(c.target_product || '').trim().toLowerCase();
+        const matchedQty = products
+          .filter((p) => !target || String(p.product_name).toLowerCase().includes(target))
+          .reduce((s, p) => s + Number(p.quantity || 0), 0);
+        if (matchedQty < minQ) continue;
+        const key = gift.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        gifts.push({ product: gift, qty: Number(c.gift_quantity) || 1, unit: String(c.gift_unit || 'KG') });
+      }
+      return gifts;
+    } catch {
+      return [];
+    }
+  }
+
   private async createOrderItems(
     orderId: string,
     products: AiOrderInput['products'],
     tenantId: string,
   ) {
-    const items = await Promise.all(
+    const items: Array<Record<string, unknown>> = await Promise.all(
       products.map(async (p) => {
         const { data: product } = await this.supabase.db
           .from('products')
-          .select('id, price')
+          .select('id, price, wholesale_price, wholesale_min_qty')
           .eq('tenant_id', tenantId)
           .eq('product_name', p.product_name)
           .maybeSingle();
 
-        const unitPrice = product ? Number(product.price) : 0;
+        const unitPrice = this.resolveUnitPrice(product, p.quantity);
         return {
           order_id: orderId,
           product_id: product?.id || null,
@@ -256,6 +296,22 @@ export class OrderEngineService {
         };
       }),
     );
+
+    // Kampanya hediyeleri → 0 TL kalem olarak eklenir (esnaf paketin içine koysun diye görünür).
+    try {
+      const gifts = await this.resolveCampaignGifts(products, tenantId);
+      for (const g of gifts) {
+        items.push({
+          order_id: orderId,
+          product_id: null,
+          product_name: g.product,
+          quantity: g.qty,
+          unit: g.unit,
+          unit_price: 0,
+          total: 0,
+        });
+      }
+    } catch { /* yoksay */ }
 
     const { error } = await this.supabase.db
       .from('order_items')
@@ -299,6 +355,19 @@ export class OrderEngineService {
     return `${yearPrefix}-${seq.toString().padStart(5, '0')}`;
   }
 
+  /** Birim fiyat: miktar toptan eşiğine ulaşıyorsa wholesale_price, aksi halde price. */
+  private resolveUnitPrice(
+    product: { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null } | null,
+    qty: number,
+  ): number {
+    if (!product) return 0;
+    const base = Number(product.price) || 0;
+    const wholesale = Number(product.wholesale_price) || 0;
+    const minQty = Number(product.wholesale_min_qty) || 0;
+    if (wholesale > 0 && minQty > 0 && qty >= minQty) return wholesale;
+    return base;
+  }
+
   async calculateTotal(
     input: AiOrderInput,
     tenantId: string,
@@ -308,12 +377,12 @@ export class OrderEngineService {
     for (const p of input.products) {
       const { data: product } = await this.supabase.db
         .from('products')
-        .select('price')
+        .select('price, wholesale_price, wholesale_min_qty')
         .eq('tenant_id', tenantId)
         .eq('product_name', p.product_name)
         .maybeSingle();
 
-      const price = product ? Number(product.price) : 0;
+      const price = this.resolveUnitPrice(product, p.quantity);
       total += price * p.quantity;
     }
 

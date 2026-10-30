@@ -17,7 +17,7 @@ export class RateLimiterMiddleware implements NestMiddleware {
     // AI Çalışanım (sesli asistan): yoğun konuşma/bildirim trafiği — 300 req/min
     this.endpoints.set('/api/ai-employee', { windowMs: 60000, maxRequests: 300 });
     // Sipariş AI (sesli ajan + panel önizleme): ajan uçları agent-secret korumalı; panel polling'i ajanı kilitlemesin.
-    this.endpoints.set('/api/order-ai', { windowMs: 60000, maxRequests: 600 });
+    this.endpoints.set('/api/order-ai', { windowMs: 60000, maxRequests: 3000 });
     // Auth: 30 req/min — re-login fırtınası (oturum yenileme) 10/dk'yı aşıyordu; brute-force koruması yine de korunur
     this.endpoints.set('/api/auth', { windowMs: 60000, maxRequests: 30 });
     // Webhook endpoints: 50 req/min
@@ -30,6 +30,13 @@ export class RateLimiterMiddleware implements NestMiddleware {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const path = req.path || '';
     const now = Date.now();
+
+    // Ajan uçları (x-agent-secret ile korumalı) limitten MUAF: 429 konuşmayı doğrudan bozuyor.
+    const fullPath = req.originalUrl || req.url || path;
+    if (fullPath.includes('/order-ai/agent') || fullPath.includes('/api/conversations')) {
+      next();
+      return;
+    }
 
     // Find matching endpoint config
     let config: RateLimitConfig | undefined = this.endpoints.get('default');

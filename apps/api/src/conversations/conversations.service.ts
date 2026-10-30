@@ -167,11 +167,13 @@ export class ConversationsService {
       results.sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
 
       const final = results.slice(0, limit);
-      if (final.length === 0) {
-        this.logger.warn('No conversations found, returning mock data');
-        return this.getMockConversations();
-      }
-      return final;
+      // Gerçek + sahte testleri BİRLEŞTİR (sistem boş görünmesin; yeterli gerçek test olunca mock temizlenecek).
+      const mock = this.getMockConversations();
+      const existingIds = new Set(final.map((r) => r.id));
+      const merged = [...final, ...mock.filter((m) => !existingIds.has(m.id))].sort(
+        (a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime(),
+      );
+      return merged;
     } catch (e) {
       this.logger.warn('Supabase query failed, returning mock data');
       return this.getMockConversations();

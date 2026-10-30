@@ -20,6 +20,7 @@
     "@livekit/agents-plugin-silero": "^1.9.3",
     "@livekit/noise-cancellation-node": "^0.3.0",
     "dotenv": "^16.4.5",
+    "ffmpeg-static": "^5.3.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

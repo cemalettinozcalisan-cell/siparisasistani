@@ -6,6 +6,13 @@ import { WhatsAppIcon, ChannelIconType } from '@/components/channel-icons';
 import { getTenantId } from '@/lib/tenant';
 import { SkeletonKPI } from '@/components/skeleton';
 
+function authHeaders(): Record<string, string> {
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch { return {}; }
+}
+
 function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -340,9 +347,9 @@ export default function DashboardPage() {
   const loadDashboard = async () => {
     try {
       const [d, tl, h] = await Promise.all([
-        fetch(`/api/dashboard/${tid}`).then(r => r.json()),
-        fetch(`/api/timeline/recent/${tid}`).then(r => r.json()),
-        fetch(`/api/health/${tid}`).then(r => r.json()).catch(() => ({})),
+        fetch(`/api/dashboard/${tid}`, { headers: authHeaders() }).then(r => r.json()),
+        fetch(`/api/timeline/recent/${tid}`, { headers: authHeaders() }).then(r => r.json()),
+        fetch(`/api/health/${tid}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
       ]);
       setStats({ ...d, ...h });
       setRecent(Array.isArray(tl) ? tl : []);

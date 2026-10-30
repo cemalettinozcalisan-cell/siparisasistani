@@ -35,16 +35,9 @@ export class OrderItemsController {
         .from('order_items')
         .select('product_name, quantity, unit, unit_price, total')
         .eq('order_id', orderId);
-      if (data && data.length > 0) return data;
-    } catch {}
-
-    // Mock data fallback for demo orders
-    if (MOCK_ITEMS[orderId]) return MOCK_ITEMS[orderId];
-
-    // Default mock for any order ID
-    return [
-      { product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', unit_price: 890, total: 1780 },
-      { product_name: 'Pastırma', quantity: 1, unit: 'KG', unit_price: 1200, total: 1200 },
-    ];
+      return data || [];
+    } catch {
+      return [];
+    }
   }
 }

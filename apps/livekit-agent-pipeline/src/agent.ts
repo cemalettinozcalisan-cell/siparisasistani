@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
-import { readFileSync, existsSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { readFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { isAbsolute, join, basename } from 'node:path';
 import { AudioFrame } from '@livekit/rtc-node';
 import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
@@ -42,6 +42,39 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY || '';
 const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY || '';
 const CARTESIA_VOICE_ID = process.env.CARTESIA_VOICE_ID || '9626c31c-bec5-4cca-baa8-f8ba9e84c8bc';
+
+// Telaffuz sözlüğü: TTS'in bozuk okuduğu kelimeleri düzeltir (TTS'e giden metne uygulanır).
+// Türkçe "C" (/dʒ/) TTS tarafından "K" okunuyor → isimlerde baştaki C'yi J ile deniyoruz.
+const NAMES_C = [
+  'Cavit', 'Cahit', 'Cavide', 'Cemal', 'Can', 'Canan', 'Cemre', 'Cansu', 'Cem', 'Cenk',
+  'Cengiz', 'Cihan', 'Ceyhun', 'Ceyhan', 'Celal', 'Celil', 'Cemil', 'Cevat', 'Cevdet',
+  'Cafer', 'Cabir', 'Cüneyt', 'Cüneyd', 'Cihanşah', 'Cihangir', 'Civan', 'Cömert',
+  'Coşkun', 'Cengizhan', 'Canalp', 'Caner', 'Canberk', 'Cankut', 'Cantuğ', 'Cankaya',
+  'Cevahir', 'Cezmi',
+];
+const PRONUNCIATION_FIXES: Array<[RegExp, string]> = [
+  [/\bhavale\b/gi, 'havâle'],
+  ...NAMES_C.map(
+    (n) => [new RegExp(`\\b${n}\\b`, 'gi'), n.replace(/^C/i, 'J')] as [RegExp, string],
+  ),
+];
+function fixPronunciationText(text: string): string {
+  let out = text;
+  for (const [re, rep] of PRONUNCIATION_FIXES) out = out.replace(re, rep);
+  return out;
+}
+// SDK TextTransform imzası: stream gir -> stream çıkar.
+function fixPronunciation(input: ReadableStream<string>): ReadableStream<string> {
+  const reader = input.getReader();
+  return new ReadableStream<string>({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) { controller.close(); return; }
+      controller.enqueue(fixPronunciationText(value));
+    },
+    cancel(reason) { return reader.cancel(reason); },
+  });
+}
 
 // STT / LLM / TTS modelleri (env ile değiştirilebilir; fallback zinciri için)
 const STT_PROVIDER = (process.env.PIPELINE_STT || 'groq').toLowerCase(); // groq | openai | deepgram
@@ -135,16 +168,71 @@ async function runOrderTool(
   action: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
-  const res = await fetch(`${API_BASE}/api/order-ai/agent/tool`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
-    body: JSON.stringify({ tenantId, sessionId, action, args }),
-  });
-  return res.json().catch(() => ({ ok: false, error: 'gecersiz yanit' }));
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/order-ai/agent/tool`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
+      body: JSON.stringify({ tenantId, sessionId, action, args }),
+    });
+  } catch {
+    return { ok: false, error: 'Kısa bir teknik kesinti oldu; lütfen AYNI işlemi BİR kez daha dene.' };
+  }
+  const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+  if (res.status === 429) {
+    return { ok: false, error: 'Kısa bir yoğunluk oldu; lütfen az sonra AYNI işlemi BİR kez daha dene. Kullanıcıya teknik hata söyleme.' };
+  }
+  if (!res.ok && (!json || json.ok !== true)) {
+    return { ok: false, error: 'İşlem şu an tamamlanamadı; kısa bir kesinti oldu, lütfen AYNI işlemi BİR kez daha dene.' };
+  }
+  return json ?? { ok: false, error: 'gecersiz yanit' };
 }
 
-async function fetchDraft(tenantId: string, sessionId: string): Promise<Record<string, unknown> | null> {
+async function reportSessionEnd(tenantId: string, sessionId: string): Promise<void> {
   try {
+    await fetch(`${API_BASE}/api/order-ai/agent/session-end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
+      body: JSON.stringify({ tenantId, sessionId }),
+    });
+  } catch { /* yoksay */ }
+}
+
+// Görüşmenin gerçek transkripti (job başına; worker job izolasyonu ile ayrık).
+let agentTranscript: Array<{ role: 'user' | 'assistant'; text: string; at: number }> = [];
+
+async function reportTranscript(tenantId: string, sessionId: string): Promise<void> {
+  try {
+    if (!agentTranscript.length) return;
+    await fetch(`${API_BASE}/api/order-ai/agent/transcript`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
+      body: JSON.stringify({ tenantId, sessionId, messages: agentTranscript }),
+    });
+  } catch { /* yoksay */ } finally {
+    agentTranscript = [];
+  }
+}
+
+// Görüşme ses kaydını kalıcı dizine kopyalar + API'ye bildirir (esnaf panelden dinler).
+async function saveRecording(tenantId: string, sessionId: string, caller: string, sessionDir: string): Promise<void> {
+  try {
+    const src = join(sessionDir, 'audio.ogg');
+    if (!existsSync(src)) return;
+    const dir = 'C:\\SiparisAsistani\\apps\\api\\backups\\recordings';
+    mkdirSync(dir, { recursive: true });
+    const safe = sessionId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const dest = join(dir, `${safe}.ogg`);
+    copyFileSync(src, dest);
+    await fetch(`${API_BASE}/api/order-ai/agent/recording`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
+      body: JSON.stringify({ tenantId, sessionId, phone: caller, file: basename(dest) }),
+    });
+  } catch { /* yoksay */ }
+}
+
+async function fetchDraft(tenantId: string, sessionId: string): Promise<Record<string, unknown> | null> {  try {
     const url = `${API_BASE}/api/order-ai/agent/draft?tenantId=${encodeURIComponent(tenantId)}&sessionId=${encodeURIComponent(sessionId)}`;
     const res = await fetch(url, { headers: { 'x-agent-secret': AGENT_SECRET } });
     if (!res.ok) return null;
@@ -428,6 +516,8 @@ function buildTts(): elevenlabs.TTS | openai.TTS | google.beta.TTS | cartesia.TT
       voiceId: FISH_VOICE_ID || undefined,
       // Ses enerjisi düşük sesleri yükselt (dB). FISH_VOLUME ile canlıda ayarlanabilir.
       volume: Number(process.env.FISH_VOLUME ?? 16),
+      // Konuşma hızı (prosody). 1.0 = normal; 1.1 = biraz hızlı. FISH_SPEED ile ayarlanır.
+      speed: Number(process.env.FISH_SPEED ?? 1),
       normalizeLoudness: true,
     });
   }
@@ -485,7 +575,10 @@ class OrderAiPipelineAgent extends voice.Agent {
           buf += typeof chunk === 'string' ? chunk : ((chunk as { text?: string })?.text ?? '');
         }
       } catch { /* yoksay */ }
-      if (buf.trim()) console.log(`[pipeline-agent] AI: ${buf.trim().slice(0, 600)}`);
+      if (buf.trim()) {
+        console.log(`[pipeline-agent] AI: ${buf.trim().slice(0, 600)}`);
+        agentTranscript.push({ role: 'assistant', text: buf.trim(), at: Date.now() });
+      }
     })();
     return pass;
   }
@@ -501,6 +594,7 @@ export default defineAgent({
     const { caller, did } = await getSipInfo(ctx);
     const tenantId = resolveTenantId(did || DEFAULT_DID);
     const sessionId = ctx.room.name || `lk-${Date.now()}`;
+    agentTranscript = [];
 
     console.log(`[pipeline-agent] oturum room=${sessionId} caller=${caller || '?'} did=${did || DEFAULT_DID} tenant=${tenantId} stt=${STT_PROVIDER} llm=${LLM_MODEL} tts=${TTS_PROVIDER}`);
 
@@ -553,6 +647,8 @@ export default defineAgent({
       llm: buildLlm(),
       tts: ttsJessica,
       vad,
+      // TTS'e giden metne uygulanır: telaffuz sözlüğü (havale→havâle vb.) + markdown/emoji filtresi.
+      ttsTextTransforms: ['filter_markdown', 'filter_emoji', fixPronunciation],
       turnHandling: {
         preemptiveGeneration: { enabled: true },
         // DENEY: sahte/erken kesintileri azalt — daha uzun konuşma + en az 2 kelime şartı.
@@ -567,6 +663,7 @@ export default defineAgent({
     session.on(AgentSessionEventTypes.UserInputTranscribed, (ev) => {
       if (ev.isFinal && ev.transcript.trim()) {
         console.log(`[pipeline-agent] KULLANICI: ${ev.transcript.trim().slice(0, 300)}`);
+        agentTranscript.push({ role: 'user', text: ev.transcript.trim(), at: Date.now() });
       }
     });
 
@@ -631,8 +728,8 @@ export default defineAgent({
         lastToolAt = 0;
         void recoverFromToolGap();
       }
-      // P3-nudge: onaydan sonra müşteri 1 sn sessiz kalırsa doğum gününü sor (tek kez).
-      if (birthdayPending && !birthdayNudged && !agentBusy && !userSpeaking && silenceSince && Date.now() - silenceSince > 1000) {
+      // P3-nudge: onaydan sonra müşteri 0.5 sn sessiz kalırsa doğum gününü sor (tek kez).
+      if (birthdayPending && !birthdayNudged && !agentBusy && !userSpeaking && silenceSince && Date.now() - silenceSince > 500) {
         birthdayNudged = true;
         nudgeBirthday();
       }
@@ -658,11 +755,19 @@ export default defineAgent({
         }
       }
     }, 1000);
-    session.on(AgentSessionEventTypes.Close, () => clearInterval(watchdog));
+    session.on(AgentSessionEventTypes.Close, () => {
+      clearInterval(watchdog);
+      // Çağrı kapanınca: sipariş onaylanmadıysa/oluşmadıysa kaydet (abandoned/no_confirm).
+      void reportSessionEnd(tenantId, sessionId);
+      void reportTranscript(tenantId, sessionId);
+      void saveRecording(tenantId, sessionId, caller || '', ctx.sessionDirectory);
+    });
 
     await session.start({
       agent,
       room: ctx.room,
+      // Görüşme sesini kaydet (RecorderIO → ctx.sessionDirectory/audio.ogg). Esnaf dinleyebilsin.
+      record: true,
       // Gelen ses için eko/arka-ses temizliği (SIP/telefon için ayarlı BVC) — kesintileri azaltır.
       // Not: BVC açıkken SIP trunk'ta krisp KAPALI olmalı (iki gelişmiş model üst üste binmesin).
       inputOptions: { noiseCancellation: TelephonyBackgroundVoiceCancellation() },

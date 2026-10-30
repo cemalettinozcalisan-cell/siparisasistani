@@ -27,14 +27,14 @@ export class OrdersListController {
     try {
       let query = this.supabase.db
         .from('orders')
-        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, cargo_company, cargo_status, tracking_number, payment_method, payment_status, customer:customer_id(name, phone, city, address)')
+        .select('id, order_number, total_price, status, channel, source, created_at, notes, customer_note, cargo_company, cargo_status, tracking_number, payment_method, payment_status, customer_name, customer_phone, customer_address, customer_city, customer_district, customer:customer_id(name, phone, city, address), items:order_items(product_name, quantity, unit, unit_price)')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
 
       if (status && status !== 'all') {
-        const statuses = status.toUpperCase().split(',');
+        const statuses = status.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
         if (statuses.length === 1) query = query.eq('status', statuses[0]);
-        else query = query.in('status', statuses);
+        else if (statuses.length > 1) query = query.in('status', statuses);
       }
       if (source && source !== 'all') query = query.eq('source', source.toUpperCase());
       if (q) query = query.or(`order_number.ilike.%${q}%`);
@@ -46,8 +46,6 @@ export class OrdersListController {
       }
       const rawOrders = data || [];
 
-      if (rawOrders.length === 0) return this.getMockOrders(source);
-
       const results = rawOrders.map((o: Record<string, unknown>) => ({
         id: o.id, order_number: o.order_number, total_price: o.total_price,
         status: o.status, channel: o.channel, source: o.source || 'PHONE',
@@ -56,10 +54,11 @@ export class OrdersListController {
         cargo_status: o.cargo_status || '',
         payment_method: o.payment_method || '', payment_status: o.payment_status || '',
         created_at: o.created_at,
-        customer_name: (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
-        customer_phone: (o.customer as Record<string, unknown>)?.phone || (o as any).customer_phone || '',
-        customer_city: (o.customer as Record<string, unknown>)?.city || '',
-        customer_address: (o.customer as Record<string, unknown>)?.address || (o as any).customer_address || '',
+        customer_name: (o as any).customer_name || (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
+        customer_phone: (o as any).customer_phone || (o.customer as Record<string, unknown>)?.phone || (o as any).customer_phone || '',
+        customer_city: (o as any).customer_city || (o.customer as Record<string, unknown>)?.city || '',
+        customer_district: (o as any).customer_district || '',
+        customer_address: (o as any).customer_address || (o.customer as Record<string, unknown>)?.address || (o as any).customer_address || '',
         customer_birthday: (o.customer as Record<string, unknown>)?.birth_date || '',
         customer_identity: (o.customer as Record<string, unknown>)?.identity_number || '',
         customer_company: (o.customer as Record<string, unknown>)?.company_name || '',

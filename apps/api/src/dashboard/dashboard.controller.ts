@@ -24,7 +24,7 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       const [orders, customers, payments, conversations] = await Promise.all([
         this.supabase.db
           .from('orders')
-          .select('*, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
+          .select('*, customer_name, customer_phone, customer_address, customer_city, customer_district, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
           .eq('tenant_id', tenantId),
         this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId),
         this.supabase.db.from('payments').select('amount, status, created_at').eq('tenant_id', tenantId).eq('status', 'paid'),
@@ -35,7 +35,18 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
           .gte('created_at', todayIso),
       ]);
 
-      const allOrders = (orders.data || []) as Record<string, any>[];
+      // Snapshot alanlarını customer join'e yansıt (paylaşılan müşteri yerine sipariş anındaki bilgi).
+      const allOrders: Record<string, any>[] = ((orders.data || []) as Record<string, any>[]).map((o) => ({
+        ...o,
+        customer: {
+          ...(o.customer || {}),
+          name: o.customer_name || (o.customer || {}).name,
+          phone: o.customer_phone || (o.customer || {}).phone,
+          city: o.customer_city || (o.customer || {}).city,
+          address: o.customer_address || (o.customer || {}).address,
+          district: o.customer_district || '',
+        },
+      }));
       const hasRealOrders = allOrders.length > 0;
 
       // Talep & İstek: birleşik şikayet tablosu (son 24 saat) + müşteri adres/şehir zenginleştirme

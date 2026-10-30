@@ -19,7 +19,7 @@ export class SpeechStyleComponent {
       '• Karşılama:',
       '  "Merhaba, hoş geldiniz. Buyurun, sizi dinliyorum."',
       '  "Merhaba, buyurun. Nasıl yardımcı olabilirim?"',
-      '  "Merhaba, hoş geldiniz. Ne alalım?"',
+      '  "Merhaba, buyurun; nasıl yardımcı olabilirim?"',
       '  "Buyurun, dinliyorum sizi."',
       '',
       '• Onaylama / dinlediğini belli etme (kısa, çeşitli — "not aldım/alıyorum" DEME):',

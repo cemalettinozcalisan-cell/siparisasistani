@@ -1,4 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderEngineService } from '../order-engine/order-engine.service';
 import { OrderValidatorService } from '../ai/conversation/validator/validator';
@@ -488,7 +491,7 @@ export class OrderAiToolsService {
         channel: 'phone',
         phone: d.customer.phone || null,
         status: 'completed',
-        session_label: 'ORDER-AI',
+        session_label: `ORDER-AI-${Date.now()}`,
         ai_model: 'gemini-live',
         source: 'order-ai',
         order_id: order.order_id,
@@ -502,6 +505,7 @@ export class OrderAiToolsService {
           payment: d.payment || '',
           address: d.customer.address || '',
           city: d.customer.city || '',
+          district: d.customer.district || '',
           order_number: order.order_number,
           company_name: d.invoice?.company_name || '',
           tax_number: d.invoice?.tax_number || '',
@@ -510,7 +514,168 @@ export class OrderAiToolsService {
         },
       });
     } catch (e) {
-      this.logger.warn(`conversation_sessions kaydı başarısız: ${(e as Error).message}`);
+      const err = e as { message?: string; code?: string; details?: string; hint?: string };
+      this.logger.error(
+        `conversation_sessions kaydı başarısız: ${err?.message || String(e)} | code=${err?.code || ''} | details=${err?.details || ''} | hint=${err?.hint || ''}`,
+      );
+    }
+  }
+
+  /**
+   * Sipariş ONAYLANMADAN/OLUŞMADAN kapanan çağrıyı conversation_sessions'a yazar.
+   * status: 'no_confirm' (ürün alınmış ama onay yok) | 'abandoned' (hiç sipariş yok).
+   */
+  async recordSessionEnd(tenantId: string, sessionId: string): Promise<{ ok: boolean; status?: string; recorded?: boolean; reason?: string }> {
+    const d = this.drafts.get(this.key(tenantId, sessionId));
+    if (d?.confirmed) return { ok: true, status: 'completed', recorded: false, reason: 'onaylı sipariş zaten kayıtlı' };
+    if (!d) return { ok: true, status: 'abandoned', recorded: false, reason: 'taslak yok' };
+    const phone = String(d.customer.phone || '').replace(/[^\d]/g, '');
+    const now = new Date().toISOString();
+    const status = d.products.length > 0 ? 'no_confirm' : 'abandoned';
+    try {
+      await this.supabase.db.from('conversation_sessions').insert({
+        tenant_id: tenantId,
+        channel: 'phone',
+        phone: phone || 'bilinmiyor',
+        status,
+        session_label: `ORDER-AI-${Date.now()}`,
+        ai_model: 'gemini-live',
+        source: 'order-ai',
+        started_at: new Date(d.createdAt).toISOString(),
+        ended_at: now,
+        created_at: now,
+        session_data: {
+          outcome: status,
+          customer_name: d.customer.name || '',
+          products: d.products.map((p) => p.product_name),
+          items: d.products,
+          payment: d.payment || '',
+          address: d.customer.address || '',
+          city: d.customer.city || '',
+          district: d.customer.district || '',
+          notes: d.notes || '',
+          external_session_id: sessionId,
+        },
+      });
+      return { ok: true, status, recorded: true };
+    } catch (e) {
+      const err = e as { message?: string; code?: string; details?: string; hint?: string };
+      this.logger.error(
+        `recordSessionEnd kaydı başarısız: ${err?.message || String(e)} | code=${err?.code || ''} | details=${err?.details || ''} | hint=${err?.hint || ''}`,
+      );
+      return { ok: false, reason: err?.message || String(e) };
+    }
+  }
+
+  /** Sesli görüşmenin gerçek transkriptini ai_audit_logs'a yazar (detay sayfası buradan okur). */
+  async recordTranscript(
+    tenantId: string,
+    sessionId: string,
+    messages: Array<{ role: string; text: string; at?: number }>,
+  ): Promise<{ ok: boolean; count?: number }> {
+    try {
+      // Oda adı (room) -> conversation_sessions.id (detay bu id ile arıyor).
+      let dbSessionId: string | null = null;
+      try {
+        const { data } = await this.supabase.db
+          .from('conversation_sessions')
+          .select('id, session_data')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
+        dbSessionId = m?.id || null;
+      } catch { /* yoksay */ }
+
+      const rows = (messages || [])
+        .filter((m) => m && String(m.text || '').trim())
+        .map((m) => ({
+          tenant_id: tenantId,
+          session_id: dbSessionId || sessionId,
+          user_message: m.role === 'user' ? String(m.text).trim() : null,
+          raw_response: m.role === 'assistant' ? String(m.text).trim() : null,
+          model: 'livekit-pipeline',
+          provider: 'livekit',
+          success: true,
+          ...(m.at ? { created_at: new Date(m.at).toISOString() } : {}),
+        }));
+      if (!rows.length) return { ok: true, count: 0 };
+      const { error } = await this.supabase.db.from('ai_audit_logs').insert(rows);
+      if (error) throw error;
+      return { ok: true, count: rows.length };
+    } catch (e) {
+      this.logger.error(`recordTranscript başarısız: ${(e as Error).message}`);
+      return { ok: false };
+    }
+  }
+
+  /** Görüşme ses kaydını call_recordings'e yazar (esnaf panelden dinler). */
+  async recordRecording(
+    tenantId: string,
+    sessionId: string,
+    phone: string,
+    file: string,
+  ): Promise<{ ok: boolean }> {
+    try {
+      // room adı (external_session_id) -> conversation_sessions.id
+      let dbSessionId: string | null = null;
+      try {
+        const { data } = await this.supabase.db
+          .from('conversation_sessions')
+          .select('id, session_data')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
+        dbSessionId = m?.id || null;
+      } catch { /* yoksay */ }
+
+      const url = `/api/order-ai/agent/recordings/${encodeURIComponent(file)}`;
+      await this.supabase.db.from('call_recordings').insert({
+        tenant_id: tenantId,
+        session_id: dbSessionId,
+        phone: String(phone || '').replace(/[^\d]/g, '') || 'bilinmiyor',
+        direction: 'incoming',
+        recording_url: url,
+        status: 'completed',
+        created_at: new Date().toISOString(),
+      });
+      return { ok: true };
+    } catch (e) {
+      this.logger.error(`recordRecording başarısız: ${(e as Error).message}`);
+      return { ok: false };
+    }
+  }
+
+  /** Günlük temizlik: retention süresini aşan ses kayıtlarını (DB + dosya) siler. */
+  @Cron('0 3 * * *')
+  async cleanupOldRecordings(): Promise<void> {
+    try {
+      const { data: settings } = await this.supabase.db
+        .from('tenant_settings')
+        .select('tenant_id, recording_retention_days, auto_cleanup_enabled')
+        .eq('auto_cleanup_enabled', true);
+      const dir = 'C:\\SiparisAsistani\\apps\\api\\backups\\recordings';
+      for (const s of (settings || []) as Array<Record<string, unknown>>) {
+        const days = Number(s.recording_retention_days) || 15;
+        const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+        const { data: old } = await this.supabase.db
+          .from('call_recordings')
+          .select('id, recording_url')
+          .eq('tenant_id', String(s.tenant_id))
+          .lt('created_at', cutoff);
+        const rows = (old || []) as Array<{ id: string; recording_url?: string }>;
+        if (!rows.length) continue;
+        for (const r of rows) {
+          try {
+            const file = String(r.recording_url || '').split('/').pop() || '';
+            if (file) fs.rmSync(path.join(dir, decodeURIComponent(file)), { force: true });
+          } catch { /* yoksay */ }
+        }
+        await this.supabase.db.from('call_recordings').delete().in('id', rows.map((x) => x.id));
+      }
+    } catch (e) {
+      this.logger.warn(`kayıt temizliği hatası: ${(e as Error).message}`);
     }
   }
 
