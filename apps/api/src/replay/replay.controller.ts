@@ -49,30 +49,52 @@ export class ReplayController {
 
     const { data: order } = await this.supabase.db
       .from('orders')
-      .select('id, order_number, ai_transcript, ai_confidence, customer_note, created_at')
+      .select('id, order_number, ai_transcript, ai_confidence, customer_note, created_at, tenant_id')
       .eq('id', orderId)
       .single();
 
     if (!order) return { error: 'Order not found' };
 
-    const { data: audits } = await this.supabase.db
-      .from('ai_audit_logs')
-      .select('*')
-      .eq('tenant_id', (await this.supabase.db.from('orders').select('tenant_id').eq('id', orderId).single()).data?.tenant_id)
-      .order('created_at', { ascending: true })
-      .limit(20);
+    // Siparişe ait konuşma oturumu (order_id) → o oturumun transkripti.
+    // ÖNEMLİ: tenant'ın tüm loglarını DEĞİL, yalnızca bu siparişin oturumunu kullan.
+    const { data: session } = await this.supabase.db
+      .from('conversation_sessions')
+      .select('id')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    const transcript = order.ai_transcript
-      ? order.ai_transcript.split('\n').map((line: string) => {
-          const [role, ...msg] = line.split(':');
-          return { role: role.trim().toLowerCase(), content: msg.join(':').trim() };
+    const { data: audits } = session?.id
+      ? await this.supabase.db
+        .from('ai_audit_logs')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('created_at', { ascending: true })
+      : { data: [] as any[] };
+
+    const auditRows = (audits || []) as any[];
+
+    let transcript: { role: string; content: string; created_at?: string }[] = [];
+    if (order.ai_transcript) {
+      transcript = String(order.ai_transcript).split('\n').map((line: string) => {
+        const [role, ...msg] = line.split(':');
+        return { role: role.trim().toLowerCase(), content: msg.join(':').trim() };
+      });
+    } else {
+      transcript = auditRows
+        .map((a: any) => {
+          if (a.user_message) return { role: 'customer', content: String(a.user_message), created_at: a.created_at };
+          if (a.raw_response) return { role: 'assistant', content: String(a.raw_response), created_at: a.created_at };
+          return null;
         })
-      : [];
+        .filter(Boolean) as { role: string; content: string; created_at?: string }[];
+    }
 
     return {
       order,
       transcript,
-      audits: audits || [],
+      audits: auditRows,
     };
   }
 }

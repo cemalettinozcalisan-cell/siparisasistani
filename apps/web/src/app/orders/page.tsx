@@ -161,6 +161,7 @@ function OrdersPageContent() {
   const [defaultCargo, setDefaultCargo] = useState<{ company: string; label: string } | null>(null);
   const [cargoMsg, setCargoMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [cargoBusy, setCargoBusy] = useState(false);
+  const [cargoCfg, setCargoCfg] = useState<{ price: number; freeEnabled: boolean; freeWeight: number }>({ price: 0, freeEnabled: false, freeWeight: 0 });
   const [showChat, setShowChat] = useState(false);
   const [products, setProducts] = useState<Array<{ productName: string; unit: string; price: number }>>([]);
   const [productSearch, setProductSearch] = useState<Record<number, { open: boolean; query: string }>>({});
@@ -178,6 +179,13 @@ function OrdersPageContent() {
         const def = d.find((c: any) => c.is_default) || d.find((c: any) => c.enabled && c.configured);
         if (def) setDefaultCargo({ company: String(def.company), label: String(def.label) });
       }
+    }).catch(() => {});
+    fetch(`/api/settings/${tid}`).then(r => r.json()).then((s) => {
+      setCargoCfg({
+        price: Number(s?.cargo_default_price || 0),
+        freeEnabled: !!s?.cargo_free_enabled,
+        freeWeight: Number(s?.cargo_free_weight || 0),
+      });
     }).catch(() => {});
   }, []);
 
@@ -531,10 +539,23 @@ function OrdersPageContent() {
                             <span className="text-gray-500">{(item.quantity * item.unit_price).toLocaleString('tr-TR')} TL</span>
                           </div>
                         ))}
-                        <div className="border-t pt-1 flex justify-between font-bold text-xs">
-                          <span>Toplam</span>
-                          <span className="text-gray-900 dark:text-white">{Number(selected.total_price).toLocaleString('tr-TR')} TL</span>
-                        </div>
+                        {(() => {
+                          const totalKg = items.reduce((s, it) => s + (String(it.unit || '').toLowerCase().includes('kg') ? Number(it.quantity) || 0 : 0), 0);
+                          const free = cargoCfg.freeEnabled && cargoCfg.freeWeight > 0 && totalKg >= cargoCfg.freeWeight;
+                          const fee = cargoCfg.price > 0 ? (free ? 0 : cargoCfg.price) : 0;
+                          return (
+                            <>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-700 dark:text-slate-300">Kargo</span>
+                                <span className={free ? 'text-emerald-600 font-semibold' : 'text-gray-500'}>{fee > 0 ? `${fee.toLocaleString('tr-TR')} TL` : 'Ücretsiz (0 TL)'}</span>
+                              </div>
+                              <div className="border-t pt-1 flex justify-between font-bold text-xs">
+                                <span>Toplam</span>
+                                <span className="text-gray-900 dark:text-white">{(Number(selected.total_price) + fee).toLocaleString('tr-TR')} TL</span>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     ) : (
                       <div className="text-xs text-gray-400">Ürün bilgisi yüklenemedi — sayfayı yenileyip tekrar deneyin</div>
