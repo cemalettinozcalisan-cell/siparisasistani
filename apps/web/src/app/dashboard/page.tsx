@@ -362,7 +362,9 @@ export default function DashboardPage() {
     loadDashboard();
     const onRefresh = () => { void loadDashboard(); };
     window.addEventListener('data-refresh', onRefresh);
-    return () => window.removeEventListener('data-refresh', onRefresh);
+    // Tarayıcı-bağımsız yedek: SSE çalışmasa bile en geç 12 sn'de güncellenir
+    const iv = setInterval(() => { void loadDashboard(); }, 12000);
+    return () => { window.removeEventListener('data-refresh', onRefresh); clearInterval(iv); };
   }, []);
 
   useEffect(() => {

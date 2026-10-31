@@ -201,6 +201,16 @@ async function reportSessionEnd(tenantId: string, sessionId: string): Promise<vo
 // Görüşmenin gerçek transkripti (job başına; worker job izolasyonu ile ayrık).
 let agentTranscript: Array<{ role: 'user' | 'assistant'; text: string; at: number }> = [];
 
+// Aynı rol + aynı metin çok kısa sürede tekrar gelirse (TTS/ASR çift olayı) bir kez yaz.
+function pushTranscript(role: 'user' | 'assistant', text: string): void {
+  const t = String(text || '').trim();
+  if (!t) return;
+  const now = Date.now();
+  const last = agentTranscript[agentTranscript.length - 1];
+  if (last && last.role === role && last.text === t && now - (last.at || 0) <= 2500) return;
+  agentTranscript.push({ role, text: t, at: now });
+}
+
 async function reportTranscript(tenantId: string, sessionId: string): Promise<void> {
   try {
     if (!agentTranscript.length) return;
@@ -577,7 +587,7 @@ class OrderAiPipelineAgent extends voice.Agent {
       } catch { /* yoksay */ }
       if (buf.trim()) {
         console.log(`[pipeline-agent] AI: ${buf.trim().slice(0, 600)}`);
-        agentTranscript.push({ role: 'assistant', text: buf.trim(), at: Date.now() });
+        pushTranscript('assistant', buf.trim());
       }
     })();
     return pass;
@@ -663,7 +673,7 @@ export default defineAgent({
     session.on(AgentSessionEventTypes.UserInputTranscribed, (ev) => {
       if (ev.isFinal && ev.transcript.trim()) {
         console.log(`[pipeline-agent] KULLANICI: ${ev.transcript.trim().slice(0, 300)}`);
-        agentTranscript.push({ role: 'user', text: ev.transcript.trim(), at: Date.now() });
+        pushTranscript('user', ev.transcript.trim());
       }
     });
 

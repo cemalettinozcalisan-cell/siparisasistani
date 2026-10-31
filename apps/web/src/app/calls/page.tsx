@@ -286,7 +286,9 @@ function CallsContent() {
     load();
     const onRefresh = () => { void load(); };
     window.addEventListener('data-refresh', onRefresh);
-    return () => window.removeEventListener('data-refresh', onRefresh);
+    // Tarayıcı-bağımsız yedek: SSE çalışmasa bile en geç 12 sn'de güncellenir
+    const iv = setInterval(() => { void load(); }, 12000);
+    return () => { window.removeEventListener('data-refresh', onRefresh); clearInterval(iv); };
   }, [load]);
 
   // ?session=X parametresiyle gelindiğinde ilgili görüşmeyi otomatik aç

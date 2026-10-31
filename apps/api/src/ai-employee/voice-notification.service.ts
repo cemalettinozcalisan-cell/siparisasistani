@@ -116,14 +116,19 @@ export class VoiceNotificationService {
 
   /** Bir event'i sesli bildirim kuyruğuna ekler (idempotent). */
   async enqueue(eventType: string, tenantId: string, payload: Record<string, unknown>, entityId?: string): Promise<void> {
+    const tag = `[voice:${eventType}]`;
     try {
-      const cfg = await this.aiEmployee.get(tenantId).catch(() => null);
-      if (!cfg || !cfg.enabled) return;
+      const cfg = await this.aiEmployee.get(tenantId).catch((e) => {
+        this.logger.warn(`${tag} config okunamadi: ${(e as Error).message}`);
+        return null;
+      });
+      if (!cfg) { this.logger.warn(`${tag} atlandi: config yok (tenant=${tenantId})`); return; }
+      if (!cfg.enabled) { this.logger.log(`${tag} atlandi: AI calisan enabled=false`); return; }
 
       const prefKey = EVENT_PREF_KEY[eventType];
       if (prefKey) {
         const prefs = (cfg.notification_preferences || {}) as Record<string, boolean>;
-        if (prefs[prefKey] === false) return;
+        if (prefs[prefKey] === false) { this.logger.log(`${tag} atlandi: ${prefKey}=false`); return; }
       }
 
       const dedupKey = `${eventType}:${entityId || String(payload.id || payload.orderId || payload.ticket_number || '')}`;
@@ -132,10 +137,10 @@ export class VoiceNotificationService {
         .select('id')
         .eq('dedup_key', dedupKey)
         .maybeSingle();
-      if (existing) return; // idempotency
+      if (existing) { this.logger.log(`${tag} atlandi: dedup ${dedupKey}`); return; } // idempotency
 
       const text = this.buildText(eventType, cfg, payload);
-      await this.supabase.db.from('ai_voice_notifications').insert({
+      const { error } = await this.supabase.db.from('ai_voice_notifications').insert({
         tenant_id: tenantId,
         event_type: eventType,
         entity_id: entityId || null,
@@ -144,8 +149,10 @@ export class VoiceNotificationService {
         priority: eventType === 'ORDER_CREATED' ? 1 : 5,
         status: 'pending',
       });
+      if (error) { this.logger.warn(`${tag} insert hatasi: ${error.message}`); return; }
+      this.logger.log(`${tag} kuyruga eklendi: "${String(text).slice(0, 70)}"`);
     } catch (e) {
-      this.logger.warn(`Voice enqueue failed: ${(e as Error).message}`);
+      this.logger.warn(`${tag} enqueue failed: ${(e as Error).message}`);
     }
   }
 
