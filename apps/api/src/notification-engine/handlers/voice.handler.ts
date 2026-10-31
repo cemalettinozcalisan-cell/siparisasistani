@@ -18,8 +18,8 @@ export class VoiceHandler implements NotificationHandler {
     if (!supported.includes(event.type)) return;
 
     const p = event.payload as Record<string, unknown>;
-    // Ön ödemeli siparişte "yeni sipariş" bildirimi ödeme onayına kadar bekler (mevcut davranışla uyumlu)
-    if (event.type === 'ORDER_CREATED' && p.esnafNotify === false) return;
+    // Her yeni siparişte sesli anons (ön ödemeli/havale DAHİL) — esnaf haberdar olsun.
+    void p;
 
     await this.voice.enqueue(event.type, event.tenantId, p, event.entityId);
   }

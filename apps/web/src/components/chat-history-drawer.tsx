@@ -38,19 +38,11 @@ export function ChatHistoryDrawer({
         const res = await fetch(`/api/replay/conversation/${orderId}`);
         const data = await res.json();
         const audits = (data.audits || []) as Record<string, unknown>[];
-        const transcript = (data.transcript || []) as Record<string, unknown>[];
 
         const chat: ChatMessage[] = [];
 
-        // Add transcript messages
-        for (const t of transcript) {
-          const role = t.role as string;
-          if (role === 'customer' || role === 'user') {
-            chat.push({ id: `t-${chat.length}`, role: 'customer', content: String(t.content || ''), timestamp: String(t.created_at || new Date().toISOString()) });
-          } else if (role === 'assistant' || role === 'ai') {
-            chat.push({ id: `t-${chat.length}`, role: 'ai', content: String(t.content || ''), timestamp: String(t.created_at || new Date().toISOString()) });
-          }
-        }
+        // Tek kaynak: audit logları (calls sayfasıyla aynı). transcript dizisi de aynı kaynaktan
+        // üretildiği için ayrıca eklenirse satırlar çift görünür — ekleme.
 
         // Add audit log messages
         for (const a of audits) {

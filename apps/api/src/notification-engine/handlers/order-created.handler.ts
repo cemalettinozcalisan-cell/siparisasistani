@@ -12,8 +12,7 @@ export class OrderCreatedHandler implements NotificationHandler {
   async handle(event: SystemEvent): Promise<void> {
     const p = event.payload as Record<string, unknown>;
 
-    // Ön ödemeli siparişte (IBAN/link) "Yeni Sipariş" bildirimi ödeme onayına kadar bekler
-    if (event.type === 'ORDER_CREATED' && p.esnafNotify === false) return;
+    // Her yeni siparişte zil bildirimi (ön ödemeli/havale DAHİL).
 
     if (event.type === 'ORDER_PAYMENT_CONFIRMED') {
       await this.supabase.db.from('notifications').insert({
