@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NotificationHandler } from './base.handler';
 import { SystemEvent } from '../../event-bus/event-bus.service';
 import { VoiceNotificationService } from '../../ai-employee/voice-notification.service';
@@ -9,6 +9,7 @@ import { VoiceNotificationService } from '../../ai-employee/voice-notification.s
  */
 @Injectable()
 export class VoiceHandler implements NotificationHandler {
+  private readonly logger = new Logger(VoiceHandler.name);
   readonly eventType = 'ORDER_CREATED';
 
   constructor(private readonly voice: VoiceNotificationService) {}
@@ -16,6 +17,7 @@ export class VoiceHandler implements NotificationHandler {
   async handle(event: SystemEvent): Promise<void> {
     const supported = ['ORDER_CREATED', 'ORDER_UPDATED', 'COMPLAINT_CREATED', 'REQUEST_CREATED', 'SUBSCRIPTION_THRESHOLD', 'SYSTEM_HEALTH_FAILED'];
     if (!supported.includes(event.type)) return;
+    this.logger.log(`[voice] handle ${event.type} (tenant=${event.tenantId})`);
 
     const p = event.payload as Record<string, unknown>;
     // Her yeni siparişte sesli anons (ön ödemeli/havale DAHİL) — esnaf haberdar olsun.

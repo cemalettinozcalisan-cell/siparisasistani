@@ -49,6 +49,7 @@ export class NotificationEngineService implements OnModuleInit {
     this.eventBus.onAll().subscribe((event) => {
       // Exact event type -> tüm handler'lar (orderCreated + voice gibi)
       const list = this.handlers.get(event.type);
+      this.logger.debug(`[engine] ${event.type} -> ${(list || []).map((h) => h.eventType).join(',') || 'HANDLER YOK'}`);
       if (list?.length) {
         for (const handler of list) {
           handler.handle(event).catch((err) => {
