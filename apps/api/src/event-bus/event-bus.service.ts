@@ -40,8 +40,6 @@ export interface SystemEvent {
 @Injectable()
 export class EventBusService {
   private readonly logger = new Logger(EventBusService.name);
-  private static instanceSeq = 0;
-  readonly instanceId = ++EventBusService.instanceSeq;
   private eventSubject = new Subject<SystemEvent>();
 
   emit(type: SystemEvents, tenantId: string, payload: Record<string, unknown>, entityId?: string): void {
@@ -53,7 +51,7 @@ export class EventBusService {
       timestamp: new Date(),
     };
 
-    this.logger.debug(`Event: ${type} for tenant ${tenantId} | bus#${this.instanceId} subscribers=${this.eventSubject.observed}`);
+    this.logger.debug(`Event: ${type} for tenant ${tenantId} | subscribers=${this.eventSubject.observed}`);
     this.eventSubject.next(event);
   }
 
@@ -64,7 +62,6 @@ export class EventBusService {
   }
 
   onAll(): Observable<SystemEvent> {
-    this.logger.log(`onAll subscribe (bus#${this.instanceId})`);
     return this.eventSubject.asObservable();
   }
 }

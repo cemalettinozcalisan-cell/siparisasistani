@@ -79,8 +79,8 @@ function normalizeTrNumbers(text: string): string {
   });
   return text
     .replace(/TL/gi, 'lira')
-    .replace(/-?\d[\d.,]*/g, (m) => {
-      const neg = m.startsWith('-');
+    .replace(/\d[\d.,]*/g, (m) => {
+      const neg = false; // negatif yok: sipariş no'daki "26-00186" gibi tireler "eksi" okunmasın
       const body = m.replace('-', '');
       if (body.includes(',')) {
         const [i, d] = body.split(',');
@@ -251,7 +251,21 @@ export class VoiceNotificationService {
       const num = payload.orderNumber ? `#${payload.orderNumber}` : '';
       const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
       const chan = payload.channel ? ` (${String(payload.channel).toUpperCase()})` : '';
-      return `${sal}, yeni siparişiniz var${num ? ' ' + num : ''}${chan}.${price ? ' Tutar ' + price : ''}`;
+      const cust = String(payload.customerName || '').trim();
+      const city = String(payload.city || '').trim();
+      const district = String(payload.district || '').trim();
+      const items = Array.isArray(payload.items)
+        ? (payload.items as Array<{ name?: string; quantity?: number; unit?: string }>)
+          .filter((i) => i && i.name)
+          .map((i) => `${i.quantity ?? ''} ${i.unit || ''} ${i.name}`.trim())
+          .join(', ')
+        : '';
+      const loc = [district, city].filter(Boolean).join(', ');
+      return `${sal}, yeni siparişiniz var${num ? ' ' + num : ''}${chan}.`
+        + `${cust ? ' Müşteri ' + cust + '.' : ''}`
+        + `${loc ? ' ' + loc + '.' : ''}`
+        + `${items ? ' ' + items + '.' : ''}`
+        + `${price ? ' Tutar ' + price : ''}`;
     }
     if (eventType === 'ORDER_UPDATED') {
       const num = payload.orderNumber ? `#${payload.orderNumber}` : '';

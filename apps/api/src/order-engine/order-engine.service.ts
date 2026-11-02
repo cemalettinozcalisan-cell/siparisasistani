@@ -124,9 +124,8 @@ export class OrderEngineService {
     const paymentMethod = this.normalizePayment(input.payment);
     const esnafNotify = !isPrepaid(paymentMethod);
 
-    if (esnafNotify) {
-      await this.createNotification(tenantId, order.id, orderNumber, totalPrice);
-    }
+    // NOT: "Yeni Sipariş" bildirimi tek kaynaktan (notification-engine/order-created.handler) düşer.
+    // Burada ikinci kez insert ETME → aynı sipariş için çift bildirim oluşuyordu.
     await this.logAiEvent(tenantId, order.id, 'order_received', {
       confidence: input.confidence,
       channel: input.channel,
@@ -148,6 +147,14 @@ export class OrderEngineService {
       orderNumber,
       totalPrice,
       customerId,
+      customerName: input.customer?.name || '',
+      city: input.customer?.city || '',
+      district: input.customer?.district || '',
+      items: (input.products || []).map((p) => ({
+        name: (p as { productName?: string; name?: string }).productName || (p as { name?: string }).name || '',
+        quantity: (p as { quantity?: number }).quantity || 0,
+        unit: (p as { unit?: string }).unit || '',
+      })),
       confidence: input.confidence,
       channel: input.channel,
       paymentMethod,
@@ -395,13 +402,8 @@ export class OrderEngineService {
     orderNumber: string,
     totalPrice: number,
   ) {
-    await this.supabase.db.from('notifications').insert({
-      tenant_id: tenantId,
-      type: 'new_order',
-      title: 'Yeni Sipariş',
-      message: `Sipariş #${orderNumber} - ${totalPrice.toLocaleString('tr-TR')} TL`,
-      status: 'unread',
-    });
+    // Kullanılmıyor: sipariş bildirimi order-created.handler'dan geçer (çift bildirimi önlemek için kapatıldı).
+    void tenantId; void orderId; void orderNumber; void totalPrice;
   }
 
   private async logAiEvent(

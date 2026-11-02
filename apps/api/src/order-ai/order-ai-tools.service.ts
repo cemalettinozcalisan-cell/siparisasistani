@@ -74,9 +74,7 @@ function missingAddressParts(address: string, city?: string, district?: string):
   if (!/mahalle|mah\./.test(a)) missing.push('mahalle');
   if (!/sokak|cadde|bulvar|sok\.|cad\./.test(a)) missing.push('sokak/cadde');
   if (!/apartman|apartmanı|iş ?yeri|is ?yeri|blok|site|han|plaza|apt/.test(a)) missing.push('apartman/işyeri');
-  if (!/(no|numara|kapı)\s*[:.]?\s*\d/.test(a)) missing.push('kapı no');
-  if (!/kat/.test(a)) missing.push('kat');
-  if (!/daire/.test(a)) missing.push('daire');
+  // Kapı no / kat / daire bilinmiyorsa sipariş ENGELLENMEZ: AI not ekler + esnaf uyarılır.
   if (!city || !String(city).trim()) missing.push('il');
   if (!district || !String(district).trim()) missing.push('ilçe');
   return missing;
