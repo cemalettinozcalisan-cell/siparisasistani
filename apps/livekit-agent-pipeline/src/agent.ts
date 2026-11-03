@@ -33,6 +33,7 @@ import { FrameProcessor } from '@livekit/rtc-node';
  */
 class AgcProcessor extends FrameProcessor<AudioFrame> {
   private enabled = true;
+  private frames = 0;
   isEnabled(): boolean { return this.enabled; }
   setEnabled(enabled: boolean): void { this.enabled = enabled; }
   close(): void { /* no-op */ }
@@ -54,12 +55,20 @@ class AgcProcessor extends FrameProcessor<AudioFrame> {
     else if (db < -20) gainDb = 8;
     else if (db < -14) gainDb = 4;
     else if (db > -6) gainDb = -3;
+
+    // Teşhis: ilk 20 frame'de AGC tetikleniyor mu + seviye
+    if (this.frames < 20) {
+      this.frames++;
+      console.log(`[agc] frame=${this.frames} rmsDb=${db.toFixed(1)} gainDb=${gainDb}`);
+    }
     if (gainDb === 0) return frame;
 
+    // Limiter: max -1 dB (32767*0.891) — kırpılmayı önle
+    const MAX = 29200;
     const g = Math.pow(10, gainDb / 20);
     for (let i = 0; i < n; i++) {
       const v = d[i] * g;
-      d[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v;
+      d[i] = v > MAX ? MAX : v < -MAX ? -MAX : v;
     }
     return frame;
   }
