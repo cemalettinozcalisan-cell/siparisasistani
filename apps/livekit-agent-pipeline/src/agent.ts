@@ -22,7 +22,48 @@ import * as deepgram from '@livekit/agents-plugin-deepgram';
 import * as cartesia from '@livekit/agents-plugin-cartesia';
 import * as fishaudio from '@livekit/agents-plugin-fishaudio';
 import * as silero from '@livekit/agents-plugin-silero';
-import { TelephonyBackgroundVoiceCancellation } from '@livekit/noise-cancellation-node';
+import { FrameProcessor } from '@livekit/rtc-node';
+
+/**
+ * Basit AGC (otomatik kazanç): kısık gelen müşteri sesini yükseltir, normal sesi bozmaz, kırpmayı önler.
+ * - RMS < -30 dB → +12 dB'e kadar yükselt
+ * - -30..-20 dB → +8 dB, -20..-14 dB → +4 dB (hafif telafi)
+ * - > -6 dB → -3 dB (hafif kıs)
+ * Limiter: örnekleri [-32768, 32767] aralığına sabitler.
+ */
+class AgcProcessor extends FrameProcessor<AudioFrame> {
+  private enabled = true;
+  isEnabled(): boolean { return this.enabled; }
+  setEnabled(enabled: boolean): void { this.enabled = enabled; }
+  close(): void { /* no-op */ }
+
+  process(frame: AudioFrame): AudioFrame {
+    if (!this.enabled) return frame;
+    const d = frame.data;
+    const n = d.length;
+    if (!n) return frame;
+
+    let sumSq = 0;
+    for (let i = 0; i < n; i++) { const v = d[i]; sumSq += v * v; }
+    const rms = Math.sqrt(sumSq / n);
+    if (!rms) return frame;
+
+    const db = 20 * Math.log10(rms / 32768);
+    let gainDb = 0;
+    if (db < -30) gainDb = 12;
+    else if (db < -20) gainDb = 8;
+    else if (db < -14) gainDb = 4;
+    else if (db > -6) gainDb = -3;
+    if (gainDb === 0) return frame;
+
+    const g = Math.pow(10, gainDb / 20);
+    for (let i = 0; i < n; i++) {
+      const v = d[i] * g;
+      d[i] = v > 32767 ? 32767 : v < -32768 ? -32768 : v;
+    }
+    return frame;
+  }
+}
 
 loadEnv({ path: fileURLToPath(new URL('../.env', import.meta.url)) });
 
@@ -780,7 +821,8 @@ export default defineAgent({
       record: true,
       // Gelen ses için eko/arka-ses temizliği (SIP/telefon için ayarlı BVC) — kesintileri azaltır.
       // Not: BVC açıkken SIP trunk'ta krisp KAPALI olmalı (iki gelişmiş model üst üste binmesin).
-      inputOptions: { noiseCancellation: TelephonyBackgroundVoiceCancellation() },
+      // Gelen ses: kısık sesi yükselt (AGC). Normal sese dokunmaz, kırpmayı limiter ile önler.
+    inputOptions: { noiseCancellation: new AgcProcessor() },
     });
 
     // ---- Açılış IVR: gerçek kayıt (menü) → DTMF (1: aydınlatma, 2: sipariş) → karşılama ----
