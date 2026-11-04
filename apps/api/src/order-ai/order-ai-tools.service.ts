@@ -577,23 +577,23 @@ export class OrderAiToolsService {
     try {
       const { data } = await this.supabase.db
         .from('conversation_sessions')
-        .select('id, session_data, phone')
+        .select('id, session_data, phone, created_at')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(30);
       const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
       dbSessionId = m?.id || null;
 
-      // Fallback: kısa/cut-off aramada external_session_id yazılmamış olabilir.
-      // Aynı telefonun en son oturumuna bağla (room adındaki numara ile eşleştir).
+      // Dar fallback: YALNIZCA telefon eşleşen + son 30 dk içindeki oturum. Eşleşme yoksa null (yanlış oturuma bağlama).
       if (!dbSessionId) {
-        const digits = sessionId.replace(/\D/g, '');
-        const ph = digits.slice(-10);
+        const ph = sessionId.replace(/\D/g, '').slice(-10);
+        const cutoff = Date.now() - 30 * 60 * 1000;
         const recent = (data || []) as any[];
         const match = recent.find((s) => {
           const sp = String(s.phone || (s.session_data || {}).phone || '').replace(/[^\d]/g, '');
-          return sp && ph && sp.slice(-10) === ph;
-        }) || recent.find((s) => !String(s.id || '').startsWith('0000'));
+          const created = s.created_at ? new Date(s.created_at).getTime() : 0;
+          return !!ph && !!sp && sp.slice(-10) === ph && created >= cutoff;
+        });
         if (match) dbSessionId = match.id;
       }
     } catch { /* yoksay */ }
@@ -602,7 +602,7 @@ export class OrderAiToolsService {
         .filter((m) => m && String(m.text || '').trim())
         .map((m) => ({
           tenant_id: tenantId,
-          session_id: dbSessionId || sessionId,
+          session_id: dbSessionId,
           user_message: m.role === 'user' ? String(m.text).trim() : null,
           raw_response: m.role === 'assistant' ? String(m.text).trim() : null,
           model: 'livekit-pipeline',
@@ -633,22 +633,23 @@ export class OrderAiToolsService {
     try {
       const { data } = await this.supabase.db
         .from('conversation_sessions')
-        .select('id, session_data')
+        .select('id, session_data, phone, created_at')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(30);
       const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
       dbSessionId = m?.id || null;
 
-      // Fallback: cut-off/kısa aramada external_session_id yazılmamış olabilir.
-      // Aynı telefonun en son oturumuna bağla (2 dk içinde oluşmuşsa).
+      // Dar fallback: YALNIZCA telefon eşleşen + son 30 dk içindeki oturum. Eşleşme yoksa null.
       if (!dbSessionId) {
         const phoneClean = String(phone || '').replace(/[^\d]/g, '');
+        const cutoff = Date.now() - 30 * 60 * 1000;
         const recent = (data || []) as any[];
         const match = recent.find((s) => {
           const sd = (s.session_data || {}) as Record<string, unknown>;
           const sp = String(s.phone || sd.phone || '').replace(/[^\d]/g, '');
-          return (!phoneClean || !sp || sp.endsWith(phoneClean.slice(-10))) && !s.id.startsWith('0000');
+          const created = s.created_at ? new Date(s.created_at).getTime() : 0;
+          return !!phoneClean && !!sp && sp.slice(-10) === phoneClean.slice(-10) && created >= cutoff;
         });
         if (match) dbSessionId = match.id;
       }

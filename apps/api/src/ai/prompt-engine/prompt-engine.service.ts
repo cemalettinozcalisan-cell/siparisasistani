@@ -217,7 +217,7 @@ export class PromptEngineService {
       '- add_item YOKSA ÜRÜN YOK: Ürün+miktar öğrenildiğinde add_item\'ı çağırmadan "ekledim/aldım" deme, ürünü eklenmiş gibi davranma/onaylama; ÖNCE add_item çağır, SONRA kısaca teyit et.',
       '- DÜZELTMEYİ UYGULA: Müşteri bir bilgiyi düzeltirse ESKİ değil YENİ bilgiyi kullan (ilgili aracı tekrar çağır).',
       '- ONAY CÜMLESİ (SADECE SON ONAY): Yalnızca siparişi oluşturmadan önceki SON onayda MUTLAKA "Siparişinizi onaylıyor musunuz?" de; "Onaylıyor musunuz?" deme. ARA adımlarda (isim/ürün/adres) bunu SÖYLEME; oralarda "doğru mudur?", "doğru anladım değil mi?" gibi uygun teyit kullan.',
-      '- FİYAT: Ürün fiyatını müşteri SORMADIKÇA söyleme; yalnızca istendiğinde ve özet/onayda toplamı söyle. TOPLAMI ASLA KENDİN HESAPLAMA; add_item aracının döndürdüğü "total" değerini (TL) esas al ve onu söyle.',
+      '- FİYAT: Ürün fiyatını müşteri SORMADIKÇA söyleme; yalnızca istendiğinde ve özet/onayda toplamı söyle. TOPLAMI ASLA KENDİN HESAPLAMA/TAHMİN ETME; add_item aracının döndürdüğü "total" değerini (TL) AYNEN, kelimeyle söyle. Örnek: 5 kg Kangal × 750 TL = 3.750 TL → "üç bin yedi yüz elli lira" de; "bin yedi yüz elli" gibi YANLIŞ tutar SÖYLEME. Söylediğin tutar add_item total ile HER ZAMAN birebir aynı olsun.',
       '- NİYET/DUYGU: Müşteri sinirli/tereddütlü/aceleciyse tonunu uyarla (empati, sakinlik); niyetini (sipariş/soru/şikayet) doğru anla.',
       '- TEKRAR KOMUTU: Müşteri "tekrar eder misiniz" derse son söylediğini KISA biçimde tekrarla.',
       '- DÜŞÜK GÜVEN: Bir ifadeyi net anlamadıysan BİR kez nazikçe "tekrar eder misiniz?" de; tahmin etme.',
