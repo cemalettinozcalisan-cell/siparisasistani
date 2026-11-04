@@ -572,18 +572,31 @@ export class OrderAiToolsService {
     messages: Array<{ role: string; text: string; at?: number }>,
   ): Promise<{ ok: boolean; count?: number }> {
     try {
-      // Oda adı (room) -> conversation_sessions.id (detay bu id ile arıyor).
-      let dbSessionId: string | null = null;
-      try {
-        const { data } = await this.supabase.db
-          .from('conversation_sessions')
-          .select('id, session_data')
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false })
-          .limit(30);
-        const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
-        dbSessionId = m?.id || null;
-      } catch { /* yoksay */ }
+    // Oda adı (room) -> conversation_sessions.id (detay bu id ile arıyor).
+    let dbSessionId: string | null = null;
+    try {
+      const { data } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('id, session_data, phone')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
+      dbSessionId = m?.id || null;
+
+      // Fallback: kısa/cut-off aramada external_session_id yazılmamış olabilir.
+      // Aynı telefonun en son oturumuna bağla (room adındaki numara ile eşleştir).
+      if (!dbSessionId) {
+        const digits = sessionId.replace(/\D/g, '');
+        const ph = digits.slice(-10);
+        const recent = (data || []) as any[];
+        const match = recent.find((s) => {
+          const sp = String(s.phone || (s.session_data || {}).phone || '').replace(/[^\d]/g, '');
+          return sp && ph && sp.slice(-10) === ph;
+        }) || recent.find((s) => !String(s.id || '').startsWith('0000'));
+        if (match) dbSessionId = match.id;
+      }
+    } catch { /* yoksay */ }
 
       const rows = (messages || [])
         .filter((m) => m && String(m.text || '').trim())

@@ -213,7 +213,11 @@ function pushTranscript(role: 'user' | 'assistant', text: string): void {
 
 async function reportTranscript(tenantId: string, sessionId: string): Promise<void> {
   try {
-    if (!agentTranscript.length) return;
+    if (!agentTranscript.length) {
+      console.log('[transcript] mesaj yok, gonderilmedi');
+      return;
+    }
+    console.log(`[transcript] ${agentTranscript.length} mesaj gonderiliyor`);
     await fetch(`${API_BASE}/api/order-ai/agent/transcript`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-agent-secret': AGENT_SECRET },
