@@ -615,18 +615,31 @@ export class OrderAiToolsService {
     file: string,
   ): Promise<{ ok: boolean }> {
     try {
-      // room adı (external_session_id) -> conversation_sessions.id
-      let dbSessionId: string | null = null;
-      try {
-        const { data } = await this.supabase.db
-          .from('conversation_sessions')
-          .select('id, session_data')
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false })
-          .limit(30);
-        const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
-        dbSessionId = m?.id || null;
-      } catch { /* yoksay */ }
+    // room adı (external_session_id) -> conversation_sessions.id
+    let dbSessionId: string | null = null;
+    try {
+      const { data } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('id, session_data')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      const m = (data || []).find((s) => (s.session_data as Record<string, unknown> | null)?.external_session_id === sessionId);
+      dbSessionId = m?.id || null;
+
+      // Fallback: cut-off/kısa aramada external_session_id yazılmamış olabilir.
+      // Aynı telefonun en son oturumuna bağla (2 dk içinde oluşmuşsa).
+      if (!dbSessionId) {
+        const phoneClean = String(phone || '').replace(/[^\d]/g, '');
+        const recent = (data || []) as any[];
+        const match = recent.find((s) => {
+          const sd = (s.session_data || {}) as Record<string, unknown>;
+          const sp = String(s.phone || sd.phone || '').replace(/[^\d]/g, '');
+          return (!phoneClean || !sp || sp.endsWith(phoneClean.slice(-10))) && !s.id.startsWith('0000');
+        });
+        if (match) dbSessionId = match.id;
+      }
+    } catch { /* yoksay */ }
 
       const url = `/api/order-ai/agent/recordings/${encodeURIComponent(file)}`;
       await this.supabase.db.from('call_recordings').insert({
