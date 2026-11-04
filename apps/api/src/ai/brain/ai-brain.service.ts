@@ -355,6 +355,8 @@ export class AiBrainService {
       .eq('phone', input.phone)
       .gte('created_at', sixtySecAgo)
       .eq('status', 'active')
+      // Kendi (şu an işlenen) oturumunu mükerrer sayma
+      .neq('id', input.sessionId || '')
       .limit(1);
 
     if (data && data.length > 0) {
