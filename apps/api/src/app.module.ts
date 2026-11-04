@@ -25,6 +25,7 @@ import { HealthModule } from './health/health.module';
 import { ReplayModule } from './replay/replay.module';
 import { SupabaseService } from './common/supabase.client';
 import { NetgsmModule } from './netgsm/netgsm.module';
+import { VerimorModule } from './verimor/verimor.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { AliasEngineModule } from './alias-engine/alias-engine.module';
 import { ClarificationModule } from './clarification/clarification.module';
@@ -98,6 +99,7 @@ import { AlertModule } from './alert/alert.module';
     OrderLockModule,
     VoiceModule,
     NetgsmModule,
+    VerimorModule,
     CampaignsModule,
     AliasEngineModule,
     ClarificationModule,
