@@ -34,8 +34,8 @@ export class WhatsAppConversationsService {
     direction: 'incoming' | 'outgoing';
     body: string;
     attachment?: string;
-  }) {
-    const { error } = await this.supabase.db
+  }): Promise<string | undefined> {
+    const { data, error } = await this.supabase.db
       .from('whatsapp_messages')
       .insert({
         tenant_id: params.tenantId,
@@ -45,16 +45,20 @@ export class WhatsAppConversationsService {
         message: params.body,
         attachment: params.attachment || null,
         status: 'queued',
-      });
+      })
+      .select('id')
+      .single();
 
     if (error) {
       this.logger.error(`WhatsApp message save failed: ${error.message}`);
-      return;
+      return undefined;
     }
 
     await this.supabase.db.rpc('increment_message_count', {
       conv_id: params.conversationId,
     });
+
+    return (data?.id as string) || undefined;
   }
 
   async getHistory(conversationId: string) {
