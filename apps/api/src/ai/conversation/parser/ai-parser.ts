@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiOrderInput } from '@siparis/types';
+import { normalizePayment } from '../../order-normalize';
 
 export interface ParsedResponse {
   reply?: string;
@@ -154,11 +155,9 @@ export class AiParserService {
   }
 
   private mapPayment(payment?: string): AiOrderInput['payment'] {
-    const map: Record<string, AiOrderInput['payment']> = {
-      IBAN: 'iban', CASH_ON_DELIVERY: 'cash_on_delivery', CARD: 'website', PAYTR: 'paytr',
-      iban: 'iban', website: 'website', paytr: 'paytr', iyzico: 'iyzico', cash_on_delivery: 'cash_on_delivery',
-    };
-    return map[payment || ''] || 'iban';
+    // Telefon kanalıyla aynı normalizasyon: "kapıda kredi kartı" -> kapida_kart,
+    // "kapıda nakit" -> cash_on_delivery, "havale" -> iban vb.
+    return normalizePayment(payment) ?? 'cash_on_delivery';
   }
 
   private normalizeConfidence(value: unknown): number {

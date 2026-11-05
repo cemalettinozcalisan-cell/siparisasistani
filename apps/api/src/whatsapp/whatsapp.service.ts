@@ -167,6 +167,18 @@ export class WhatsappService {
     await this.deliver(tenantId, phone, aiReply, outgoingId);
 
     this.logger.log(`WhatsApp cevap gonderildi (${profileName || phone}): ${aiReply.substring(0, 80)}`);
+
+    const orderSummary = (result.orderSummary || '').trim();
+    if (orderSummary) {
+      const summaryId = await this.conversations.addMessage({
+        tenantId,
+        conversationId: convId,
+        direction: 'outgoing',
+        body: orderSummary,
+      });
+      await this.deliver(tenantId, phone, orderSummary, summaryId);
+      this.logger.log(`WhatsApp siparis ozeti gonderildi (${profileName || phone})`);
+    }
   }
 
   private async deliver(tenantId: string, phone: string, body: string, outgoingId?: string) {
@@ -210,7 +222,8 @@ export class WhatsappService {
       .eq('tenant_id', tenantId)
       .eq('phone', phone)
       .eq('channel', 'whatsapp')
-      .eq('status', 'active')
+      .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+      .gte('created_at', this.sessionWindowStart())
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -247,5 +260,9 @@ export class WhatsappService {
     const digits = value.replace(/\D/g, '');
     if (digits.startsWith('0') && digits.length === 11) return `9${digits}`;
     return digits;
+  }
+
+  private sessionWindowStart(): string {
+    return new Date(Date.now() - 60 * 60 * 1000).toISOString();
   }
 }

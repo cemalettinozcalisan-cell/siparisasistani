@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { AiOrderInput } from '@siparis/types';
 import { AiProviderFactory } from '../providers/ai-provider.factory';
 import { PromptEngineService, PromptContext } from '../prompt-engine/prompt-engine.service';
 import { AiParserService } from '../conversation/parser/ai-parser';
@@ -8,6 +9,7 @@ import { OrderEngineService } from '../../order-engine/order-engine.service';
 import { ComplaintProcessorService } from '../../complaint-processor/complaint-processor.service';
 import { SupabaseService } from '../../common/supabase.client';
 import { ChannelHealthService } from '../../channel-health/channel-health.service';
+import { normalizePayment, parseBirthday } from '../order-normalize';
 
 export interface BrainInput {
   tenantId: string;
@@ -41,6 +43,7 @@ export interface BrainOutput {
   sendWhatsapp?: boolean;
   whatsappMessage?: string;
   complaintCreated?: boolean;
+  orderSummary?: string;
 }
 
 export interface CallSummary {
@@ -111,6 +114,10 @@ export class AiBrainService {
     if (!sessionId) {
       sessionId = await this.createSession(input.tenantId, input.channel, input.phone, input.channelSource);
     }
+
+    // Idempotency: ayni oturumda siparis zaten olustuysa ikinci siparis acma.
+    const existingOrderId = await this.getSessionOrderId(sessionId);
+    const existingOrderNumber = existingOrderId ? await this.getOrderNumber(existingOrderId) : undefined;
 
     // Step 4.5: Dekont alındı tespiti — müşteri "ödedim / dekont attım" beyan ederse,
     // bekleyen IBAN siparişi varsa otomatik esnaf bildirimi tetiklenir (AI çağrısı yapılmaz).
@@ -199,14 +206,25 @@ export class AiBrainService {
     parsed.confidence = finalConfidence;
 
     // Step 8: Validate (Order Engine'den once!)
+    // Odeme telefon kanaliyla ayni sekilde normalize edilir (KAPIDA_KART, CASH_ON_DELIVERY, IBAN...).
+    const normalizedPayment = normalizePayment(parsed.payment);
     const validation = this.validator.validate({
       customer: parsed.customer,
       products: parsed.products,
-      payment: parsed.payment,
+      payment: normalizedPayment || 'cash_on_delivery',
       confirmed: parsed.confirmed,
       confidence: parsed.confidence,
       channel: input.channel,
     });
+
+    // Dogum gunu her turda (varsa) musteriye yazilir (telefon kanalindaki set_birthday ile ayni).
+    if (parsed.customer?.birthday) {
+      await this.persistBirthday(
+        input.tenantId,
+        parsed.customer?.phone || input.phone,
+        parsed.customer.birthday,
+      );
+    }
 
     // Step 9: Audit
     await this.audit.log({
@@ -274,6 +292,59 @@ export class AiBrainService {
     // Step 11: Order Engine (only if validated + confirmed)
     // TOPTAN: AI, ürünlerde tanımlı wholesale_price'ı kullanarak müşteri onayıyla
     // normal sipariş gibi kurar (source=WHOLESALE). Esnafa ayrıca sormaz.
+    if (existingOrderId) {
+      const reply = existingOrderNumber
+        ? this.attachOrderNumber(parsed.reply || response.content, existingOrderNumber)
+        : (parsed.reply || response.content);
+      return {
+        reply,
+        confidence: parsed.confidence || 0,
+        orderCreated: false,
+        orderId: existingOrderId,
+        orderNumber: existingOrderNumber,
+        sessionId,
+        needsHuman: (parsed.confidence || 0) < 50,
+        maintenanceMode: false,
+        afterHours: false,
+        duplicateWarning,
+        providerUsed,
+        ...routingFields,
+        complaintCreated,
+      };
+    }
+
+    if (parsed.confirmed && !normalizedPayment) {
+      return {
+        reply: 'Siparişinizi oluşturmak için ödeme yöntemini netleştirelim: Kapıda nakit mi, kapıda kredi kartı mı, yoksa havale/IBAN mı tercih edersiniz?',
+        confidence: parsed.confidence || 0,
+        orderCreated: false,
+        sessionId,
+        needsHuman: (parsed.confidence || 0) < 50,
+        maintenanceMode: false,
+        afterHours: false,
+        duplicateWarning,
+        providerUsed,
+        ...routingFields,
+        complaintCreated,
+      };
+    }
+
+    if (parsed.confirmed && !validation.valid) {
+      return {
+        reply: 'Siparişinizi oluşturmak için birkaç bilgiyi netleştirmem gerekiyor. Ad soyad, teslimat adresi ve telefon numaranızı teyit edebilir miyiz?',
+        confidence: parsed.confidence || 0,
+        orderCreated: false,
+        sessionId,
+        needsHuman: (parsed.confidence || 0) < 50,
+        maintenanceMode: false,
+        afterHours: false,
+        duplicateWarning,
+        providerUsed,
+        ...routingFields,
+        complaintCreated,
+      };
+    }
+
     if (validation.valid && parsed.confirmed) {
       try {
         const orderInput = this.parser.toOrderInput(parsed, input.channel);
@@ -284,11 +355,12 @@ export class AiBrainService {
         await this.updateSessionOrder(sessionId, order.order_id, order.order_number);
 
         return {
-          reply: parsed.reply || response.content,
+          reply: this.attachOrderNumber(parsed.reply || response.content, order.order_number),
           confidence: parsed.confidence || 0,
           orderCreated: true,
           orderId: order.order_id,
           orderNumber: order.order_number,
+          orderSummary: this.buildOrderSummary(orderInput, order),
           sessionId,
           needsHuman: (parsed.confidence || 0) < 50,
           maintenanceMode: false,
@@ -455,6 +527,66 @@ export class AiBrainService {
       .from('conversation_sessions')
       .update({ order_id: orderId })
       .eq('id', sessionId);
+  }
+
+  private async getSessionOrderId(sessionId: string): Promise<string | undefined> {
+    const { data } = await this.supabase.db
+      .from('conversation_sessions')
+      .select('order_id')
+      .eq('id', sessionId)
+      .maybeSingle();
+    return (data?.order_id as string) || undefined;
+  }
+
+  private async getOrderNumber(orderId: string): Promise<string | undefined> {
+    const { data } = await this.supabase.db
+      .from('orders')
+      .select('order_number')
+      .eq('id', orderId)
+      .maybeSingle();
+    return (data?.order_number as string) || undefined;
+  }
+
+  private async persistBirthday(tenantId: string, phone: string, birthday?: string): Promise<void> {
+    const iso = parseBirthday(birthday);
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!iso || !digits) return;
+    try {
+      await this.supabase.db
+        .from('customers')
+        .update({ birth_date: iso })
+        .eq('tenant_id', tenantId)
+        .eq('phone', digits);
+    } catch {
+      /* yoksay */
+    }
+  }
+
+  private attachOrderNumber(reply: string, orderNumber: string): string {
+    const pattern = /(sipari[sş]\s*numaran[ıi]z?\s*[:：]?\s*)(#?[A-Za-z0-9-]+)/i;
+    if (pattern.test(reply)) return reply.replace(pattern, `$1${orderNumber}`);
+    if (reply.includes(orderNumber)) return reply;
+    return `${reply.trim()} Sipariş numaranız: ${orderNumber}.`;
+  }
+
+  private buildOrderSummary(
+    orderInput: AiOrderInput,
+    order: { order_number: string; total_price: number },
+  ): string {
+    const tl = (amount: number) => Number(amount || 0).toLocaleString('tr-TR');
+    const items = (orderInput.products || [])
+      .map((item) => `${item.quantity} ${String(item.unit).toLowerCase()} ${item.product_name}`)
+      .join(', ');
+    const address = [orderInput.customer.address, orderInput.customer.city].filter(Boolean).join(', ');
+    return [
+      `Siparişiniz alındı. Sipariş No: #${order.order_number}`,
+      `Ürünler: ${items}`,
+      `Toplam: ${tl(order.total_price)} TL`,
+      address ? `Teslimat: ${address}` : '',
+      'Bilgi için bizi arayabilirsiniz. Afiyet olsun!',
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   private async endSession(sessionId: string, endReason: string) {

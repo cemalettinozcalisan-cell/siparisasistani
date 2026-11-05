@@ -54,7 +54,8 @@ export class InstagramService {
             .eq('tenant_id', tenantId)
             .eq('phone', igUserId)
             .eq('channel', 'instagram')
-            .eq('status', 'active')
+            .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+            .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -113,6 +114,12 @@ export class InstagramService {
 
             await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
             await this.sendMessage(conv.id, tenantId, aiReply);
+
+            const orderSummary = result.orderSummary || '';
+            if (orderSummary) {
+              await this.saveMessage(conv.id, tenantId, 'outgoing', orderSummary);
+              await this.sendMessage(conv.id, tenantId, orderSummary);
+            }
 
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
             await this.channelHealth.record(tenantId, 'instagram', true);

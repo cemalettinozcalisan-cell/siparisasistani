@@ -53,15 +53,16 @@ export class VerimorIncomingSms {
 
       if (!message) return { received: false, reason: 'empty message' };
 
-      // Aktif SMS oturumu (son 5 dk)
-      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Son 30 dk icindeki SMS oturumu (siparis sonrasi dogum gunu devamı icin completed dahil)
+      const sessionWindow = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       const { data: sessions } = await this.supabase.db
         .from('conversation_sessions')
         .select('id, messages, status')
+        .eq('tenant_id', tenantId)
         .eq('phone', phone)
         .eq('channel', 'sms')
-        .eq('status', 'active')
-        .gte('created_at', fiveMinAgo)
+        .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+        .gte('created_at', sessionWindow)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -115,6 +116,11 @@ export class VerimorIncomingSms {
           })
           .eq('id', sessionId);
         await this.sms.sendSms(rawPhone, aiReply);
+
+        const orderSummary = (result as { orderSummary?: string }).orderSummary || '';
+        if (orderSummary) {
+          await this.sms.sendSms(rawPhone, orderSummary);
+        }
       }
 
       return { received: true, replySent: !!aiReply, sessionId };

@@ -49,15 +49,16 @@ export class IncomingSmsWebhook {
       return { received: false, reason: 'empty message' };
     }
 
-    // Find active SMS session for this phone (last 5 minutes)
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // Son 30 dk icindeki SMS oturumu (siparis sonrasi devam icin completed dahil)
+    const sessionWindow = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: sessions } = await this.supabase.db
       .from('conversation_sessions')
       .select('id, messages, status')
+      .eq('tenant_id', tenantId)
       .eq('phone', phone)
       .eq('channel', 'sms')
-      .eq('status', 'active')
-      .gte('created_at', fiveMinAgo)
+      .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+      .gte('created_at', sessionWindow)
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -123,6 +124,11 @@ export class IncomingSmsWebhook {
 
       // Send AI reply back via SMS
       await this.netgsm.sendSms(rawPhone, aiReply);
+
+      const orderSummary = result.orderSummary || '';
+      if (orderSummary) {
+        await this.netgsm.sendSms(rawPhone, orderSummary);
+      }
     }
 
     return { received: true, replySent: !!aiReply, sessionId };
