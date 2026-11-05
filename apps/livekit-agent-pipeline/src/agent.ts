@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { isAbsolute, join, basename } from 'node:path';
 import { AudioFrame } from '@livekit/rtc-node';
+import { RoomServiceClient } from 'livekit-server-sdk';
 import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
 import {
@@ -186,6 +187,24 @@ async function runOrderTool(
     return { ok: false, error: 'İşlem şu an tamamlanamadı; kısa bir kesinti oldu, lütfen AYNI işlemi BİR kez daha dene.' };
   }
   return json ?? { ok: false, error: 'gecersiz yanit' };
+}
+
+async function hangupSip(roomName: string, caller: string): Promise<void> {
+  try {
+    const apiKey = process.env.LIVEKIT_API_KEY || '';
+    const apiSecret = process.env.LIVEKIT_API_SECRET || '';
+    const host = (process.env.LIVEKIT_URL || '').replace(/^wss:\/\//, 'https://');
+    if (!apiKey || !apiSecret || !host || !roomName) return;
+    const svc = new RoomServiceClient(host, apiKey, apiSecret);
+    const identity = caller ? `sip_${caller}` : '';
+    if (identity) {
+      await svc.removeParticipant(roomName, identity).catch(() => { /* yoksay */ });
+    }
+    await svc.deleteRoom(roomName).catch(() => { /* yoksay */ });
+    console.log(`[watchdog] SIP hatti dusuruldu: room=${roomName} participant=${identity || '-'}`);
+  } catch (e) {
+    console.error(`[watchdog] SIP hangup hata: ${(e as Error).message}`);
+  }
 }
 
 async function reportSessionEnd(tenantId: string, sessionId: string): Promise<void> {
@@ -765,8 +784,9 @@ export default defineAgent({
           console.log('[watchdog] 2. uyari: hatlarda sorun + 7sn sonra kapat');
           void sayTts('Hatlarda bir sorun var galiba, sizi duyamıyorum. İsterseniz daha sonra tekrar arayabilirsiniz. İyi günler dilerim.');
           setTimeout(() => {
-            console.log('[watchdog] kapatiliyor: ctx.job.shutdown (SIP hatti) + room.disconnect');
-            // SIP/telefon hattını gerçekten kapatmak için job shutdown gerekir.
+            console.log('[watchdog] kapatiliyor: SIP hangup + job.shutdown');
+            // SIP hattını gerçekten düşür (katılımcıyı odadan çıkar + odayı sil).
+            try { void hangupSip(ctx.room.name || '', caller || ''); } catch { /* yoksay */ }
             try { void ctx.room.disconnect(); } catch { /* yoksay */ }
             try { (ctx as unknown as { job?: { shutdown?: (r?: string) => void } }).job?.shutdown?.('timeout'); } catch { /* yoksay */ }
           }, 7000);
