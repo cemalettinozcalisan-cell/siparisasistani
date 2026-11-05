@@ -3,6 +3,7 @@ import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { VerimorSmsProvider } from './verimor-sms.provider';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderEngineService } from '../order-engine/order-engine.service';
+import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
 
 /**
  * Verimor gelen SMS webhook'u.
@@ -53,8 +54,8 @@ export class VerimorIncomingSms {
 
       if (!message) return { received: false, reason: 'empty message' };
 
-      // Son 30 dk icindeki SMS oturumu (siparis sonrasi dogum gunu devamı icin completed dahil)
-      const sessionWindow = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      // Son pencere icindeki SMS oturumu (siparis sonrasi devam icin completed dahil)
+      const sessionWindow = sessionWindowStart();
       const { data: sessions } = await this.supabase.db
         .from('conversation_sessions')
         .select('id, messages, status')
@@ -83,6 +84,7 @@ export class VerimorIncomingSms {
             phone,
             status: 'active',
             messages: [],
+            session_label: generateSessionLabel(),
             created_at: new Date().toISOString(),
           })
           .select('id')
@@ -106,15 +108,17 @@ export class VerimorIncomingSms {
 
       const aiReply = (result as { reply?: string }).reply || '';
       if (aiReply) {
-        history.push({ role: 'assistant', content: aiReply });
+        const storedMessages = (result as { resetHistory?: boolean }).resetHistory
+          ? [{ role: 'customer', content: message }, { role: 'assistant', content: aiReply }]
+          : [...history, { role: 'assistant', content: aiReply }];
         await this.supabase.db
           .from('conversation_sessions')
           .update({
-            messages: history,
+            messages: storedMessages,
             updated_at: new Date().toISOString(),
             status: (result as { orderCreated?: boolean }).orderCreated ? 'completed' : 'active',
           })
-          .eq('id', sessionId);
+          .eq('id', (result as { sessionId?: string }).sessionId || sessionId);
         await this.sms.sendSms(rawPhone, aiReply);
 
         const orderSummary = (result as { orderSummary?: string }).orderSummary || '';

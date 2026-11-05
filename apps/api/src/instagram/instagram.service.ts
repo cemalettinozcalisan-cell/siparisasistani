@@ -3,6 +3,7 @@ import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
+import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
 
 @Injectable()
 export class InstagramService {
@@ -55,7 +56,7 @@ export class InstagramService {
             .eq('phone', igUserId)
             .eq('channel', 'instagram')
             .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
-            .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+            .gte('created_at', sessionWindowStart())
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -77,6 +78,7 @@ export class InstagramService {
                 phone: igUserId,
                 status: 'active',
                 messages: [],
+                session_label: generateSessionLabel(),
                 created_at: new Date().toISOString(),
               })
               .select('id')
@@ -101,16 +103,18 @@ export class InstagramService {
 
           const aiReply = result.reply || '';
           if (aiReply) {
-            history.push({ role: 'assistant', content: aiReply });
+            const storedMessages = result.resetHistory
+              ? [{ role: 'customer', content: text }, { role: 'assistant', content: aiReply }]
+              : [...history, { role: 'assistant', content: aiReply }];
 
             await this.supabase.db
               .from('conversation_sessions')
               .update({
-                messages: history,
+                messages: storedMessages,
                 updated_at: new Date().toISOString(),
                 status: result.orderCreated ? 'completed' : 'active',
               })
-              .eq('id', sessionId);
+              .eq('id', result.sessionId || sessionId);
 
             await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
             await this.sendMessage(conv.id, tenantId, aiReply);

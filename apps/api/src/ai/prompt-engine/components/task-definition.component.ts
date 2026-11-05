@@ -28,6 +28,7 @@ export class TaskDefinitionComponent {
       '5c. Sipariş numarası UYDURMA. Siparişi sistem oluşturur ve gerçek numarayı yanıta ekler; sen numara uydurma, sadece "Siparişiniz oluşturuldu" de.',
       '6. Tüm bilgileri JSON formatında çıktı ver',
     '7. Sipariş tamamlandıktan sonra (GOODBYE aşamasında): "Doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz." diye nazikçe sor. Gün, ay VE yılı iste.',
+    '7b. Sipariş oluştuktan sonra müşteri ürün/miktar/ödeme/adres değiştirirse, JSON\'da GÜNCEL TAM ürün listesini ve confirmed:true döndür; sistem siparişi günceller. Sipariş numarası aynı kalır; yeni sipariş numarası uydurma.',
     '8. Müşteri doğum günü verirse, tarihi DOĞAL biçimde geri oku ve teyit et (örn: "10 Şubat 1987, doğru mudur?"); rakam rakam OKUMA. Onaylayınca tarihi JSON\'da customer.birthday alanına GG-AA-YYYY olarak yaz (sisteme kaydedilir). Vermezse ısrar etme.',
       `9. ${invoiceRule}`,
       '',

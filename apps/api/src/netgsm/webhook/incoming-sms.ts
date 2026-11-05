@@ -3,6 +3,7 @@ import { AiBrainService } from '../../ai/brain/ai-brain.service';
 import { NetgsmProvider } from '../providers/netgsm.provider';
 import { SupabaseService } from '../../common/supabase.client';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
+import { generateSessionLabel, sessionWindowStart } from '../../common/chat-session';
 
 @Injectable()
 export class IncomingSmsWebhook {
@@ -49,8 +50,8 @@ export class IncomingSmsWebhook {
       return { received: false, reason: 'empty message' };
     }
 
-    // Son 30 dk icindeki SMS oturumu (siparis sonrasi devam icin completed dahil)
-    const sessionWindow = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Son pencere icindeki SMS oturumu (siparis sonrasi devam icin completed dahil)
+    const sessionWindow = sessionWindowStart();
     const { data: sessions } = await this.supabase.db
       .from('conversation_sessions')
       .select('id, messages, status')
@@ -82,6 +83,7 @@ export class IncomingSmsWebhook {
           phone,
           status: 'active',
           messages: [],
+          session_label: generateSessionLabel(),
           created_at: new Date().toISOString(),
         })
         .select('id')
@@ -110,17 +112,19 @@ export class IncomingSmsWebhook {
     // Append AI reply to history
     const aiReply = result.reply || '';
     if (aiReply) {
-      history.push({ role: 'assistant', content: aiReply });
+      const storedMessages = result.resetHistory
+        ? [{ role: 'customer', content: message }, { role: 'assistant', content: aiReply }]
+        : [...history, { role: 'assistant', content: aiReply }];
 
       // Update session with full history
       await this.supabase.db
         .from('conversation_sessions')
         .update({
-          messages: history,
+          messages: storedMessages,
           updated_at: new Date().toISOString(),
           status: result.orderCreated ? 'completed' : 'active',
         })
-        .eq('id', sessionId);
+        .eq('id', result.sessionId || sessionId);
 
       // Send AI reply back via SMS
       await this.netgsm.sendSms(rawPhone, aiReply);

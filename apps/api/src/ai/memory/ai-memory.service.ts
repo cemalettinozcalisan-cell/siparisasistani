@@ -20,6 +20,9 @@ export class AiMemoryService {
     const sections: string[] = ['[MÜŞTERİ HAFIZASI]'];
     sections.push(`Müşteri: ${customer.name}`);
     sections.push(`Toplam sipariş: ${customer.orderCount}`);
+    if (customer.birthDate) {
+      sections.push(`Doğum günü: ${customer.birthDate} (bu bilgi kayıtlı; tekrar sorma)`);
+    }
 
     if (customer.lastOrder) {
       sections.push(`Son sipariş: #${customer.lastOrder.order_number} - ${customer.lastOrder.total_price} TL`);
@@ -49,6 +52,7 @@ export class AiMemoryService {
   ): Promise<{
     name: string;
     orderCount: number;
+    birthDate?: string;
     lastOrder?: {
       order_number: string;
       total_price: string;
@@ -60,7 +64,7 @@ export class AiMemoryService {
   } | null> {
     const { data: customer } = await this.supabase.db
       .from('customers')
-      .select('id, name')
+      .select('id, name, birth_date')
       .eq('tenant_id', tenantId)
       .eq('phone', phone)
       .maybeSingle();
@@ -95,6 +99,9 @@ export class AiMemoryService {
     return {
       name: customer.name,
       orderCount: count || 0,
+      birthDate: customer.birth_date
+        ? new Date(customer.birth_date).toLocaleDateString('tr-TR')
+        : undefined,
       lastOrder: lastOrder
         ? {
             order_number: lastOrder.order_number,

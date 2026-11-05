@@ -6,6 +6,7 @@ import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
 import { WhatsAppConversationsService } from './conversations/conversations.service';
 import { MetaWhatsappProvider } from '../messages/providers/meta-whatsapp.provider';
+import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
 
 interface WaMessage {
   id?: string;
@@ -144,13 +145,15 @@ export class WhatsappService {
     const aiReply = (result.reply || '').trim();
     if (!aiReply) return;
 
-    history.push({ role: 'assistant', content: aiReply });
+    const storedMessages = result.resetHistory
+      ? [{ role: 'customer', content: text }, { role: 'assistant', content: aiReply }]
+      : [...history, { role: 'assistant', content: aiReply }];
     const effectiveSessionId = result.sessionId || sessionId;
     if (effectiveSessionId) {
       await this.supabase.db
         .from('conversation_sessions')
         .update({
-          messages: history,
+          messages: storedMessages,
           updated_at: new Date().toISOString(),
           status: result.orderCreated ? 'completed' : 'active',
         })
@@ -223,7 +226,7 @@ export class WhatsappService {
       .eq('phone', phone)
       .eq('channel', 'whatsapp')
       .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
-      .gte('created_at', this.sessionWindowStart())
+      .gte('created_at', sessionWindowStart())
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -248,6 +251,7 @@ export class WhatsappService {
         phone,
         status: 'active',
         messages: [],
+        session_label: generateSessionLabel(),
         created_at: new Date().toISOString(),
       })
       .select('id')
@@ -260,9 +264,5 @@ export class WhatsappService {
     const digits = value.replace(/\D/g, '');
     if (digits.startsWith('0') && digits.length === 11) return `9${digits}`;
     return digits;
-  }
-
-  private sessionWindowStart(): string {
-    return new Date(Date.now() - 60 * 60 * 1000).toISOString();
   }
 }

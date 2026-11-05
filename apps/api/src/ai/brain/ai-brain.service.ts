@@ -10,6 +10,7 @@ import { ComplaintProcessorService } from '../../complaint-processor/complaint-p
 import { SupabaseService } from '../../common/supabase.client';
 import { ChannelHealthService } from '../../channel-health/channel-health.service';
 import { normalizePayment, parseBirthday } from '../order-normalize';
+import { generateSessionLabel, isResetCommand } from '../../common/chat-session';
 
 export interface BrainInput {
   tenantId: string;
@@ -44,6 +45,7 @@ export interface BrainOutput {
   whatsappMessage?: string;
   complaintCreated?: boolean;
   orderSummary?: string;
+  resetHistory?: boolean;
 }
 
 export interface CallSummary {
@@ -113,6 +115,32 @@ export class AiBrainService {
     // Step 4: Session Management
     if (!sessionId) {
       sessionId = await this.createSession(input.tenantId, input.channel, input.phone, input.channelSource);
+    }
+
+    // "Yeni sipariş / sıfırla / baştan" komutu: mevcut oturumu temizleyip sıfırdan başlat.
+    if (isResetCommand(lastMessage)) {
+      await this.supabase.db
+        .from('conversation_sessions')
+        .update({
+          messages: [],
+          status: 'active',
+          order_id: null,
+          session_data: null,
+          end_reason: null,
+          ended_at: null,
+        })
+        .eq('id', sessionId);
+      this.logger.log(`Session reset by command: ${sessionId}`);
+      return {
+        reply: 'Tabii, yeni siparişinizi alabilirim. Ne almak istersiniz?',
+        confidence: 100,
+        orderCreated: false,
+        sessionId,
+        needsHuman: false,
+        maintenanceMode: false,
+        afterHours: false,
+        resetHistory: true,
+      };
     }
 
     // Idempotency: ayni oturumda siparis zaten olustuysa ikinci siparis acma.
@@ -293,6 +321,34 @@ export class AiBrainService {
     // TOPTAN: AI, ürünlerde tanımlı wholesale_price'ı kullanarak müşteri onayıyla
     // normal sipariş gibi kurar (source=WHOLESALE). Esnafa ayrıca sormaz.
     if (existingOrderId) {
+      // Sipariş sonrası değişiklik ("2 kilo daha ekle", "kargo adresini değiştir" vb.)
+      const changePattern = /\b(ekle|ekleyin|ekleme|çıkar|çıkarın|arttır|artır|azalt|değiştir|güncelle|olsun|yapalım|iptal)\b/i;
+      if (parsed.confirmed && normalizedPayment && validation.valid && changePattern.test(lastMessage)) {
+        try {
+          const orderInput = this.parser.toOrderInput(parsed, input.channel);
+          orderInput.customer.phone = orderInput.customer.phone || input.phone;
+          const updated = await this.orderEngine.updateOrder(existingOrderId, orderInput, input.tenantId);
+          const total = Number(updated.total_price || 0).toLocaleString('tr-TR');
+          return {
+            reply: `${(parsed.reply || response.content).trim()} Güncel sipariş toplamı: ${total} TL.`,
+            confidence: parsed.confidence || 0,
+            orderCreated: false,
+            orderId: existingOrderId,
+            orderNumber: updated.order_number,
+            sessionId,
+            needsHuman: false,
+            maintenanceMode: false,
+            afterHours: false,
+            duplicateWarning,
+            providerUsed,
+            ...routingFields,
+            complaintCreated,
+          };
+        } catch (e) {
+          this.logger.error(`Order update failed: ${(e as Error).message}`);
+        }
+      }
+
       const reply = existingOrderNumber
         ? this.attachOrderNumber(parsed.reply || response.content, existingOrderNumber)
         : (parsed.reply || response.content);
@@ -497,6 +553,7 @@ export class AiBrainService {
         tenant_id: tenantId, channel,
         channel_source: channelSource || channel,
         phone, status: 'active', language: 'tr',
+        session_label: generateSessionLabel(),
       })
       .select('id, session_label')
       .single();
