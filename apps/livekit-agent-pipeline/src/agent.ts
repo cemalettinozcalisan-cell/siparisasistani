@@ -737,6 +737,7 @@ export default defineAgent({
       });
     };
 
+    let watchdogTicks = 0;
     const watchdog = setInterval(() => {
       if (lastToolAt && !agentBusy && !userSpeaking && Date.now() - lastToolAt > 10000) {
         lastToolAt = 0;
@@ -747,12 +748,17 @@ export default defineAgent({
         birthdayNudged = true;
         nudgeBirthday();
       }
-      // Sessizlik yönetimi (IVR sonrası): 8 sn → nazik uyarı, sonraki 8 sn → nazik kapanış.
+      // Sessizlik yönetimi (IVR sonrası): 8 sn → uyarı, +8 sn → kapanış, +7 sn → kapat.
       if (ivrDone && !birthdayPending && !agentBusy && !userSpeaking && silenceSince) {
         const idle = Date.now() - silenceSince;
+        watchdogTicks++;
+        if (watchdogTicks % 5 === 0) {
+          console.log(`[watchdog] idle=${Math.round(idle / 1000)}s stage=${silenceStage} ivrDone=${ivrDone} agentBusy=${agentBusy} userSpeaking=${userSpeaking}`);
+        }
         if (silenceStage === 0 && idle > 8000) {
           silenceStage = 1;
           silenceSince = Date.now();
+          console.log('[watchdog] 1. uyari: sesinizi alamiyorum');
           session.generateReply({
             instructions:
               'Müşteri bir süredir sessiz. Kısa ve nazik bir dille sesini alamadığını söyle; cümlenin başına "[Ad] Bey/Hanım" ekle: ' +
@@ -760,13 +766,20 @@ export default defineAgent({
           });
         } else if (silenceStage === 1 && idle > 8000) {
           silenceStage = 2;
+          console.log('[watchdog] 2. uyari: hatlarda sorun + 7sn sonra kapat');
           session.generateReply({
             instructions:
               'Müşteri hâlâ sessiz. Kısa, nazik ve anlayışlı bir dille konuşmayı bitir: ' +
               '"[Ad] Bey/Hanım, hatlarda bir sorun var galiba, sizi duyamıyorum. İsterseniz daha sonra tekrar arayabilirsiniz. İyi günler dilerim."',
           });
-          setTimeout(() => { try { void ctx.room.disconnect(); } catch { /* yoksay */ } }, 7000);
+          setTimeout(() => {
+            console.log('[watchdog] session.close + room.disconnect cagriliyor');
+            try { void (session as unknown as { close?: () => Promise<void> }).close?.(); } catch { /* yoksay */ }
+            try { void ctx.room.disconnect(); } catch { /* yoksay */ }
+          }, 7000);
         }
+      } else {
+        watchdogTicks = 0;
       }
     }, 1000);
     session.on(AgentSessionEventTypes.Close, () => {

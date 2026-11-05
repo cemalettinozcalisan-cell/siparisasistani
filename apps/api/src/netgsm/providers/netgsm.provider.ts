@@ -159,31 +159,32 @@ export class NetgsmProvider implements TelephonyProvider {
   }
 
   async sendSms(phone: string, message: string): Promise<{ success: boolean; messageId?: string }> {
-    const params = new URLSearchParams({
-      usercode: this.username,
-      password: this.password,
-      gsmno: phone.startsWith('+') ? phone.slice(1) : phone,
-      message,
-      msgheader: this.msgHeader || 'SIPARIS',
-      dil: 'TR',
-    });
-
-    this.logger.log(`NetGSM sendSms to ${phone}: ${message.substring(0, 50)}...`);
-
-    const response = await fetch(`${this.apiUrl}/sms/send/otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
-
-    const text = await response.text();
-    this.logger.log(`NetGSM sendSms response: ${text}`);
-
-    if (!response.ok) {
-      this.logger.error(`NetGSM sendSms failed: ${text}`);
+    // Giden SMS'ler artık VERİMOR üzerinden gönderilir (NetGSM kaldırıldı).
+    // Tüm çağrılar (esnaf/kampanya/bilgi/AI cevap) buradan geçtiği için tek noktadan Verimor'a yönlendirilir.
+    const username = process.env.VERIMOR_SMS_USERNAME || this.username;
+    const password = process.env.VERIMOR_SMS_PASSWORD || this.password;
+    const header = process.env.VERIMOR_SMS_HEADER || this.msgHeader || '';
+    let p = String(phone || '').replace(/[^\d]/g, '');
+    if (p.startsWith('0')) p = p.slice(1);
+    if (!p.startsWith('90')) p = '90' + p;
+    try {
+      if (!username || !password) {
+        this.logger.warn('Verimor SMS kimligi tanimli degil (VERIMOR_SMS_USERNAME/PASSWORD)');
+        return { success: false };
+      }
+      const params = new URLSearchParams({ username, password, msg: message, dest: p });
+      if (header) params.set('source_addr', header);
+      const response = await fetch(`https://sms.verimor.com.tr/v2/send?${params.toString()}`, { method: 'GET' });
+      const text = (await response.text()).trim();
+      this.logger.log(`Verimor sendSms -> ${p}: ${response.status} ${text.slice(0, 50)}`);
+      if (!response.ok) {
+        this.logger.error(`Verimor sendSms failed: ${text}`);
+        return { success: false };
+      }
+      return { success: true, messageId: text };
+    } catch (e) {
+      this.logger.error(`Verimor sendSms hata: ${(e as Error).message}`);
       return { success: false };
     }
-
-    return { success: true, messageId: text.trim() };
   }
 }
