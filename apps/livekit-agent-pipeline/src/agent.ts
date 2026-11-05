@@ -759,30 +759,16 @@ export default defineAgent({
           silenceStage = 1;
           silenceSince = Date.now();
           console.log('[watchdog] 1. uyari: sesinizi alamiyorum');
-          session.generateReply({
-            instructions:
-              'Müşteri bir süredir sessiz. Kısa ve nazik bir dille sesini alamadığını söyle; cümlenin başına "[Ad] Bey/Hanım" ekle: ' +
-              '"[Ad] Bey/Hanım, sesinizi alamıyorum, beni duyabiliyor musunuz?"',
-          });
+          void sayTts('Sesinizi alamıyorum, beni duyabiliyor musunuz?');
         } else if (silenceStage === 1 && idle > 8000) {
           silenceStage = 2;
           console.log('[watchdog] 2. uyari: hatlarda sorun + 7sn sonra kapat');
-          session.generateReply({
-            instructions:
-              'Müşteri hâlâ sessiz. Kısa, nazik ve anlayışlı bir dille konuşmayı bitir: ' +
-              '"[Ad] Bey/Hanım, hatlarda bir sorun var galiba, sizi duyamıyorum. İsterseniz daha sonra tekrar arayabilirsiniz. İyi günler dilerim."',
-          });
+          void sayTts('Hatlarda bir sorun var galiba, sizi duyamıyorum. İsterseniz daha sonra tekrar arayabilirsiniz. İyi günler dilerim.');
           setTimeout(() => {
-            console.log('[watchdog] kapatiliyor: once room.disconnect, sonra session.close (3sn timeout)');
-            // Önce hattı düşür (anında kapanır), sonra session.close'u timeout'lu çağır.
+            console.log('[watchdog] kapatiliyor: ctx.job.shutdown (SIP hatti) + room.disconnect');
+            // SIP/telefon hattını gerçekten kapatmak için job shutdown gerekir.
             try { void ctx.room.disconnect(); } catch { /* yoksay */ }
-            const closer = (session as unknown as { close?: () => Promise<void> }).close;
-            if (typeof closer === 'function') {
-              void Promise.race([
-                Promise.resolve().then(() => closer.call(session)),
-                new Promise<void>((resolve) => setTimeout(resolve, 3000)),
-              ]).catch(() => { /* yoksay */ });
-            }
+            try { (ctx as unknown as { job?: { shutdown?: (r?: string) => void } }).job?.shutdown?.('timeout'); } catch { /* yoksay */ }
           }, 7000);
         }
       } else {
