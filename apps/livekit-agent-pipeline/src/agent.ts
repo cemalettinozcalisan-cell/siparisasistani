@@ -773,9 +773,16 @@ export default defineAgent({
               '"[Ad] Bey/Hanım, hatlarda bir sorun var galiba, sizi duyamıyorum. İsterseniz daha sonra tekrar arayabilirsiniz. İyi günler dilerim."',
           });
           setTimeout(() => {
-            console.log('[watchdog] session.close + room.disconnect cagriliyor');
-            try { void (session as unknown as { close?: () => Promise<void> }).close?.(); } catch { /* yoksay */ }
+            console.log('[watchdog] kapatiliyor: once room.disconnect, sonra session.close (3sn timeout)');
+            // Önce hattı düşür (anında kapanır), sonra session.close'u timeout'lu çağır.
             try { void ctx.room.disconnect(); } catch { /* yoksay */ }
+            const closer = (session as unknown as { close?: () => Promise<void> }).close;
+            if (typeof closer === 'function') {
+              void Promise.race([
+                Promise.resolve().then(() => closer.call(session)),
+                new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+              ]).catch(() => { /* yoksay */ });
+            }
           }, 7000);
         }
       } else {
