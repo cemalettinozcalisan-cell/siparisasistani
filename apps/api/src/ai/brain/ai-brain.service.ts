@@ -563,9 +563,12 @@ export class AiBrainService {
   }
 
   private attachOrderNumber(reply: string, orderNumber: string): string {
-    const pattern = /(sipari[sş]\s*numaran[ıi]z?\s*[:：]?\s*)(#?[A-Za-z0-9-]+)/i;
-    if (pattern.test(reply)) return reply.replace(pattern, `$1${orderNumber}`);
-    if (reply.includes(orderNumber)) return reply;
+    const label = /(sipari[sş]\s*numaran[ıi]z?\s*[:：]?\s*)(#?[A-Za-z0-9-]+)/i;
+    if (label.test(reply)) return reply.replace(label, `$1${orderNumber}`);
+    const created = /(sipari[sş]iniz\s+olu[sş]turuldu[^.!?]*[.!?]?)/i;
+    if (created.test(reply)) {
+      return reply.replace(created, (matched) => `${matched} Sipariş numaranız: ${orderNumber}.`);
+    }
     return `${reply.trim()} Sipariş numaranız: ${orderNumber}.`;
   }
 
