@@ -119,7 +119,11 @@ export class VerimorIncomingSms {
 
         const orderSummary = (result as { orderSummary?: string }).orderSummary || '';
         if (orderSummary) {
-          await this.sms.sendSms(rawPhone, orderSummary);
+          try {
+            await this.sms.sendSms(rawPhone, orderSummary);
+          } catch (e) {
+            this.logger.warn(`Verimor siparis ozeti gonderilemedi: ${(e as Error).message}`);
+          }
         }
       }
 

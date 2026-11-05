@@ -127,7 +127,11 @@ export class IncomingSmsWebhook {
 
       const orderSummary = result.orderSummary || '';
       if (orderSummary) {
-        await this.netgsm.sendSms(rawPhone, orderSummary);
+        try {
+          await this.netgsm.sendSms(rawPhone, orderSummary);
+        } catch (e) {
+          this.logger.warn(`SMS siparis ozeti gonderilemedi: ${(e as Error).message}`);
+        }
       }
     }
 
