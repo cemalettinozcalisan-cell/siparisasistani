@@ -24,6 +24,16 @@ export function sessionWindowStart(): string {
   return new Date(Date.now() - sessionWindowMinutes() * 60 * 1000).toISOString();
 }
 
+/**
+ * TEST AMAÇLI: "yeni oturum / yeni sipariş" komutunda müşteri hafızasını atla
+ * (isim/adres/telefon baştan sorulsun). Canlıda kapalı olmalı.
+ * .env: TEXT_TEST_RESET_NO_MEMORY=true (test) / false|yok (canlı)
+ */
+export function isTestResetNoMemory(): boolean {
+  const raw = String(process.env.TEXT_TEST_RESET_NO_MEMORY ?? 'false').toLowerCase();
+  return raw === 'true' || raw === '1';
+}
+
 const RESET_PATTERN = /^\s*(yeni\s*sipari[sş]|yeni\s*oturum|yeni\s*sohbet|yeni\s*konu[sş]ma|s[ıi]f[ıi]rla|ba[sş]tan|reset)\s*[.!]*\s*$/i;
 
 export function isResetCommand(text: string): boolean {

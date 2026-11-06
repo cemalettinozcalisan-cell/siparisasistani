@@ -132,15 +132,6 @@ export class IncomingSmsWebhook {
 
       // Send AI reply back via SMS
       await this.netgsm.sendSms(rawPhone, aiReply);
-
-      const orderSummary = result.orderSummary || '';
-      if (orderSummary) {
-        try {
-          await this.netgsm.sendSms(rawPhone, orderSummary);
-        } catch (e) {
-          this.logger.warn(`SMS siparis ozeti gonderilemedi: ${(e as Error).message}`);
-        }
-      }
     }
 
     return { received: true, replySent: !!aiReply, sessionId };

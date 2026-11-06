@@ -188,7 +188,8 @@ export class OrderEngineService {
       const { data: prev } = await this.supabase.db.from('orders').select('customer_note').eq('id', orderId).maybeSingle();
       prevNote = String((prev as Record<string, unknown> | null)?.customer_note || '').trim();
     } catch { /* yoksay */ }
-    const customerNote = [prevNote, input.notes, editNote].filter(Boolean).join(' | ');
+    const notesToAdd = input.notes && !prevNote.includes(String(input.notes)) ? String(input.notes) : '';
+    const customerNote = [prevNote, notesToAdd, editNote].filter(Boolean).join(' | ');
 
     const { data: order, error } = await this.supabase.db
       .from('orders')
@@ -478,29 +479,49 @@ export class OrderEngineService {
   }
 
   /** Ödeme bekleyen (dekont beklenen) IBAN siparişini telefon numarasına göre bulur. */
-  async findAwaitingDekontOrder(tenantId: string, phone: string): Promise<{ id: string } | null> {
-    if (!phone) return null;
-
-    const { data: customer } = await this.supabase.db
-      .from('customers')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('phone', phone)
-      .maybeSingle();
-    if (!customer) return null;
+  async findAwaitingDekontOrder(
+    tenantId: string,
+    phone: string,
+  ): Promise<{ id: string; order_number?: string; customer_name?: string } | null> {
+    const variants = this.phoneVariants(phone);
+    if (!variants.length) return null;
 
     const { data: order } = await this.supabase.db
       .from('orders')
-      .select('id')
+      .select('id, order_number, customer_name')
       .eq('tenant_id', tenantId)
-      .eq('customer_id', customer.id)
-      .in('payment_method', ['iban', 'IBAN'])
+      .eq('payment_method', 'iban')
       .in('payment_status', ['awaiting_dekont', 'waiting'])
+      .in('customer_phone', variants)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    return order ? { id: String(order.id) } : null;
+    return order
+      ? {
+          id: String(order.id),
+          order_number: (order as Record<string, unknown>).order_number as string | undefined,
+          customer_name: (order as Record<string, unknown>).customer_name as string | undefined,
+        }
+      : null;
+  }
+
+  /** Telefon varyantları: 905…, 0 5…, 5… (kanallar arası eşleşme için). */
+  private phoneVariants(phone: string): string[] {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return [];
+    const set = new Set<string>([digits]);
+    if (digits.startsWith('90') && digits.length > 10) {
+      set.add('0' + digits.slice(2));
+      set.add(digits.slice(2));
+    } else if (digits.startsWith('0') && digits.length >= 11) {
+      set.add('9' + digits);
+      set.add(digits.slice(1));
+    } else if (digits.length === 10) {
+      set.add('90' + digits);
+      set.add('0' + digits);
+    }
+    return Array.from(set);
   }
 
   async updateStatus(orderId: string, status: string): Promise<void> {

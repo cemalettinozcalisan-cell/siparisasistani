@@ -13,6 +13,8 @@ interface WaMessage {
   from?: string;
   type?: string;
   text?: { body?: string };
+  image?: { id?: string; caption?: string; mime_type?: string };
+  document?: { id?: string; caption?: string; mime_type?: string; filename?: string };
 }
 
 interface SessionHistoryItem {
@@ -109,6 +111,14 @@ export class WhatsappService {
       }
     }
 
+    const phone = this.normalizePhone(String(msg.from));
+    const convId = await this.conversations.findOrCreate(tenantId, phone);
+
+    if (msg.type === 'image' || msg.type === 'document') {
+      await this.processMedia(tenantId, msg, profileName, convId, phone);
+      return;
+    }
+
     if (msg.type !== 'text') {
       this.logger.log(`WhatsApp desteklenmeyen mesaj tipi: ${msg.type}`);
       return;
@@ -116,9 +126,6 @@ export class WhatsappService {
 
     const text = String(msg.text?.body || '').trim();
     if (!text) return;
-
-    const phone = this.normalizePhone(String(msg.from));
-    const convId = await this.conversations.findOrCreate(tenantId, phone);
 
     await this.conversations.addMessage({
       tenantId,
@@ -171,19 +178,83 @@ export class WhatsappService {
     await this.deliver(tenantId, phone, aiReply, outgoingId);
 
     this.logger.log(`WhatsApp cevap gonderildi (${profileName || phone}): ${aiReply.substring(0, 80)}`);
+  }
 
-    const orderSummary = (result.orderSummary || '').trim();
-    if (orderSummary) {
-      const summaryId = await this.conversations.addMessage({
-        tenantId,
-        conversationId: convId,
-        direction: 'outgoing',
-        body: orderSummary,
-        status: 'sending',
-      });
-      await this.deliver(tenantId, phone, orderSummary, summaryId);
-      this.logger.log(`WhatsApp siparis ozeti gonderildi (${profileName || phone})`);
+  private async processMedia(
+    tenantId: string,
+    msg: WaMessage,
+    profileName: string,
+    convId: string,
+    phone: string,
+  ) {
+    const media = msg.image || msg.document;
+    const mediaId = String(media?.id || '');
+    const caption = String(media?.caption || '').trim();
+    let mediaUrl: string | undefined;
+    if (mediaId) {
+      try {
+        mediaUrl = await this.saveMedia(tenantId, mediaId, String(msg.id || ''), media?.mime_type);
+      } catch (e) {
+        this.logger.warn(`WhatsApp medya indirilemedi: ${(e as Error).message}`);
+      }
     }
+
+    await this.conversations.addMessage({
+      tenantId,
+      conversationId: convId,
+      direction: 'incoming',
+      body: caption || '[Görsel/Dekont]',
+      mediaUrl,
+    });
+
+    // OCR yok: müşteriden metin teyidi iste (dekont işaretlemesi metinle yapılır).
+    const reply = 'Dekontunuzu aldım. Siparişinizi oluşturmak için lütfen "gönderdim" yazın.';
+    const outgoingId = await this.conversations.addMessage({
+      tenantId,
+      conversationId: convId,
+      direction: 'outgoing',
+      body: reply,
+      status: 'sending',
+    });
+    await this.deliver(tenantId, phone, reply, outgoingId);
+    this.logger.log(`WhatsApp medya alindi (${profileName || phone})`);
+  }
+
+  private async saveMedia(
+    tenantId: string,
+    mediaId: string,
+    messageId: string,
+    mimeType?: string,
+  ): Promise<string | undefined> {
+    const creds = await this.whatsapp.getCredentials(tenantId);
+    if (!creds) return undefined;
+
+    const metaRes = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${creds.token}` },
+    });
+    if (!metaRes.ok) throw new Error(`media meta HTTP ${metaRes.status}`);
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string };
+    if (!meta.url) throw new Error('media url yok');
+
+    const binRes = await fetch(meta.url, { headers: { Authorization: `Bearer ${creds.token}` } });
+    if (!binRes.ok) throw new Error(`media download HTTP ${binRes.status}`);
+    const buffer = Buffer.from(await binRes.arrayBuffer());
+
+    const contentType = mimeType || meta.mime_type || 'image/jpeg';
+    const ext = (contentType.split('/')[1] || 'bin').split(';')[0];
+    const path = `${tenantId}/${messageId || Date.now()}.${ext}`;
+
+    const bucketCheck = await this.supabase.db.storage.getBucket('whatsapp-media');
+    if (bucketCheck.error) {
+      await this.supabase.db.storage.createBucket('whatsapp-media', { public: true });
+    }
+    const { error } = await this.supabase.db.storage
+      .from('whatsapp-media')
+      .upload(path, buffer, { contentType, upsert: true });
+    if (error) throw new Error(error.message);
+
+    const { data } = this.supabase.db.storage.from('whatsapp-media').getPublicUrl(path);
+    return data?.publicUrl;
   }
 
   private async deliver(tenantId: string, phone: string, body: string, outgoingId?: string) {

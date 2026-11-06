@@ -22,6 +22,8 @@ export interface PromptContext {
   channel: 'phone' | 'whatsapp' | 'instagram' | 'sms';
   currentState: string;
   collectedData?: Record<string, unknown>;
+  /** true ise müşteri hafızası (geçmiş sipariş/isim) prompt'a eklenmez (test sıfırlama). */
+  skipMemory?: boolean;
 }
 
 @Injectable()
@@ -51,7 +53,7 @@ export class PromptEngineService {
       this.campaigns.renderCampaignPrompt(ctx.tenantId),
       this.salesCoach.render(ctx),
       this.scopeRules.render(ctx),
-      this.memory.buildContext(ctx.tenantId, ctx.customerPhone),
+      ctx.skipMemory ? '' : this.memory.buildContext(ctx.tenantId, ctx.customerPhone),
       this.rules.render(ctx),
       this.customerCtx.render(ctx),
       this.taskDef.render(ctx),

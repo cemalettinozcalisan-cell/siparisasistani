@@ -124,15 +124,6 @@ export class VerimorIncomingSms {
           })
           .eq('id', (result as { sessionId?: string }).sessionId || sessionId);
         await this.sms.sendSms(rawPhone, aiReply);
-
-        const orderSummary = (result as { orderSummary?: string }).orderSummary || '';
-        if (orderSummary) {
-          try {
-            await this.sms.sendSms(rawPhone, orderSummary);
-          } catch (e) {
-            this.logger.warn(`Verimor siparis ozeti gonderilemedi: ${(e as Error).message}`);
-          }
-        }
       }
 
       return { received: true, replySent: !!aiReply, sessionId };

@@ -10,7 +10,7 @@ import { ComplaintProcessorService } from '../../complaint-processor/complaint-p
 import { SupabaseService } from '../../common/supabase.client';
 import { ChannelHealthService } from '../../channel-health/channel-health.service';
 import { normalizePayment, parseBirthday } from '../order-normalize';
-import { generateSessionLabel, isResetCommand } from '../../common/chat-session';
+import { generateSessionLabel, isResetCommand, isTestResetNoMemory } from '../../common/chat-session';
 
 export interface BrainInput {
   tenantId: string;
@@ -44,7 +44,6 @@ export interface BrainOutput {
   sendWhatsapp?: boolean;
   whatsappMessage?: string;
   complaintCreated?: boolean;
-  orderSummary?: string;
   resetHistory?: boolean;
 }
 
@@ -120,19 +119,26 @@ export class AiBrainService {
     // "Yeni sipariş / sıfırla / baştan" komutu: yeni ve temiz bir oturum aç,
     // böylece her siparişin audit/transkripti ayrı olur (panel karışmaz).
     if (isResetCommand(lastMessage)) {
-      const greetingName = await this.getCustomerName(input.tenantId, input.phone);
+      const skipMemory = isTestResetNoMemory();
+      const greetingName = skipMemory ? undefined : await this.getCustomerName(input.tenantId, input.phone);
       const newSessionId = await this.createSession(
         input.tenantId,
         input.channel,
         input.phone,
         input.channelSource,
       );
+      if (skipMemory) {
+        await this.supabase.db
+          .from('conversation_sessions')
+          .update({ session_data: { skipMemory: true } })
+          .eq('id', newSessionId);
+      }
       await this.endSession(sessionId, 'reset');
-      this.logger.log(`Session reset by command: ${sessionId} -> ${newSessionId}`);
+      this.logger.log(`Session reset by command: ${sessionId} -> ${newSessionId} (skipMemory=${skipMemory})`);
       return {
         reply: greetingName
           ? `Merhaba ${greetingName}, yeni siparişinizi alabilirim. Ne almak istersiniz?`
-          : 'Tabii, yeni siparişinizi alabilirim. Ne almak istersiniz?',
+          : 'Merhaba, yeni siparişinizi alabilirim. Ne almak istersiniz?',
         confidence: 100,
         orderCreated: false,
         sessionId: newSessionId,
@@ -154,13 +160,15 @@ export class AiBrainService {
 
     // Step 5: Prompt
     const tenantName = await this.getTenantName(input.tenantId);
+    const skipMemory = await this.getSkipMemory(sessionId);
 
     const promptCtx: PromptContext = {
       tenantId: input.tenantId,
       tenantName,
-      customerPhone: input.phone,
+      customerPhone: skipMemory ? undefined : input.phone,
       channel: input.channel,
       currentState: this.detectState(input.messages),
+      skipMemory,
     };
 
     const systemPrompt = await this.promptEngine.buildSystemPrompt(promptCtx);
@@ -457,13 +465,29 @@ export class AiBrainService {
         await this.endSession(sessionId, 'completed');
         await this.updateSessionOrder(sessionId, order.order_id, order.order_number);
 
+        const customerName = String(parsed.customer?.name || '').trim();
+        let reply: string;
+        if (normalizedPayment === 'iban') {
+          // Havale: numara ve doğum günü dekont onayından SONRA söylenir.
+          const iban = await this.getTenantIban(input.tenantId);
+          reply = [
+            `Siparişiniz alındı${customerName ? ', sayın ' + customerName : ''}.`,
+            iban ? `Havale/IBAN: ${iban}.` : '',
+            'Dekontu ilettiğinizde siparişinizi onaylayıp kargoya verelim.',
+          ]
+            .filter(Boolean)
+            .join(' ');
+        } else {
+          // Kapıda: gerçek sipariş no'yu doğum günü sorusundan önce ekle.
+          reply = this.attachOrderNumber(parsed.reply || response.content, order.order_number);
+        }
+
         return {
-          reply: parsed.reply || response.content,
+          reply,
           confidence: parsed.confidence || 0,
           orderCreated: true,
           orderId: order.order_id,
           orderNumber: order.order_number,
-          orderSummary: this.buildOrderSummary(orderInput, order),
           sessionId,
           needsHuman: (parsed.confidence || 0) < 50,
           maintenanceMode: false,
@@ -663,6 +687,23 @@ export class AiBrainService {
     return (data?.name as string) || undefined;
   }
 
+  private async getSkipMemory(sessionId: string): Promise<boolean> {
+    const { data } = await this.supabase.db
+      .from('conversation_sessions')
+      .select('session_data')
+      .eq('id', sessionId)
+      .maybeSingle();
+    let sessionData = (data as { session_data?: unknown } | null)?.session_data;
+    if (typeof sessionData === 'string') {
+      try {
+        sessionData = JSON.parse(sessionData);
+      } catch {
+        sessionData = null;
+      }
+    }
+    return Boolean(sessionData && (sessionData as Record<string, unknown>).skipMemory);
+  }
+
   /**
    * AI'ya verilecek konusma gecmisi: audit'lerdeki yapisal parsed_json ile.
    * JSON mode'da duz metin asistan mesajlari bosluk urettigi icin assistant
@@ -706,22 +747,37 @@ export class AiBrainService {
       this.supabase.db.from('orders').select('payment_method').eq('id', existingOrderId).maybeSingle(),
       this.supabase.db
         .from('order_items')
-        .select('product_name, quantity, unit')
+        .select('product_name, quantity, unit, total')
         .eq('order_id', existingOrderId),
     ]);
 
+    type ItemRow = { product_name?: string; quantity?: number; unit?: string; total?: number };
     const normText = (value?: string) => String(value || '').trim().toLocaleLowerCase('tr-TR');
-    const itemKey = (item: { product_name?: string; quantity?: number; unit?: string }) =>
+    const itemKey = (item: ItemRow) =>
       `${normText(item.product_name)}|${Number(item.quantity || 0)}|${normText(item.unit)}`;
-    const currentItems = ((items || []) as { product_name?: string; quantity?: number; unit?: string }[])
+
+    const currentItems = (items || []) as ItemRow[];
+    // Hediye/0 TL satırlarını karşılaştırmadan çıkar (ör. kampanya kavurma).
+    const giftNames = currentItems
+      .filter((item) => Number(item.total || 0) === 0)
+      .map((item) => normText(item.product_name))
+      .filter(Boolean);
+    const isGift = (name?: string) => {
+      const n = normText(name);
+      return giftNames.some((gift) => n === gift || n.includes(gift));
+    };
+
+    const currentKey = currentItems
+      .filter((item) => Number(item.total || 0) > 0)
       .map(itemKey)
       .sort()
       .join(';');
-    const nextItems = (orderInput.products || [])
-      .map((item) => itemKey(item as { product_name?: string; quantity?: number; unit?: string }))
+    const nextKey = (orderInput.products || [])
+      .filter((item) => !isGift((item as ItemRow).product_name))
+      .map((item) => itemKey(item as ItemRow))
       .sort()
       .join(';');
-    if (currentItems !== nextItems) return true;
+    if (currentKey !== nextKey) return true;
 
     const normPayment = (value?: string) => {
       const v = String(value || '').toLowerCase();
@@ -748,24 +804,24 @@ export class AiBrainService {
     }
   }
 
-  private buildOrderSummary(
-    orderInput: AiOrderInput,
-    order: { order_number: string; total_price: number },
-  ): string {
-    const tl = (amount: number) => Number(amount || 0).toLocaleString('tr-TR');
-    const items = (orderInput.products || [])
-      .map((item) => `${item.quantity} ${String(item.unit).toLowerCase()} ${item.product_name}`)
-      .join(', ');
-    const address = [orderInput.customer.address, orderInput.customer.city].filter(Boolean).join(', ');
-    return [
-      `Siparişiniz alındı. Sipariş No: #${order.order_number}`,
-      `Ürünler: ${items}`,
-      `Toplam: ${tl(order.total_price)} TL`,
-      address ? `Teslimat: ${address}` : '',
-      'Bilgi için bizi arayabilirsiniz.',
-    ]
-      .filter(Boolean)
-      .join('\n');
+  /** Sipariş numarasını, doğum günü sorusundan ÖNCE yanıta yerleştirir. */
+  private attachOrderNumber(reply: string, orderNumber: string): string {
+    const label = /(sipari[sş]\s*numaran[ıi]z?\s*[:：]?\s*)(#?[A-Za-z0-9-]+)/i;
+    if (label.test(reply)) return reply.replace(label, `$1${orderNumber}`);
+    const created = /(sipari[sş]iniz\s+olu[sş]turuldu[^.!?]*[.!?]?)/i;
+    if (created.test(reply)) {
+      return reply.replace(created, (matched) => `${matched} Sipariş numaranız: ${orderNumber}.`);
+    }
+    return `${reply.trim()} Sipariş numaranız: ${orderNumber}.`;
+  }
+
+  private async getTenantIban(tenantId: string): Promise<string | undefined> {
+    const { data } = await this.supabase.db
+      .from('tenants')
+      .select('iban')
+      .eq('id', tenantId)
+      .maybeSingle();
+    return (data?.iban as string) || undefined;
   }
 
   private async endSession(sessionId: string, endReason: string) {
@@ -808,8 +864,17 @@ export class AiBrainService {
     if (!handled) return null;
 
     this.logger.log(`Dekont detected in conversation for order ${order.id} (${input.channel})`);
+    const name = String(order.customer_name || '').trim();
+    const orderNumber = String(order.order_number || '').trim();
+    const reply = [
+      `Siparişiniz oluştu${name ? ', sayın ' + name : ''}.`,
+      orderNumber ? `Sipariş numaranız: ${orderNumber}.` : '',
+      'Bu arada doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz.',
+    ]
+      .filter(Boolean)
+      .join(' ');
     return {
-      reply: 'Dekontunuz alındı, esnafımız onaylayacak. En kısa sürede kargoya veriyoruz.',
+      reply,
       confidence: 90,
       orderCreated: false,
       sessionId,

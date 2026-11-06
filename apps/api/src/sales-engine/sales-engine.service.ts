@@ -20,6 +20,83 @@ export class SalesEngineService {
     private readonly iys: IysService,
   ) {}
 
+  // Havale/IBAN dekont hatırlatması (varsayılan 3 saat, tek sefer)
+  @Cron('*/30 * * * *')
+  async checkDekontReminders() {
+    try {
+      const configured = Number(process.env.DEKONT_REMINDER_HOURS || '3');
+      const hours = Number.isFinite(configured) && configured > 0 ? configured : 3;
+      const cutoff = new Date(Date.now() - hours * 3600000).toISOString();
+
+      // Sessiz saatlerde gönderme (09:00 - 21:00)
+      const hourNow = new Date().getHours();
+      if (hourNow < 9 || hourNow >= 21) return;
+
+      const { data: orders } = await this.supabase.db
+        .from('orders')
+        .select('id, tenant_id, order_number, customer_name, customer_phone, created_at')
+        .eq('payment_method', 'iban')
+        .in('payment_status', ['awaiting_dekont', 'waiting'])
+        .lt('created_at', cutoff)
+        .is('dekont_reminder_sent_at', null)
+        .order('created_at', { ascending: true })
+        .limit(50);
+
+      for (const row of (orders || []) as Record<string, unknown>[]) {
+        const tenantId = String(row.tenant_id || '');
+        const phone = String(row.customer_phone || '');
+        if (!tenantId || !phone) continue;
+
+        const name = String(row.customer_name || '').trim();
+        const orderNumber = String(row.order_number || '').trim();
+        const body = [
+          `Sayın${name ? ' ' + name : ''},`,
+          orderNumber ? `${orderNumber} numaralı siparişiniz` : 'Siparişiniz',
+          'havale/IBAN ödemesi bekliyor.',
+          'Havaleyi yaptıysanız dekontu ileterek siparişinizi oluşturabiliriz.',
+        ].join(' ');
+
+        let sent = false;
+        try {
+          const wa = await this.outbound.send({
+            tenantId,
+            channel: 'whatsapp',
+            to: phone,
+            body,
+            orderId: String(row.id),
+          });
+          sent = wa.success;
+        } catch {
+          /* yoksay */
+        }
+        if (!sent) {
+          try {
+            const sms = await this.outbound.send({
+              tenantId,
+              channel: 'sms',
+              to: phone,
+              body,
+              orderId: String(row.id),
+            });
+            sent = sms.success;
+          } catch {
+            /* yoksay */
+          }
+        }
+
+        if (sent) {
+          await this.supabase.db
+            .from('orders')
+            .update({ dekont_reminder_sent_at: new Date().toISOString() })
+            .eq('id', row.id);
+          this.logger.log(`Dekont reminder sent for order ${orderNumber || String(row.id)}`);
+        }
+      }
+    } catch (e) {
+      this.logger.error(`Dekont reminder check failed: ${(e as Error).message}`);
+    }
+  }
+
   // Abandoned cart check every hour (more frequent than daily ops)
   @Cron('0 * * * *') // every hour
   async checkAbandonedCarts() {

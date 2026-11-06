@@ -123,12 +123,6 @@ export class InstagramService {
             await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
             await this.sendMessage(conv.id, tenantId, aiReply);
 
-            const orderSummary = result.orderSummary || '';
-            if (orderSummary) {
-              await this.saveMessage(conv.id, tenantId, 'outgoing', orderSummary);
-              await this.sendMessage(conv.id, tenantId, orderSummary);
-            }
-
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
             await this.channelHealth.record(tenantId, 'instagram', true);
           }
