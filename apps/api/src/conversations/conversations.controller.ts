@@ -66,7 +66,17 @@ export class ConversationsController {
 
       // Build transcript from session.messages when no audit logs exist (seed/test data)
       let transcript = audits || [];
-      const sessionMessages = (session as any).messages as Array<{ role?: string; content?: string }> | null;
+      let sessionMessages = (session as any).messages as
+        | Array<{ role?: string; content?: string }>
+        | string
+        | null;
+      if (typeof sessionMessages === 'string') {
+        try {
+          sessionMessages = JSON.parse(sessionMessages);
+        } catch {
+          sessionMessages = [];
+        }
+      }
       if (transcript.length === 0 && Array.isArray(sessionMessages) && sessionMessages.length > 0) {
         transcript = sessionMessages.map((m) => ({
           user_message: m.content || '',
@@ -81,14 +91,34 @@ export class ConversationsController {
       // WhatsApp: yalnızca BU oturumun mesajları (telefonun tüm geçmişi DEĞİL)
       const sessionChannel = (session as any).channel;
       let waMessages: any[] = [];
-      if (sessionChannel === 'whatsapp' && Array.isArray(sessionMessages)) {
-        const baseTime = (session as any).created_at || new Date().toISOString();
-        waMessages = sessionMessages.map((m, idx) => ({
-          id: `s-${idx}`,
-          direction: m.role === 'user' || m.role === 'customer' ? 'incoming' : 'outgoing',
-          body: m.content || '',
-          created_at: baseTime,
-        }));
+      if (sessionChannel === 'whatsapp') {
+        waMessages = ((audits || []) as any[]).flatMap((a) => {
+          const out: any[] = [];
+          if (a.user_message) {
+            out.push({
+              id: `u-${a.created_at}`,
+              direction: 'incoming',
+              body: String(a.user_message),
+              created_at: a.created_at,
+            });
+          }
+          if (a.raw_response) {
+            let reply = String(a.raw_response);
+            try {
+              const parsed = JSON.parse(reply);
+              reply = String(parsed.reply || reply);
+            } catch {
+              /* ham metin */
+            }
+            out.push({
+              id: `a-${a.created_at}`,
+              direction: 'outgoing',
+              body: reply,
+              created_at: a.created_at,
+            });
+          }
+          return out;
+        });
       }
 
       // Gerçek oturumda ASLA mock dönme; veri yoksa boş dön (mock yalnız mock id'lerde).
