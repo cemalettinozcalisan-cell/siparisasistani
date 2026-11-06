@@ -120,7 +120,14 @@ export class VerimorIncomingSms {
           .update({
             messages: storedMessages,
             updated_at: new Date().toISOString(),
-            status: (result as { orderCreated?: boolean }).orderCreated ? 'completed' : 'active',
+            status:
+              (result as { orderCreated?: boolean }).orderCreated ||
+              (result as { sessionClosed?: boolean }).sessionClosed
+                ? 'completed'
+                : 'active',
+            ...((result as { sessionClosed?: boolean }).sessionClosed
+              ? { end_reason: 'goodbye', ended_at: new Date().toISOString() }
+              : {}),
           })
           .eq('id', (result as { sessionId?: string }).sessionId || sessionId);
         await this.sms.sendSms(rawPhone, aiReply);

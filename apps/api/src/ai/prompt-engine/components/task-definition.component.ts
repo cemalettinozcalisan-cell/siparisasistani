@@ -44,6 +44,13 @@ export class TaskDefinitionComponent {
       'MODERASYON: Müşteri küfür/hakaret/öfke kullanırsa sakin kal, asla karşılık verme, tartışmaya girme. Sorunu çözmeye odaklan; çözülemezse yetkiliye aktar. Müşteriyi 3 kez anlayamazsan farklı uslupla yeniden dene, sonra WhatsApp kanalına davet et (WhatsApp ise), çözülmezse yetkiliye aktar.',
     ];
 
+    if (ctx.pendingDekont) {
+      tasks.push(
+        '',
+        'IBAN ÖDEMESİ BEKLENİYOR: Dekont henüz gelmedi. Doğum günü SORMA, sipariş numarası SÖYLEME, "siparişiniz oluştu" DEME. Kibarca "Dekontu ilettiğinizde siparişinizi onaylayıp kargoya vereceğiz" de.',
+      );
+    }
+
     if (ctx.currentState === 'GREETING') {
       tasks.push('', '[ŞU ANKİ ADIM] Karşılama - Müşteriyi tanı ve sipariş almaya başla.');
     } else if (ctx.currentState === 'ISIM') {

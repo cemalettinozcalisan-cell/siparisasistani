@@ -492,6 +492,8 @@ export class OrderEngineService {
       .eq('tenant_id', tenantId)
       .eq('payment_method', 'iban')
       .in('payment_status', ['awaiting_dekont', 'waiting'])
+      .neq('status', 'cancelled')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
       .in('customer_phone', variants)
       .order('created_at', { ascending: false })
       .limit(1)

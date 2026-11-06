@@ -126,7 +126,10 @@ export class IncomingSmsWebhook {
         .update({
           messages: storedMessages,
           updated_at: new Date().toISOString(),
-          status: result.orderCreated ? 'completed' : 'active',
+          status: result.orderCreated || result.sessionClosed ? 'completed' : 'active',
+          ...(result.sessionClosed
+            ? { end_reason: 'goodbye', ended_at: new Date().toISOString() }
+            : {}),
         })
         .eq('id', result.sessionId || sessionId);
 

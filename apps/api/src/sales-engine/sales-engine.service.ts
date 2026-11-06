@@ -20,6 +20,95 @@ export class SalesEngineService {
     private readonly iys: IysService,
   ) {}
 
+  // Tamamlanmayan sipariş hatırlatması: 10 dk -> 1., +2 saat -> 2. (en fazla 2)
+  @Cron('*/5 * * * *')
+  async checkIncompleteOrderReminders() {
+    try {
+      const now = Date.now();
+      const tenMinAgo = new Date(now - 10 * 60 * 1000).toISOString();
+      const dayAgo = new Date(now - 24 * 3600 * 1000).toISOString();
+
+      const { data: sessions } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('id, tenant_id, phone, channel, updated_at')
+        .eq('status', 'active')
+        .is('order_id', null)
+        .gte('updated_at', dayAgo)
+        .lt('updated_at', tenMinAgo)
+        .order('updated_at', { ascending: true })
+        .limit(50);
+
+      for (const row of (sessions || []) as Record<string, unknown>[]) {
+        const sessionId = String(row.id || '');
+        const tenantId = String(row.tenant_id || '');
+        const phone = this.normalizePhone(String(row.phone || ''));
+        const channel = String(row.channel || '');
+        if (!sessionId || !tenantId || !phone) continue;
+        if (!['whatsapp', 'sms', 'phone', 'instagram'].includes(channel)) continue;
+
+        const { data: reminders } = await this.supabase.db
+          .from('follow_up_reminders')
+          .select('stage, sent_at')
+          .eq('session_id', sessionId)
+          .order('stage', { ascending: true });
+
+        const rows = (reminders || []) as { stage: number; sent_at: string }[];
+        if (rows.some((r) => r.stage === 2)) continue;
+
+        const updatedAt = String(row.updated_at || '');
+        const latest = rows[rows.length - 1];
+        // Müşteri son hatırlatmadan sonra yazdıysa döngüyü sıfırla.
+        if (latest && updatedAt && new Date(updatedAt).getTime() > new Date(latest.sent_at).getTime()) {
+          await this.supabase.db.from('follow_up_reminders').delete().eq('session_id', sessionId);
+          continue;
+        }
+
+        const stage1 = rows.find((r) => r.stage === 1);
+        let stage = 1;
+        if (!stage1) {
+          stage = 1;
+        } else if (now - new Date(stage1.sent_at).getTime() >= 2 * 3600 * 1000) {
+          stage = 2;
+        } else {
+          continue;
+        }
+
+        const body = 'Efendim, siparişiniz tamamlanmadı. Kaldığımız yerden devam etmek ister misiniz?';
+        let sent = false;
+        try {
+          const wa = await this.outbound.send({ tenantId, channel: 'whatsapp', to: phone, body });
+          sent = wa.success;
+        } catch {
+          /* yoksay */
+        }
+        if (!sent) {
+          try {
+            const sms = await this.outbound.send({ tenantId, channel: 'sms', to: phone, body });
+            sent = sms.success;
+          } catch {
+            /* yoksay */
+          }
+        }
+
+        if (sent) {
+          await this.supabase.db.from('follow_up_reminders').upsert(
+            {
+              tenant_id: tenantId,
+              session_id: sessionId,
+              stage,
+              last_activity_at: updatedAt || null,
+              sent_at: new Date().toISOString(),
+            },
+            { onConflict: 'session_id,stage' },
+          );
+          this.logger.log(`Incomplete order reminder (stage ${stage}) for session ${sessionId}`);
+        }
+      }
+    } catch (e) {
+      this.logger.error(`Incomplete order reminder failed: ${(e as Error).message}`);
+    }
+  }
+
   // Havale/IBAN dekont hatırlatması (varsayılan 3 saat, tek sefer)
   @Cron('*/30 * * * *')
   async checkDekontReminders() {
@@ -37,6 +126,8 @@ export class SalesEngineService {
         .select('id, tenant_id, order_number, customer_name, customer_phone, created_at')
         .eq('payment_method', 'iban')
         .in('payment_status', ['awaiting_dekont', 'waiting'])
+        .neq('status', 'cancelled')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
         .lt('created_at', cutoff)
         .is('dekont_reminder_sent_at', null)
         .order('created_at', { ascending: true })
@@ -44,7 +135,7 @@ export class SalesEngineService {
 
       for (const row of (orders || []) as Record<string, unknown>[]) {
         const tenantId = String(row.tenant_id || '');
-        const phone = String(row.customer_phone || '');
+        const phone = this.normalizePhone(String(row.customer_phone || ''));
         if (!tenantId || !phone) continue;
 
         const name = String(row.customer_name || '').trim();
@@ -270,7 +361,7 @@ export class SalesEngineService {
     // Find abandoned conversations across all channels (phone, whatsapp, instagram)
     const { data: sessions } = await this.supabase.db
       .from('conversation_sessions')
-      .select('id, phone, channel, status, session_label, session_data, created_at')
+        .select('id, phone, channel, status, session_label, session_data, order_id, created_at')
       .eq('tenant_id', tenantId)
       .neq('status', 'completed')
       .neq('status', 'closed')
@@ -280,9 +371,17 @@ export class SalesEngineService {
 
     if (!sessions || sessions.length === 0) return;
 
-    for (const s of sessions || []) {
-      const phone = (s as any).phone as string;
-      if (!phone) continue;
+      for (const s of sessions || []) {
+        // Metin kanallarında tamamlanmayan siparişler artık yeni 10dk+2sa hatırlatmasıyla ele alınır.
+        const sessionChannel = String((s as any).channel || '');
+        if (
+          ['whatsapp', 'sms', 'instagram'].includes(sessionChannel) &&
+          !(s as any).order_id
+        ) {
+          continue;
+        }
+        const phone = (s as any).phone as string;
+        if (!phone) continue;
 
       // Find associated customer
       const { data: customer } = await this.supabase.db
@@ -315,6 +414,15 @@ export class SalesEngineService {
       await this.logCampaign(tenantId, 'abandoned_cart', (customer as any)?.id || phone, message, phone);
       this.logger.log(`[AbandonedCart] Tenant ${tenantId}: Session ${(s as any).id} (${(s as any).channel}) - ${customerName}`);
     }
+  }
+
+  private normalizePhone(value: string): string {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('0') && digits.length >= 11) return '9' + digits;
+    if (digits.startsWith('90')) return digits;
+    if (digits.length === 10) return '90' + digits;
+    return digits;
   }
 
   private async logCampaign(tenantId: string, type: string, customerId: string, message: string, phone?: string, channel: 'sms' | 'whatsapp' | 'instagram' = 'whatsapp') {

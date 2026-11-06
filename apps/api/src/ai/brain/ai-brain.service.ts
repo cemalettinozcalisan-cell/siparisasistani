@@ -45,6 +45,7 @@ export interface BrainOutput {
   whatsappMessage?: string;
   complaintCreated?: boolean;
   resetHistory?: boolean;
+  sessionClosed?: boolean;
 }
 
 export interface CallSummary {
@@ -161,6 +162,7 @@ export class AiBrainService {
     // Step 5: Prompt
     const tenantName = await this.getTenantName(input.tenantId);
     const skipMemory = await this.getSkipMemory(sessionId);
+    const pendingDekont = existingOrderId ? await this.isPendingDekont(existingOrderId) : false;
 
     const promptCtx: PromptContext = {
       tenantId: input.tenantId,
@@ -169,6 +171,7 @@ export class AiBrainService {
       channel: input.channel,
       currentState: this.detectState(input.messages),
       skipMemory,
+      pendingDekont,
     };
 
     const systemPrompt = await this.promptEngine.buildSystemPrompt(promptCtx);
@@ -321,6 +324,10 @@ export class AiBrainService {
       }
     }
 
+    const sessionClosed =
+      parsed.conversationStage === 'GOODBYE' ||
+      /(iyi günler|görüşmek üzere|hoşça kal|kendinize iyi bak)/i.test(parsed.reply || '');
+
     const routingFields = {
       intent: parsed.intent,
       complaintType: parsed.complaintType,
@@ -330,6 +337,7 @@ export class AiBrainService {
       recommendedAction: parsed.recommendedAction,
       sendWhatsapp: this.detectWhatsappRequest(parsed.reply || ''),
       whatsappMessage: parsed.reply || '',
+      sessionClosed,
     };
 
     // Faz 3: Birleşik Şikayet Hattı — şikayet intent'ini tüm kanallarda tek noktadan kaydet
@@ -704,6 +712,20 @@ export class AiBrainService {
     return Boolean(sessionData && (sessionData as Record<string, unknown>).skipMemory);
   }
 
+  private async isPendingDekont(orderId: string): Promise<boolean> {
+    const { data } = await this.supabase.db
+      .from('orders')
+      .select('payment_method, payment_status, status')
+      .eq('id', orderId)
+      .maybeSingle();
+    const order = (data || {}) as Record<string, unknown>;
+    return (
+      String(order.payment_method || '') === 'iban' &&
+      ['awaiting_dekont', 'waiting'].includes(String(order.payment_status || '')) &&
+      String(order.status || '') !== 'cancelled'
+    );
+  }
+
   /**
    * AI'ya verilecek konusma gecmisi: audit'lerdeki yapisal parsed_json ile.
    * JSON mode'da duz metin asistan mesajlari bosluk urettigi icin assistant
@@ -853,15 +875,36 @@ export class AiBrainService {
   }
 
   private async maybeHandleDekont(input: BrainInput, lastMessage: string, sessionId: string): Promise<BrainOutput | null> {
-    if (!/dekont|att[ıi]m|gönderdim|gönderdik|ödedim|havale\s*(yapt|gönder)|transfer\s*(yapt|gönder)/i.test(lastMessage)) {
-      return null;
+    // Yalnızca TAMAMLANMIŞ eylem: "attım / gönderdim / ödedim / havale yaptım".
+    // "dekontu atayım / atacağım / göndereceğim" gibi gelecek zaman EŞLEŞMEZ.
+    const dekontDone =
+      /(att[ıi]m|gönderdim|gönderdik|ilettim|yolladım|ulaşt[ıi]|ödedim|ödeme(yi)?\s*(yapt[ıi]m|gönderdim)|havale(yi)?\s*(yapt[ıi]m|gönderdim)|transfer(i)?\s*(yapt[ıi]m|gönderdim))/i;
+    if (!dekontDone.test(lastMessage)) return null;
+
+    // Önce BU oturumun siparişi (yanlış/eski siparişe bulaşmayı önler).
+    const sessionOrderId = await this.getSessionOrderId(sessionId);
+    let order: { id: string; order_number?: string; customer_name?: string } | null = null;
+
+    if (sessionOrderId) {
+      const handled = await this.orderEngine.markDekontReceived(sessionOrderId, 'auto');
+      if (!handled) return null; // bu oturumun siparişi uygun değil → telefon yedeğine DÜŞME
+      const { data } = await this.supabase.db
+        .from('orders')
+        .select('order_number, customer_name')
+        .eq('id', sessionOrderId)
+        .maybeSingle();
+      order = {
+        id: sessionOrderId,
+        order_number: (data as Record<string, unknown> | null)?.order_number as string | undefined,
+        customer_name: (data as Record<string, unknown> | null)?.customer_name as string | undefined,
+      };
+    } else {
+      // Yeni oturum (dekont sonradan geldi): telefonla en son bekleyen (son 7 gün).
+      order = await this.orderEngine.findAwaitingDekontOrder(input.tenantId, input.phone);
+      if (!order) return null;
+      const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');
+      if (!handled) return null;
     }
-
-    const order = await this.orderEngine.findAwaitingDekontOrder(input.tenantId, input.phone);
-    if (!order) return null;
-
-    const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');
-    if (!handled) return null;
 
     this.logger.log(`Dekont detected in conversation for order ${order.id} (${input.channel})`);
     const name = String(order.customer_name || '').trim();

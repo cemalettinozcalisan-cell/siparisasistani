@@ -24,6 +24,8 @@ export interface PromptContext {
   collectedData?: Record<string, unknown>;
   /** true ise müşteri hafızası (geçmiş sipariş/isim) prompt'a eklenmez (test sıfırlama). */
   skipMemory?: boolean;
+  /** true ise IBAN ödemesi dekont bekliyor; doğum günü/numara sorulmaz. */
+  pendingDekont?: boolean;
 }
 
 @Injectable()
