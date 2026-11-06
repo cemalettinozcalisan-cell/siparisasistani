@@ -171,13 +171,25 @@ export class AiBrainService {
     const provider = this.aiFactory.getProvider(settings?.aiProvider || undefined);
     const effectiveProvider = settings?.aiProvider || 'deepseek';
 
-    const aiMessages = [
-      { role: 'system' as const, content: fullPrompt },
-      ...input.messages.map((m) => ({
-        role: m.role as 'system' | 'user' | 'assistant',
-        content: m.content,
-      })),
-    ];
+    // JSON mode + duz metin asistan gecmisi DeepSeek'te bosluk dondurebiliyor.
+    // Bu yuzden gecmisi audit'lerdeki YAPISAL parsed_json ile veriyoruz.
+    const structuredHistory = await this.getStructuredHistory(sessionId);
+    const aiMessages = structuredHistory.length > 0
+      ? [
+          { role: 'system' as const, content: fullPrompt },
+          ...structuredHistory,
+          { role: 'user' as const, content: lastMessage },
+        ]
+      : [
+          { role: 'system' as const, content: fullPrompt },
+          ...input.messages.map((m) => {
+            const role = (m.role === 'customer' || m.role === 'user' ? 'user' : 'assistant') as
+              | 'user'
+              | 'assistant';
+            const content = role === 'assistant' ? JSON.stringify({ reply: m.content }) : m.content;
+            return { role, content };
+          }),
+        ];
 
     let response;
     let providerUsed = effectiveProvider;
@@ -186,6 +198,7 @@ export class AiBrainService {
         messages: aiMessages, temperature: 0.3,
         model: settings?.aiModel || undefined,
         jsonMode: true,
+        maxTokens: 2048,
       });
       response = result.result;
       providerUsed = result.providerUsed;
@@ -648,6 +661,44 @@ export class AiBrainService {
       .eq('phone', digits)
       .maybeSingle();
     return (data?.name as string) || undefined;
+  }
+
+  /**
+   * AI'ya verilecek konusma gecmisi: audit'lerdeki yapisal parsed_json ile.
+   * JSON mode'da duz metin asistan mesajlari bosluk urettigi icin assistant
+   * mesajlari JSON string olarak gonderilir.
+   */
+  private async getStructuredHistory(
+    sessionId: string,
+  ): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+    const { data } = await this.supabase.db
+      .from('ai_audit_logs')
+      .select('user_message, parsed_json, created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(8);
+
+    const rows = (data || []) as { user_message?: string; parsed_json?: unknown }[];
+    const messages: { role: 'user' | 'assistant'; content: string }[] = [];
+
+    for (const row of [...rows].reverse()) {
+      const userMessage = String(row.user_message || '').trim();
+      if (userMessage) messages.push({ role: 'user', content: userMessage });
+
+      let parsed = row.parsed_json;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch {
+          parsed = null;
+        }
+      }
+      const reply = parsed && typeof parsed === 'object'
+        ? String((parsed as Record<string, unknown>).reply || '').trim()
+        : '';
+      if (reply) messages.push({ role: 'assistant', content: JSON.stringify(parsed) });
+    }
+    return messages;
   }
 
   private async orderDiffers(existingOrderId: string, orderInput: AiOrderInput): Promise<boolean> {
