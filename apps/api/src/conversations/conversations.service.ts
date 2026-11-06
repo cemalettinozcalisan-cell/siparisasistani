@@ -9,7 +9,7 @@ export class ConversationsService {
 
   async getConversations(tenantId: string, limit = 50) {
     try {
-      const [sessions, calls, whatsapp, whatsappConvs, instagramConvs, orders] = await Promise.all([
+      const [sessions, calls, instagramConvs, orders] = await Promise.all([
         this.supabase.db
           .from('conversation_sessions')
           .select('id, channel, phone, status, call_status, session_label, messages, session_data, order_id, created_at, ended_at, call_duration, ai_model')
@@ -20,20 +20,6 @@ export class ConversationsService {
         this.supabase.db
           .from('call_recordings')
           .select('id, session_id, phone, direction, recording_url, duration_seconds, created_at')
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false })
-          .limit(limit),
-
-        this.supabase.db
-          .from('whatsapp_messages')
-          .select('id, conversation_id, direction, body, created_at')
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false })
-          .limit(limit),
-
-        this.supabase.db
-          .from('whatsapp_conversations')
-          .select('id, phone, status, message_count, created_at')
           .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false })
           .limit(limit),
@@ -95,7 +81,11 @@ export class ConversationsService {
 
         results.push({
           id: s.id,
-          type: sessionChannel === 'phone' ? 'call' : 'sms',
+          type:
+            sessionChannel === 'phone' ? 'call'
+              : sessionChannel === 'whatsapp' ? 'whatsapp'
+                : sessionChannel === 'instagram' ? 'instagram'
+                  : 'sms',
           channel: channelTypeMap[sessionChannel] || 'VOICE',
           phone: sessionData.phone,
           sessionLabel: sessionData.session_label,
@@ -118,31 +108,8 @@ export class ConversationsService {
         });
       }
 
-      // WhatsApp conversations (group by conversation_id)
-      const whatsappGroups = new Map<string, Record<string, unknown>[]>();
-      for (const msg of whatsapp.data || []) {
-        const convId = (msg.conversation_id as string) || 'unknown';
-        if (!whatsappGroups.has(convId)) whatsappGroups.set(convId, []);
-        whatsappGroups.get(convId)!.push(msg as unknown as Record<string, unknown>);
-      }
-
-      for (const [convId, msgs] of whatsappGroups) {
-        const first = msgs[0];
-        const key = `wa-${convId}-${first.created_at}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        results.push({
-          id: `wa-${convId}`,
-          type: 'whatsapp',
-          channel: 'WHATSAPP',
-          phone: convId,
-          status: 'completed',
-          messageCount: msgs.length,
-          lastMessage: msgs[msgs.length - 1]?.body || '',
-          createdAt: first.created_at,
-        });
-      }
+      // WhatsApp konuşmaları oturumlardan (conversation_sessions) gelir.
+      // Eski `wa-<conversationId>` grupları kaldırıldı: mükerrer ve mock detay dönüyordu.
 
       // Instagram conversations
       for (const ig of instagramConvs.data || []) {

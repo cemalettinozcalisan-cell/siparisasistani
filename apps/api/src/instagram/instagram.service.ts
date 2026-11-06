@@ -49,16 +49,20 @@ export class InstagramService {
         // Faz 3.3: Route to AI Brain for response
         try {
           // Get existing conversation session for context
-          const { data: session } = await this.supabase.db
-            .from('conversation_sessions')
-            .select('id, messages')
-            .eq('tenant_id', tenantId)
-            .eq('phone', igUserId)
-            .eq('channel', 'instagram')
-            .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
-            .gte('created_at', sessionWindowStart())
-            .order('created_at', { ascending: false })
-            .limit(1);
+          const run = (windowColumn: 'updated_at' | 'created_at') =>
+            this.supabase.db
+              .from('conversation_sessions')
+              .select('id, messages')
+              .eq('tenant_id', tenantId)
+              .eq('phone', igUserId)
+              .eq('channel', 'instagram')
+              .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+              .gte(windowColumn, sessionWindowStart())
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+          let { data: session, error: sessionErr } = await run('updated_at');
+          if (sessionErr) ({ data: session } = await run('created_at'));
 
           let sessionId: string;
           let history: { role: string; content: string }[] = [];

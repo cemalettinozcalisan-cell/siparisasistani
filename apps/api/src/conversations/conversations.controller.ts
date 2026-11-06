@@ -40,7 +40,7 @@ export class ConversationsController {
         .maybeSingle();
 
       if (!session) {
-        if (/^(mock-|wa-|ig-|3333)/.test(sessionId)) return this.getMockDetail(sessionId);
+        if (/^(mock-|ig-|3333)/.test(sessionId)) return this.getMockDetail(sessionId);
         return { session: null, recording: null, transcript: [], whatsappMessages: [] };
       }
 
@@ -78,26 +78,17 @@ export class ConversationsController {
         }));
       }
 
-      // Get WhatsApp messages by phone via whatsapp_conversations
-      const sessionPhone = (session as any).phone;
+      // WhatsApp: yalnızca BU oturumun mesajları (telefonun tüm geçmişi DEĞİL)
+      const sessionChannel = (session as any).channel;
       let waMessages: any[] = [];
-      if (sessionPhone) {
-        const { data: waConv } = await this.supabase.db
-          .from('whatsapp_conversations')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('phone', sessionPhone)
-          .maybeSingle();
-
-        if (waConv) {
-          const { data: msgs } = await this.supabase.db
-            .from('whatsapp_messages')
-            .select('id, direction, body, message, media_url, created_at')
-            .eq('conversation_id', (waConv as any).id)
-            .order('created_at', { ascending: true })
-            .limit(200);
-          waMessages = msgs || [];
-        }
+      if (sessionChannel === 'whatsapp' && Array.isArray(sessionMessages)) {
+        const baseTime = (session as any).created_at || new Date().toISOString();
+        waMessages = sessionMessages.map((m, idx) => ({
+          id: `s-${idx}`,
+          direction: m.role === 'user' || m.role === 'customer' ? 'incoming' : 'outgoing',
+          body: m.content || '',
+          created_at: baseTime,
+        }));
       }
 
       // Gerçek oturumda ASLA mock dönme; veri yoksa boş dön (mock yalnız mock id'lerde).

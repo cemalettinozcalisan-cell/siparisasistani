@@ -56,16 +56,20 @@ export class VerimorIncomingSms {
 
       // Son pencere icindeki SMS oturumu (siparis sonrasi devam icin completed dahil)
       const sessionWindow = sessionWindowStart();
-      const { data: sessions } = await this.supabase.db
-        .from('conversation_sessions')
-        .select('id, messages, status')
-        .eq('tenant_id', tenantId)
-        .eq('phone', phone)
-        .eq('channel', 'sms')
-        .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
-        .gte('created_at', sessionWindow)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const run = (windowColumn: 'updated_at' | 'created_at') =>
+        this.supabase.db
+          .from('conversation_sessions')
+          .select('id, messages, status')
+          .eq('tenant_id', tenantId)
+          .eq('phone', phone)
+          .eq('channel', 'sms')
+          .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+          .gte(windowColumn, sessionWindow)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+      let { data: sessions, error: sessionErr } = await run('updated_at');
+      if (sessionErr) ({ data: sessions } = await run('created_at'));
 
       let sessionId: string;
       let history: { role: string; content: string }[] = [];

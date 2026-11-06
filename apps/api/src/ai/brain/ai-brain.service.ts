@@ -329,6 +329,14 @@ export class AiBrainService {
     // TOPTAN: AI, ürünlerde tanımlı wholesale_price'ı kullanarak müşteri onayıyla
     // normal sipariş gibi kurar (source=WHOLESALE). Esnafa ayrıca sormaz.
     if (existingOrderId) {
+      // Sipariş sonrası not (ör. "kargocu beni arasın", "bugün kargolansın") kalıcı kaydedilsin.
+      if (parsed.notes) {
+        await this.supabase.db
+          .from('orders')
+          .update({ customer_note: parsed.notes })
+          .eq('id', existingOrderId);
+      }
+
       // Sipariş sonrası değişiklik ("2 kilo daha ekle", "kargo adresini değiştir" vb.)
       const changePattern = /\b(ekle|ekleyin|ekleme|çıkar|çıkarın|arttır|artır|azalt|değiştir|güncelle|olsun|yapalım|iptal)\b/i;
       if (parsed.confirmed && normalizedPayment && validation.valid && changePattern.test(lastMessage)) {
@@ -357,11 +365,9 @@ export class AiBrainService {
         }
       }
 
-      const reply = existingOrderNumber
-        ? this.attachOrderNumber(parsed.reply || response.content, existingOrderNumber)
-        : (parsed.reply || response.content);
+      // Numara yalnızca özet mesajında söylenir; burada tekrar eklenmez.
       return {
-        reply,
+        reply: parsed.reply || response.content,
         confidence: parsed.confidence || 0,
         orderCreated: false,
         orderId: existingOrderId,
@@ -420,7 +426,7 @@ export class AiBrainService {
         await this.updateSessionOrder(sessionId, order.order_id, order.order_number);
 
         return {
-          reply: this.attachOrderNumber(parsed.reply || response.content, order.order_number),
+          reply: parsed.reply || response.content,
           confidence: parsed.confidence || 0,
           orderCreated: true,
           orderId: order.order_id,
@@ -628,16 +634,6 @@ export class AiBrainService {
     }
   }
 
-  private attachOrderNumber(reply: string, orderNumber: string): string {
-    const label = /(sipari[sş]\s*numaran[ıi]z?\s*[:：]?\s*)(#?[A-Za-z0-9-]+)/i;
-    if (label.test(reply)) return reply.replace(label, `$1${orderNumber}`);
-    const created = /(sipari[sş]iniz\s+olu[sş]turuldu[^.!?]*[.!?]?)/i;
-    if (created.test(reply)) {
-      return reply.replace(created, (matched) => `${matched} Sipariş numaranız: ${orderNumber}.`);
-    }
-    return `${reply.trim()} Sipariş numaranız: ${orderNumber}.`;
-  }
-
   private buildOrderSummary(
     orderInput: AiOrderInput,
     order: { order_number: string; total_price: number },
@@ -652,7 +648,7 @@ export class AiBrainService {
       `Ürünler: ${items}`,
       `Toplam: ${tl(order.total_price)} TL`,
       address ? `Teslimat: ${address}` : '',
-      'Bilgi için bizi arayabilirsiniz. Afiyet olsun!',
+      'Bilgi için bizi arayabilirsiniz.',
     ]
       .filter(Boolean)
       .join('\n');

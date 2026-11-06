@@ -227,16 +227,20 @@ export class WhatsappService {
     tenantId: string,
     phone: string,
   ): Promise<{ sessionId: string; history: SessionHistoryItem[] }> {
-    const { data } = await this.supabase.db
-      .from('conversation_sessions')
-      .select('id, messages')
-      .eq('tenant_id', tenantId)
-      .eq('phone', phone)
-      .eq('channel', 'whatsapp')
-      .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
-      .gte('created_at', sessionWindowStart())
-      .order('created_at', { ascending: false })
-      .limit(1);
+    const run = (windowColumn: 'updated_at' | 'created_at') =>
+      this.supabase.db
+        .from('conversation_sessions')
+        .select('id, messages')
+        .eq('tenant_id', tenantId)
+        .eq('phone', phone)
+        .eq('channel', 'whatsapp')
+        .or('status.eq.active,and(status.eq.completed,order_id.not.is.null)')
+        .gte(windowColumn, sessionWindowStart())
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+    let { data, error } = await run('updated_at');
+    if (error) ({ data } = await run('created_at'));
 
     if (data && data.length > 0) {
       const row = data[0] as Record<string, unknown>;

@@ -70,7 +70,29 @@ function trDigit(ch: string): string {
   return TR_BIRLER[Number(ch)] || ch;
 }
 
+/**
+ * Sipariş numarasını sıfırları koruyarak okur.
+ * Örn. "26-00197" -> "yirmi altı, sıfır sıfır, yüz doksan yedi"
+ */
+function readOrderNumber(value: string): string {
+  const [prefix, seq] = value.split('-');
+  const parts: string[] = [];
+  if (prefix) parts.push(trNumber(parseInt(prefix, 10) || 0));
+  if (seq) {
+    const m = seq.match(/^(0+)(\d*)$/);
+    if (m) {
+      if (m[1]) parts.push(m[1].split('').map(() => 'sıfır').join(' '));
+      if (m[2]) parts.push(trNumber(parseInt(m[2], 10) || 0));
+    } else {
+      parts.push(trNumber(parseInt(seq, 10) || 0));
+    }
+  }
+  return parts.filter(Boolean).join(', ');
+}
+
 function normalizeTrNumbers(text: string): string {
+  // Sipariş no (ör. 26-00197): genel sayı dönüşümünden ÖNCE, sıfırları koruyarak oku.
+  text = text.replace(/\b(\d{1,4})-(\d{3,})\b/g, (_m, a, b) => readOrderNumber(`${a}-${b}`));
   // Telefon numaraları: para gibi değil, rakam rakam okunur (9-13 hane)
   text = text.replace(/(\+?\d[\d\s-]{9,16})/g, (m) => {
     const digits = m.replace(/[^\d]/g, '');
