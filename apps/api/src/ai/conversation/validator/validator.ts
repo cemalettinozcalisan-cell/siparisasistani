@@ -6,11 +6,11 @@ const OrderSchema = z.object({
   customer: z.object({
     name: z.string().min(2, 'Müşteri adı en az 2 karakter olmalı'),
     phone: z.string().min(10, 'Geçersiz telefon numarası'),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    district: z.string().optional(),
-    company_name: z.string().optional(),
-    identity_number: z.string().optional()
+    address: z.string().nullish(),
+    city: z.string().nullish(),
+    district: z.string().nullish(),
+    company_name: z.string().nullish(),
+    identity_number: z.string().nullish()
       .refine(v => !v || /^\d{10,11}$/.test(v), 'TCKN 11 haneli, VKN 10 haneli olmalıdır'),
   }).refine(
     (c) => !c.address || !!(c.district && c.district.trim().length >= 2),

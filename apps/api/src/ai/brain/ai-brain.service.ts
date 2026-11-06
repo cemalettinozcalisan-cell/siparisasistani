@@ -236,8 +236,16 @@ export class AiBrainService {
     // Step 8: Validate (Order Engine'den once!)
     // Odeme telefon kanaliyla ayni sekilde normalize edilir (KAPIDA_KART, CASH_ON_DELIVERY, IBAN...).
     const normalizedPayment = normalizePayment(parsed.payment);
+    // AI bazen optional alanlari `null` dondurur; validator `undefined` bekler. Temizle.
+    const rawCustomer = (parsed.customer || {}) as Record<string, unknown>;
+    const validatorCustomer = {
+      name: String(rawCustomer.name || ''),
+      phone: String(rawCustomer.phone || input.phone || ''),
+      company_name: rawCustomer.company_name ? String(rawCustomer.company_name) : undefined,
+      identity_number: rawCustomer.identity_number ? String(rawCustomer.identity_number) : undefined,
+    };
     const validation = this.validator.validate({
-      customer: parsed.customer,
+      customer: validatorCustomer,
       products: parsed.products,
       payment: normalizedPayment || 'cash_on_delivery',
       confirmed: parsed.confirmed,
@@ -269,7 +277,7 @@ export class AiBrainService {
     });
 
     // Step 10: Session Update
-    await this.updateSession(sessionId, input.messages, response.content, effectiveProvider, parsed.confidence);
+    await this.updateSession(sessionId, input.messages, parsed.reply || response.content, effectiveProvider, parsed.confidence);
 
     // M1 çok dil: algılanan dili oturuma kaydet (sesli kanal dahil sonraki adımlar kullanır)
     if (parsed.language && parsed.language !== 'tr') {
@@ -386,6 +394,7 @@ export class AiBrainService {
     }
 
     if (parsed.confirmed && !validation.valid) {
+      this.logger.warn(`Order validation failed: ${validation.errors.join(' | ')}`);
       return {
         reply: 'Siparişinizi oluşturmak için birkaç bilgiyi netleştirmem gerekiyor. Ad soyad, teslimat adresi ve telefon numaranızı teyit edebilir miyiz?',
         confidence: parsed.confidence || 0,

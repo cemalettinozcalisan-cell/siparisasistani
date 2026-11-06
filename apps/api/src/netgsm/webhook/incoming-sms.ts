@@ -102,7 +102,7 @@ export class IncomingSmsWebhook {
       phone,
       sessionId,
       messages: history.map((m) => ({
-        role: m.role === 'customer' ? 'user' : 'assistant',
+        role: m.role === 'customer' || m.role === 'user' ? 'user' : 'assistant',
         content: m.content,
       })),
       channel: 'sms',

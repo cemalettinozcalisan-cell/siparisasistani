@@ -137,7 +137,7 @@ export class WhatsappService {
       phone,
       sessionId,
       messages: history.map((m) => ({
-        role: m.role === 'customer' ? 'user' : 'assistant',
+        role: m.role === 'customer' || m.role === 'user' ? 'user' : 'assistant',
         content: m.content,
       })),
     });
@@ -165,6 +165,7 @@ export class WhatsappService {
       conversationId: convId,
       direction: 'outgoing',
       body: aiReply,
+      status: 'sending',
     });
 
     await this.deliver(tenantId, phone, aiReply, outgoingId);
@@ -178,6 +179,7 @@ export class WhatsappService {
         conversationId: convId,
         direction: 'outgoing',
         body: orderSummary,
+        status: 'sending',
       });
       await this.deliver(tenantId, phone, orderSummary, summaryId);
       this.logger.log(`WhatsApp siparis ozeti gonderildi (${profileName || phone})`);
@@ -202,7 +204,7 @@ export class WhatsappService {
       if (outgoingId) {
         await this.supabase.db
           .from('whatsapp_messages')
-          .update({ error_message: result.error || null })
+          .update({ status: 'queued', error_message: result.error || null })
           .eq('id', outgoingId);
       }
       await this.channelHealth.record(tenantId, 'whatsapp', false, {
@@ -212,6 +214,12 @@ export class WhatsappService {
     } catch (e) {
       const err = e as Error;
       this.logger.warn(`WhatsApp gonderim hatasi (kuyruga birakildi): ${err.message}`);
+      if (outgoingId) {
+        await this.supabase.db
+          .from('whatsapp_messages')
+          .update({ status: 'queued', error_message: err.message })
+          .eq('id', outgoingId);
+      }
     }
   }
 

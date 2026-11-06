@@ -34,6 +34,7 @@ export class WhatsAppConversationsService {
     direction: 'incoming' | 'outgoing';
     body: string;
     attachment?: string;
+    status?: 'queued' | 'sending' | 'sent';
   }): Promise<string | undefined> {
     const { data, error } = await this.supabase.db
       .from('whatsapp_messages')
@@ -44,7 +45,7 @@ export class WhatsAppConversationsService {
         body: params.body,
         message: params.body,
         attachment: params.attachment || null,
-        status: 'queued',
+        status: params.status || 'queued',
       })
       .select('id')
       .single();
