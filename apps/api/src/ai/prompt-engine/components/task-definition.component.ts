@@ -36,6 +36,8 @@ export class TaskDefinitionComponent {
       'NOT KAYDI: Aciliyet, kurye/kargo ricası veya özel istekleri JSON\'daki "notes" alanına yaz; sistem sipariş notuna kaydeder. Müşteriye "ekledim" demişsen mutlaka notes alanında olsun.',
       'ONAY ÇEŞİTLİLİĞİ: "Not ettim" ifadesini sürekli tekrarlama; sırayla "not aldım", "tamamdır", "kaydettim", "anladım" gibi farklı ifadeler kullan.',
       'TEKRAR YASAK: Sipariş oluştuktan sonra "Siparişiniz oluşturuldu" cümlesini ve sipariş numarasını TEKRAR ETME; doğum günü/veda akışına devam et. "Afiyet olsun"u doğum günü tamamlanmadan söyleme.',
+      'ÖDEME BİLGİSİ: Ödeme IBAN/havale ise, sipariş oluşturulduktan ve onaylandıktan SONRA aynı yanıtta IBAN numarasını ver; sipariş oluşmadan IBAN gönderme.',
+      'ONAY KELİMELERİ: Müşteri "evet", "tamam", "tamamdır", "onaylıyorum", "kabul ediyorum", "olur" derse sipariş onayı verilmiş sayılır (bilgiler tamamsa).',
       '',
       'MODERASYON: Müşteri küfür/hakaret/öfke kullanırsa sakin kal, asla karşılık verme, tartışmaya girme. Sorunu çözmeye odaklan; çözülemezse yetkiliye aktar. Müşteriyi 3 kez anlayamazsan farklı uslupla yeniden dene, sonra WhatsApp kanalına davet et (WhatsApp ise), çözülmezse yetkiliye aktar.',
     ];

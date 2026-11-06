@@ -117,25 +117,25 @@ export class AiBrainService {
       sessionId = await this.createSession(input.tenantId, input.channel, input.phone, input.channelSource);
     }
 
-    // "Yeni sipariş / sıfırla / baştan" komutu: mevcut oturumu temizleyip sıfırdan başlat.
+    // "Yeni sipariş / sıfırla / baştan" komutu: yeni ve temiz bir oturum aç,
+    // böylece her siparişin audit/transkripti ayrı olur (panel karışmaz).
     if (isResetCommand(lastMessage)) {
-      await this.supabase.db
-        .from('conversation_sessions')
-        .update({
-          messages: [],
-          status: 'active',
-          order_id: null,
-          session_data: null,
-          end_reason: null,
-          ended_at: null,
-        })
-        .eq('id', sessionId);
-      this.logger.log(`Session reset by command: ${sessionId}`);
+      const greetingName = await this.getCustomerName(input.tenantId, input.phone);
+      const newSessionId = await this.createSession(
+        input.tenantId,
+        input.channel,
+        input.phone,
+        input.channelSource,
+      );
+      await this.endSession(sessionId, 'reset');
+      this.logger.log(`Session reset by command: ${sessionId} -> ${newSessionId}`);
       return {
-        reply: 'Tabii, yeni siparişinizi alabilirim. Ne almak istersiniz?',
+        reply: greetingName
+          ? `Merhaba ${greetingName}, yeni siparişinizi alabilirim. Ne almak istersiniz?`
+          : 'Tabii, yeni siparişinizi alabilirim. Ne almak istersiniz?',
         confidence: 100,
         orderCreated: false,
-        sessionId,
+        sessionId: newSessionId,
         needsHuman: false,
         maintenanceMode: false,
         afterHours: false,
@@ -185,6 +185,7 @@ export class AiBrainService {
       const result = await this.aiFactory.completeWithFailover({
         messages: aiMessages, temperature: 0.3,
         model: settings?.aiModel || undefined,
+        jsonMode: true,
       });
       response = result.result;
       providerUsed = result.providerUsed;
@@ -244,6 +245,15 @@ export class AiBrainService {
       company_name: rawCustomer.company_name ? String(rawCustomer.company_name) : undefined,
       identity_number: rawCustomer.identity_number ? String(rawCustomer.identity_number) : undefined,
     };
+
+    // Onay es anlamlilari: "evet / tamam / tamamdir / onayliyorum / kabul ediyorum / olur"
+    // Bilgiler tamamsa onay sayilir (telefon kanalindaki davranisla ayni).
+    const affirmation = /^\s*(evet|tamam|tamamdır|tamamdir|onaylıyorum|onayliyorum|kabul\s+ediyorum|olur|onayla)\b/i.test(
+      lastMessage.trim(),
+    );
+    const hasOrderState = !!(normalizedPayment && parsed.products?.length && parsed.address && validatorCustomer.phone);
+    if (affirmation && hasOrderState) parsed.confirmed = true;
+
     const validation = this.validator.validate({
       customer: validatorCustomer,
       products: parsed.products,
@@ -335,31 +345,40 @@ export class AiBrainService {
           .from('orders')
           .update({ customer_note: parsed.notes })
           .eq('id', existingOrderId);
+      } else if (
+        /aciliyet|bugün kargo|bugun kargo|kargocu|zile basma|aransın|aransin|not\s*(al|düş|dus|ekle)/i.test(lastMessage)
+      ) {
+        // AI notu JSON'a koymadıysa ama müşteri açıkça not/aciliyet verdiyse kaydet.
+        await this.supabase.db
+          .from('orders')
+          .update({ customer_note: lastMessage })
+          .eq('id', existingOrderId);
       }
 
-      // Sipariş sonrası değişiklik ("2 kilo daha ekle", "kargo adresini değiştir" vb.)
-      const changePattern = /\b(ekle|ekleyin|ekleme|çıkar|çıkarın|arttır|artır|azalt|değiştir|güncelle|olsun|yapalım|iptal)\b/i;
-      if (parsed.confirmed && normalizedPayment && validation.valid && changePattern.test(lastMessage)) {
+      // Sipariş sonrası değişiklik: onaylı ve geçerliyse mevcut siparişle farkı kontrol et.
+      if (parsed.confirmed && normalizedPayment && validation.valid) {
         try {
           const orderInput = this.parser.toOrderInput(parsed, input.channel);
           orderInput.customer.phone = orderInput.customer.phone || input.phone;
-          const updated = await this.orderEngine.updateOrder(existingOrderId, orderInput, input.tenantId);
-          const total = Number(updated.total_price || 0).toLocaleString('tr-TR');
-          return {
-            reply: `${(parsed.reply || response.content).trim()} Güncel sipariş toplamı: ${total} TL.`,
-            confidence: parsed.confidence || 0,
-            orderCreated: false,
-            orderId: existingOrderId,
-            orderNumber: updated.order_number,
-            sessionId,
-            needsHuman: false,
-            maintenanceMode: false,
-            afterHours: false,
-            duplicateWarning,
-            providerUsed,
-            ...routingFields,
-            complaintCreated,
-          };
+          if (await this.orderDiffers(existingOrderId, orderInput)) {
+            const updated = await this.orderEngine.updateOrder(existingOrderId, orderInput, input.tenantId);
+            const total = Number(updated.total_price || 0).toLocaleString('tr-TR');
+            return {
+              reply: `${(parsed.reply || response.content).trim()} Güncel sipariş toplamı: ${total} TL.`,
+              confidence: parsed.confidence || 0,
+              orderCreated: false,
+              orderId: existingOrderId,
+              orderNumber: updated.order_number,
+              sessionId,
+              needsHuman: false,
+              maintenanceMode: false,
+              afterHours: false,
+              duplicateWarning,
+              providerUsed,
+              ...routingFields,
+              complaintCreated,
+            };
+          }
         } catch (e) {
           this.logger.error(`Order update failed: ${(e as Error).message}`);
         }
@@ -617,6 +636,50 @@ export class AiBrainService {
       .eq('id', orderId)
       .maybeSingle();
     return (data?.order_number as string) || undefined;
+  }
+
+  private async getCustomerName(tenantId: string, phone: string): Promise<string | undefined> {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return undefined;
+    const { data } = await this.supabase.db
+      .from('customers')
+      .select('name')
+      .eq('tenant_id', tenantId)
+      .eq('phone', digits)
+      .maybeSingle();
+    return (data?.name as string) || undefined;
+  }
+
+  private async orderDiffers(existingOrderId: string, orderInput: AiOrderInput): Promise<boolean> {
+    const [{ data: order }, { data: items }] = await Promise.all([
+      this.supabase.db.from('orders').select('payment_method').eq('id', existingOrderId).maybeSingle(),
+      this.supabase.db
+        .from('order_items')
+        .select('product_name, quantity, unit')
+        .eq('order_id', existingOrderId),
+    ]);
+
+    const normText = (value?: string) => String(value || '').trim().toLocaleLowerCase('tr-TR');
+    const itemKey = (item: { product_name?: string; quantity?: number; unit?: string }) =>
+      `${normText(item.product_name)}|${Number(item.quantity || 0)}|${normText(item.unit)}`;
+    const currentItems = ((items || []) as { product_name?: string; quantity?: number; unit?: string }[])
+      .map(itemKey)
+      .sort()
+      .join(';');
+    const nextItems = (orderInput.products || [])
+      .map((item) => itemKey(item as { product_name?: string; quantity?: number; unit?: string }))
+      .sort()
+      .join(';');
+    if (currentItems !== nextItems) return true;
+
+    const normPayment = (value?: string) => {
+      const v = String(value || '').toLowerCase();
+      return v === 'cod' || v === 'kapida_nakit' ? 'cash_on_delivery' : v;
+    };
+    const currentPayment = normPayment((order as { payment_method?: string } | null)?.payment_method);
+    if (currentPayment && currentPayment !== normPayment(orderInput.payment)) return true;
+
+    return false;
   }
 
   private async persistBirthday(tenantId: string, phone: string, birthday?: string): Promise<void> {

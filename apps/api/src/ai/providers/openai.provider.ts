@@ -47,6 +47,7 @@ export class OpenAIProvider implements AiProvider {
           ],
           temperature: request.temperature ?? 0.3,
           max_tokens: request.maxTokens ?? 1024,
+          ...(request.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
         }, { signal: controller.signal });
 
         clearTimeout(timer);

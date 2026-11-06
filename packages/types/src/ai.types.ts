@@ -32,6 +32,8 @@ export interface AiCompletionRequest {
   temperature?: number;
   maxTokens?: number;
   model?: string;
+  /** true ise sağlayıcıdan geçerli JSON nesnesi döndürmesi istenir (response_format=json_object). */
+  jsonMode?: boolean;
 }
 
 export interface AiCompletionResult {
