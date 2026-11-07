@@ -175,7 +175,10 @@ export class AiBrainService {
     // Step 5: Prompt
     const tenantName = await this.getTenantName(input.tenantId);
     const skipMemory = await this.getSkipMemory(sessionId);
-    const pendingDekont = existingOrderId ? await this.isPendingDekont(existingOrderId) : false;
+    const paymentState = existingOrderId
+      ? await this.getOrderPaymentState(existingOrderId)
+      : { pendingDekont: false, dekontReceived: false };
+    const { pendingDekont, dekontReceived } = paymentState;
 
     const promptCtx: PromptContext = {
       tenantId: input.tenantId,
@@ -185,6 +188,7 @@ export class AiBrainService {
       currentState: this.detectState(input.messages),
       skipMemory,
       pendingDekont,
+      dekontReceived,
     };
 
     const systemPrompt = await this.promptEngine.buildSystemPrompt(promptCtx);
@@ -256,6 +260,10 @@ export class AiBrainService {
     // IBAN dekontu beklenirken doğum günü/numara söylenmesin (model prompt kuralını atlarsa).
     if (pendingDekont && parsed.reply) {
       parsed.reply = this.stripPendingDekontReply(parsed.reply);
+    }
+    // Dekont zaten alındıysa "dekontu iletin" tekrarını temizle.
+    if (dekontReceived && parsed.reply) {
+      parsed.reply = this.stripDekontReceivedReply(parsed.reply);
     }
 
     const hasName = !!(parsed.customer?.name);
@@ -730,18 +738,22 @@ export class AiBrainService {
     return Boolean(sessionData && (sessionData as Record<string, unknown>).skipMemory);
   }
 
-  private async isPendingDekont(orderId: string): Promise<boolean> {
+  private async getOrderPaymentState(
+    orderId: string,
+  ): Promise<{ pendingDekont: boolean; dekontReceived: boolean }> {
     const { data } = await this.supabase.db
       .from('orders')
       .select('payment_method, payment_status, status')
       .eq('id', orderId)
       .maybeSingle();
     const order = (data || {}) as Record<string, unknown>;
-    return (
-      String(order.payment_method || '') === 'iban' &&
-      ['awaiting_dekont', 'waiting'].includes(String(order.payment_status || '')) &&
-      String(order.status || '') !== 'cancelled'
-    );
+    const isIban = String(order.payment_method || '') === 'iban';
+    const status = String(order.payment_status || '');
+    const cancelled = String(order.status || '') === 'cancelled';
+    return {
+      pendingDekont: isIban && ['awaiting_dekont', 'waiting'].includes(status) && !cancelled,
+      dekontReceived: isIban && ['dekont_alindi', 'paid'].includes(status),
+    };
   }
 
   /**
@@ -874,6 +886,17 @@ export class AiBrainService {
     return out || 'Dekontu ilettiğinizde siparişinizi onaylayıp kargoya vereceğiz.';
   }
 
+  /** Dekont zaten alındıysa "dekontu iletin/onaylayın" cümlelerini temizler. */
+  private stripDekontReceivedReply(reply: string): string {
+    let out = String(reply || '')
+      .replace(/[^.!?\n]*dekont[^.!?\n]*[.!?]?/gi, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    if (!out) out = 'Teşekkürler, bilgilerinizi kaydettim.';
+    return out;
+  }
+
   private async hasKnownBirthday(tenantId: string, phone: string): Promise<boolean> {
     const digits = String(phone || '').replace(/\D/g, '');
     if (!digits) return false;
@@ -978,6 +1001,26 @@ export class AiBrainService {
     ]
       .filter(Boolean)
       .join(' ');
+
+    // Bu tur AI çağrısı yapmadan döndüğü için audit'e elle yazılır; böylece yapısal
+    // geçmiş ve panel/replay "Siparişiniz oluştu + no" turunu görür.
+    try {
+      await this.supabase.db.from('ai_audit_logs').insert({
+        tenant_id: input.tenantId,
+        session_id: sessionId,
+        model: 'system',
+        provider: 'system',
+        user_message: lastMessage,
+        raw_response: JSON.stringify({ intent: 'ORDER', payment: 'IBAN', confirmed: true, reply }),
+        parsed_json: { intent: 'ORDER', payment: 'IBAN', confirmed: true, reply },
+        confidence: 90,
+        latency_ms: 0,
+        success: true,
+      });
+    } catch {
+      /* yoksay */
+    }
+
     return {
       reply,
       confidence: 90,

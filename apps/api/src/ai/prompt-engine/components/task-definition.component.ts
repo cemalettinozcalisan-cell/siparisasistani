@@ -51,6 +51,13 @@ export class TaskDefinitionComponent {
       );
     }
 
+    if (ctx.dekontReceived) {
+      tasks.push(
+        '',
+        'IBAN DEKONTU ZATEN ALINDI: "Dekontu iletin/onaylayın" DEME, tekrar isteme. Doğum günü/veda akışına devam et.',
+      );
+    }
+
     if (ctx.currentState === 'GREETING') {
       tasks.push('', '[ŞU ANKİ ADIM] Karşılama - Müşteriyi tanı ve sipariş almaya başla.');
     } else if (ctx.currentState === 'ISIM') {

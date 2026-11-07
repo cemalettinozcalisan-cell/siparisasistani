@@ -26,6 +26,8 @@ export interface PromptContext {
   skipMemory?: boolean;
   /** true ise IBAN ödemesi dekont bekliyor; doğum günü/numara sorulmaz. */
   pendingDekont?: boolean;
+  /** true ise IBAN dekontu zaten alındı; tekrar dekont istenmez. */
+  dekontReceived?: boolean;
 }
 
 @Injectable()
