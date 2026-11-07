@@ -120,7 +120,7 @@ export class CustomersController {
   async create(@Param('tenantId') tenantId: string, @Body() body: Record<string, unknown>) {
     const { data, error } = await this.supabase.db
       .from('customers')
-      .insert({ ...body, tenant_id: tenantId })
+      .insert({ ...this.sanitizeCustomerBody(body), tenant_id: tenantId })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -140,13 +140,41 @@ export class CustomersController {
   async update(@Param('tenantId') tenantId: string, @Param('id') id: string, @Body() body: Record<string, unknown>) {
     const { data, error } = await this.supabase.db
       .from('customers')
-      .update(body)
+      .update(this.sanitizeCustomerBody(body))
       .eq('tenant_id', tenantId)
       .eq('id', id)
       .select()
       .single();
     if (error) throw new Error(error.message);
     return data;
+  }
+
+  /**
+   * Yalnızca customers tablosunda VAR OLAN kolonları geçirir.
+   * Web formu `notes` gönderir; tabloda `note` vardır. `tax_office` kolonu yoktur (yok sayılır).
+   */
+  private sanitizeCustomerBody(body: Record<string, unknown>): Record<string, unknown> {
+    const allowed = [
+      'name',
+      'phone',
+      'email',
+      'address',
+      'city',
+      'note',
+      'identity_number',
+      'company_name',
+      'birth_date',
+      'balance',
+      'credit_limit',
+      'payment_term',
+    ];
+    const out: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (body[key] !== undefined) out[key] = body[key];
+    }
+    if (out.note === undefined && body.notes !== undefined) out.note = body.notes;
+    if (out.birth_date === undefined && body.birthday !== undefined) out.birth_date = body.birthday;
+    return out;
   }
 
   @Post('dedup/:tenantId')
