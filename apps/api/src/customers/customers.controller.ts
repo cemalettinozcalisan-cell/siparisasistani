@@ -26,28 +26,13 @@ export class CustomersController {
 
       const { data: customers } = await query;
 
-      // If no real customers found, return mock data
       if (!customers || customers.length === 0) {
         return this.getMockCustomers();
       }
 
-      const results = (customers || []).map((c: Record<string, unknown>) => ({
-        ...c,
-        order_count: orderCounts[c.id as string] || 0,
-        total_spent: 0,
-        last_channel: channelInfo[c.id as string]?.channel || '',
-        last_source: channelInfo[c.id as string]?.source || '',
-      }));
-
-      // Always inject mock customers alongside real ones for channel diversity
-      const mockData = this.getMockCustomers();
-      const mockIds = new Set((results as any[]).map((r: any) => r.phone));
-      const newMocks = mockData.filter((m) => !mockIds.has(m.phone as string));
-      return [...results, ...newMocks];
-
-      // Get order counts for all customers
-      const customerIds = (customers || []).map((c: Record<string, unknown>) => c.id);
-      let orderCounts: Record<string, number> = {};
+      const customerIds = customers.map((c: Record<string, unknown>) => c.id as string);
+      const orderCounts: Record<string, number> = {};
+      const channelInfo: Record<string, { channel: string; source: string }> = {};
 
       if (customerIds.length > 0) {
         const { data: orders } = await this.supabase.db
@@ -56,16 +41,11 @@ export class CustomersController {
           .eq('tenant_id', tenantId)
           .in('customer_id', customerIds);
 
-        orderCounts = {};
         (orders || []).forEach((o: Record<string, unknown>) => {
           const cid = o.customer_id as string;
           orderCounts[cid] = (orderCounts[cid] || 0) + 1;
         });
-      }
 
-      // Get latest channel per customer
-      let channelInfo: Record<string, { channel: string; source: string }> = {};
-      if (customerIds.length > 0) {
         const { data: latestOrders } = await this.supabase.db
           .from('orders')
           .select('customer_id, channel, source, created_at')
@@ -83,13 +63,19 @@ export class CustomersController {
         });
       }
 
-      return (customers || []).map((c: Record<string, unknown>) => ({
+      const results = customers.map((c: Record<string, unknown>) => ({
         ...c,
         order_count: orderCounts[c.id as string] || 0,
         total_spent: 0,
         last_channel: channelInfo[c.id as string]?.channel || '',
         last_source: channelInfo[c.id as string]?.source || '',
       }));
+
+      // Gerçek müşterilerin yanında kanal çeşitliliği için mock eklenir.
+      const mockData = this.getMockCustomers();
+      const realPhones = new Set((results as any[]).map((r: any) => r.phone));
+      const newMocks = mockData.filter((m) => !realPhones.has(m.phone as string));
+      return [...results, ...newMocks];
     } catch (e) {
       return this.getMockCustomers();
     }

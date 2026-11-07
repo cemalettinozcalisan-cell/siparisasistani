@@ -135,6 +135,19 @@ export class AiBrainService {
           .eq('id', newSessionId);
       }
       await this.endSession(sessionId, 'reset');
+      // Aynı telefon/kanaldaki DİĞER aktif oturumları da kapat (eski hatırlatma kaynağı kalmasın).
+      await this.supabase.db
+        .from('conversation_sessions')
+        .update({
+          status: 'failed',
+          end_reason: 'reset',
+          ended_at: new Date().toISOString(),
+        })
+        .eq('tenant_id', input.tenantId)
+        .eq('phone', input.phone)
+        .eq('channel', input.channel)
+        .eq('status', 'active')
+        .neq('id', newSessionId);
       this.logger.log(`Session reset by command: ${sessionId} -> ${newSessionId} (skipMemory=${skipMemory})`);
       return {
         reply: greetingName
@@ -239,6 +252,11 @@ export class AiBrainService {
 
     // Step 7: Parse
     const parsed = this.parser.parseAiResponse(response.content);
+
+    // IBAN dekontu beklenirken doğum günü/numara söylenmesin (model prompt kuralını atlarsa).
+    if (pendingDekont && parsed.reply) {
+      parsed.reply = this.stripPendingDekontReply(parsed.reply);
+    }
 
     const hasName = !!(parsed.customer?.name);
     const hasAddress = !!parsed.address;
@@ -846,6 +864,46 @@ export class AiBrainService {
     return (data?.iban as string) || undefined;
   }
 
+  /** IBAN dekontu beklenirken yanıttan doğum günü/numara ifadelerini çıkarır. */
+  private stripPendingDekontReply(reply: string): string {
+    let out = String(reply || '')
+      .replace(/sipari[şs]iniz\s+olu[şs]turuldu/gi, 'siparişiniz alındı')
+      .replace(/[^.!?\n]*do[ğg]um\s*(g[üu]n[üu]|tarih)[^.!?\n]*[.!?]?/gi, '')
+      .replace(/[^.!?\n]*sipari[şs]\s*numaran[ıi]z?[^.!?\n]*[.!?]?/gi, '');
+    out = out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    return out || 'Dekontu ilettiğinizde siparişinizi onaylayıp kargoya vereceğiz.';
+  }
+
+  private async hasKnownBirthday(tenantId: string, phone: string): Promise<boolean> {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return false;
+    const { data } = await this.supabase.db
+      .from('customers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .in('phone', this.phoneVariants(digits))
+      .not('birth_date', 'is', null)
+      .limit(1);
+    return !!(data && data.length > 0);
+  }
+
+  private phoneVariants(phone: string): string[] {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return [];
+    const set = new Set<string>([digits]);
+    if (digits.startsWith('90') && digits.length > 10) {
+      set.add('0' + digits.slice(2));
+      set.add(digits.slice(2));
+    } else if (digits.startsWith('0') && digits.length >= 11) {
+      set.add('9' + digits);
+      set.add(digits.slice(1));
+    } else if (digits.length === 10) {
+      set.add('90' + digits);
+      set.add('0' + digits);
+    }
+    return Array.from(set);
+  }
+
   private async endSession(sessionId: string, endReason: string) {
     await this.supabase.db
       .from('conversation_sessions')
@@ -909,10 +967,14 @@ export class AiBrainService {
     this.logger.log(`Dekont detected in conversation for order ${order.id} (${input.channel})`);
     const name = String(order.customer_name || '').trim();
     const orderNumber = String(order.order_number || '').trim();
+    const skipMemory = await this.getSkipMemory(sessionId);
+    const knownBirthday = !skipMemory && (await this.hasKnownBirthday(input.tenantId, input.phone));
     const reply = [
       `Siparişiniz oluştu${name ? ', sayın ' + name : ''}.`,
       orderNumber ? `Sipariş numaranız: ${orderNumber}.` : '',
-      'Bu arada doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz.',
+      knownBirthday
+        ? ''
+        : 'Bu arada doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz.',
     ]
       .filter(Boolean)
       .join(' ');

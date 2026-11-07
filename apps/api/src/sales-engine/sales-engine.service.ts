@@ -46,6 +46,9 @@ export class SalesEngineService {
         if (!sessionId || !tenantId || !phone) continue;
         if (!['whatsapp', 'sms', 'phone', 'instagram'].includes(channel)) continue;
 
+        // Aynı numarada daha yeni aktif bir konuşma varsa bu eski oturuma hatırlatma gönderme.
+        if (await this.hasRecentActiveConversation(tenantId, phone, sessionId)) continue;
+
         const { data: reminders } = await this.supabase.db
           .from('follow_up_reminders')
           .select('stage, sent_at')
@@ -130,13 +133,21 @@ export class SalesEngineService {
         .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
         .lt('created_at', cutoff)
         .is('dekont_reminder_sent_at', null)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(50);
 
+      const seenPhones = new Set<string>();
       for (const row of (orders || []) as Record<string, unknown>[]) {
         const tenantId = String(row.tenant_id || '');
         const phone = this.normalizePhone(String(row.customer_phone || ''));
         if (!tenantId || !phone) continue;
+
+        // Telefon başına yalnızca EN SON bekleyen sipariş için hatırlat.
+        if (seenPhones.has(phone)) continue;
+        seenPhones.add(phone);
+
+        // Müşteri şu an başka bir kanalda aktif konuşuyorsa hatırlatma gönderme.
+        if (await this.hasRecentActiveConversation(tenantId, phone)) continue;
 
         const name = String(row.customer_name || '').trim();
         const orderNumber = String(row.order_number || '').trim();
@@ -364,8 +375,9 @@ export class SalesEngineService {
         .select('id, phone, channel, status, session_label, session_data, order_id, created_at')
       .eq('tenant_id', tenantId)
       .neq('status', 'completed')
-      .neq('status', 'closed')
-      .lt('created_at', cutoff)
+        .neq('status', 'closed')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+        .lt('created_at', cutoff)
       .order('created_at', { ascending: true })
       .limit(50);
 
@@ -382,6 +394,11 @@ export class SalesEngineService {
         }
         const phone = (s as any).phone as string;
         if (!phone) continue;
+
+        // Siparişi olan oturumda abandoned-cart çalışmasın.
+        if ((s as any).order_id) continue;
+        // Müşteri şu an aktif konuşuyorsa eski oturuma hatırlatma gönderme.
+        if (await this.hasRecentActiveConversation(tenantId, phone, (s as any).id)) continue;
 
       // Find associated customer
       const { data: customer } = await this.supabase.db
@@ -423,6 +440,45 @@ export class SalesEngineService {
     if (digits.startsWith('90')) return digits;
     if (digits.length === 10) return '90' + digits;
     return digits;
+  }
+
+  private phoneVariants(phone: string): string[] {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return [];
+    const set = new Set<string>([digits]);
+    if (digits.startsWith('90') && digits.length > 10) {
+      set.add('0' + digits.slice(2));
+      set.add(digits.slice(2));
+    } else if (digits.startsWith('0') && digits.length >= 11) {
+      set.add('9' + digits);
+      set.add(digits.slice(1));
+    } else if (digits.length === 10) {
+      set.add('90' + digits);
+      set.add('0' + digits);
+    }
+    return Array.from(set);
+  }
+
+  /** Son 15 dk içinde aktif (yeni) bir konuşma var mı? Varsa hatırlatma gönderme. */
+  private async hasRecentActiveConversation(
+    tenantId: string,
+    phone: string,
+    excludeSessionId?: string,
+  ): Promise<boolean> {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits) return false;
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    let query = this.supabase.db
+      .from('conversation_sessions')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .in('phone', this.phoneVariants(digits))
+      .eq('status', 'active')
+      .gte('updated_at', cutoff)
+      .limit(1);
+    if (excludeSessionId) query = query.neq('id', excludeSessionId);
+    const { data } = await query;
+    return !!(data && data.length > 0);
   }
 
   private async logCampaign(tenantId: string, type: string, customerId: string, message: string, phone?: string, channel: 'sms' | 'whatsapp' | 'instagram' = 'whatsapp') {

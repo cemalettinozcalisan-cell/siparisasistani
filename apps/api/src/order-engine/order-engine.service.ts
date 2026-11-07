@@ -50,6 +50,7 @@ export class OrderEngineService {
       this.logger.log(`Existing customer: ${existing.id}`);
       // Fatura bilgisi verilmişse mevcut müşteriyi güncelle (P63)
       const patch: Record<string, unknown> = {};
+      if (input.customer.name) patch.name = input.customer.name;
       if (input.customer.company_name) patch.company_name = input.customer.company_name;
       if (input.customer.identity_number) patch.identity_number = input.customer.identity_number;
       if (Object.keys(patch).length) {
