@@ -33,7 +33,19 @@ export class RateLimiterMiddleware implements NestMiddleware {
 
     // Ajan uçları (x-agent-secret ile korumalı) limitten MUAF: 429 konuşmayı doğrudan bozuyor.
     const fullPath = req.originalUrl || req.url || path;
-    if (fullPath.includes('/order-ai/agent') || fullPath.includes('/api/conversations')) {
+    // Sağlayıcı webhook'ları ve altyapı uçları limitten muaf: 429, Meta/Verimor retry'larında mesaj kaybettiriyor.
+    const exemptPrefixes = [
+      '/api/whatsapp/webhook',
+      '/api/verimor/',
+      '/api/netgsm/',
+      '/api/instagram/',
+      '/api/webhook',
+      '/api/health',
+      '/api/events/stream',
+      '/order-ai/agent',
+      '/api/conversations',
+    ];
+    if (exemptPrefixes.some((prefix) => fullPath.includes(prefix))) {
       next();
       return;
     }
