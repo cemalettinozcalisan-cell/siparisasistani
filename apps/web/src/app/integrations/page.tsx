@@ -482,6 +482,29 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
+      {/* Web Sitesi */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center">
+            <Globe className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+          </div>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Web Sitesi Entegrasyonu</h2>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">Web Sitesi URL</label>
+          <input
+            value={String(settings.website_url ?? '')}
+            onChange={(e) => setSettings((prev) => ({ ...prev, website_url: e.target.value }))}
+            placeholder="https://firma.com"
+            className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-slate-400">
+          Aşağıdaki webhook URL&apos;lerini e-ticaret platformunuzun webhook ayarlarına ekleyin. Siparişler
+          iç sipariş numarasıyla (26-xxxx) panele düşer; web sitenizin sipariş numarası not olarak saklanır.
+        </p>
+      </div>
+
       {/* Webhook URLs */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
         <div className="flex items-center gap-2">
