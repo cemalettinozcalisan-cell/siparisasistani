@@ -51,8 +51,11 @@ export class VoiceService {
 
     const normalized = this.normalizer.normalize(text);
 
-    // SSML wrapping for natural speech (adds pauses and prosody)
-    const withSSML = settings?.voice_gender ? this.wrapSSML(normalized) : normalized;
+    // SSML wrapping for natural speech (adds pauses and prosody).
+    // ElevenLabs SSML desteklemez; SSML gönderilirse "Çankaya" gibi Türkçe
+    // kelimeler ve duraklamalar bozuluyor. Sadece destekleyen sağlayıcılarda kullan.
+    const supportsSsml = providerName !== 'elevenlabs';
+    const withSSML = settings?.voice_gender && supportsSsml ? this.wrapSSML(normalized) : normalized;
 
     const hashKey = this.cache.hashKey(withSSML, persona);
 
