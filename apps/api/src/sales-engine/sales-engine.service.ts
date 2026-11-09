@@ -56,6 +56,12 @@ export class SalesEngineService {
         // Sadece sipariş/fiyat/ürün niyeti olan oturumları hatırlat (kargo durum sorgusu, şikayet vb. hariç).
         if (!(await this.shouldRemindForSession(sessionId))) continue;
 
+        // Bu oturumdan SONRA tamamlanmış sipariş varsa eski yarım oturumu hatırlatma.
+        const sessionUpdatedAt = String(row.updated_at || '');
+        if (sessionUpdatedAt && (await this.hasOrderCreatedAfter(tenantId, phone, sessionUpdatedAt))) {
+          continue;
+        }
+
         // status kolonu (079 migration) varsa onu kullan; yoksa stage=99 sentinel'ine düş.
         const reminderResult = await this.supabase.db
           .from('follow_up_reminders')
@@ -504,6 +510,27 @@ export class SalesEngineService {
       return true;
     } catch {
       return true;
+    }
+  }
+
+  private async hasOrderCreatedAfter(
+    tenantId: string,
+    phone: string,
+    since: string,
+  ): Promise<boolean> {
+    if (!since) return false;
+    try {
+      const { data } = await this.supabase.db
+        .from('orders')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .in('customer_phone', this.phoneVariants(phone))
+        .neq('status', 'cancelled')
+        .gt('created_at', since)
+        .limit(1);
+      return !!(data && data.length);
+    } catch {
+      return false;
     }
   }
 
