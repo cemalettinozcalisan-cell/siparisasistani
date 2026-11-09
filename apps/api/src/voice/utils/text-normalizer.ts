@@ -44,7 +44,7 @@ export class TextNormalizer {
   private normalizeAbbreviations(text: string): string {
     const map: Record<string, string> = {
       'TL': 'Türk Lirası',
-      'IBAN': 'I BAN',
+      'IBAN': 'havale',
       'SMS': 'es em es',
       'KG': 'kilogram',
       'GR': 'gram',

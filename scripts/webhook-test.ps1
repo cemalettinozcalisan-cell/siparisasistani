@@ -15,7 +15,7 @@ param(
   [string]$PaymentMethod = "website"
 )
 
-$body = @{
+$payload = @{
   id             = $EventId
   order_number   = "WEB-$EventId"
   customer_name  = "Webhook Test"
@@ -27,13 +27,17 @@ $body = @{
   items          = @(
     @{ name = $Product; quantity = $Quantity; unit = "KG"; price = $Price }
   )
-} | ConvertTo-Json -Depth 6
+}
+
+# Türkçe karakterlerin (Ç, Ğ, İ, ı, Ö, Ş, Ü) bozulmaması için gövdeyi UTF-8 byte olarak gönder.
+$json = $payload | ConvertTo-Json -Depth 6
+$utf8Body = [System.Text.Encoding]::UTF8.GetBytes($json)
 
 Write-Host "POST $ApiBase/api/webhook/custom/$TenantId" -ForegroundColor Cyan
 Write-Host "EventId: $EventId (tekrar kullanmayın; idempotency duplicate döner)" -ForegroundColor DarkGray
 
 try {
-  $res = Invoke-RestMethod -Uri "$ApiBase/api/webhook/custom/$TenantId" -Method Post -Body $body -ContentType "application/json"
+  $res = Invoke-RestMethod -Uri "$ApiBase/api/webhook/custom/$TenantId" -Method Post -Body $utf8Body -ContentType "application/json; charset=utf-8"
   $res | ConvertTo-Json -Depth 5
   Write-Host ""
   Write-Host "Kontrol:" -ForegroundColor Green

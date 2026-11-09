@@ -354,7 +354,7 @@ export class VoiceNotificationService {
     if (m === 'iban' || m === 'havale') {
       return ['dekont_alindi', 'paid', 'confirmed'].includes(s)
         ? 'Ödeme alındı.'
-        : 'Ödeme bekliyor (havale/IBAN).';
+        : 'Ödeme bekliyor (havale/EFT).';
     }
     if (m === 'kapida_kart' || m === 'cash_on_delivery' || m === 'cod' || m === 'kapida_nakit') {
       return 'Kapıda ödeme.';
