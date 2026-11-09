@@ -5,6 +5,7 @@ import { ComplaintHandler } from './handlers/complaint.handler';
 import { PaymentHandler } from './handlers/payment.handler';
 import { ShipmentHandler } from './handlers/shipment.handler';
 import { VoiceHandler } from './handlers/voice.handler';
+import { OrderUpdatedHandler } from './handlers/order-updated.handler';
 import { NotificationHandler } from './handlers/base.handler';
 
 @Injectable()
@@ -19,11 +20,13 @@ export class NotificationEngineService implements OnModuleInit {
     payment: PaymentHandler,
     shipment: ShipmentHandler,
     voice: VoiceHandler,
+    orderUpdated: OrderUpdatedHandler,
   ) {
     this.register(orderCreated);
     this.register(complaint);
     this.register(payment);
     this.register(shipment);
+    this.register(orderUpdated);
     // Kargo gönderimi iki farklı olay adıyla yayınlanabilir (STATUS_UPDATED / ORDER_SHIPPED)
     this.add(SystemEvents.ORDER_SHIPPED, shipment);
     // Ödeme onayı (dekont / link) geldiğinde de sipariş bildirimi düşer — aynı handler

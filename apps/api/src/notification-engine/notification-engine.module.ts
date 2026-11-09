@@ -6,6 +6,7 @@ import { ComplaintHandler } from './handlers/complaint.handler';
 import { PaymentHandler } from './handlers/payment.handler';
 import { ShipmentHandler } from './handlers/shipment.handler';
 import { VoiceHandler } from './handlers/voice.handler';
+import { OrderUpdatedHandler } from './handlers/order-updated.handler';
 import { SupabaseService } from '../common/supabase.client';
 import { AiEmployeeModule } from '../ai-employee/ai-employee.module';
 
@@ -19,6 +20,7 @@ import { AiEmployeeModule } from '../ai-employee/ai-employee.module';
     PaymentHandler,
     ShipmentHandler,
     VoiceHandler,
+    OrderUpdatedHandler,
     SupabaseService,
   ],
 })

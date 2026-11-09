@@ -7,11 +7,12 @@ import { OrderValidatorService } from '../conversation/validator/validator';
 import { AiAuditService } from '../audit/ai-audit.service';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
 import { ComplaintProcessorService } from '../../complaint-processor/complaint-processor.service';
+import { CargoTrackingService } from '../../cargo-tracking/cargo-tracking.service';
 import { SupabaseService } from '../../common/supabase.client';
 import { ChannelHealthService } from '../../channel-health/channel-health.service';
 import { normalizePayment, parseBirthday } from '../order-normalize';
 import { generateSessionLabel, isResetCommand, isTestResetNoMemory } from '../../common/chat-session';
-import { isDekontSent } from '../../common/text-normalize';
+import { foldTr, isDekontSent } from '../../common/text-normalize';
 
 export interface BrainInput {
   tenantId: string;
@@ -37,6 +38,7 @@ export interface BrainOutput {
   duplicateWarning?: string;
   providerUsed?: string;
   intent?: string;
+  orderAction?: string;
   complaintType?: string;
   complaintSeverity?: string;
   escalationLevel?: number;
@@ -75,6 +77,7 @@ export class AiBrainService {
     private readonly validator: OrderValidatorService,
     private readonly audit: AiAuditService,
     private readonly orderEngine: OrderEngineService,
+    private readonly cargoTracking: CargoTrackingService,
     private readonly supabase: SupabaseService,
     private readonly complaintProcessor: ComplaintProcessorService,
     private readonly channelHealth: ChannelHealthService,
@@ -164,9 +167,56 @@ export class AiBrainService {
       };
     }
 
-    // Idempotency: ayni oturumda siparis zaten olustuysa ikinci siparis acma.
+    // Oturumda sipariş varsa idempotency uygulanır; ancak order_action="new" ise yeni sipariş açılabilir.
     const existingOrderId = await this.getSessionOrderId(sessionId);
-    const existingOrderNumber = existingOrderId ? await this.getOrderNumber(existingOrderId) : undefined;
+    const recentOrder = await this.orderEngine.findRecentOrderByPhone(input.tenantId, input.phone);
+    const contextOrder = existingOrderId
+      ? await this.getOrderContext(existingOrderId)
+      : recentOrder;
+    let orderStatus = String(contextOrder?.status || '');
+    let cargoStatus = String(contextOrder?.cargo_status || '');
+
+    // Kargo gerçekten çıkmış mı? Takip varsa ve mesaj sipariş/kargo ile ilgiliyse canlı sorgula.
+    if (
+      contextOrder?.id &&
+      contextOrder?.tracking_number &&
+      contextOrder?.cargo_company &&
+      this.shouldCheckCargo(lastMessage)
+    ) {
+      try {
+        const cargoResult = await this.cargoTracking.checkOrderStatus(
+          input.tenantId,
+          String(contextOrder.cargo_company),
+          String(contextOrder.tracking_number),
+          String(contextOrder.id),
+        );
+        if (cargoResult?.status) cargoStatus = String(cargoResult.status);
+      } catch (e) {
+        this.logger.warn(`Cargo pre-check failed: ${(e as Error).message}`);
+      }
+    }
+
+    const lastOrder = contextOrder
+      ? {
+          orderNumber: contextOrder.order_number ? String(contextOrder.order_number) : undefined,
+          status: orderStatus || undefined,
+          cargoStatus: cargoStatus || undefined,
+          cargoCompany: contextOrder.cargo_company ? String(contextOrder.cargo_company) : undefined,
+          trackingNumber: contextOrder.tracking_number
+            ? String(contextOrder.tracking_number)
+            : undefined,
+          totalPrice: Number(contextOrder.total_price || 0) || undefined,
+          paymentMethod: contextOrder.payment_method
+            ? String(contextOrder.payment_method)
+            : undefined,
+          paymentStatus: contextOrder.payment_status
+            ? String(contextOrder.payment_status)
+            : undefined,
+          createdAt: contextOrder.created_at ? String(contextOrder.created_at) : undefined,
+          updatable: this.isOrderUpdatable({ status: orderStatus, cargoStatus }),
+        }
+      : undefined;
+    const existingOrderNumber = lastOrder?.orderNumber;
 
     // Step 4.5: Dekont alındı tespiti — müşteri "ödedim / dekont attım" beyan ederse,
     // bekleyen IBAN siparişi varsa otomatik esnaf bildirimi tetiklenir (AI çağrısı yapılmaz).
@@ -190,6 +240,7 @@ export class AiBrainService {
       skipMemory,
       pendingDekont,
       dekontReceived,
+      lastOrder,
     };
 
     const systemPrompt = await this.promptEngine.buildSystemPrompt(promptCtx);
@@ -257,13 +308,17 @@ export class AiBrainService {
 
     // Step 7: Parse
     const parsed = this.parser.parseAiResponse(response.content);
+    const orderAction = String(parsed.orderAction || '').toLowerCase();
+    const wantsNew = orderAction === 'new';
+    const wantsUpdate = orderAction === 'update';
 
     // IBAN dekontu beklenirken doğum günü/numara söylenmesin (model prompt kuralını atlarsa).
-    if (pendingDekont && parsed.reply) {
+    // Yeni sipariş niyetinde eski siparişin dekont durumu yeni cevabı etkilemesin.
+    if (!wantsNew && pendingDekont && parsed.reply) {
       parsed.reply = this.stripPendingDekontReply(parsed.reply);
     }
     // Dekont zaten alındıysa "dekontu iletin" tekrarını temizle.
-    if (dekontReceived && parsed.reply) {
+    if (!wantsNew && dekontReceived && parsed.reply) {
       parsed.reply = this.stripDekontReceivedReply(parsed.reply);
     }
 
@@ -357,6 +412,7 @@ export class AiBrainService {
 
     const routingFields = {
       intent: parsed.intent,
+      orderAction: parsed.orderAction,
       complaintType: parsed.complaintType,
       complaintSeverity: parsed.complaintSeverity,
       escalationLevel: parsed.escalationLevel,
@@ -394,13 +450,21 @@ export class AiBrainService {
     // Step 11: Order Engine (only if validated + confirmed)
     // TOPTAN: AI, ürünlerde tanımlı wholesale_price'ı kullanarak müşteri onayıyla
     // normal sipariş gibi kurar (source=WHOLESALE). Esnafa ayrıca sormaz.
-    if (existingOrderId) {
+    const targetOrderId = existingOrderId || (wantsUpdate ? recentOrder?.id : undefined);
+    const targetOrderNumber =
+      targetOrderId === existingOrderId
+        ? existingOrderNumber
+        : recentOrder?.order_number
+          ? String(recentOrder.order_number)
+          : undefined;
+
+    if (targetOrderId && !wantsNew) {
       // Sipariş sonrası not (ör. "kargocu beni arasın", "bugün kargolansın") kalıcı kaydedilsin.
       if (parsed.notes) {
         await this.supabase.db
           .from('orders')
           .update({ customer_note: parsed.notes })
-          .eq('id', existingOrderId);
+          .eq('id', targetOrderId);
       } else if (
         /aciliyet|bugün kargo|bugun kargo|kargocu|zile basma|aransın|aransin|not\s*(al|düş|dus|ekle)/i.test(lastMessage)
       ) {
@@ -408,7 +472,7 @@ export class AiBrainService {
         await this.supabase.db
           .from('orders')
           .update({ customer_note: lastMessage })
-          .eq('id', existingOrderId);
+          .eq('id', targetOrderId);
       }
 
       // Sipariş sonrası değişiklik: onaylı ve geçerliyse mevcut siparişle farkı kontrol et.
@@ -416,14 +480,38 @@ export class AiBrainService {
         try {
           const orderInput = this.parser.toOrderInput(parsed, input.channel);
           orderInput.customer.phone = orderInput.customer.phone || input.phone;
-          if (await this.orderDiffers(existingOrderId, orderInput)) {
-            const updated = await this.orderEngine.updateOrder(existingOrderId, orderInput, input.tenantId);
+          const updatable = this.isOrderUpdatable({ status: orderStatus, cargoStatus });
+          if (!updatable) {
+            return {
+              reply:
+                'Kargonuz yola çıkmış/teslim edilmiş görünüyor; bu siparişe ekleme yapamıyorum. İsterseniz ayrı bir sipariş oluşturayım.',
+              confidence: parsed.confidence || 0,
+              orderCreated: false,
+              orderId: targetOrderId,
+              orderNumber: targetOrderNumber,
+              sessionId,
+              needsHuman: false,
+              maintenanceMode: false,
+              afterHours: false,
+              duplicateWarning,
+              providerUsed,
+              ...routingFields,
+              complaintCreated,
+            };
+          }
+          if (await this.orderDiffers(targetOrderId, orderInput)) {
+            const updated = await this.orderEngine.updateOrder(targetOrderId, orderInput, input.tenantId);
+            await this.updateSessionOrder(
+              sessionId,
+              targetOrderId,
+              updated.order_number || targetOrderNumber || '',
+            );
             const total = Number(updated.total_price || 0).toLocaleString('tr-TR');
             return {
               reply: `${(parsed.reply || response.content).trim()} Güncel sipariş toplamı: ${total} TL.`,
               confidence: parsed.confidence || 0,
               orderCreated: false,
-              orderId: existingOrderId,
+              orderId: targetOrderId,
               orderNumber: updated.order_number,
               sessionId,
               needsHuman: false,
@@ -436,17 +524,39 @@ export class AiBrainService {
             };
           }
         } catch (e) {
-          this.logger.error(`Order update failed: ${(e as Error).message}`);
+          const message = (e as Error).message;
+          this.logger.error(`Order update failed: ${message}`);
+          if (message.includes('ORDER_NOT_UPDATABLE')) {
+            return {
+              reply:
+                'Kargonuz yola çıkmış/teslim edilmiş görünüyor; bu siparişe ekleme yapamıyorum. İsterseniz ayrı bir sipariş oluşturayım.',
+              confidence: parsed.confidence || 0,
+              orderCreated: false,
+              orderId: targetOrderId,
+              orderNumber: targetOrderNumber,
+              sessionId,
+              needsHuman: false,
+              maintenanceMode: false,
+              afterHours: false,
+              duplicateWarning,
+              providerUsed,
+              ...routingFields,
+              complaintCreated,
+            };
+          }
         }
       }
 
       // Numara yalnızca özet mesajında söylenir; burada tekrar eklenmez.
+      if (targetOrderId !== existingOrderId) {
+        await this.updateSessionOrder(sessionId, targetOrderId, targetOrderNumber || '');
+      }
       return {
         reply: parsed.reply || response.content,
         confidence: parsed.confidence || 0,
         orderCreated: false,
-        orderId: existingOrderId,
-        orderNumber: existingOrderNumber,
+        orderId: targetOrderId,
+        orderNumber: targetOrderNumber,
         sessionId,
         needsHuman: (parsed.confidence || 0) < 50,
         maintenanceMode: false,
@@ -456,6 +566,12 @@ export class AiBrainService {
         ...routingFields,
         complaintCreated,
       };
+    }
+
+    // Yeni sipariş niyeti: eski sipariş bağını kaldır ki yarım kalırsa hatırlatma çalışsın.
+    // (Sipariş oluşursa updateSessionOrder zaten yeni siparişi bağlar.)
+    if (wantsNew) {
+      await this.clearSessionOrderForNewIntent(sessionId);
     }
 
     if (parsed.confirmed && !normalizedPayment) {
@@ -690,6 +806,53 @@ export class AiBrainService {
       .from('conversation_sessions')
       .update({ order_id: orderId })
       .eq('id', sessionId);
+    // Sipariş oluştu/güncellendi: bu oturumun eski takip hatırlatmalarını temizle.
+    await this.supabase.db.from('follow_up_reminders').delete().eq('session_id', sessionId);
+  }
+
+  private async clearSessionOrderForNewIntent(sessionId: string) {
+    await this.supabase.db
+      .from('conversation_sessions')
+      .update({ order_id: null })
+      .eq('id', sessionId);
+    await this.supabase.db.from('follow_up_reminders').delete().eq('session_id', sessionId);
+  }
+
+  private async getOrderContext(orderId: string): Promise<{
+    id: string;
+    order_number?: string;
+    status?: string;
+    cargo_status?: string;
+    cargo_company?: string;
+    tracking_number?: string;
+    total_price?: number;
+    payment_method?: string;
+    payment_status?: string;
+    created_at?: string;
+    customer_name?: string;
+  } | null> {
+    const { data } = await this.supabase.db
+      .from('orders')
+      .select(
+        'id, order_number, status, cargo_status, cargo_company, tracking_number, total_price, payment_method, payment_status, created_at, customer_name',
+      )
+      .eq('id', orderId)
+      .maybeSingle();
+    return (data as any) || null;
+  }
+
+  private shouldCheckCargo(message: string): boolean {
+    return /(ekle|ilave|kargo|siparis|gonder|yeni|ayri|mevcut|durum|nerede|teslim)/.test(
+      foldTr(message),
+    );
+  }
+
+  private isOrderUpdatable(order: { status?: string; cargoStatus?: string }): boolean {
+    const status = String(order.status || '').toLowerCase();
+    const cargo = String(order.cargoStatus || '').toLowerCase();
+    if (['shipped', 'delivered', 'completed', 'cancelled'].includes(status)) return false;
+    if (['in_transit', 'at_branch', 'out_for_delivery', 'delivered'].includes(cargo)) return false;
+    return true;
   }
 
   private async getSessionOrderId(sessionId: string): Promise<string | undefined> {

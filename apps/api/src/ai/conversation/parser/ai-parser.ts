@@ -5,6 +5,7 @@ import { normalizePayment } from '../../order-normalize';
 export interface ParsedResponse {
   reply?: string;
   intent?: string;
+  orderAction?: string;
   customer?: { name?: string; phone?: string; birthday?: string; companyName?: string; identityNumber?: string };
   products?: { product_name?: string; quantity?: number; unit?: string }[];
   address?: string;
@@ -67,6 +68,7 @@ export class AiParserService {
     return {
       reply: (j.reply as string) || content,
       intent: j.intent as string,
+      orderAction: j.order_action as string,
       customer: j.customer as { name?: string; phone?: string },
       products: j.products as { product_name?: string; quantity?: number; unit?: string }[],
       address: j.address as string,

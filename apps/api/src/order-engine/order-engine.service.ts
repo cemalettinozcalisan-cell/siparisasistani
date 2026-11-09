@@ -180,6 +180,23 @@ export class OrderEngineService {
    * Kalemleri yeniden yazar, toplamı yeniden hesaplar ve ORDER_UPDATED yayar.
    */
   async updateOrder(orderId: string, input: AiOrderInput, tenantId: string): Promise<OrderResult> {
+    // Kargoya verilmiş/teslim edilmiş/iptal sipariş güncellenemez.
+    const { data: currentOrder } = await this.supabase.db
+      .from('orders')
+      .select('status, cargo_status')
+      .eq('id', orderId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    if (!currentOrder) throw new Error('ORDER_NOT_FOUND');
+    const currentStatus = String((currentOrder as Record<string, unknown>).status || '').toLowerCase();
+    const currentCargo = String((currentOrder as Record<string, unknown>).cargo_status || '').toLowerCase();
+    if (
+      ['shipped', 'delivered', 'completed', 'cancelled'].includes(currentStatus) ||
+      ['in_transit', 'at_branch', 'out_for_delivery', 'delivered'].includes(currentCargo)
+    ) {
+      throw new Error('ORDER_NOT_UPDATABLE');
+    }
+
     const totalPrice = await this.calculateTotal(input, tenantId);
 
     // Düzenleme notu (FAZ 4): mevcut müşteri notunu koru + yeni not + zaman damgası
@@ -509,6 +526,56 @@ export class OrderEngineService {
       : null;
   }
 
+  /** Telefonun son 7 gündeki en son siparişi (yeni sipariş / mevcut siparişe ekleme ayrımı için). */
+  async findRecentOrderByPhone(
+    tenantId: string,
+    phone: string,
+  ): Promise<{
+    id: string;
+    order_number?: string;
+    status?: string;
+    cargo_status?: string;
+    cargo_company?: string;
+    tracking_number?: string;
+    total_price?: number;
+    payment_method?: string;
+    payment_status?: string;
+    created_at?: string;
+    customer_name?: string;
+  } | null> {
+    const variants = this.phoneVariants(phone);
+    if (!variants.length) return null;
+
+    const { data } = await this.supabase.db
+      .from('orders')
+      .select(
+        'id, order_number, status, cargo_status, cargo_company, tracking_number, total_price, payment_method, payment_status, created_at, customer_name',
+      )
+      .eq('tenant_id', tenantId)
+      .in('customer_phone', variants)
+      .neq('status', 'cancelled')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) return null;
+    const o = data as Record<string, unknown>;
+    return {
+      id: String(o.id),
+      order_number: o.order_number ? String(o.order_number) : undefined,
+      status: o.status ? String(o.status) : undefined,
+      cargo_status: o.cargo_status ? String(o.cargo_status) : undefined,
+      cargo_company: o.cargo_company ? String(o.cargo_company) : undefined,
+      tracking_number: o.tracking_number ? String(o.tracking_number) : undefined,
+      total_price: Number(o.total_price || 0) || undefined,
+      payment_method: o.payment_method ? String(o.payment_method) : undefined,
+      payment_status: o.payment_status ? String(o.payment_status) : undefined,
+      created_at: o.created_at ? String(o.created_at) : undefined,
+      customer_name: o.customer_name ? String(o.customer_name) : undefined,
+    };
+  }
+
   /** Telefon varyantları: 905…, 0 5…, 5… (kanallar arası eşleşme için). */
   private phoneVariants(phone: string): string[] {
     const digits = String(phone || '').replace(/\D/g, '');
@@ -557,6 +624,7 @@ export class OrderEngineService {
     this.eventBus.emit(SystemEvents.ORDER_UPDATED, order.tenant_id, {
       entityType: 'order',
       orderId,
+      orderNumber: order.order_number,
       newStatus: status,
       description: `Sipariş durumu: ${status}`,
     }, orderId);

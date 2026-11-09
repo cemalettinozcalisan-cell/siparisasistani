@@ -44,6 +44,30 @@ export class TaskDefinitionComponent {
       'MODERASYON: Müşteri küfür/hakaret/öfke kullanırsa sakin kal, asla karşılık verme, tartışmaya girme. Sorunu çözmeye odaklan; çözülemezse yetkiliye aktar. Müşteriyi 3 kez anlayamazsan farklı uslupla yeniden dene, sonra WhatsApp kanalına davet et (WhatsApp ise), çözülmezse yetkiliye aktar.',
     ];
 
+    if (ctx.lastOrder) {
+      const lo = ctx.lastOrder;
+      const cargoLine = [
+        lo.cargoStatus ? `kargo: ${lo.cargoStatus}` : '',
+        lo.cargoCompany ? `firma: ${lo.cargoCompany}` : '',
+        lo.trackingNumber ? `takip: ${lo.trackingNumber}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
+      tasks.push(
+        '',
+        'SON SIPARIS BILGISI (telefon bazli):',
+        `- Numara: ${lo.orderNumber || '-'} | Durum: ${lo.status || '-'}${cargoLine ? ' | ' + cargoLine : ''}`,
+        `- Bu siparis guncellenebilir mi: ${lo.updatable ? 'EVET (henuz kargoya verilmemis/teslim edilmemis)' : 'HAYIR (kargoda/teslim edilmis/iptal)'}`,
+        '',
+        'SIPARIS ISLEMI (order_action alanini MUTLAKA doldur):',
+        '- Musteri "bunu da ekleyin", "siparisime ekleyin", "mevcut siparise ekle", "kargoya vermeden ekle" diyorsa ve yukaridaki siparis guncellenebilir=EVET ise order_action="update".',
+        '- Musteri "yeni siparis", "ayri siparis", "simdi almak istiyorum", "bunu da kargolayin", "yeni urun alayim" diyorsa VEYA siparis guncellenebilir=HAYIR ise order_action="new".',
+        '- Fiyat/urun bilgisi, siparis durumu/kargo sorgusu, selamlama, sikayet gibi siparis olusturmayan mesajlarda order_action="none".',
+        '- Emin degilsen order_action="none" ve "Mevcut siparisinize mi ekleyelim, ayri siparis mi olusturalim?" diye sor.',
+        '- Musteri taniniyor ve son siparisi varsa YENI oturumda "hos geldiniz" deme; son siparise kisaca atif yap ve nasil yardimci olabilecegini sor.',
+      );
+    }
+
     if (ctx.pendingDekont) {
       tasks.push(
         '',

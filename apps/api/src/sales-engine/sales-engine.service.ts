@@ -53,6 +53,9 @@ export class SalesEngineService {
         // Aynı numarada daha yeni aktif bir konuşma varsa bu eski oturuma hatırlatma gönderme.
         if (await this.hasRecentActiveConversation(tenantId, phone, sessionId)) continue;
 
+        // Sadece sipariş/fiyat/ürün niyeti olan oturumları hatırlat (kargo durum sorgusu, şikayet vb. hariç).
+        if (!(await this.shouldRemindForSession(sessionId))) continue;
+
         // status kolonu (079 migration) varsa onu kullan; yoksa stage=99 sentinel'ine düş.
         const reminderResult = await this.supabase.db
           .from('follow_up_reminders')
@@ -473,6 +476,34 @@ export class SalesEngineService {
 
       await this.logCampaign(tenantId, 'abandoned_cart', (customer as any)?.id || phone, message, phone);
       this.logger.log(`[AbandonedCart] Tenant ${tenantId}: Session ${(s as any).id} (${(s as any).channel}) - ${customerName}`);
+    }
+  }
+
+  /**
+   * Oturumun son AI turu sipariş/fiyat/ürün niyeti mi?
+   * Kargo durumu, şikayet, insan aktarma gibi turlar için hatırlatma gönderme.
+   */
+  private async shouldRemindForSession(sessionId: string): Promise<boolean> {
+    try {
+      const { data } = await this.supabase.db
+        .from('ai_audit_logs')
+        .select('parsed_json')
+        .eq('session_id', sessionId)
+        .neq('model', 'system')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const row = data?.[0] as { parsed_json?: unknown } | undefined;
+      const parsed = row?.parsed_json as Record<string, unknown> | null;
+      if (!parsed) return true;
+      const intent = String(parsed.intent || '').toUpperCase();
+      if (['COMPLAINT', 'CALLBACK', 'HUMAN_TRANSFER'].includes(intent)) return false;
+      const products = Array.isArray(parsed.products) ? parsed.products : [];
+      if (!products.length && !['ORDER', 'PRICE_INFO', 'PRODUCT_INFO'].includes(intent)) {
+        return false;
+      }
+      return true;
+    } catch {
+      return true;
     }
   }
 

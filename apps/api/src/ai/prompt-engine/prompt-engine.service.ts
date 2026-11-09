@@ -28,6 +28,19 @@ export interface PromptContext {
   pendingDekont?: boolean;
   /** true ise IBAN dekontu zaten alındı; tekrar dekont istenmez. */
   dekontReceived?: boolean;
+  /** Müşterinin son siparişi (telefon bazlı); yeni sipariş / mevcut siparişe ekleme ayrımı için. */
+  lastOrder?: {
+    orderNumber?: string;
+    status?: string;
+    cargoStatus?: string;
+    cargoCompany?: string;
+    trackingNumber?: string;
+    totalPrice?: number;
+    paymentMethod?: string;
+    paymentStatus?: string;
+    createdAt?: string;
+    updatable?: boolean;
+  };
 }
 
 @Injectable()
@@ -371,6 +384,7 @@ export class PromptEngineService {
       'JSON FORMATI (ZORUNLU - asagidaki alanlarin TAMAMINI dondur):',
       '{',
       '  "intent": "ORDER|COMPLAINT|PRICE_INFO|PRODUCT_INFO|CALLBACK|HUMAN_TRANSFER",',
+      '  "order_action": "new|update|none",',
       '  "reply": "Merhaba Mehmet Bey, Ahmet Ipek Sucuklari\'na hos geldiniz. Hemen not ediyorum:\n• 2 kg Dana Parmak Sucuk\n• 1 kg Pastirma\n\n• Teslimat:\nAnkara / Etimesgut\n\nYaklasik toplam:\n2.980 TL\nKesin tutar tartimdan sonra netlesecektir.\nOdeme yonteminizi ogrenebilir miyim? IBAN havalesi veya kredi karti?\n(Bu asamada kampanya teklif etme. Kampanya sadece odeme bilgisi alindiktan sonra gelir.)",',
       '  "customer": { "name": "Mehmet Yilmaz", "phone": "05321234567", "birthday": "15-05|null", "company_name": "ABC Gida Ltd Sti|null", "identity_number": "1234567890|null" },',
       '  "products": [',
