@@ -144,14 +144,14 @@ async function fetchSystemPrompt(
   phone?: string,
 ): Promise<{
   systemInstruction: string;
-  ivr: { menu: string; kvkk: string; noinput: string } | null;
+  ivr: { menu: string; kvkk: string; noinput: string; kvkkLink?: string } | null;
   greeting: string | null;
 }> {
   const url = `${API_BASE}/api/order-ai/agent/prompt?tenantId=${encodeURIComponent(tenantId)}&phone=${encodeURIComponent(phone || '')}`;
   const res = await fetch(url, { headers: { 'x-agent-secret': AGENT_SECRET } });
   const json = (await res.json().catch(() => ({}))) as {
     systemInstruction?: string;
-    ivr?: { menu: string; kvkk: string; noinput: string } | null;
+    ivr?: { menu: string; kvkk: string; noinput: string; kvkkLink?: string } | null;
     greeting?: string | null;
     message?: string;
   };
@@ -641,7 +641,7 @@ export default defineAgent({
     }
 
     let systemInstruction = '';
-    let ivrTexts: { menu: string; kvkk: string; noinput: string } | null = null;
+    let ivrTexts: { menu: string; kvkk: string; noinput: string; kvkkLink?: string } | null = null;
     let greetingText: string | null = null;
     try {
       const pr = await fetchSystemPrompt(tenantId, caller);
@@ -870,6 +870,9 @@ export default defineAgent({
     let proceed = false;
     if (ivrEnabled) {
       await playMenu();
+      if (ivrTexts?.kvkkLink) {
+        await sayTts(ivrTexts.kvkkLink);
+      }
       let choice = await takeDtmf(ivrTimeout);
       if (choice === '1') { await sayTts(kvkkText); await playMenu(); choice = await takeDtmf(ivrTimeout); }
       if (choice === '2') {

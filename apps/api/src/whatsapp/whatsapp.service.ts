@@ -135,6 +135,10 @@ export class WhatsappService {
     });
 
     const { sessionId, history } = await this.loadSession(tenantId, phone);
+    const isNewSession = history.length === 0;
+    if (isNewSession) {
+      await this.sendWelcome(tenantId, phone, convId, sessionId);
+    }
     history.push({ role: 'customer', content: text });
 
     const result = await this.brain.process({
@@ -180,7 +184,48 @@ export class WhatsappService {
 
     await this.deliver(tenantId, phone, aiReply, outgoingId);
 
+    if (result.resetHistory) {
+      await this.sendWelcome(tenantId, phone, convId, effectiveSessionId);
+    }
+
     this.logger.log(`WhatsApp cevap gonderildi (${profileName || phone}): ${aiReply.substring(0, 80)}`);
+  }
+
+  private async sendWelcome(
+    tenantId: string,
+    phone: string,
+    conversationId: string,
+    sessionId?: string,
+  ): Promise<void> {
+    try {
+      const body = await this.brain.buildTextWelcome(tenantId);
+      const outgoingId = await this.conversations.addMessage({
+        tenantId,
+        conversationId,
+        direction: 'outgoing',
+        body,
+        status: 'sending',
+      });
+      await this.deliver(tenantId, phone, body, outgoingId);
+      if (sessionId) {
+        await this.supabase.db.from('ai_audit_logs').insert({
+          tenant_id: tenantId,
+          session_id: sessionId,
+          conversation_id: conversationId,
+          model: 'system',
+          provider: 'system',
+          user_message: '[SISTEM KARSILAMA]',
+          raw_response: JSON.stringify({ reply: body, reminder: 'text_welcome' }),
+          parsed_json: { reply: body, reminder: 'text_welcome' },
+          confidence: 100,
+          latency_ms: 0,
+          success: true,
+        });
+      }
+      this.logger.log(`WhatsApp KVKK/karşılama gönderildi (${phone})`);
+    } catch (e) {
+      this.logger.warn(`WhatsApp KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+    }
   }
 
   private async processMedia(

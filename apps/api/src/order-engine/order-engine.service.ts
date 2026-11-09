@@ -4,6 +4,7 @@ import { AiOrderInput, OrderResult } from '@siparis/types';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 import { OutboundService } from '../messages/outbound.service';
+import { ProductLookupService } from '../common/product-lookup.service';
 
 const PREPAID_METHODS = ['iban', 'paytr', 'iyzico', 'website'];
 
@@ -20,6 +21,7 @@ export class OrderEngineService {
     private readonly eventBus: EventBusService,
     private readonly whatsapp: WhatsAppConversationsService,
     private readonly outbound: OutboundService,
+    private readonly productLookup: ProductLookupService,
   ) {}
 
   async process(input: AiOrderInput, tenantId: string): Promise<OrderResult> {
@@ -90,7 +92,13 @@ export class OrderEngineService {
     const orderNumber = await this.generateOrderNumber(tenantId);
     const totalPrice = await this.calculateTotal(input, tenantId);
 
-    const sourceMap: Record<string, string> = { phone: 'PHONE', whatsapp: 'WHATSAPP', sms: 'SMS', manual: 'PANEL' };
+    const sourceMap: Record<string, string> = {
+      phone: 'PHONE',
+      whatsapp: 'WHATSAPP',
+      sms: 'SMS',
+      manual: 'PANEL',
+      web: 'WEBSITE',
+    };
     const source = input.source || sourceMap[input.channel] || 'PANEL';
 
     const { data: order, error: orderError } = await this.supabase.db
@@ -152,15 +160,26 @@ export class OrderEngineService {
       city: input.customer?.city || '',
       district: input.customer?.district || '',
       items: (input.products || []).map((p) => ({
-        name: (p as { productName?: string; name?: string }).productName || (p as { name?: string }).name || '',
+        name:
+          (p as { productName?: string; name?: string; product_name?: string }).productName ||
+          (p as { name?: string }).name ||
+          (p as { product_name?: string }).product_name ||
+          '',
         quantity: (p as { quantity?: number }).quantity || 0,
         unit: (p as { unit?: string }).unit || '',
       })),
+      address: input.customer?.address || '',
       confidence: input.confidence,
       channel: input.channel,
       paymentMethod,
+      paymentStatus: paymentMethod === 'iban' ? 'awaiting_dekont' : 'waiting',
       esnafNotify,
-      description: `#${orderNumber} - ${totalPrice.toLocaleString('tr-TR')} TL`,
+      description: `#${orderNumber} - ${input.customer?.name || ''}${input.customer?.name ? ' - ' : ''}${
+        (input.products || []).map((p) => {
+          const x = p as { productName?: string; name?: string; product_name?: string };
+          return `${(p as { quantity?: number }).quantity || ''} ${(p as { unit?: string }).unit || ''} ${x.productName || x.name || x.product_name || ''}`.trim();
+        }).filter(Boolean).join(', ')
+      } - ${totalPrice.toLocaleString('tr-TR')} TL${paymentMethod === 'iban' ? ' - Ödeme bekliyor' : ''}`,
       productCount: input.products.length,
     }, order.id);
 
@@ -183,13 +202,14 @@ export class OrderEngineService {
     // Kargoya verilmiş/teslim edilmiş/iptal sipariş güncellenemez.
     const { data: currentOrder } = await this.supabase.db
       .from('orders')
-      .select('status, cargo_status')
+      .select('*')
       .eq('id', orderId)
       .eq('tenant_id', tenantId)
       .maybeSingle();
     if (!currentOrder) throw new Error('ORDER_NOT_FOUND');
-    const currentStatus = String((currentOrder as Record<string, unknown>).status || '').toLowerCase();
-    const currentCargo = String((currentOrder as Record<string, unknown>).cargo_status || '').toLowerCase();
+    const old = currentOrder as Record<string, unknown>;
+    const currentStatus = String(old.status || '').toLowerCase();
+    const currentCargo = String(old.cargo_status || '').toLowerCase();
     if (
       ['shipped', 'delivered', 'completed', 'cancelled'].includes(currentStatus) ||
       ['in_transit', 'at_branch', 'out_for_delivery', 'delivered'].includes(currentCargo)
@@ -198,23 +218,36 @@ export class OrderEngineService {
     }
 
     const totalPrice = await this.calculateTotal(input, tenantId);
+    const { data: oldItemsData } = await this.supabase.db
+      .from('order_items')
+      .select('product_name, quantity, unit')
+      .eq('order_id', orderId);
+    const oldItems = (oldItemsData || []) as Record<string, unknown>[];
 
     // Düzenleme notu (FAZ 4): mevcut müşteri notunu koru + yeni not + zaman damgası
     const editNote = `Müşteri ${new Date().toLocaleString('tr-TR')} tarihinde siparişi düzenledi`;
-    let prevNote = '';
-    try {
-      const { data: prev } = await this.supabase.db.from('orders').select('customer_note').eq('id', orderId).maybeSingle();
-      prevNote = String((prev as Record<string, unknown> | null)?.customer_note || '').trim();
-    } catch { /* yoksay */ }
+    const prevNote = String(old.customer_note || '').trim();
     const notesToAdd = input.notes && !prevNote.includes(String(input.notes)) ? String(input.notes) : '';
     const customerNote = [prevNote, notesToAdd, editNote].filter(Boolean).join(' | ');
+
+    const newPayment = this.normalizePayment(input.payment);
+    const newAddress = input.customer?.address || String(old.customer_address || '');
+    const newCity = input.customer?.city || String(old.customer_city || '');
+    const newDistrict = input.customer?.district || String(old.customer_district || '');
+    const newName = input.customer?.name || String(old.customer_name || '');
+    const newPhone = input.customer?.phone || String(old.customer_phone || '');
 
     const { data: order, error } = await this.supabase.db
       .from('orders')
       .update({
         total_price: totalPrice,
-        payment_method: this.normalizePayment(input.payment),
+        payment_method: newPayment,
         customer_note: customerNote,
+        customer_name: newName || null,
+        customer_phone: newPhone || null,
+        customer_address: newAddress || null,
+        customer_city: newCity || null,
+        customer_district: newDistrict || null,
       })
       .eq('id', orderId)
       .eq('tenant_id', tenantId)
@@ -226,18 +259,75 @@ export class OrderEngineService {
       throw new Error(`Order update failed: ${error.message}`);
     }
 
+    const customerId = String(old.customer_id || '');
+    if (customerId) {
+      const customerPatch: Record<string, unknown> = {};
+      if (newName) customerPatch.name = newName;
+      if (newPhone) customerPatch.phone = newPhone;
+      if (newAddress) customerPatch.address = newAddress;
+      if (newCity) customerPatch.city = newCity;
+      if (Object.keys(customerPatch).length > 0) {
+        await this.supabase.db
+          .from('customers')
+          .update(customerPatch)
+          .eq('id', customerId)
+          .eq('tenant_id', tenantId);
+      }
+    }
+
     await this.supabase.db.from('order_items').delete().eq('order_id', orderId);
     await this.createOrderItems(orderId, input.products, tenantId);
 
     const o = order as Record<string, unknown>;
     const orderNumber = String(o.order_number);
-    const paymentMethod = this.normalizePayment(input.payment);
+
+    const keyOf = (name: unknown, unit: unknown) =>
+      `${String(name || '').trim().toLocaleLowerCase('tr-TR')}|${String(unit || '').toLowerCase()}`;
+    const oldMap = new Map<string, { name: string; qty: number; unit: string }>();
+    for (const it of oldItems) {
+      oldMap.set(keyOf(it.product_name, it.unit), {
+        name: String(it.product_name || ''),
+        qty: Number(it.quantity || 0),
+        unit: String(it.unit || ''),
+      });
+    }
+    const newMap = new Map<string, { name: string; qty: number; unit: string }>();
+    for (const p of input.products) {
+      newMap.set(keyOf(p.product_name, p.unit), {
+        name: p.product_name,
+        qty: Number(p.quantity || 0),
+        unit: String(p.unit || ''),
+      });
+    }
+
+    const parts: string[] = [];
+    for (const [key, next] of newMap) {
+      const prev = oldMap.get(key);
+      if (!prev) parts.push(`${next.qty} ${next.unit} ${next.name} eklendi`);
+      else if (prev.qty !== next.qty) parts.push(`${next.name}: ${prev.qty} ${prev.unit} → ${next.qty} ${next.unit}`);
+    }
+    for (const [key, prev] of oldMap) {
+      if (!newMap.has(key)) parts.push(`${prev.qty} ${prev.unit} ${prev.name} çıkarıldı`);
+    }
+    const oldPayment = this.normalizePayment(String(old.payment_method || ''));
+    if (oldPayment !== newPayment) parts.push(`Ödeme yöntemi: ${oldPayment} → ${newPayment}`);
+    const oldAddress = [old.customer_district, old.customer_city, old.customer_address]
+      .filter(Boolean)
+      .join(' / ');
+    const newAddressFull = [newDistrict, newCity, newAddress].filter(Boolean).join(' / ');
+    if (newAddressFull && oldAddress !== newAddressFull) {
+      parts.push(`Adres güncellendi: ${newAddressFull}`);
+    }
+    const changeSummary = parts.length ? parts.join('; ') : 'Sipariş güncellendi';
+    const changedFields = ['items', 'address', 'payment', 'total'];
+    const changeKey = `${changedFields.join(',')}:${totalPrice}:${Math.floor(Date.now() / 60000)}`;
 
     await this.logAiEvent(tenantId, orderId, 'order_updated', {
       channel: input.channel,
       products: input.products.length,
-      payment_method: paymentMethod,
+      payment_method: newPayment,
       total_price: totalPrice,
+      change_summary: changeSummary,
     });
 
     this.eventBus.emit(SystemEvents.ORDER_UPDATED, tenantId, {
@@ -245,9 +335,19 @@ export class OrderEngineService {
       orderId,
       orderNumber,
       totalPrice,
-      paymentMethod,
+      paymentMethod: newPayment,
+      paymentStatus: String(old.payment_status || ''),
       productCount: input.products.length,
-      description: `#${orderNumber} güncellendi - ${totalPrice.toLocaleString('tr-TR')} TL`,
+      customerName: newName,
+      city: newCity,
+      district: newDistrict,
+      address: newAddress,
+      items: input.products.map((p) => ({ name: p.product_name, quantity: p.quantity, unit: p.unit })),
+      channel: input.channel,
+      changeSummary,
+      changedFields,
+      changeKey,
+      description: `#${orderNumber} - ${newName} - ${changeSummary} - ${totalPrice.toLocaleString('tr-TR')} TL`,
     }, orderId);
 
     return {
@@ -303,14 +403,13 @@ export class OrderEngineService {
   ) {
     const items: Array<Record<string, unknown>> = await Promise.all(
       products.map(async (p) => {
-        const { data: product } = await this.supabase.db
-          .from('products')
-          .select('id, price, wholesale_price, wholesale_min_qty')
-          .eq('tenant_id', tenantId)
-          .eq('product_name', p.product_name)
-          .maybeSingle();
-
-        const unitPrice = this.resolveUnitPrice(product, p.quantity);
+        const product = await this.productLookup.findByName(tenantId, p.product_name);
+        const unitPrice = this.resolveUnitPrice(
+          product as
+            | { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null }
+            | null,
+          p.quantity,
+        );
         return {
           order_id: orderId,
           product_id: product?.id || null,
@@ -401,14 +500,13 @@ export class OrderEngineService {
     let total = 0;
 
     for (const p of input.products) {
-      const { data: product } = await this.supabase.db
-        .from('products')
-        .select('price, wholesale_price, wholesale_min_qty')
-        .eq('tenant_id', tenantId)
-        .eq('product_name', p.product_name)
-        .maybeSingle();
-
-      const price = this.resolveUnitPrice(product, p.quantity);
+      const product = await this.productLookup.findByName(tenantId, p.product_name);
+      const price = this.resolveUnitPrice(
+        product as
+          | { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null }
+          | null,
+        p.quantity,
+      );
       total += price * p.quantity;
     }
 
@@ -479,17 +577,38 @@ export class OrderEngineService {
       .update({ payment_status: 'dekont_alindi', payment_note: paymentNote })
       .eq('id', orderId);
 
+    const { data: itemRows } = await this.supabase.db
+      .from('order_items')
+      .select('product_name, quantity, unit')
+      .eq('order_id', orderId);
+    const items = ((itemRows || []) as Record<string, unknown>[]).map((it) => ({
+      name: String(it.product_name || ''),
+      quantity: Number(it.quantity || 0),
+      unit: String(it.unit || ''),
+    }));
+    const customerName = String(
+      o.customer_name || (o.customer as Record<string, unknown> | undefined)?.name || '',
+    );
+
     this.eventBus.emit(SystemEvents.ORDER_PAYMENT_CONFIRMED, String(o.tenant_id), {
       entityType: 'order',
       orderId,
       orderNumber: o.order_number,
-      customerName: (o.customer as Record<string, unknown>)?.name || '',
-      customerPhone: (o.customer as Record<string, unknown>)?.phone || '',
+      customerName,
+      customerPhone: (o.customer as Record<string, unknown>)?.phone || o.customer_phone || '',
+      city: o.customer_city || '',
+      district: o.customer_district || '',
+      address: o.customer_address || '',
+      channel: o.channel || '',
       totalPrice: o.total_price,
       paymentMethod: 'iban',
+      paymentStatus: 'dekont_alindi',
       paymentNote,
+      items,
       dekont: true,
-      description: `🆕 Yeni Sipariş #${o.order_number}\n💵 Havale — ${paymentNote}`,
+      description: `#${o.order_number} - ${customerName} - Havale ödemesi tamamlandı - ${
+        Number(o.total_price || 0).toLocaleString('tr-TR')
+      } TL`,
     }, orderId);
 
     this.logger.log(`Dekont received (${source}) for order ${o.order_number}`);
@@ -597,7 +716,7 @@ export class OrderEngineService {
   async updateStatus(orderId: string, status: string): Promise<void> {
     const { data: order, error: fetchError } = await this.supabase.db
       .from('orders')
-      .select('tenant_id, order_number')
+      .select('tenant_id, order_number, customer_name, channel')
       .eq('id', orderId)
       .single();
 
@@ -621,19 +740,25 @@ export class OrderEngineService {
       }, orderId);
     }
 
-    this.eventBus.emit(SystemEvents.ORDER_UPDATED, order.tenant_id, {
-      entityType: 'order',
-      orderId,
-      orderNumber: order.order_number,
-      newStatus: status,
-      description: `Sipariş durumu: ${status}`,
-    }, orderId);
+    if (status !== 'cancelled') {
+      this.eventBus.emit(SystemEvents.ORDER_UPDATED, order.tenant_id, {
+        entityType: 'order',
+        orderId,
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        channel: order.channel,
+        newStatus: status,
+        changeSummary: `Sipariş durumu: ${status}`,
+        changeKey: `status:${status}:${Math.floor(Date.now() / 60000)}`,
+        description: `#${order.order_number} - ${order.customer_name || ''} - Sipariş durumu: ${status}`,
+      }, orderId);
+    }
   }
 
-  async cancelOrder(orderId: string): Promise<void> {
+  async cancelOrder(orderId: string, reason?: string): Promise<void> {
     const { data: order } = await this.supabase.db
       .from('orders')
-      .select('tenant_id, order_number')
+      .select('tenant_id, order_number, customer_name, channel')
       .eq('id', orderId)
       .single();
 
@@ -643,9 +768,35 @@ export class OrderEngineService {
       this.eventBus.emit(SystemEvents.ORDER_CANCELLED, order.tenant_id, {
         entityType: 'order',
         orderId,
-        description: `Sipariş #${order.order_number} iptal edildi`,
+        orderNumber: order.order_number,
+        customerName: order.customer_name,
+        channel: order.channel,
+        cancelReason: reason || '',
+        description: `#${order.order_number} - ${order.customer_name || ''} - Sipariş iptal edildi${reason ? ' - ' + reason : ''}`,
       }, orderId);
     }
+  }
+
+  /** Müşteri iptal talebi: siparişi iptal etmez; esnafa bildirim gider, panelden onaylanır. */
+  async requestCancellation(orderId: string, reason?: string): Promise<boolean> {
+    const { data: order } = await this.supabase.db
+      .from('orders')
+      .select('tenant_id, order_number, customer_name, channel, status')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (!order) return false;
+    const o = order as Record<string, unknown>;
+    if (String(o.status || '').toLowerCase() === 'cancelled') return false;
+    this.eventBus.emit(SystemEvents.ORDER_CANCEL_REQUESTED, String(o.tenant_id), {
+      entityType: 'order',
+      orderId,
+      orderNumber: o.order_number,
+      customerName: o.customer_name,
+      channel: o.channel,
+      cancelReason: reason || '',
+      description: `#${o.order_number} - ${o.customer_name || ''} - Müşteri iptal talebi${reason ? ' - ' + reason : ''}`,
+    }, orderId);
+    return true;
   }
 
   async updateCargo(orderId: string, cargoCompany: string, trackingNumber: string): Promise<void> {

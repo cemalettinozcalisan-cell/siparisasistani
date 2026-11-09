@@ -34,7 +34,7 @@ const ORDER_TOOL: any = {
   parameters: {
     type: 'object',
     properties: {
-      action: { type: 'string', description: 'set_customer|add_item|set_address|set_payment|set_invoice|confirm_order|send_payment_info|escalate|sleep' },
+      action: { type: 'string', description: 'set_customer|add_item|set_address|set_payment|set_invoice|confirm_order|send_payment_info|cancel_order|escalate|sleep' },
       args: { type: 'object', description: 'Araç parametreleri' },
     },
     required: ['action'],

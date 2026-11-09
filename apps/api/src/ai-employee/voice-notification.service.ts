@@ -17,6 +17,9 @@ const SALUTATION_MAP: Record<string, string> = {
 const EVENT_PREF_KEY: Record<string, string> = {
   ORDER_CREATED: 'order_voice',
   ORDER_UPDATED: 'order_voice',
+  ORDER_PAYMENT_CONFIRMED: 'order_voice',
+  ORDER_CANCELLED: 'order_voice',
+  ORDER_CANCEL_REQUESTED: 'order_voice',
   REQUEST_CREATED: 'request_voice',
   COMPLAINT_CREATED: 'complaint_voice',
   SUBSCRIPTION_THRESHOLD: 'subscription_voice',
@@ -25,9 +28,24 @@ const EVENT_PREF_KEY: Record<string, string> = {
 const EVENT_LABEL: Record<string, string> = {
   ORDER_CREATED: 'yeni sipariş',
   ORDER_UPDATED: 'güncellenen sipariş',
+  ORDER_PAYMENT_CONFIRMED: 'ödeme onayı',
+  ORDER_CANCELLED: 'iptal edilen sipariş',
+  ORDER_CANCEL_REQUESTED: 'iptal talebi',
   REQUEST_CREATED: 'müşteri talebi',
   COMPLAINT_CREATED: 'müşteri şikâyeti',
   SUBSCRIPTION_THRESHOLD: 'abonelik uyarısı',
+};
+
+const CHANNEL_LABEL: Record<string, string> = {
+  phone: 'TELEFON',
+  whatsapp: 'WHATSAPP',
+  instagram: 'INSTAGRAM',
+  sms: 'SMS',
+  web: 'WEB',
+  website: 'WEB',
+  manual: 'PANEL',
+  panel: 'PANEL',
+  wholesale: 'TOPTAN',
 };
 
 const TR_BIRLER = ['', 'bir', 'iki', 'üç', 'dört', 'beş', 'altı', 'yedi', 'sekiz', 'dokuz'];
@@ -153,7 +171,9 @@ export class VoiceNotificationService {
         if (prefs[prefKey] === false) { this.logger.log(`${tag} atlandi: ${prefKey}=false`); return; }
       }
 
-      const dedupKey = `${eventType}:${entityId || String(payload.id || payload.orderId || payload.ticket_number || '')}`;
+      const changeKey =
+        eventType === 'ORDER_UPDATED' ? String(payload.changeKey || payload.changeSummary || '') : '';
+      const dedupKey = `${eventType}:${entityId || String(payload.id || payload.orderId || payload.ticket_number || '')}${changeKey ? ':' + changeKey : ''}`;
       const { data: existing } = await this.supabase.db
         .from('ai_voice_notifications')
         .select('id')
@@ -269,30 +289,47 @@ export class VoiceNotificationService {
 
   private buildText(eventType: string, cfg: AiEmployeeConfig, payload: Record<string, unknown>): string {
     const sal = this.salutation(cfg);
-    if (eventType === 'ORDER_CREATED') {
-      const num = payload.orderNumber ? `#${payload.orderNumber}` : '';
-      const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
-      const chan = payload.channel ? ` (${String(payload.channel).toUpperCase()})` : '';
-      const cust = String(payload.customerName || '').trim();
-      const city = String(payload.city || '').trim();
-      const district = String(payload.district || '').trim();
-      const items = Array.isArray(payload.items)
-        ? (payload.items as Array<{ name?: string; quantity?: number; unit?: string }>)
-          .filter((i) => i && i.name)
-          .map((i) => `${i.quantity ?? ''} ${i.unit || ''} ${i.name}`.trim())
+    const num = payload.orderNumber ? `#${String(payload.orderNumber)}` : '';
+    const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
+    const channel = this.channelLabel(payload.channel, payload.source);
+    const cust = String(payload.customerName || '').trim();
+    const city = String(payload.city || '').trim();
+    const district = String(payload.district || '').trim();
+    const address = String(payload.address || '').trim();
+    const loc = [district, city].filter(Boolean).join(', ') || address;
+    const items = Array.isArray(payload.items)
+      ? (payload.items as Array<{ name?: string; product_name?: string; quantity?: number; unit?: string }>)
+          .filter((i) => i && (i.name || i.product_name))
+          .map((i) => `${i.quantity ?? ''} ${i.unit || ''} ${i.name || i.product_name || ''}`.trim())
           .join(', ')
-        : '';
-      const loc = [district, city].filter(Boolean).join(', ');
-      return `${sal}, yeni siparişiniz var${num ? ' ' + num : ''}${chan}.`
+      : '';
+
+    if (eventType === 'ORDER_CREATED') {
+      const payment = this.paymentLabel(payload.paymentMethod, payload.paymentStatus);
+      return `${sal}, yeni siparişiniz var${num ? ' ' + num : ''}${channel ? ' (' + channel + ')' : ''}.`
         + `${cust ? ' Müşteri ' + cust + '.' : ''}`
         + `${loc ? ' ' + loc + '.' : ''}`
-        + `${items ? ' ' + items + '.' : ''}`
-        + `${price ? ' Tutar ' + price : ''}`;
+        + `${items ? ' Ürünler: ' + items + '.' : ''}`
+        + `${price ? ' Tutar ' + price + '.' : ''}`
+        + `${payment ? ' ' + payment : ''}`;
     }
     if (eventType === 'ORDER_UPDATED') {
-      const num = payload.orderNumber ? `#${payload.orderNumber}` : '';
-      const price = payload.totalPrice ? `${Number(payload.totalPrice).toLocaleString('tr-TR')} TL` : '';
-      return `${sal}, ${num ? num + ' nolu ' : ''}bir sipariş güncellendi.${price ? ' Yeni tutar ' + price : ''}`;
+      const change = String(payload.changeSummary || payload.description || 'Sipariş güncellendi').trim();
+      return `${sal}, ${num ? num + ' nolu ' : ''}siparişte değişiklik var: ${change}`
+        + `${price ? ' Yeni toplam ' + price + '.' : ''}`;
+    }
+    if (eventType === 'ORDER_PAYMENT_CONFIRMED') {
+      return `${sal}, ${num ? num + ' numaralı ' : ''}siparişin havale ödemesi tamamlandı, lütfen kontrol edin.`
+        + `${cust ? ' Müşteri ' + cust + '.' : ''}`
+        + `${price ? ' Tutar ' + price + '.' : ''}`;
+    }
+    if (eventType === 'ORDER_CANCELLED') {
+      return `${sal}, ${num ? num + ' nolu ' : ''}sipariş müşteri tarafından iptal edildi.`
+        + `${cust ? ' Müşteri ' + cust + '.' : ''}`;
+    }
+    if (eventType === 'ORDER_CANCEL_REQUESTED') {
+      return `${sal}, ${num ? num + ' nolu ' : ''}sipariş müşteri tarafından iptal edilmek isteniyor, lütfen kontrol edin.`
+        + `${cust ? ' Müşteri ' + cust + '.' : ''}`;
     }
     if (eventType === 'COMPLAINT_CREATED') {
       return `${sal}, bir müşterimiz şikâyet kaydı oluşturdu. Detaylarını panelden inceleyebilirsiniz.`;
@@ -304,6 +341,28 @@ export class VoiceNotificationService {
       return `${sal}, sipariş hakkımız ${payload.remaining != null ? payload.remaining : ''} adede düştü.`;
     }
     return `${sal}, yeni bir bildiriminiz var.`;
+  }
+
+  private channelLabel(channel: unknown, source: unknown): string {
+    const key = String(channel || source || '').trim().toLowerCase();
+    return CHANNEL_LABEL[key] || (key ? key.toUpperCase() : '');
+  }
+
+  private paymentLabel(method: unknown, status: unknown): string {
+    const m = String(method || '').trim().toLowerCase();
+    const s = String(status || '').trim().toLowerCase();
+    if (m === 'iban' || m === 'havale') {
+      return ['dekont_alindi', 'paid', 'confirmed'].includes(s)
+        ? 'Ödeme alındı.'
+        : 'Ödeme bekliyor (havale/IBAN).';
+    }
+    if (m === 'kapida_kart' || m === 'cash_on_delivery' || m === 'cod' || m === 'kapida_nakit') {
+      return 'Kapıda ödeme.';
+    }
+    if (m === 'paytr' || m === 'iyzico' || m === 'website' || m === 'online') {
+      return s === 'paid' ? 'Ödeme alındı.' : 'Online ödeme.';
+    }
+    return '';
   }
 
   private salutation(cfg: AiEmployeeConfig | null): string {

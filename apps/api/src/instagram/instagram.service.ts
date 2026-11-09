@@ -66,6 +66,7 @@ export class InstagramService {
 
           let sessionId: string;
           let history: { role: string; content: string }[] = [];
+          const isNewSession = !(session && session.length > 0);
 
           if (session && session.length > 0) {
             sessionId = session[0].id as string;
@@ -89,6 +90,16 @@ export class InstagramService {
               .single();
 
             sessionId = (newSession?.id as string) || '';
+          }
+
+          if (isNewSession) {
+            try {
+              const welcome = await this.brain.buildTextWelcome(tenantId);
+              await this.saveMessage(conv.id, tenantId, 'outgoing', welcome);
+              await this.sendMessage(conv.id, tenantId, welcome);
+            } catch (e) {
+              this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+            }
           }
 
           history.push({ role: 'customer', content: text });
@@ -125,6 +136,16 @@ export class InstagramService {
 
             await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
             await this.sendMessage(conv.id, tenantId, aiReply);
+
+            if (result.resetHistory) {
+              try {
+                const welcome = await this.brain.buildTextWelcome(tenantId);
+                await this.saveMessage(conv.id, tenantId, 'outgoing', welcome);
+                await this.sendMessage(conv.id, tenantId, welcome);
+              } catch (e) {
+                this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+              }
+            }
 
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
             await this.channelHealth.record(tenantId, 'instagram', true);

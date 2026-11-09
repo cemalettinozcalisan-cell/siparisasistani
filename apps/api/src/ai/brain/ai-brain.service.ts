@@ -223,6 +223,14 @@ export class AiBrainService {
     const dekontReply = await this.maybeHandleDekont(input, lastMessage, sessionId);
     if (dekontReply) return dekontReply;
 
+    const cancelReply = await this.maybeHandleCancellation(
+      input,
+      lastMessage,
+      sessionId,
+      existingOrderId,
+    );
+    if (cancelReply) return cancelReply;
+
     // Step 5: Prompt
     const tenantName = await this.getTenantName(input.tenantId);
     const skipMemory = await this.getSkipMemory(sessionId);
@@ -733,6 +741,28 @@ export class AiBrainService {
 
   private tenantNameCache: Map<string, string> = new Map();
 
+  /** Metin kanalları (WhatsApp/Instagram/SMS/Messenger) için KVKK + karşılama metni. */
+  async buildTextWelcome(tenantId: string): Promise<string> {
+    const tenantName = await this.getTenantName(tenantId);
+    const greeting = await this.promptEngine.buildGreeting(tenantId, tenantName);
+    let link = '';
+    try {
+      const { data } = await this.supabase.db
+        .from('tenant_settings')
+        .select('kvkk_url')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      link = String((data as Record<string, unknown> | null)?.kvkk_url || '').trim();
+    } catch {
+      /* yoksay */
+    }
+    const intro = 'Gastronomi Şehri Afyonkarahisar’dan sevgiler, saygılar.';
+    const kvkk = `Kişisel Verileri Koruma Kanunu kapsamında, sizlere daha iyi hizmet verebilmek adına görüşmelerimiz kaydedilmektedir. Kanun kapsamındaki Aydınlatma metnine ${
+      link ? `${link} linkinden` : 'web sitemizden'
+    } ulaşabilir, bu konuda detaylı bilgi alabilirsiniz.`;
+    return `${intro} ${kvkk}\n\n${greeting}`;
+  }
+
   private async getTenantName(tenantId: string): Promise<string | undefined> {
     if (this.tenantNameCache.has(tenantId)) return this.tenantNameCache.get(tenantId);
 
@@ -1117,6 +1147,50 @@ export class AiBrainService {
     if (/ödeme|kart|iban|havale/i.test(lastAssistantMsg)) return 'payment';
     if (/telefon|numara|ulaşabilir/i.test(lastAssistantMsg)) return 'asking_phone';
     return 'ordering';
+  }
+
+  private async maybeHandleCancellation(
+    input: BrainInput,
+    lastMessage: string,
+    sessionId: string,
+    existingOrderId?: string,
+  ): Promise<BrainOutput | null> {
+    if (!existingOrderId) return null;
+    if (!/(iptal\s*(etmek|ediyorum|edelim|talep)|vazge[cç])/i.test(lastMessage)) return null;
+    const handled = await this.orderEngine.requestCancellation(
+      existingOrderId,
+      lastMessage.slice(0, 200),
+    );
+    if (!handled) return null;
+    const reply =
+      'İptal talebinizi esnafımıza ilettim. Esnafımız kontrol edip sizinle iletişime geçecek.';
+    try {
+      await this.supabase.db.from('ai_audit_logs').insert({
+        tenant_id: input.tenantId,
+        session_id: sessionId,
+        model: 'system',
+        provider: 'system',
+        user_message: lastMessage,
+        raw_response: JSON.stringify({ intent: 'CALLBACK', reply, cancelRequested: true }),
+        parsed_json: { intent: 'CALLBACK', reply, cancelRequested: true },
+        confidence: 90,
+        latency_ms: 0,
+        success: true,
+      });
+    } catch {
+      /* yoksay */
+    }
+    return {
+      reply,
+      confidence: 90,
+      orderCreated: false,
+      sessionId,
+      needsHuman: false,
+      maintenanceMode: false,
+      afterHours: false,
+      intent: 'CALLBACK',
+      orderAction: 'none',
+    };
   }
 
   private async maybeHandleDekont(input: BrainInput, lastMessage: string, sessionId: string): Promise<BrainOutput | null> {

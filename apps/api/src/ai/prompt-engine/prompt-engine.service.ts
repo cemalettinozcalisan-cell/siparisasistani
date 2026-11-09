@@ -288,7 +288,10 @@ export class PromptEngineService {
   }
 
   /** Açılış IVR metinleri (TTS ile okunur). Kısa menü + panelden aydınlatma + uyarı. */
-  async buildIvrTexts(tenantId: string, tenantName?: string): Promise<{ menu: string; kvkk: string; noinput: string }> {
+  async buildIvrTexts(
+    tenantId: string,
+    tenantName?: string,
+  ): Promise<{ menu: string; kvkk: string; noinput: string; kvkkLink: string }> {
     const firma = tenantName || 'İşletmemiz';
     let kvkkLink = '';
     let disclosure = '';
@@ -308,7 +311,10 @@ export class PromptEngineService {
       'Kişisel verilerinizin işlenmesine ilişkin aydınlatma metni için lütfen web sitemizi ziyaret edin. Sipariş vermek için 2\'ye basınız.';
     const noinput =
       'Herhangi bir tuşlama yapmadınız. Aydınlatma metni için 1\'e, sipariş vermek için 2\'ye basınız.';
-    return { menu, kvkk, noinput };
+    const kvkkLinkSentence = kvkkLink
+      ? `Aydınlatma metnine ${kvkkLink} adresinden ulaşabilirsiniz.`
+      : 'Aydınlatma metnine web sitemizden ulaşabilirsiniz.';
+    return { menu, kvkk, noinput, kvkkLink: kvkkLinkSentence };
   }
 
   /** Açılış karşılaması (sabit metin) — panelden düzenlenebilir şablon + {firma}/{urun}/{asistan}. */
@@ -386,7 +392,7 @@ export class PromptEngineService {
       '  "intent": "ORDER|COMPLAINT|PRICE_INFO|PRODUCT_INFO|CALLBACK|HUMAN_TRANSFER",',
       '  "order_action": "new|update|none",',
       '  "reply": "Merhaba Mehmet Bey, Ahmet Ipek Sucuklari\'na hos geldiniz. Hemen not ediyorum:\n• 2 kg Dana Parmak Sucuk\n• 1 kg Pastirma\n\n• Teslimat:\nAnkara / Etimesgut\n\nYaklasik toplam:\n2.980 TL\nKesin tutar tartimdan sonra netlesecektir.\nOdeme yonteminizi ogrenebilir miyim? IBAN havalesi veya kredi karti?\n(Bu asamada kampanya teklif etme. Kampanya sadece odeme bilgisi alindiktan sonra gelir.)",',
-      '  "customer": { "name": "Mehmet Yilmaz", "phone": "05321234567", "birthday": "15-05|null", "company_name": "ABC Gida Ltd Sti|null", "identity_number": "1234567890|null" },',
+      '  "customer": { "name": "Mehmet Yilmaz", "phone": "05321234567", "birthday": "15-05|null", "company_name": "ABC Gida Ltd Sti|null", "identity_number": "1234567890|null", "city": "Ankara|null", "district": "Etimesgut|null" },',
       '  "products": [',
       '    { "product_name": "Dana Parmak Sucuk", "quantity": 2, "unit": "KG" }',
       '  ],',

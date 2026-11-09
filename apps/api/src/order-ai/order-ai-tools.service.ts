@@ -292,6 +292,23 @@ export class OrderAiToolsService {
           await this.recordSession(tenantId, sid, d, updated);
           return { ok: true, result: { orderNumber: updated.order_number, orderId: updated.order_id, total: updated.total_price, status: updated.status, updated: true } };
         }
+        case 'cancel_order': {
+          if (!d.order) {
+            return { ok: false, error: 'Onaylanmış sipariş yok; önce sipariş oluşturulmalı.' };
+          }
+          const reason = String(args.reason || args.note || 'Müşteri talebi');
+          const requested = await this.orderEngine.requestCancellation(d.order.orderId, reason);
+          return requested
+            ? {
+                ok: true,
+                result: {
+                  requested: true,
+                  orderNumber: d.order.orderNumber,
+                  message: 'İptal talebi esnafa iletildi; esnaf kontrol edecek.',
+                },
+              }
+            : { ok: false, error: 'İptal talebi iletilemedi.' };
+        }
         case 'set_birthday': {
           const iso = parseBirthdayArg(args);
           if (!iso) {
@@ -754,12 +771,15 @@ export class OrderAiToolsService {
       const tl = (n: number) => Number(n || 0).toLocaleString('tr-TR');
       const items = d.products.map((p) => `${p.quantity} ${String(p.unit).toLowerCase()} ${p.product_name}`).join(', ');
       const address = [d.customer.address, d.customer.city].filter(Boolean).join(', ');
+      const isIban = String(d.payment || '').toLowerCase() === 'iban';
       const body = [
-        `Siparişiniz alındı. Sipariş No: #${order.order_number}`,
+        isIban
+          ? 'Siparişiniz alındı. Sipariş numaranız dekont onayından sonra iletilecektir.'
+          : `Siparişiniz alındı. Sipariş No: #${order.order_number}`,
         `Ürünler: ${items}`,
         `Toplam: ${tl(order.total_price)} TL`,
         address ? `Teslimat: ${address}` : '',
-        'Bilgi için bizi arayabilirsiniz. Afiyet olsun!',
+        isIban ? 'Dekontu ilettiğinizde siparişinizi onaylayıp kargoya verelim.' : 'Bilgi için bizi arayabilirsiniz. Afiyet olsun!',
       ].filter(Boolean).join('\n');
       await this.sendWhatsappThenSms(tenantId, phone, body, d.order?.orderId);
     } catch { /* yoksay */ }

@@ -6,7 +6,15 @@ export interface ParsedResponse {
   reply?: string;
   intent?: string;
   orderAction?: string;
-  customer?: { name?: string; phone?: string; birthday?: string; companyName?: string; identityNumber?: string };
+  customer?: {
+    name?: string;
+    phone?: string;
+    birthday?: string;
+    companyName?: string;
+    identityNumber?: string;
+    city?: string;
+    district?: string;
+  };
   products?: { product_name?: string; quantity?: number; unit?: string }[];
   address?: string;
   payment?: string;

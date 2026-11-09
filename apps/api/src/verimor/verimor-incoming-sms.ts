@@ -74,6 +74,7 @@ export class VerimorIncomingSms {
 
       let sessionId: string;
       let history: { role: string; content: string }[] = [];
+      let isNewSession = false;
 
       if (sessions && sessions.length > 0) {
         sessionId = sessions[0].id as string;
@@ -95,6 +96,16 @@ export class VerimorIncomingSms {
           .select('id')
           .single();
         sessionId = (newSession?.id as string) || '';
+        isNewSession = true;
+      }
+
+      if (isNewSession) {
+        try {
+          const welcome = await this.brain.buildTextWelcome(tenantId);
+          await this.sms.sendSms(rawPhone, welcome);
+        } catch (e) {
+          this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+        }
       }
 
       history.push({ role: 'customer', content: message });
@@ -132,6 +143,14 @@ export class VerimorIncomingSms {
           })
           .eq('id', (result as { sessionId?: string }).sessionId || sessionId);
         await this.sms.sendSms(rawPhone, aiReply);
+        if ((result as { resetHistory?: boolean }).resetHistory) {
+          try {
+            const welcome = await this.brain.buildTextWelcome(tenantId);
+            await this.sms.sendSms(rawPhone, welcome);
+          } catch (e) {
+            this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+          }
+        }
       }
 
       return { received: true, replySent: !!aiReply, sessionId };

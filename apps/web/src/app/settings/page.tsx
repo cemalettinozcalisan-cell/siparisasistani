@@ -666,6 +666,15 @@ export default function SettingsPage() {
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
           </div>
           <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">Ürün / Meslek Adı</label>
+            <input value={String(settings.greeting_product ?? '')}
+              onChange={(e) => update('greeting_product', e.target.value)}
+              onBlur={(e) => saveAndKeep('greeting_product', e.target.value)}
+              placeholder="Örn: sucuk / lokum"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white" />
+            <p className="text-[10px] text-slate-400 mt-1">Karşılamada &quot;{'{firma}'} {'{urun}'}larına hoş geldiniz&quot; için kullanılır.</p>
+          </div>
+          <div>
             <label className="text-xs font-medium text-gray-500 dark:text-slate-400 block mb-1">KVKK Aydınlatma Linki <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
             <input value={String(settings.kvkk_url ?? '')}
               onChange={(e) => update('kvkk_url', e.target.value)}

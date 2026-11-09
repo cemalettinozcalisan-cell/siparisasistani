@@ -21,6 +21,7 @@ export class NotificationService implements OnModuleInit {
       SystemEvents.ORDER_UPDATED,
       SystemEvents.ORDER_SHIPPED,
       SystemEvents.ORDER_CANCELLED,
+      SystemEvents.ORDER_CANCEL_REQUESTED,
       SystemEvents.CALLBACK_REQUIRED,
       SystemEvents.HUMAN_REQUIRED,
     ];
@@ -33,13 +34,6 @@ export class NotificationService implements OnModuleInit {
   }
 
   private async route(event: SystemEvent) {
-    // Ön ödemeli siparişlerde (IBAN/link) esnaf bildirimi dekont/ödeme onayına kadar bekler.
-    // Burada yalnızca activity_log (denetim izi) yazılır; grup + yazıcı ORDER_PAYMENT_CONFIRMED ile gelir.
-    if (event.type === SystemEvents.ORDER_CREATED && event.payload.esnafNotify === false) {
-      await this.send('activity_log', event);
-      return;
-    }
-
     const channels = await this.resolveChannels(event.tenantId);
 
     const promises = channels.map(async (channel) => {
@@ -85,9 +79,21 @@ export class NotificationService implements OnModuleInit {
 
       case 'whatsapp_group': {
         const p = event.payload as Record<string, unknown>;
-        const prefix = event.type === SystemEvents.ORDER_CREATED && p.orderNumber
-          ? `🆕 Yeni Sipariş #${p.orderNumber}\n`
-          : '';
+        const label =
+          event.type === SystemEvents.ORDER_CREATED
+            ? (String(p.paymentMethod || '').toLowerCase() === 'iban'
+                ? '🛒 Yeni Sipariş (ÖDEME BEKLİYOR)'
+                : '🛒 Yeni Sipariş')
+            : event.type === SystemEvents.ORDER_PAYMENT_CONFIRMED
+              ? '✅ Ödeme Tamamlandı'
+              : event.type === SystemEvents.ORDER_UPDATED
+                ? '✏️ Sipariş Güncellendi'
+                : event.type === SystemEvents.ORDER_CANCELLED
+                  ? '❌ Sipariş İptal Edildi'
+                  : event.type === SystemEvents.ORDER_CANCEL_REQUESTED
+                    ? '⚠️ İptal Talebi'
+                    : '';
+        const prefix = label && p.orderNumber ? `${label} #${p.orderNumber}\n` : '';
         await this.supabase.db.from('ai_events').insert({
           tenant_id: event.tenantId,
           order_id: event.entityId,

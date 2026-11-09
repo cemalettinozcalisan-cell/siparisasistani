@@ -18,13 +18,15 @@ export class OrderUpdatedHandler implements NotificationHandler {
       p.totalPrice != null
         ? `Yeni tutar: ${Number(p.totalPrice).toLocaleString('tr-TR')} TL`
         : '';
-    const detail = total || String(p.description || 'Sipariş güncellendi');
-    const message = [orderNumber, detail].filter(Boolean).join(' - ');
+    const detail = String(p.changeSummary || p.description || 'Sipariş güncellendi');
+    const message = [orderNumber, p.customerName ? String(p.customerName) : '', detail, total]
+      .filter(Boolean)
+      .join(' - ');
 
     await this.supabase.db.from('notifications').insert({
       tenant_id: event.tenantId,
       type: 'new_order',
-      title: 'Sipariş Güncellendi',
+      title: '✏️ Sipariş Güncellendi',
       message: message || 'Bir sipariş güncellendi',
       status: 'unread',
     });

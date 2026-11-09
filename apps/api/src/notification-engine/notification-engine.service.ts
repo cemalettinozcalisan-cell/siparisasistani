@@ -6,6 +6,7 @@ import { PaymentHandler } from './handlers/payment.handler';
 import { ShipmentHandler } from './handlers/shipment.handler';
 import { VoiceHandler } from './handlers/voice.handler';
 import { OrderUpdatedHandler } from './handlers/order-updated.handler';
+import { OrderCancelledHandler } from './handlers/order-cancelled.handler';
 import { NotificationHandler } from './handlers/base.handler';
 
 @Injectable()
@@ -21,19 +22,32 @@ export class NotificationEngineService implements OnModuleInit {
     shipment: ShipmentHandler,
     voice: VoiceHandler,
     orderUpdated: OrderUpdatedHandler,
+    orderCancelled: OrderCancelledHandler,
   ) {
     this.register(orderCreated);
     this.register(complaint);
     this.register(payment);
     this.register(shipment);
     this.register(orderUpdated);
+    this.register(orderCancelled);
+    this.add(SystemEvents.ORDER_CANCEL_REQUESTED, orderCancelled);
     // Kargo gönderimi iki farklı olay adıyla yayınlanabilir (STATUS_UPDATED / ORDER_SHIPPED)
     this.add(SystemEvents.ORDER_SHIPPED, shipment);
     // Ödeme onayı (dekont / link) geldiğinde de sipariş bildirimi düşer — aynı handler
     this.add(SystemEvents.ORDER_PAYMENT_CONFIRMED, orderCreated);
     // AI Çalışanım sesli bildirim kanalı — birden çok event dinler.
     // ÖNEMLİ: aynı olay birden çok handler'a gidebilir; map tek handler tutmaz (voice, orderCreated'ı ezmemeli).
-    for (const evt of [SystemEvents.ORDER_CREATED, SystemEvents.ORDER_UPDATED, SystemEvents.COMPLAINT_CREATED, SystemEvents.REQUEST_CREATED, SystemEvents.SUBSCRIPTION_THRESHOLD, SystemEvents.SYSTEM_HEALTH_FAILED]) {
+    for (const evt of [
+      SystemEvents.ORDER_CREATED,
+      SystemEvents.ORDER_UPDATED,
+      SystemEvents.ORDER_PAYMENT_CONFIRMED,
+      SystemEvents.ORDER_CANCELLED,
+      SystemEvents.ORDER_CANCEL_REQUESTED,
+      SystemEvents.COMPLAINT_CREATED,
+      SystemEvents.REQUEST_CREATED,
+      SystemEvents.SUBSCRIPTION_THRESHOLD,
+      SystemEvents.SYSTEM_HEALTH_FAILED,
+    ]) {
       this.add(evt, voice);
     }
   }

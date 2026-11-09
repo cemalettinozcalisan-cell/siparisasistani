@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SupabaseService } from '../../../common/supabase.client';
+import { ProductLookupService } from '../../../common/product-lookup.service';
 import { PromptContext } from '../prompt-engine.service';
 
 @Injectable()
@@ -7,7 +7,7 @@ export class ProductCatalogComponent {
   private readonly logger = new Logger(ProductCatalogComponent.name);
   private cache: Map<string, unknown[]> = new Map();
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly productLookup: ProductLookupService) {}
 
   async render(ctx: PromptContext): Promise<string> {
     const cached = this.cache.get(ctx.tenantId);
@@ -72,23 +72,20 @@ export class ProductCatalogComponent {
   }
 
   async findProduct(tenantId: string, productName: string) {
-    const { data } = await this.supabase.db
-      .from('products')
-      .select('id, product_name, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price, wholesale_min_qty')
-      .eq('tenant_id', tenantId)
-      .eq('active', true)
-      .ilike('product_name', `%${productName}%`)
-      .limit(5);
-    return data || [];
+    const products = await this.productLookup.listActive(tenantId);
+    const query = String(productName || '').trim().toLocaleLowerCase('tr-TR');
+    if (!query) return products.slice(0, 5);
+    return products
+      .filter((p) =>
+        String((p as Record<string, unknown>).product_name || '')
+          .toLocaleLowerCase('tr-TR')
+          .includes(query),
+      )
+      .slice(0, 5);
   }
 
   private async loadProducts(tenantId: string) {
-    const { data } = await this.supabase.db
-      .from('products')
-      .select('product_name, category, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, ai_rules, min_order_qty, wholesale_price, wholesale_min_qty')
-      .eq('tenant_id', tenantId)
-      .eq('active', true)
-      .order('product_name');
+    const data = await this.productLookup.listActive(tenantId);
     if (data) this.cache.set(tenantId, data);
     return data;
   }

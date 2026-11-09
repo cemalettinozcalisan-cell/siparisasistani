@@ -175,6 +175,7 @@ export class OrdersListController {
       .single();
     if (error) throw new Error(error.message);
     if (data) {
+      const changedFields = Object.keys(body).filter((k) => k !== 'tenant_id' && k !== 'id');
       this.eventBus.emit(
         SystemEvents.ORDER_UPDATED,
         tenantId,
@@ -183,10 +184,31 @@ export class OrdersListController {
           orderNumber: (data as any).order_number,
           customerName: (data as any).customer_name,
           channel: (data as any).channel,
-          changedFields: Object.keys(body).filter((k) => k !== 'tenant_id' && k !== 'id'),
+          city: (data as any).customer_city || '',
+          district: (data as any).customer_district || '',
+          totalPrice: (data as any).total_price,
+          changedFields,
+          changeSummary: `Panelden güncellendi: ${changedFields.join(', ')}`,
+          changeKey: `panel:${changedFields.join(',')}:${Math.floor(Date.now() / 60000)}`,
+          description: `#${(data as any).order_number} - ${(data as any).customer_name || ''} - Panelden güncellendi`,
         },
         id,
       );
+
+      if (String(orderFields.status || '').toLowerCase() === 'cancelled') {
+        this.eventBus.emit(
+          SystemEvents.ORDER_CANCELLED,
+          tenantId,
+          {
+            orderId: id,
+            orderNumber: (data as any).order_number,
+            customerName: (data as any).customer_name,
+            channel: (data as any).channel,
+            description: `#${(data as any).order_number} - ${(data as any).customer_name || ''} - Sipariş iptal edildi`,
+          },
+          id,
+        );
+      }
 
       const orderNum = (data as any).order_number ? `#${(data as any).order_number}` : '';
       await this.timeline.logEvent({

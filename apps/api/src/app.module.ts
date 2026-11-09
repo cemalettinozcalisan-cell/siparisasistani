@@ -72,6 +72,7 @@ import { WhatsappTemplatesModule } from './whatsapp-templates/whatsapp-templates
 import { ChannelHealthModule } from './channel-health/channel-health.module';
 import { SupportModule } from './support/support.module';
 import { AlertModule } from './alert/alert.module';
+import { ProductsModule } from './common/products.module';
 
 
 
@@ -140,6 +141,7 @@ import { AlertModule } from './alert/alert.module';
     ChannelHealthModule,
     SupportModule,
     AlertModule,
+    ProductsModule,
     AiEmployeeModule,
     OrderAiModule,
   ],

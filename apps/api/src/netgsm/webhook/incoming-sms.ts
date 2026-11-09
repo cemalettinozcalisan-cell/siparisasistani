@@ -70,6 +70,7 @@ export class IncomingSmsWebhook {
 
     let sessionId: string;
     let history: { role: string; content: string }[] = [];
+    let isNewSession = false;
 
     if (sessions && sessions.length > 0) {
       // Resume existing session
@@ -95,7 +96,17 @@ export class IncomingSmsWebhook {
         .single();
 
       sessionId = (newSession?.id as string) || '';
+      isNewSession = true;
       this.logger.log(`Created new SMS session ${sessionId}`);
+    }
+
+    if (isNewSession) {
+      try {
+        const welcome = await this.brain.buildTextWelcome(tenantId);
+        await this.netgsm.sendSms(rawPhone, welcome);
+      } catch (e) {
+        this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+      }
     }
 
     // Append customer message to history
@@ -136,6 +147,14 @@ export class IncomingSmsWebhook {
 
       // Send AI reply back via SMS
       await this.netgsm.sendSms(rawPhone, aiReply);
+      if (result.resetHistory) {
+        try {
+          const welcome = await this.brain.buildTextWelcome(tenantId);
+          await this.netgsm.sendSms(rawPhone, welcome);
+        } catch (e) {
+          this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+        }
+      }
     }
 
     return { received: true, replySent: !!aiReply, sessionId };

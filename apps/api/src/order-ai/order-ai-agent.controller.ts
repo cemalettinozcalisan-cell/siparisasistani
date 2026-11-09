@@ -53,7 +53,7 @@ export class OrderAiAgentController {
       currentState: 'ordering',
       customerPhone: phone || '',
     });
-    let ivr: { menu: string; kvkk: string; noinput: string } | null = null;
+    let ivr: { menu: string; kvkk: string; noinput: string; kvkkLink?: string } | null = null;
     try {
       ivr = await this.promptEngine.buildIvrTexts(tenantId, name);
     } catch { /* yoksay */ }

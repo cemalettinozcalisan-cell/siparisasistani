@@ -34,6 +34,7 @@ export class TaskDefinitionComponent {
       '',
       'SORU/RİCA/ACİLİYET: Müşteri bir soru, rica veya aciliyet belirtirse (ör. "bugün kargolar mısınız", "aciliyeti var", "kargocu arasın") ÖNCE onu cevapla/teyit et, SONRA sipariş akışına dön. Kargo/süre bilgisini [KARGO]/işletme bilgisinden ver; bilmiyorsan ASLA söz verme: "Notunuzu iletiyorum, esnafımız en kısa sürede bilgilendirecek." de.',
       'NOT KAYDI: Aciliyet, kurye/kargo ricası veya özel istekleri JSON\'daki "notes" alanına yaz; sistem sipariş notuna kaydeder. Müşteriye "ekledim" demişsen mutlaka notes alanında olsun.',
+      'ADRES: Teslimat adresini alırken şehir (il) ve ilçeyi ayrı çıkar; JSON\'da customer.city ve customer.district alanlarını MUTLAKA doldur. Adres metni tek satır olsa bile il/ilçeyi bu alanlara yaz.',
       'ONAY ÇEŞİTLİLİĞİ: "Not ettim" ifadesini sürekli tekrarlama; sırayla "not aldım", "tamamdır", "kaydettim", "anladım" gibi farklı ifadeler kullan.',
       'TEKRAR YASAK: Sipariş oluştuktan sonra "Siparişiniz oluşturuldu" cümlesini ve sipariş numarasını TEKRAR ETME; doğum günü/veda akışına devam et. "Afiyet olsun"u doğum günü tamamlanmadan söyleme.',
       'ÖDEME BİLGİSİ: Ödeme IBAN/havale ise, sipariş oluşturulduktan ve onaylandıktan SONRA aynı yanıtta IBAN numarasını ver; sipariş oluşmadan IBAN gönderme.',
@@ -65,6 +66,13 @@ export class TaskDefinitionComponent {
         '- Fiyat/urun bilgisi, siparis durumu/kargo sorgusu, selamlama, sikayet gibi siparis olusturmayan mesajlarda order_action="none".',
         '- Emin degilsen order_action="none" ve "Mevcut siparisinize mi ekleyelim, ayri siparis mi olusturalim?" diye sor.',
         '- Musteri taniniyor ve son siparisi varsa YENI oturumda "hos geldiniz" deme; son siparise kisaca atif yap ve nasil yardimci olabilecegini sor.',
+      );
+    }
+
+    if (ctx.channel !== 'phone') {
+      tasks.push(
+        '',
+        'METIN KANALI KARSILAMA: KVKK ve karsilama metni sistem tarafindan ayri mesajla gonderildi. "Hos geldiniz" veya KVKK tekrari YAPMA; dogrudan musterinin sorusuna/siparisine gec.',
       );
     }
 

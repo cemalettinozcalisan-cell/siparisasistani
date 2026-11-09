@@ -1,85 +1,69 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SupabaseService } from '../common/supabase.client';
+import { AiOrderInput } from '@siparis/types';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
+import { OrderEngineService } from '../order-engine/order-engine.service';
 
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
   constructor(
-    private readonly supabase: SupabaseService,
     private readonly channelHealth: ChannelHealthService,
+    private readonly orderEngine: OrderEngineService,
   ) {}
 
   async receiveOrder(tenantId: string, platform: string, payload: Record<string, unknown>) {
     this.logger.log(`Webhook order from ${platform} for tenant ${tenantId}`);
 
     try {
-    // Normalize common order fields from various platforms
-    const orderData = this.normalizeOrder(platform, payload);
-    if (!orderData) {
-      this.logger.warn(`Unsupported platform: ${platform}`);
-      return { error: 'Unsupported platform' };
-    }
+      const orderData = this.normalizeOrder(platform, payload);
+      if (!orderData) {
+        this.logger.warn(`Unsupported platform: ${platform}`);
+        return { error: 'Unsupported platform' };
+      }
 
-    // Find or create customer
-    const { data: existing } = await this.supabase.db
-      .from('customers')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('phone', orderData.phone)
-      .maybeSingle();
-
-    let customerId = existing?.id;
-    if (!customerId) {
-      const { data: newCustomer } = await this.supabase.db
-        .from('customers')
-        .insert({ tenant_id: tenantId, name: orderData.name, phone: orderData.phone, address: orderData.address, city: orderData.city })
-        .select('id')
-        .single();
-      customerId = newCustomer?.id;
-    }
-
-    // Create order
-    const { data: order } = await this.supabase.db
-      .from('orders')
-      .insert({
-        tenant_id: tenantId,
-        customer_id: customerId,
-        order_number: orderData.orderNumber,
-        channel: 'manual',
-        source: 'WEBSITE',
-        status: 'new',
-        payment_method: orderData.payment || 'website',
-        payment_status: 'waiting',
-        total_price: orderData.total,
-        notes: orderData.notes || null,
-        customer_note: orderData.customerNote || null,
-      })
-      .select()
-      .single();
-
-    // Create order items if provided
-    const items = (orderData.items || []) as Record<string, unknown>[];
-    if (order && items.length > 0) {
-      await this.supabase.db.from('order_items').insert(
-        items.map((item: Record<string, unknown>) => ({
-          order_id: order.id,
-          product_name: item.name,
-          quantity: item.quantity,
-          unit: item.unit || 'ADET',
-          unit_price: item.price,
-          total: Number(item.quantity) * Number(item.price),
+      const rawItems = (orderData.items || []) as Record<string, unknown>[];
+      const products = rawItems
+        .map((item) => ({
+          product_name: String(item.name || item.product_name || '').trim(),
+          quantity: Number(item.quantity || 0),
+          unit: String(item.unit || 'ADET').trim() || 'ADET',
         }))
-      );
-    }
+        .filter((p) => p.product_name && p.quantity > 0);
 
-    // Kanal sağlığı: web'den sipariş başarıyla düştü
-    await this.channelHealth.record(tenantId, 'website', true);
-    return { status: 'created', order_id: order?.id, order_number: orderData.orderNumber };
+      if (!orderData.phone || products.length === 0) {
+        return { error: 'Webhook order requires phone and at least one item' };
+      }
+
+      const input: AiOrderInput = {
+        customer: {
+          name: String(orderData.name || '').trim(),
+          phone: String(orderData.phone || '').replace(/[^\d]/g, ''),
+          address: String(orderData.address || '').trim() || undefined,
+          city: String(orderData.city || '').trim() || undefined,
+          district: String(orderData.district || '').trim() || undefined,
+        },
+        products,
+        payment: (String(orderData.payment || 'website') as AiOrderInput['payment']),
+        confirmed: true,
+        confidence: 90,
+        channel: 'web',
+        source: 'WEBSITE',
+        notes: `Web ${platform} #${String(orderData.orderNumber || '')}${
+          orderData.notes ? ' - ' + String(orderData.notes) : ''
+        }`,
+      };
+
+      const order = await this.orderEngine.process(input, tenantId);
+      await this.channelHealth.record(tenantId, 'website', true);
+      return {
+        status: 'created',
+        order_id: order.order_id,
+        order_number: order.order_number,
+        external_order_number: orderData.orderNumber,
+      };
     } catch (err) {
       this.logger.error(`Webhook order failed for ${platform} tenant ${tenantId}: ${(err as Error).message}`);
-      // Kanal sağlığı: web'den sipariş düşmedi (kritik)
       await this.channelHealth.record(tenantId, 'website', false, { error: (err as Error).message, errorCode: 'WEBHOOK_FAILED' });
       return { error: (err as Error).message };
     }
@@ -94,6 +78,7 @@ export class WebhookService {
           phone: String(((payload.billing as Record<string, unknown>)?.phone as string) || ''),
           address: `${(payload.billing as Record<string, unknown>)?.address_1 || ''} ${(payload.billing as Record<string, unknown>)?.address_2 || ''}`.trim(),
           city: String((payload.billing as Record<string, unknown>)?.city || ''),
+          district: String((payload.billing as Record<string, unknown>)?.state || ''),
           total: Number(payload.total || 0),
           payment: String(payload.payment_method || 'website'),
           notes: String(payload.customer_note || ''),
@@ -112,6 +97,7 @@ export class WebhookService {
           phone: String((payload.customer as Record<string, unknown>)?.phone || payload.phone || ''),
           address: String((payload.shipping_address as Record<string, unknown>)?.address1 || ''),
           city: String((payload.shipping_address as Record<string, unknown>)?.city || ''),
+          district: String((payload.shipping_address as Record<string, unknown>)?.province || ''),
           total: Number(payload.total_price || 0),
           payment: String(payload.gateway || 'website'),
           notes: String(payload.note || ''),
@@ -131,6 +117,7 @@ export class WebhookService {
           phone: String(payload.customer_phone || payload.phone || ''),
           address: String(payload.address || ''),
           city: String(payload.city || ''),
+          district: String(payload.district || ''),
           total: Number(payload.total_price || payload.total || 0),
           payment: String(payload.payment_method || 'website'),
           notes: String(payload.notes || ''),

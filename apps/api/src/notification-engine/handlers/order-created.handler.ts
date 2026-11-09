@@ -18,18 +18,20 @@ export class OrderCreatedHandler implements NotificationHandler {
       await this.supabase.db.from('notifications').insert({
         tenant_id: event.tenantId,
         type: 'new_order',
-        title: '🆕 Yeni Sipariş + 💳 Ödeme',
-        message: `#${p.orderNumber} - ${p.customerName || 'Bilinmiyor'} - ${p.paymentNote || 'Ödeme alındı'} - ${p.totalPrice ? Number(p.totalPrice).toLocaleString('tr-TR') + ' TL' : ''}`,
+        title: '💰 Ödeme Tamamlandı',
+        message: `#${p.orderNumber} - ${p.customerName || 'Bilinmiyor'} - ${p.paymentNote || 'Havale ödemesi tamamlandı'} - ${p.totalPrice ? Number(p.totalPrice).toLocaleString('tr-TR') + ' TL' : ''}`,
         status: 'unread',
       });
       return;
     }
 
+    const payment = String(p.paymentMethod || '').toLowerCase();
+    const iban = payment === 'iban' || payment === 'havale';
     await this.supabase.db.from('notifications').insert({
       tenant_id: event.tenantId,
       type: 'new_order',
-      title: '🆕 Yeni Sipariş',
-      message: `#${p.orderNumber} - ${p.customerName || 'Bilinmiyor'} - ${p.totalPrice || '?'} TL`,
+      title: iban ? '🛒 Yeni Sipariş (Ödeme Bekliyor)' : '🛒 Yeni Sipariş',
+      message: `#${p.orderNumber} - ${p.customerName || 'Bilinmiyor'} - ${p.totalPrice ? Number(p.totalPrice).toLocaleString('tr-TR') + ' TL' : '?'}${iban ? ' - Havale/IBAN ödemesi bekliyor' : ''}`,
       status: 'unread',
     });
   }
