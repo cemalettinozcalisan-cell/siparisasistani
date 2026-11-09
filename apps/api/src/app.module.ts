@@ -37,6 +37,7 @@ import { OrderProcessorModule } from './order-processor/order-processor.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { ComplaintProcessorModule } from './complaint-processor/complaint-processor.module';
 import { NotificationEngineModule } from './notification-engine/notification-engine.module';
+import { NotificationModule } from './notification/notification.module';
 import { PaymentEngineModule } from './payment-engine/payment-engine.module';
 import { OrderStatusModule } from './order-status/order-status.module';
 import { OrdersListModule } from './orders-list/orders-list.module';
@@ -112,6 +113,7 @@ import { ProductsModule } from './common/products.module';
     TimelineModule,
     ComplaintProcessorModule,
     NotificationEngineModule,
+    NotificationModule,
     PaymentEngineModule,
     OrderStatusModule,
     OrdersListModule,
