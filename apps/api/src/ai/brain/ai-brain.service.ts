@@ -11,6 +11,7 @@ import { SupabaseService } from '../../common/supabase.client';
 import { ChannelHealthService } from '../../channel-health/channel-health.service';
 import { normalizePayment, parseBirthday } from '../order-normalize';
 import { generateSessionLabel, isResetCommand, isTestResetNoMemory } from '../../common/chat-session';
+import { isDekontSent } from '../../common/text-normalize';
 
 export interface BrainInput {
   tenantId: string;
@@ -958,9 +959,7 @@ export class AiBrainService {
   private async maybeHandleDekont(input: BrainInput, lastMessage: string, sessionId: string): Promise<BrainOutput | null> {
     // Yalnızca TAMAMLANMIŞ eylem: "attım / gönderdim / ödedim / havale yaptım".
     // "dekontu atayım / atacağım / göndereceğim" gibi gelecek zaman EŞLEŞMEZ.
-    const dekontDone =
-      /(att[ıi]m|gönderdim|gönderdik|ilettim|yolladım|ulaşt[ıi]|ödedim|ödeme(yi)?\s*(yapt[ıi]m|gönderdim)|havale(yi)?\s*(yapt[ıi]m|gönderdim)|transfer(i)?\s*(yapt[ıi]m|gönderdim))/i;
-    if (!dekontDone.test(lastMessage)) return null;
+    if (!isDekontSent(lastMessage)) return null;
 
     // Önce BU oturumun siparişi (yanlış/eski siparişe bulaşmayı önler).
     const sessionOrderId = await this.getSessionOrderId(sessionId);

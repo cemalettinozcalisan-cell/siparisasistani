@@ -24,6 +24,10 @@ export class SalesEngineService {
   @Cron('*/5 * * * *')
   async checkIncompleteOrderReminders() {
     try {
+      // Sessiz saatlerde gönderme (09:00 - 21:00)
+      const hourNow = new Date().getHours();
+      if (hourNow < 9 || hourNow >= 21) return;
+
       const now = Date.now();
       const tenMinAgo = new Date(now - 10 * 60 * 1000).toISOString();
       const dayAgo = new Date(now - 24 * 3600 * 1000).toISOString();
@@ -49,61 +53,118 @@ export class SalesEngineService {
         // Aynı numarada daha yeni aktif bir konuşma varsa bu eski oturuma hatırlatma gönderme.
         if (await this.hasRecentActiveConversation(tenantId, phone, sessionId)) continue;
 
-        const { data: reminders } = await this.supabase.db
+        // status kolonu (079 migration) varsa onu kullan; yoksa stage=99 sentinel'ine düş.
+        const reminderResult = await this.supabase.db
           .from('follow_up_reminders')
-          .select('stage, sent_at')
+          .select('stage, sent_at, status')
           .eq('session_id', sessionId)
           .order('stage', { ascending: true });
 
-        const rows = (reminders || []) as { stage: number; sent_at: string }[];
-        if (rows.some((r) => r.stage === 2)) continue;
+        let statusColumn = !reminderResult.error;
+        let rows = (reminderResult.data || []) as {
+          stage: number;
+          sent_at: string | null;
+          status?: string;
+        }[];
+
+        if (reminderResult.error) {
+          const fallback = await this.supabase.db
+            .from('follow_up_reminders')
+            .select('stage, sent_at')
+            .eq('session_id', sessionId)
+            .order('stage', { ascending: true });
+          if (fallback.error) continue;
+          statusColumn = false;
+          rows = (fallback.data || []) as { stage: number; sent_at: string | null }[];
+        }
+
+        // Müşteri cevap verdişse / 2. hatırlatma kesinleştiyse bir daha gönderme.
+        const closed = statusColumn
+          ? rows.some((r) => r.status === 'cancelled')
+          : rows.some((r) => r.stage >= 2);
+        if (closed) continue;
+        const sentStage2 = rows.some(
+          (r) => r.stage >= 2 && (!statusColumn || r.status === 'sent'),
+        );
+        if (sentStage2) continue;
 
         const updatedAt = String(row.updated_at || '');
-        const latest = rows[rows.length - 1];
-        // Müşteri son hatırlatmadan sonra yazdıysa döngüyü sıfırla.
-        if (latest && updatedAt && new Date(updatedAt).getTime() > new Date(latest.sent_at).getTime()) {
-          await this.supabase.db.from('follow_up_reminders').delete().eq('session_id', sessionId);
+        const sentRows = rows.filter(
+          (r) => r.sent_at && (!statusColumn || r.status === 'sent'),
+        );
+        const latest = sentRows[sentRows.length - 1];
+
+        // Müşteri son hatırlatmadan sonra yazdıysa 2. hatırlatmayı iptal et (tekrar stage 1 de gönderme).
+        if (
+          latest &&
+          updatedAt &&
+          new Date(updatedAt).getTime() > new Date(latest.sent_at as string).getTime()
+        ) {
+          if (statusColumn) {
+            await this.supabase.db.from('follow_up_reminders').upsert(
+              {
+                tenant_id: tenantId,
+                session_id: sessionId,
+                stage: 2,
+                status: 'cancelled',
+                cancel_reason: 'customer_replied',
+                last_activity_at: updatedAt || null,
+                sent_at: null,
+              },
+              { onConflict: 'session_id,stage' },
+            );
+          } else {
+            await this.supabase.db.from('follow_up_reminders').upsert(
+              {
+                tenant_id: tenantId,
+                session_id: sessionId,
+                stage: 99,
+                last_activity_at: updatedAt || null,
+                sent_at: new Date().toISOString(),
+              },
+              { onConflict: 'session_id,stage' },
+            );
+          }
           continue;
         }
 
-        const stage1 = rows.find((r) => r.stage === 1);
+        const stage1 = sentRows.find((r) => r.stage === 1);
         let stage = 1;
         if (!stage1) {
           stage = 1;
-        } else if (now - new Date(stage1.sent_at).getTime() >= 2 * 3600 * 1000) {
+        } else if (now - new Date(stage1.sent_at as string).getTime() >= 2 * 3600 * 1000) {
           stage = 2;
         } else {
           continue;
         }
 
-        const body = 'Efendim, siparişiniz tamamlanmadı. Kaldığımız yerden devam etmek ister misiniz?';
-        let sent = false;
-        try {
-          const wa = await this.outbound.send({ tenantId, channel: 'whatsapp', to: phone, body });
-          sent = wa.success;
-        } catch {
-          /* yoksay */
-        }
-        if (!sent) {
-          try {
-            const sms = await this.outbound.send({ tenantId, channel: 'sms', to: phone, body });
-            sent = sms.success;
-          } catch {
-            /* yoksay */
-          }
-        }
+        const name = await this.resolveCustomerName(tenantId, phone);
+        const prefix = name ? `${name}, ` : '';
+        const body = stage === 1
+          ? `${prefix}konuşmamız yarım kaldı. Kaldığımız yerden devam etmek ister misiniz?`
+          : `${prefix}hâlâ yardımcı olabilirim. Devam etmek ister misiniz?`;
+
+        const sent = await this.sendSystemMessage({
+          tenantId,
+          phone,
+          body,
+          sessionId,
+          reminder: 'incomplete_order',
+          stage,
+        });
 
         if (sent) {
-          await this.supabase.db.from('follow_up_reminders').upsert(
-            {
-              tenant_id: tenantId,
-              session_id: sessionId,
-              stage,
-              last_activity_at: updatedAt || null,
-              sent_at: new Date().toISOString(),
-            },
-            { onConflict: 'session_id,stage' },
-          );
+          const payload: Record<string, unknown> = {
+            tenant_id: tenantId,
+            session_id: sessionId,
+            stage,
+            last_activity_at: updatedAt || null,
+            sent_at: new Date().toISOString(),
+          };
+          if (statusColumn) payload.status = 'sent';
+          await this.supabase.db.from('follow_up_reminders').upsert(payload, {
+            onConflict: 'session_id,stage',
+          });
           this.logger.log(`Incomplete order reminder (stage ${stage}) for session ${sessionId}`);
         }
       }
@@ -158,33 +219,15 @@ export class SalesEngineService {
           'Havaleyi yaptıysanız dekontu ileterek siparişinizi oluşturabiliriz.',
         ].join(' ');
 
-        let sent = false;
-        try {
-          const wa = await this.outbound.send({
-            tenantId,
-            channel: 'whatsapp',
-            to: phone,
-            body,
-            orderId: String(row.id),
-          });
-          sent = wa.success;
-        } catch {
-          /* yoksay */
-        }
-        if (!sent) {
-          try {
-            const sms = await this.outbound.send({
-              tenantId,
-              channel: 'sms',
-              to: phone,
-              body,
-              orderId: String(row.id),
-            });
-            sent = sms.success;
-          } catch {
-            /* yoksay */
-          }
-        }
+        const sessionId = await this.findLatestSessionId(tenantId, phone, 'whatsapp');
+        const sent = await this.sendSystemMessage({
+          tenantId,
+          phone,
+          body,
+          sessionId,
+          orderId: String(row.id),
+          reminder: 'dekont_reminder',
+        });
 
         if (sent) {
           await this.supabase.db
@@ -431,6 +474,155 @@ export class SalesEngineService {
       await this.logCampaign(tenantId, 'abandoned_cart', (customer as any)?.id || phone, message, phone);
       this.logger.log(`[AbandonedCart] Tenant ${tenantId}: Session ${(s as any).id} (${(s as any).channel}) - ${customerName}`);
     }
+  }
+
+  private async resolveCustomerName(tenantId: string, phone: string): Promise<string | undefined> {
+    const variants = this.phoneVariants(phone);
+    if (!variants.length) return undefined;
+    try {
+      const { data: customers } = await this.supabase.db
+        .from('customers')
+        .select('name')
+        .eq('tenant_id', tenantId)
+        .in('phone', variants)
+        .limit(1);
+      const customerName = String((customers?.[0] as Record<string, unknown> | undefined)?.name || '').trim();
+      if (customerName) return customerName;
+
+      const { data: orders } = await this.supabase.db
+        .from('orders')
+        .select('customer_name')
+        .eq('tenant_id', tenantId)
+        .in('customer_phone', variants)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const orderName = String((orders?.[0] as Record<string, unknown> | undefined)?.customer_name || '').trim();
+      return orderName || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async findLatestSessionId(
+    tenantId: string,
+    phone: string,
+    channel: string,
+  ): Promise<string | undefined> {
+    try {
+      const { data } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('channel', channel)
+        .in('phone', this.phoneVariants(phone))
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return (data?.[0] as Record<string, unknown> | undefined)?.id as string | undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Sistem kaynaklı müşteri mesajı (hatırlatma).
+   * Hem WhatsApp konuşmasına hem ai_audit_logs'a yazar; böylece panel ve AI
+   * yapısal geçmişi mesajı görür. conversation_sessions.updated_at'e DOKUNMAZ.
+   */
+  private async sendSystemMessage(params: {
+    tenantId: string;
+    phone: string;
+    body: string;
+    sessionId?: string;
+    orderId?: string;
+    reminder: string;
+    stage?: number;
+  }): Promise<boolean> {
+    let conversationId: string | undefined;
+    let messageId: string | undefined;
+
+    try {
+      conversationId = await this.whatsapp.findOrCreate(params.tenantId, params.phone);
+      messageId = await this.whatsapp.addMessage({
+        tenantId: params.tenantId,
+        conversationId,
+        direction: 'outgoing',
+        body: params.body,
+        status: 'sending',
+      });
+    } catch (e) {
+      this.logger.warn(`System message conversation save failed: ${(e as Error).message}`);
+    }
+
+    let sent = false;
+    let channel: 'whatsapp' | 'sms' = 'whatsapp';
+    try {
+      const wa = await this.outbound.send({
+        tenantId: params.tenantId,
+        channel: 'whatsapp',
+        to: params.phone,
+        body: params.body,
+        orderId: params.orderId,
+      });
+      sent = wa.success;
+    } catch (e) {
+      this.logger.warn(`System WhatsApp send failed: ${(e as Error).message}`);
+    }
+
+    if (messageId) {
+      await this.supabase.db
+        .from('whatsapp_messages')
+        .update({ status: sent ? 'sent' : 'failed' })
+        .eq('id', messageId);
+    }
+
+    if (!sent) {
+      channel = 'sms';
+      try {
+        const sms = await this.outbound.send({
+          tenantId: params.tenantId,
+          channel: 'sms',
+          to: params.phone,
+          body: params.body,
+          orderId: params.orderId,
+        });
+        sent = sms.success;
+      } catch (e) {
+        this.logger.warn(`System SMS send failed: ${(e as Error).message}`);
+      }
+    }
+
+    try {
+      await this.supabase.db.from('ai_audit_logs').insert({
+        tenant_id: params.tenantId,
+        session_id: params.sessionId || null,
+        conversation_id: conversationId || null,
+        system_prompt: null,
+        user_message: '[SISTEM HATIRLATMASI]',
+        model: 'system',
+        provider: 'system',
+        raw_response: JSON.stringify({
+          reply: params.body,
+          reminder: params.reminder,
+          stage: params.stage ?? null,
+          channel,
+          sent,
+        }),
+        parsed_json: {
+          reply: params.body,
+          reminder: params.reminder,
+          stage: params.stage ?? null,
+          channel,
+          sent,
+        },
+        confidence: 100,
+        latency_ms: 0,
+        success: sent,
+      });
+    } catch (e) {
+      this.logger.warn(`System message audit failed: ${(e as Error).message}`);
+    }
+
+    return sent;
   }
 
   private normalizePhone(value: string): string {

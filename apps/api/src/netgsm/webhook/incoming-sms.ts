@@ -4,6 +4,7 @@ import { NetgsmProvider } from '../providers/netgsm.provider';
 import { SupabaseService } from '../../common/supabase.client';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
 import { generateSessionLabel, sessionWindowStart } from '../../common/chat-session';
+import { isDekontHint } from '../../common/text-normalize';
 
 @Injectable()
 export class IncomingSmsWebhook {
@@ -32,8 +33,8 @@ export class IncomingSmsWebhook {
 
     // Dekont tespiti: yazısız medya (boş mesaj) veya "ödedim/dekont attım" beyanı.
     // Bekleyen IBAN siparişi varsa otomatik esnaf bildirimi tetiklenir (AI çağrısı yapılmaz).
-    const isDekontHint = !message || /dekont|att[ıi]m|gönderdim|gönderdik|ödedim|havale\s*(yapt|gönder)|transfer\s*(yapt|gönder)/i.test(message);
-    if (isDekontHint) {
+    const dekontHint = !message || isDekontHint(message);
+    if (dekontHint) {
       const order = await this.orderEngine.findAwaitingDekontOrder(tenantId, phone);
       if (order) {
         const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');

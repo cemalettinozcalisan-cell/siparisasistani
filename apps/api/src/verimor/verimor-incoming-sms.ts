@@ -4,6 +4,7 @@ import { VerimorSmsProvider } from './verimor-sms.provider';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderEngineService } from '../order-engine/order-engine.service';
 import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
+import { isDekontHint } from '../common/text-normalize';
 
 /**
  * Verimor gelen SMS webhook'u.
@@ -39,8 +40,8 @@ export class VerimorIncomingSms {
       this.logger.log(`Verimor SMS from ${phone}: ${message.substring(0, 80)}`);
 
       // Dekont tespiti
-      const isDekontHint = !message || /dekont|att[ıi]m|gönderdim|gönderdik|ödedim|havale\s*(yapt|gönder)|transfer\s*(yapt|gönder)/i.test(message);
-      if (isDekontHint) {
+      const dekontHint = !message || isDekontHint(message);
+      if (dekontHint) {
         const order = await this.orderEngine.findAwaitingDekontOrder(tenantId, phone);
         if (order) {
           const handled = await this.orderEngine.markDekontReceived(order.id, 'auto');

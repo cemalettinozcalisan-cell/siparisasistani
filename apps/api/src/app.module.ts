@@ -51,7 +51,7 @@ import { AiAuditCenterModule } from './ai-audit-center/ai-audit-center.module';
 import { SaasModule } from './saas/saas.module';
 import { AdminModule } from './admin/admin.module';
 import { LicenseModule } from './license/license.module';
-import { FollowUpModule } from './followup/followup.module';
+
 import { AiBrainModule } from './ai/brain/ai-brain.module';
 import { OrderLockModule } from './order-lock/order-lock.module';
 import { VoiceModule } from './voice/voice.module';
@@ -125,7 +125,6 @@ import { AlertModule } from './alert/alert.module';
     SaasModule,
     AdminModule,
     LicenseModule,
-    FollowUpModule,
     InstagramModule,
     WebhookModule,
     KvkkModule,
