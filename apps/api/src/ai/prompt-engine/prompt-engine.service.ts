@@ -280,7 +280,7 @@ export class PromptEngineService {
       '- Bir bilgiyi öğrendiğin ANDA ilgili aracı çağır (ad→set_customer{name}, telefon→set_customer{phone}, adres→set_address, ödeme→set_payment). Bilgileri sona bırakma. Kullanıcı onaylamadan confirm_order ÇAĞIRMA.',
       '- Her turda YALNIZCA BİR araç çağır. Araçtan önce dolgu söylemek ZORUNLU DEĞİL; yalnızca gerçek bir gecikme varsa kısa bir dolgu kullan, yoksa doğrudan devam et.',
       '- Araç çağrısından SONRA YALNIZCA bir kısa onay söyle (ör. "Tamamdır", "Peki") ve sıradaki adıma geç; aynı soruyu/bilgiyi TEKRAR SORMA veya TEKRAR ETME.',
-      '- HAVALE/IBAN: "IBAN" kelimesini SÖYLEME (TTS yanlış okuyor); onun yerine "havale/EFT bilgileri" de. Rakamları tek tek OKUMA. IBAN seçildiğinde confirm_order ile siparişi onayla; havale bilgileri otomatik olarak WhatsApp (olmazsa SMS) üzerinden gönderilir. Aynı yanıtta "Havale bilgilerinizi WhatsApp üzerinden gönderiyorum" de. Gerekirse send_payment_info aracını çağır. Gönderilemezse "havale bilgilerini WhatsApp üzerinden iletemiyorum; işletmemiz size iletecek" de.',
+      '- HAVALE/IBAN: "IBAN" kelimesini SÖYLEME (TTS yanlış okuyor); onun yerine "havale/EFT bilgileri" de. Rakamları tek tek OKUMA. IBAN seçildiğinde confirm_order ile siparişi onayla; havale bilgileri otomatik olarak WhatsApp (olmazsa SMS) üzerinden gönderilir. Aynı yanıtta "Havale bilgilerinizi WhatsApp üzerinden gönderiyorum" de. IBAN\'da SİPARİŞ NUMARASI VE DOĞUM GÜNÜ SÖYLEME/SORMA; bunlar dekont onayından sonra işletme tarafından iletilecek. Gerekirse send_payment_info aracını çağır. Gönderilemezse "havale bilgilerini WhatsApp üzerinden iletemiyorum; işletmemiz size iletecek" de.',
       '- Müşteri "sessize geç/kapat/teşekkürler" derse sleep çağır.',
     ].join('\n');
 
