@@ -280,7 +280,7 @@ export class PromptEngineService {
       '- Bir bilgiyi öğrendiğin ANDA ilgili aracı çağır (ad→set_customer{name}, telefon→set_customer{phone}, adres→set_address, ödeme→set_payment). Bilgileri sona bırakma. Kullanıcı onaylamadan confirm_order ÇAĞIRMA.',
       '- Her turda YALNIZCA BİR araç çağır. Araçtan önce dolgu söylemek ZORUNLU DEĞİL; yalnızca gerçek bir gecikme varsa kısa bir dolgu kullan, yoksa doğrudan devam et.',
       '- Araç çağrısından SONRA YALNIZCA bir kısa onay söyle (ör. "Tamamdır", "Peki") ve sıradaki adıma geç; aynı soruyu/bilgiyi TEKRAR SORMA veya TEKRAR ETME.',
-      '- HAVALE/IBAN: "IBAN" kelimesini SÖYLEME (TTS yanlış okuyor); onun yerine "havale/EFT bilgileri" de. Rakamları tek tek OKUMA; "havale bilgilerinizi WhatsApp üzerinden gönderiyorum" de ve send_payment_info aracını çağır. Gönderilemezse "havale bilgilerini WhatsApp üzerinden iletemiyorum; işletmemiz size iletecek" de.',
+      '- HAVALE/IBAN: "IBAN" kelimesini SÖYLEME (TTS yanlış okuyor); onun yerine "havale/EFT bilgileri" de. Rakamları tek tek OKUMA. IBAN seçildiğinde confirm_order ile siparişi onayla; havale bilgileri otomatik olarak WhatsApp (olmazsa SMS) üzerinden gönderilir. Aynı yanıtta "Havale bilgilerinizi WhatsApp üzerinden gönderiyorum" de. Gerekirse send_payment_info aracını çağır. Gönderilemezse "havale bilgilerini WhatsApp üzerinden iletemiyorum; işletmemiz size iletecek" de.',
       '- Müşteri "sessize geç/kapat/teşekkürler" derse sleep çağır.',
     ].join('\n');
 
@@ -291,30 +291,24 @@ export class PromptEngineService {
   async buildIvrTexts(
     tenantId: string,
     tenantName?: string,
-  ): Promise<{ menu: string; kvkk: string; noinput: string; kvkkLink: string }> {
-    const firma = tenantName || 'İşletmemiz';
-    let kvkkLink = '';
+  ): Promise<{ menu: string; kvkk: string; noinput: string }> {
     let disclosure = '';
     try {
       const { data } = await this.supabase.db.from('tenant_settings')
-        .select('kvkk_url, kvkk_disclosure_text').eq('tenant_id', tenantId).maybeSingle();
+        .select('kvkk_disclosure_text').eq('tenant_id', tenantId).maybeSingle();
       const g = (data || {}) as any;
-      kvkkLink = String(g.kvkk_url || '').trim();
       disclosure = String(g.kvkk_disclosure_text || '').trim();
     } catch { /* yoksay */ }
+    // Telefonda 1'e basınca aydınlatma metni dinlenir; ayrıca link cümlesi okunmaz.
     const menu =
       `Gastronomi şehri Afyonkarahisar'dan sevgiler, saygılar. ` +
       `Kişisel Verileri Koruma Kanunu kapsamında, sizlere daha iyi hizmet verebilmek adına görüşmelerimiz kaydedilmektedir. ` +
-      `Kanun kapsamında ki Aydınlatma metnini dinlemek için 1'e, sipariş vermek için 2'ye basınız.` +
-      `${kvkkLink ? ` Aydınlatma metnine ${kvkkLink} adresinden ulaşabilirsiniz.` : ''}`;
+      `Kanun kapsamında ki Aydınlatma metnini dinlemek için 1'e, sipariş vermek için 2'ye basınız.`;
     const kvkk = disclosure ||
       'Kişisel verilerinizin işlenmesine ilişkin aydınlatma metni için lütfen web sitemizi ziyaret edin. Sipariş vermek için 2\'ye basınız.';
     const noinput =
       'Herhangi bir tuşlama yapmadınız. Aydınlatma metni için 1\'e, sipariş vermek için 2\'ye basınız.';
-    const kvkkLinkSentence = kvkkLink
-      ? `Aydınlatma metnine ${kvkkLink} adresinden ulaşabilirsiniz.`
-      : 'Aydınlatma metnine web sitemizden ulaşabilirsiniz.';
-    return { menu, kvkk, noinput, kvkkLink: kvkkLinkSentence };
+    return { menu, kvkk, noinput };
   }
 
   /** Açılış karşılaması (sabit metin) — panelden düzenlenebilir şablon + {firma}/{urun}/{asistan}. */

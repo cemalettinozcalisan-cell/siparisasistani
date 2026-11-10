@@ -217,11 +217,17 @@ export class VoiceNotificationService {
     const rows = (data || []) as any[];
     if (rows.length === 0) return { quiet: false, summary: null, items: [] };
 
-    // delivered'a geçir (reconnect'te tekrar seslendirme)
+    // Aynı bildirimin tekrar tekrar seslendirilmesini önle:
+    // getPending döndürdüğü satırları doğrudan acknowledged yap; bir sonraki çağrıda gelmez.
     const ids = rows.map((r) => r.id);
+    const acknowledgedAt = new Date().toISOString();
     await this.supabase.db
       .from('ai_voice_notifications')
-      .update({ status: 'delivered', delivered_at: new Date().toISOString() })
+      .update({
+        status: 'acknowledged',
+        acknowledged_at: acknowledgedAt,
+        delivered_at: acknowledgedAt,
+      })
       .in('id', ids);
 
     // Grup özeti

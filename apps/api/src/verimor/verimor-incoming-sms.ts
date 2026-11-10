@@ -3,7 +3,7 @@ import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { VerimorSmsProvider } from './verimor-sms.provider';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderEngineService } from '../order-engine/order-engine.service';
-import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
+import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../common/chat-session';
 import { isDekontHint } from '../common/text-normalize';
 
 /**
@@ -99,10 +99,12 @@ export class VerimorIncomingSms {
         isNewSession = true;
       }
 
-      if (isNewSession) {
+      const resetCommand = isResetCommand(message);
+      let welcomeBody = '';
+      if (isNewSession && !resetCommand) {
         try {
-          const welcome = await this.brain.buildTextWelcome(tenantId);
-          await this.sms.sendSms(rawPhone, welcome);
+          welcomeBody = await this.brain.buildTextWelcome(tenantId);
+          await this.sms.sendSms(rawPhone, welcomeBody);
         } catch (e) {
           this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
         }
@@ -122,11 +124,33 @@ export class VerimorIncomingSms {
         channelSource: 'verimor',
       } as never);
 
+      const effectiveSessionId = (result as { sessionId?: string }).sessionId || sessionId;
+      const resetOnlyWelcome = !!(result as { resetHistory?: boolean }).resetHistory;
+
+      // "Yeni oturum": yalnızca tek KVKK/karşılama gönder; AI'nın reset cevabını gönderme.
+      if (resetOnlyWelcome) {
+        if (!welcomeBody) {
+          try {
+            welcomeBody = await this.brain.buildTextWelcome(tenantId);
+            await this.sms.sendSms(rawPhone, welcomeBody);
+          } catch (e) {
+            this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+          }
+        }
+        const storedMessages = [
+          { role: 'customer', content: message },
+          { role: 'assistant', content: welcomeBody },
+        ];
+        await this.supabase.db
+          .from('conversation_sessions')
+          .update({ messages: storedMessages, updated_at: new Date().toISOString(), status: 'active' })
+          .eq('id', effectiveSessionId);
+        return { received: true, replySent: !!welcomeBody, sessionId: effectiveSessionId };
+      }
+
       const aiReply = (result as { reply?: string }).reply || '';
       if (aiReply) {
-        const storedMessages = (result as { resetHistory?: boolean }).resetHistory
-          ? [{ role: 'customer', content: message }, { role: 'assistant', content: aiReply }]
-          : [...history, { role: 'assistant', content: aiReply }];
+        const storedMessages = [...history, { role: 'assistant', content: aiReply }];
         await this.supabase.db
           .from('conversation_sessions')
           .update({
@@ -141,19 +165,11 @@ export class VerimorIncomingSms {
               ? { end_reason: 'goodbye', ended_at: new Date().toISOString() }
               : {}),
           })
-          .eq('id', (result as { sessionId?: string }).sessionId || sessionId);
+          .eq('id', effectiveSessionId);
         await this.sms.sendSms(rawPhone, aiReply);
-        if ((result as { resetHistory?: boolean }).resetHistory) {
-          try {
-            const welcome = await this.brain.buildTextWelcome(tenantId);
-            await this.sms.sendSms(rawPhone, welcome);
-          } catch (e) {
-            this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
-          }
-        }
       }
 
-      return { received: true, replySent: !!aiReply, sessionId };
+      return { received: true, replySent: !!aiReply, sessionId: effectiveSessionId };
     } catch (e) {
       this.logger.error(`Verimor SMS isleme hatasi: ${(e as Error).message}`);
       return { received: false };

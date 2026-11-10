@@ -6,7 +6,7 @@ import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
 import { WhatsAppConversationsService } from './conversations/conversations.service';
 import { MetaWhatsappProvider } from '../messages/providers/meta-whatsapp.provider';
-import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
+import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../common/chat-session';
 
 interface WaMessage {
   id?: string;
@@ -135,10 +135,15 @@ export class WhatsappService {
     });
 
     const { sessionId, history } = await this.loadSession(tenantId, phone);
+    const resetCommand = isResetCommand(text);
     const isNewSession = history.length === 0;
-    if (isNewSession) {
-      await this.sendWelcome(tenantId, phone, convId, sessionId);
+    let welcomeBody = '';
+
+    // Yeni oturumda karşılama; "yeni oturum" komutunda aşağıda reset sonrası tek kez gönderilir.
+    if (isNewSession && !resetCommand) {
+      welcomeBody = await this.sendWelcome(tenantId, phone, convId, sessionId);
     }
+
     history.push({ role: 'customer', content: text });
 
     const result = await this.brain.process({
@@ -153,13 +158,35 @@ export class WhatsappService {
       })),
     });
 
+    const effectiveSessionId = result.sessionId || sessionId;
+    const resetOnlyWelcome = !!result.resetHistory;
+
+    if (resetOnlyWelcome) {
+      if (!welcomeBody) {
+        welcomeBody = await this.sendWelcome(tenantId, phone, convId, effectiveSessionId);
+      }
+      const storedMessages = [
+        { role: 'customer', content: text },
+        { role: 'assistant', content: welcomeBody },
+      ];
+      if (effectiveSessionId) {
+        await this.supabase.db
+          .from('conversation_sessions')
+          .update({
+            messages: storedMessages,
+            updated_at: new Date().toISOString(),
+            status: 'active',
+          })
+          .eq('id', effectiveSessionId);
+      }
+      this.logger.log(`WhatsApp yeni oturum: sadece KVKK/karsilama gonderildi (${phone})`);
+      return;
+    }
+
     const aiReply = (result.reply || '').trim();
     if (!aiReply) return;
 
-    const storedMessages = result.resetHistory
-      ? [{ role: 'customer', content: text }, { role: 'assistant', content: aiReply }]
-      : [...history, { role: 'assistant', content: aiReply }];
-    const effectiveSessionId = result.sessionId || sessionId;
+    const storedMessages = [...history, { role: 'assistant', content: aiReply }];
     if (effectiveSessionId) {
       await this.supabase.db
         .from('conversation_sessions')
@@ -184,10 +211,6 @@ export class WhatsappService {
 
     await this.deliver(tenantId, phone, aiReply, outgoingId);
 
-    if (result.resetHistory) {
-      await this.sendWelcome(tenantId, phone, convId, effectiveSessionId);
-    }
-
     this.logger.log(`WhatsApp cevap gonderildi (${profileName || phone}): ${aiReply.substring(0, 80)}`);
   }
 
@@ -196,7 +219,7 @@ export class WhatsappService {
     phone: string,
     conversationId: string,
     sessionId?: string,
-  ): Promise<void> {
+  ): Promise<string> {
     try {
       const body = await this.brain.buildTextWelcome(tenantId);
       const outgoingId = await this.conversations.addMessage({
@@ -223,8 +246,10 @@ export class WhatsappService {
         });
       }
       this.logger.log(`WhatsApp KVKK/karşılama gönderildi (${phone})`);
+      return body;
     } catch (e) {
       this.logger.warn(`WhatsApp KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+      return '';
     }
   }
 

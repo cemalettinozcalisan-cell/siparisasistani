@@ -34,8 +34,8 @@ export class SalesEngineService {
 
       const { data: sessions } = await this.supabase.db
         .from('conversation_sessions')
-        .select('id, tenant_id, phone, channel, updated_at')
-        .eq('status', 'active')
+        .select('id, tenant_id, phone, channel, updated_at, session_data')
+        .in('status', ['active', 'no_confirm'])
         .is('order_id', null)
         .gte('updated_at', dayAgo)
         .lt('updated_at', tenMinAgo)
@@ -54,7 +54,15 @@ export class SalesEngineService {
         if (await this.hasRecentActiveConversation(tenantId, phone, sessionId)) continue;
 
         // Sadece sipariş/fiyat/ürün niyeti olan oturumları hatırlat (kargo durum sorgusu, şikayet vb. hariç).
-        if (!(await this.shouldRemindForSession(sessionId))) continue;
+        // Telefon oturumları ai_audit_logs üretmez; niyet session_data.items/products üzerinden kontrol edilir.
+        const sessionData = (row.session_data || {}) as Record<string, unknown>;
+        if (channel === 'phone') {
+          const items = Array.isArray(sessionData.items) ? sessionData.items : [];
+          const products = Array.isArray(sessionData.products) ? sessionData.products : [];
+          if (!items.length && !products.length) continue;
+        } else if (!(await this.shouldRemindForSession(sessionId))) {
+          continue;
+        }
 
         // Bu oturumdan SONRA tamamlanmış sipariş varsa eski yarım oturumu hatırlatma.
         const sessionUpdatedAt = String(row.updated_at || '');
@@ -499,8 +507,9 @@ export class SalesEngineService {
         .order('created_at', { ascending: false })
         .limit(1);
       const row = data?.[0] as { parsed_json?: unknown } | undefined;
-      const parsed = row?.parsed_json as Record<string, unknown> | null;
-      if (!parsed) return true;
+      if (!row) return false;
+      const parsed = row.parsed_json as Record<string, unknown> | null;
+      if (!parsed) return false;
       const intent = String(parsed.intent || '').toUpperCase();
       if (['COMPLAINT', 'CALLBACK', 'HUMAN_TRANSFER'].includes(intent)) return false;
       const products = Array.isArray(parsed.products) ? parsed.products : [];
@@ -509,7 +518,7 @@ export class SalesEngineService {
       }
       return true;
     } catch {
-      return true;
+      return false;
     }
   }
 

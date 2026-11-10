@@ -258,7 +258,28 @@ export class OrderAiToolsService {
           await this.recordSession(tenantId, sid, d, order);
           // H5: Sipariş oluşunca müşteriye özet gönder (WhatsApp → olmazsa SMS). Sadece ilk oluşturmada.
           if (!alreadyCreated) void this.sendOrderSummaryToCustomer(tenantId, d, order);
-          return { ok: true, result: { orderNumber: order.order_number, orderId: order.order_id, total: order.total_price, status: order.status, updated: alreadyCreated } };
+          // IBAN ise havale bilgilerini telefon görüşmesi sırasında otomatik gönder.
+          let paymentInfo: { sent: boolean; channel: string } | null = null;
+          if (!alreadyCreated && String(d.payment || '').toLowerCase() === 'iban') {
+            try {
+              const pi = await this.sendPaymentInfo(tenantId, d);
+              paymentInfo = { sent: pi.sent, channel: pi.channel };
+            } catch (e) {
+              this.logger.warn(`Havale bilgisi otomatik gönderilemedi: ${(e as Error).message}`);
+            }
+          }
+          return {
+            ok: true,
+            result: {
+              orderNumber: order.order_number,
+              orderId: order.order_id,
+              total: order.total_price,
+              status: order.status,
+              updated: alreadyCreated,
+              paymentInfoSent: paymentInfo?.sent ?? null,
+              paymentInfoChannel: paymentInfo?.channel ?? null,
+            },
+          };
         }
         case 'update_order': {
           if (!d.confirmed || !d.order) {
@@ -336,18 +357,17 @@ export class OrderAiToolsService {
           if (!d.order) return { ok: false, error: 'Henüz onaylanmış sipariş yok; önce siparişi onayla (confirm_order).' };
           const phone = String(d.customer.phone || '').replace(/[^\d]/g, '');
           if (!phone) return { ok: false, error: 'Müşteri telefonu yok; havale bilgileri gönderilemez. Telefonu set_customer ile kaydet.' };
-          const body = await this.buildPaymentMessage(tenantId, d);
-          const res = await this.outbound.send({ tenantId, channel: 'whatsapp', to: phone, body, orderId: d.order.orderId });
+          const pi = await this.sendPaymentInfo(tenantId, d);
           return {
             ok: true,
             result: {
-              sent: true,
-              queued: !res.success,
-              channel: 'whatsapp',
+              sent: pi.sent,
+              queued: pi.queued,
+              channel: pi.channel,
               to: phone,
-              message: res.success
-                ? 'Havale ve sipariş bilgileri WhatsApp üzerinden gönderildi.'
-                : 'Havale ve sipariş bilgileri WhatsApp gönderimi için hazırlandı.',
+              message: pi.sent
+                ? 'Havale ve sipariş bilgileri WhatsApp/SMS üzerinden gönderildi.'
+                : 'Havale ve sipariş bilgileri gönderilemedi; kanal yapılandırmasını kontrol edin.',
             },
           };
         }
@@ -484,7 +504,7 @@ export class OrderAiToolsService {
     const address = [d.customer.address, d.customer.city].filter(Boolean).join(', ');
     return [
       `🧾 ${tenantName} — Sipariş Bilgileri`,
-      `Sipariş No: #${d.order?.orderNumber || '-'}`,
+      `Sipariş No: Dekont onayından sonra iletilecek`,
       `Alıcı: ${d.customer.name || '-'}`,
       `Ürünler: ${items}`,
       `Toplam: ${tl(d.order?.total)} TL`,
@@ -559,6 +579,7 @@ export class OrderAiToolsService {
         started_at: new Date(d.createdAt).toISOString(),
         ended_at: now,
         created_at: now,
+        updated_at: now,
         session_data: {
           outcome: status,
           customer_name: d.customer.name || '',
@@ -761,6 +782,18 @@ export class OrderAiToolsService {
       trackingNumber: String(o.tracking_number || ''), customerName: String(c.name || ''),
       customerPhone: String(c.phone || ''), createdAt: String(o.created_at || ''),
     };
+  }
+
+  /** Havale/IBAN bilgilerini WhatsApp → olmazsa SMS ile gönderir; gerçek sonucu döner. */
+  private async sendPaymentInfo(
+    tenantId: string,
+    d: Draft,
+  ): Promise<{ sent: boolean; channel: string; queued: boolean }> {
+    const phone = String(d.customer.phone || '').replace(/[^\d]/g, '');
+    if (!d.order || !phone) return { sent: false, channel: 'none', queued: false };
+    const body = await this.buildPaymentMessage(tenantId, d);
+    const result = await this.sendWhatsappThenSms(tenantId, phone, body, d.order.orderId);
+    return { sent: result.success, channel: result.channel, queued: !result.success };
   }
 
   /** H5: Sipariş oluşunca müşteriye özet gönder (WhatsApp → olmazsa SMS). */

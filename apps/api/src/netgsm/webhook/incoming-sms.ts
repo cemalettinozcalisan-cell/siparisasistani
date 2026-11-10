@@ -3,7 +3,7 @@ import { AiBrainService } from '../../ai/brain/ai-brain.service';
 import { NetgsmProvider } from '../providers/netgsm.provider';
 import { SupabaseService } from '../../common/supabase.client';
 import { OrderEngineService } from '../../order-engine/order-engine.service';
-import { generateSessionLabel, sessionWindowStart } from '../../common/chat-session';
+import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../../common/chat-session';
 import { isDekontHint } from '../../common/text-normalize';
 
 @Injectable()
@@ -100,10 +100,12 @@ export class IncomingSmsWebhook {
       this.logger.log(`Created new SMS session ${sessionId}`);
     }
 
-    if (isNewSession) {
+    const resetCommand = isResetCommand(message);
+    let welcomeBody = '';
+    if (isNewSession && !resetCommand) {
       try {
-        const welcome = await this.brain.buildTextWelcome(tenantId);
-        await this.netgsm.sendSms(rawPhone, welcome);
+        welcomeBody = await this.brain.buildTextWelcome(tenantId);
+        await this.netgsm.sendSms(rawPhone, welcomeBody);
       } catch (e) {
         this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
       }
@@ -125,12 +127,33 @@ export class IncomingSmsWebhook {
       channelSource: 'netgsm',
     });
 
+    const effectiveSessionId = result.sessionId || sessionId;
+
+    // "Yeni oturum": yalnızca tek KVKK/karşılama gönder; AI'nın reset cevabını gönderme.
+    if (result.resetHistory) {
+      if (!welcomeBody) {
+        try {
+          welcomeBody = await this.brain.buildTextWelcome(tenantId);
+          await this.netgsm.sendSms(rawPhone, welcomeBody);
+        } catch (e) {
+          this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+        }
+      }
+      const storedMessages = [
+        { role: 'customer', content: message },
+        { role: 'assistant', content: welcomeBody },
+      ];
+      await this.supabase.db
+        .from('conversation_sessions')
+        .update({ messages: storedMessages, updated_at: new Date().toISOString(), status: 'active' })
+        .eq('id', effectiveSessionId);
+      return { received: true, replySent: !!welcomeBody, sessionId: effectiveSessionId };
+    }
+
     // Append AI reply to history
     const aiReply = result.reply || '';
     if (aiReply) {
-      const storedMessages = result.resetHistory
-        ? [{ role: 'customer', content: message }, { role: 'assistant', content: aiReply }]
-        : [...history, { role: 'assistant', content: aiReply }];
+      const storedMessages = [...history, { role: 'assistant', content: aiReply }];
 
       // Update session with full history
       await this.supabase.db
@@ -143,20 +166,12 @@ export class IncomingSmsWebhook {
             ? { end_reason: 'goodbye', ended_at: new Date().toISOString() }
             : {}),
         })
-        .eq('id', result.sessionId || sessionId);
+        .eq('id', effectiveSessionId);
 
       // Send AI reply back via SMS
       await this.netgsm.sendSms(rawPhone, aiReply);
-      if (result.resetHistory) {
-        try {
-          const welcome = await this.brain.buildTextWelcome(tenantId);
-          await this.netgsm.sendSms(rawPhone, welcome);
-        } catch (e) {
-          this.logger.warn(`SMS KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
-        }
-      }
     }
 
-    return { received: true, replySent: !!aiReply, sessionId };
+    return { received: true, replySent: !!aiReply, sessionId: effectiveSessionId };
   }
 }

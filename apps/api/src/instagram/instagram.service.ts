@@ -3,7 +3,7 @@ import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
-import { generateSessionLabel, sessionWindowStart } from '../common/chat-session';
+import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../common/chat-session';
 
 @Injectable()
 export class InstagramService {
@@ -92,11 +92,13 @@ export class InstagramService {
             sessionId = (newSession?.id as string) || '';
           }
 
-          if (isNewSession) {
+          const resetCommand = isResetCommand(text);
+          let welcomeBody = '';
+          if (isNewSession && !resetCommand) {
             try {
-              const welcome = await this.brain.buildTextWelcome(tenantId);
-              await this.saveMessage(conv.id, tenantId, 'outgoing', welcome);
-              await this.sendMessage(conv.id, tenantId, welcome);
+              welcomeBody = await this.brain.buildTextWelcome(tenantId);
+              await this.saveMessage(conv.id, tenantId, 'outgoing', welcomeBody);
+              await this.sendMessage(conv.id, tenantId, welcomeBody);
             } catch (e) {
               this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
             }
@@ -116,11 +118,34 @@ export class InstagramService {
             channelSource: 'instagram',
           });
 
+          const effectiveSessionId = result.sessionId || sessionId;
+          const resetOnlyWelcome = !!result.resetHistory;
+
+          if (resetOnlyWelcome) {
+            if (!welcomeBody) {
+              try {
+                welcomeBody = await this.brain.buildTextWelcome(tenantId);
+                await this.saveMessage(conv.id, tenantId, 'outgoing', welcomeBody);
+                await this.sendMessage(conv.id, tenantId, welcomeBody);
+              } catch (e) {
+                this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
+              }
+            }
+            const storedMessages = [
+              { role: 'customer', content: text },
+              { role: 'assistant', content: welcomeBody },
+            ];
+            await this.supabase.db
+              .from('conversation_sessions')
+              .update({ messages: storedMessages, updated_at: new Date().toISOString(), status: 'active' })
+              .eq('id', effectiveSessionId);
+            this.logger.log(`Instagram yeni oturum: sadece KVKK/karsilama gonderildi (${username})`);
+            continue;
+          }
+
           const aiReply = result.reply || '';
           if (aiReply) {
-            const storedMessages = result.resetHistory
-              ? [{ role: 'customer', content: text }, { role: 'assistant', content: aiReply }]
-              : [...history, { role: 'assistant', content: aiReply }];
+            const storedMessages = [...history, { role: 'assistant', content: aiReply }];
 
             await this.supabase.db
               .from('conversation_sessions')
@@ -132,20 +157,10 @@ export class InstagramService {
                   ? { end_reason: 'goodbye', ended_at: new Date().toISOString() }
                   : {}),
               })
-              .eq('id', result.sessionId || sessionId);
+              .eq('id', effectiveSessionId);
 
             await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
             await this.sendMessage(conv.id, tenantId, aiReply);
-
-            if (result.resetHistory) {
-              try {
-                const welcome = await this.brain.buildTextWelcome(tenantId);
-                await this.saveMessage(conv.id, tenantId, 'outgoing', welcome);
-                await this.sendMessage(conv.id, tenantId, welcome);
-              } catch (e) {
-                this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
-              }
-            }
 
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
             await this.channelHealth.record(tenantId, 'instagram', true);
