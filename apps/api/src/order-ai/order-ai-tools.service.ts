@@ -329,7 +329,19 @@ export class OrderAiToolsService {
           const updated = await this.orderEngine.updateOrder(d.order.orderId, uv.data, tenantId);
           d.order = { orderNumber: updated.order_number, orderId: updated.order_id, total: updated.total_price, status: updated.status };
           await this.recordSession(tenantId, sid, d, updated);
-          return { ok: true, result: { orderNumber: updated.order_number, orderId: updated.order_id, total: updated.total_price, status: updated.status, updated: true } };
+          const isIbanUpdate = String(d.payment || '').toLowerCase() === 'iban';
+          return {
+            ok: true,
+            result: {
+              orderNumber: isIbanUpdate ? null : updated.order_number,
+              orderNumberDeferred: isIbanUpdate,
+              orderId: updated.order_id,
+              total: updated.total_price,
+              status: updated.status,
+              updated: true,
+              askBirthday: !isIbanUpdate,
+            },
+          };
         }
         case 'cancel_order': {
           if (!d.order) {
