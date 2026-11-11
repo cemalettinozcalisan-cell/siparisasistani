@@ -113,7 +113,7 @@ function CustomAudioPlayer({ src }: { src: string }) {
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 space-y-3">
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="none" />
       <div className="flex items-center gap-3">
         {/* Play/Pause */}
         <button onClick={togglePlay} className="bg-blue-500 text-white shadow-md hover:bg-blue-600 p-3 rounded-full transition-all hover:scale-105">

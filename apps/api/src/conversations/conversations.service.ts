@@ -12,7 +12,7 @@ export class ConversationsService {
       const [sessions, calls, instagramConvs, orders] = await Promise.all([
         this.supabase.db
           .from('conversation_sessions')
-          .select('id, channel, phone, status, call_status, session_label, messages, session_data, order_id, created_at, ended_at, call_duration, ai_model')
+          .select('id, channel, phone, status, call_status, session_label, session_data, order_id, created_at, ended_at, call_duration, ai_model')
           .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false })
           .limit(limit),

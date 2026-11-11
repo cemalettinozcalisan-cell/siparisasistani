@@ -32,7 +32,7 @@ export function AiEmployeeVoice() {
       .catch(() => {});
 
     const playSummary = async () => {
-      if (!enabled || playing.current) return;
+      if (!enabled || playing.current || document.visibilityState !== 'visible') return;
       playing.current = true;
       try {
         const res = await fetch(`/api/ai-employee/${tid}/voice/pending`).then((r) => r.json());
@@ -63,7 +63,7 @@ export function AiEmployeeVoice() {
     };
 
     playSummary();
-    const iv = setInterval(playSummary, 15000);
+    const iv = setInterval(playSummary, 60000);
     return () => {
       alive = false;
       clearInterval(iv);

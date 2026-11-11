@@ -51,17 +51,19 @@ export class AiAuditCenterController {
     @Query('status') statusFilter?: string,
   ) {
     const now = new Date();
-    const startDate = from ? new Date(from) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const endDate = to ? new Date(to) : now;
     endDate.setHours(23, 59, 59, 999);
 
     let query = this.supabase.db
       .from('ai_audit_logs')
-      .select('*')
+      // İstatistik için ağır alanlar (system_prompt/raw_response/parsed_json) çekilmez.
+      .select('id, tenant_id, model, provider, confidence, latency_ms, success, token_prompt, token_completion, created_at')
       .eq('tenant_id', tenantId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(5000);
 
     if (modelFilter) query = query.eq('model', modelFilter);
 
@@ -137,7 +139,7 @@ export class AiAuditCenterController {
     @Query('status') statusFilter?: string,
   ) {
     const now = new Date();
-    const startDate = from ? new Date(from) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const endDate = to ? new Date(to) : now;
     endDate.setHours(23, 59, 59, 999);
 

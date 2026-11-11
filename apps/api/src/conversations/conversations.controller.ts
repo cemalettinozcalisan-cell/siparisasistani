@@ -58,7 +58,7 @@ export class ConversationsController {
       // Get audit logs for transcript (filtered by session_id)
       const { data: audits } = await this.supabase.db
         .from('ai_audit_logs')
-        .select('user_message, raw_response, system_prompt, confidence, parsed_json, created_at')
+        .select('user_message, raw_response, confidence, parsed_json, created_at')
         .eq('tenant_id', tenantId)
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true })

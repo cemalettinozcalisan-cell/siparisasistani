@@ -30,7 +30,9 @@ export function NotificationBell({ size = 'text-lg' }: { size?: string }) {
       } catch {}
     };
     load();
-    const interval = setInterval(load, 15000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 60000);
     const onRefresh = () => { void load(); };
     window.addEventListener('data-refresh', onRefresh);
     return () => { clearInterval(interval); window.removeEventListener('data-refresh', onRefresh); };
