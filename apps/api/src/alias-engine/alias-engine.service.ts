@@ -21,6 +21,13 @@ export class AliasEngineService {
       return { productName: aliases.get(clean)!, matched: true, confidence: 100 };
     }
 
+    // Sucuk cesitleri ayni kanonik urun: sap/acisiz/normal/kangal sucuk -> Kangal Sucuk.
+    // DB alias kaydi yoksa da temel esleme calissin.
+    if (['sap sucuk', 'acisiz sucuk', 'acısız sucuk', 'normal sucuk'].includes(clean)) {
+      const kangal = aliases.get('kangal sucuk');
+      if (kangal) return { productName: kangal, matched: true, confidence: 100 };
+    }
+
     // Partial match
     for (const [alias, product] of aliases) {
       if (clean.includes(alias) || alias.includes(clean)) {

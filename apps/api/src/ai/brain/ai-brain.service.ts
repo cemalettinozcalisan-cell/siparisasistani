@@ -1229,11 +1229,11 @@ export class AiBrainService {
     const skipMemory = await this.getSkipMemory(sessionId);
     const knownBirthday = !skipMemory && (await this.hasKnownBirthday(input.tenantId, input.phone));
     const reply = [
-      `Siparişiniz oluştu${name ? ', sayın ' + name : ''}.`,
+      `Siparişiniz oluşturuldu${name ? ', sayın ' + name : ''}.`,
       orderNumber ? `Sipariş numaranız: ${orderNumber}.` : '',
       knownBirthday
         ? ''
-        : 'Bu arada doğum gününüzü öğrenebilir miyim? Özel gününüzde size sürpriz indirim yapmak isteriz.',
+        : `${name ? name + ', ' : ''}bu arada efendim, doğum gününüzde sizi mutlu edecek küçük bir sürprizimiz var; doğum tarihinizi bizimle paylaşırsanız size özel indirimlerimizden faydalanabilirsiniz.`,
     ]
       .filter(Boolean)
       .join(' ');

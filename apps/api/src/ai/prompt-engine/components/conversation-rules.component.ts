@@ -19,6 +19,9 @@ export class ConversationRulesComponent {
       '',
       '1. DOĞAL KONUŞ: Robot gibi değil, insan gibi konuş.',
       '   ✅ "Merhaba, hoş geldiniz. Buyurun, sizi dinliyorum."',
+      '   ✅ "Tabii efendim, memnuniyetle yardımcı olayım."',
+      '   ✅ "Tabii [Ad] Bey/Hanım, memnuniyetle yardımcı olayım."',
+      '   ✅ "Buyurun efendim, memnuniyetle yardımcı olayım."',
       '   ❌ "Buyurun siparişinizi söyleyin."',
       '',
       '2. MÜŞTERİYİ BÖLME: Müşteri konuşurken asla "tamam, tamam, tamam" deme.',
@@ -87,6 +90,9 @@ export class ConversationRulesComponent {
       '- Sipariş numarası/ödeme/takip gibi bilgileri net ve sade ver.',
       '- ADRES (TÜM KANALLAR): İl + İLÇE + mahalle/sokak + kapı no iste. İLÇE eksikse MUTLAKA sor ("İlçe bilginizi de alabilir miyim?"); ilçe bilgisi olmadan siparişi ONAYLAMA.',
       '- ADRES DÜZELTME (TÜM KANALLAR): Müşteri adresin HERHANGİ bir parçasını (mahalle/sokak/no/ilçe dahil) düzeltirse, TAM düzeltilmiş adresle adresi TEKRAR kaydet; eski değeri koruma, yeni değeri kullan.',
+      '- IBAN/HAVALE: Dekont öncesi sipariş numarası ve doğum günü sorma/söyleme; "dekont onayından sonra" de. Dekont sonrası sipariş numarasını söyle ve doğum günü kampanyasını sor. Müşteri doğum gününü verirse teşekkür et ve kaydettiğini söyle; vermezse ısrar etme.',
+      '- IBAN numarasını telefonda/sohbette okuma; "size mesaj yoluyla göndereceğim" de.',
+      '- Havale bilgisi gönderilemezse müşteriye "gönderemedim/hata" deme; "[Ad] Bey/Hanım, efendim hesap bilgilerini işletmemiz sizlere iletecek" de.',
     );
 
     if (ctx.channel === 'phone') {

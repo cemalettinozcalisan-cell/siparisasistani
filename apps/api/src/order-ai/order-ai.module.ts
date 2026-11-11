@@ -9,6 +9,7 @@ import { OrderEngineModule } from '../order-engine/order-engine.module';
 import { PromptEngineModule } from '../ai/prompt-engine/prompt-engine.module';
 import { MessagesModule } from '../messages/messages.module';
 import { ComplaintProcessorModule } from '../complaint-processor/complaint-processor.module';
+import { AliasEngineModule } from '../alias-engine/alias-engine.module';
 import { OrderValidatorService } from '../ai/conversation/validator/validator';
 import { SupabaseService } from '../common/supabase.client';
 
@@ -18,7 +19,7 @@ import { SupabaseService } from '../common/supabase.client';
  * AuthService @Global olduğu için ayrıca import gerekmez.
  */
 @Module({
-  imports: [OrderEngineModule, PromptEngineModule, MessagesModule, ComplaintProcessorModule],
+  imports: [OrderEngineModule, PromptEngineModule, MessagesModule, ComplaintProcessorModule, AliasEngineModule],
   controllers: [OrderAiDevController, OrderAiPreviewController, OrderAiAgentController],
   providers: [OrderAiToolsService, OrderAiGateway, OrderAiVoicePreviewService, OrderValidatorService, SupabaseService],
   exports: [OrderAiToolsService],

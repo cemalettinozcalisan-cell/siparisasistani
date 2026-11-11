@@ -60,6 +60,7 @@ export class SalesCoachComponent {
       '   "Oncelikle size hitap edebilmem icin adinizi ve soyadinizi ogrenebilir miyim?"',
       '   Sadece isim verirse (orn: "Cem") → "Soyadinizi da ogrenebilir miyim?" diye ek sor.',
       '   "Memnun oldum [isim] Bey/Hanim. Buyurun sizi dinliyorum." → ORDERING',
+      '   Alternatifler: "Tabii efendim, memnuniyetle yardımcı olayım." / "Tabii [isim] Bey/Hanım, memnuniyetle yardımcı olayım." / "Buyurun efendim, memnuniyetle yardımcı olayım."',
       '',
       '3. ORDERING: Urunleri ve miktarlari ogren. "2 tane" derse netlestir (kg mi adet mi?).',
       '   → SUMMARIZING',

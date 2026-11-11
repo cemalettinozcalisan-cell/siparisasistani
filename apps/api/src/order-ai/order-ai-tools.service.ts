@@ -8,6 +8,7 @@ import { OrderValidatorService } from '../ai/conversation/validator/validator';
 import { OutboundService } from '../messages/outbound.service';
 import { ComplaintProcessorService } from '../complaint-processor/complaint-processor.service';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
+import { AliasEngineService } from '../alias-engine/alias-engine.service';
 import { AiOrderInput, PaymentMethod } from '@siparis/types';
 
 /**
@@ -120,6 +121,7 @@ export class OrderAiToolsService {
     private readonly outbound: OutboundService,
     private readonly complaintProcessor: ComplaintProcessorService,
     private readonly eventBus: EventBusService,
+    private readonly aliasEngine: AliasEngineService,
   ) {}
 
   private key(tenantId: string, sessionId: string) { return `${tenantId}:${sessionId}`; }
@@ -182,11 +184,22 @@ export class OrderAiToolsService {
           return { ok: true, result: { customer: d.customer } };
         }
         case 'add_item': {
-          const product_name = String(args.product_name || args.product || args.name || '').trim();
+          let product_name = String(args.product_name || args.product || args.name || '').trim();
           const quantity = Number(String(args.quantity ?? args.qty ?? 1).replace(/[^\d.,]/g, '').replace(',', '.'));
           const unit = normUnit(args.unit || 'KG');
           if (!product_name) return { ok: false, error: 'ürün adı gerekli' };
           if (!isFinite(quantity) || quantity <= 0) return { ok: false, error: 'miktar pozitif olmalı' };
+          // Sadece "sucuk" denirse çeşit tahmin etme; müşteriye sorulur.
+          const rawKey = normName(product_name);
+          const hasType = /kangal|sap|acısız|acisiz|acılı|acili|normal|dana|parmak|kuzu|ceviz|isot|bahar/.test(rawKey);
+          if (rawKey === 'sucuk' || (rawKey.includes('sucuk') && !hasType)) {
+            return { ok: false, error: 'Sucuk çeşidi belirtilmedi. Müşteriye hangi çeşit olduğunu sor (kangal, sap, acısız veya normal).' };
+          }
+          // Ürün alias'ları: sap/acısız/normal/kangal sucuk -> kanonik ürün (örn. Kangal Sucuk).
+          try {
+            const resolved = await this.aliasEngine.resolve(tenantId, product_name);
+            if (resolved.matched && resolved.confidence >= 85) product_name = resolved.productName;
+          } catch { /* yoksay */ }
           // UPSERT (idempotent): anahtar = normalize ürün adı + birim. Eşleşirse miktarı güncelle,
           // eşleşmezse yeni satır ekle. Böylece toparlanma/retry çift satır oluşturmaz, düzeltmeler doğal çalışır.
           const itemKey = normName(product_name) + '|' + unit;
@@ -259,8 +272,9 @@ export class OrderAiToolsService {
           // H5: Sipariş oluşunca müşteriye özet gönder (WhatsApp → olmazsa SMS). Sadece ilk oluşturmada.
           if (!alreadyCreated) void this.sendOrderSummaryToCustomer(tenantId, d, order);
           // IBAN ise havale bilgilerini telefon görüşmesi sırasında otomatik gönder.
+          const isIban = String(d.payment || '').toLowerCase() === 'iban';
           let paymentInfo: { sent: boolean; channel: string } | null = null;
-          if (!alreadyCreated && String(d.payment || '').toLowerCase() === 'iban') {
+          if (!alreadyCreated && isIban) {
             try {
               const pi = await this.sendPaymentInfo(tenantId, d);
               paymentInfo = { sent: pi.sent, channel: pi.channel };
@@ -271,13 +285,17 @@ export class OrderAiToolsService {
           return {
             ok: true,
             result: {
-              orderNumber: order.order_number,
+              // IBAN'da sipariş numarası dekont onayından önce müşteriye/AI'ya verilmez.
+              orderNumber: isIban ? null : order.order_number,
+              orderNumberDeferred: isIban,
               orderId: order.order_id,
               total: order.total_price,
               status: order.status,
               updated: alreadyCreated,
+              askBirthday: !isIban,
               paymentInfoSent: paymentInfo?.sent ?? null,
               paymentInfoChannel: paymentInfo?.channel ?? null,
+              paymentInfoFallback: isIban && paymentInfo ? !paymentInfo.sent : null,
             },
           };
         }
@@ -364,10 +382,11 @@ export class OrderAiToolsService {
               sent: pi.sent,
               queued: pi.queued,
               channel: pi.channel,
-              to: phone,
+              fallback: !pi.sent,
+              to: this.toIntlPhone(phone),
               message: pi.sent
-                ? 'Havale ve sipariş bilgileri WhatsApp/SMS üzerinden gönderildi.'
-                : 'Havale ve sipariş bilgileri gönderilemedi; kanal yapılandırmasını kontrol edin.',
+                ? 'Havale ve sipariş bilgileri müşteriye iletildi.'
+                : 'Havale ve sipariş bilgileri işletme tarafından iletilecek.',
             },
           };
         }
@@ -792,7 +811,44 @@ export class OrderAiToolsService {
     const phone = String(d.customer.phone || '').replace(/[^\d]/g, '');
     if (!d.order || !phone) return { sent: false, channel: 'none', queued: false };
     const body = await this.buildPaymentMessage(tenantId, d);
-    const result = await this.sendWhatsappThenSms(tenantId, phone, body, d.order.orderId);
+    let templateVars: Record<string, string> | undefined;
+    try {
+      const { data: tenant } = await this.supabase.db
+        .from('tenants')
+        .select('company_name, iban')
+        .eq('id', tenantId)
+        .maybeSingle();
+      templateVars = {
+        '1': d.customer.name || 'Değerli müşterimiz',
+        '2': `${Number(d.order.total || 0).toLocaleString('tr-TR')} TL`,
+        '3': String((tenant as Record<string, unknown> | null)?.iban || '').trim(),
+      };
+    } catch { /* yoksay */ }
+    const result = await this.sendWhatsappThenSms(tenantId, phone, body, d.order.orderId, {
+      name: 'payment_info',
+      variables: templateVars || {},
+    });
+    if (!result.success) {
+      // Müşteriye hata söylenmez; esnaf panelinde manuel gönderim uyarısı oluşur.
+      try {
+        await this.supabase.db.from('activity_logs').insert({
+          tenant_id: tenantId,
+          entity_type: 'order',
+          entity_id: d.order.orderId,
+          event_type: 'PAYMENT_INFO_DELIVERY_FAILED',
+          description: 'Havale bilgileri müşteriye otomatik iletilemedi; manuel gönderim gerekli.',
+          metadata: {
+            orderNumber: d.order.orderNumber,
+            customerPhone: this.toIntlPhone(phone),
+            manualWhatsappUrl: `https://wa.me/${this.toIntlPhone(phone)}?text=${encodeURIComponent(body)}`,
+          },
+          actor_type: 'AI',
+          actor_id: null,
+        });
+      } catch (e) {
+        this.logger.warn(`Panel bildirimi yazılamadı: ${(e as Error).message}`);
+      }
+    }
     return { sent: result.success, channel: result.channel, queued: !result.success };
   }
 
@@ -818,14 +874,56 @@ export class OrderAiToolsService {
     } catch { /* yoksay */ }
   }
 
-  /** WhatsApp önce; başarısızsa SMS (FAZ 1). */
-  private async sendWhatsappThenSms(tenantId: string, to: string, body: string, orderId?: string): Promise<{ success: boolean; channel: string }> {
+  /** Telefon numarasını Meta/SMS'in beklediği TR E.164 formatına çevirir. */
+  private toIntlPhone(value: string): string {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('90') && digits.length === 12) return digits;
+    if (digits.startsWith('0') && digits.length === 11) return '90' + digits.slice(1);
+    if (digits.length === 10) return '90' + digits;
+    return digits;
+  }
+
+  /** WhatsApp önce; 24h/şablon hatasında onaylı şablon; olmazsa SMS (FAZ 1-2). */
+  private async sendWhatsappThenSms(
+    tenantId: string,
+    to: string,
+    body: string,
+    orderId?: string,
+    template?: { name: string; variables: Record<string, string> },
+  ): Promise<{ success: boolean; channel: string }> {
+    const target = this.toIntlPhone(to);
+    if (!target) return { success: false, channel: 'none' };
     try {
-      const wa = await this.outbound.send({ tenantId, channel: 'whatsapp', to, body, orderId });
+      const wa = await this.outbound.send({ tenantId, channel: 'whatsapp', to: target, body, orderId });
       if (wa.success) return { success: true, channel: 'whatsapp' };
     } catch { /* yoksay */ }
+    // 24 saat penceresi kapalıysa onaylı utility şablonu dene.
+    if (template?.name) {
+      try {
+        const { data: tpl } = await this.supabase.db
+          .from('whatsapp_templates')
+          .select('name')
+          .eq('tenant_id', tenantId)
+          .eq('name', template.name)
+          .eq('status', 'approved')
+          .maybeSingle();
+        if (tpl?.name) {
+          const waTpl = await this.outbound.send({
+            tenantId,
+            channel: 'whatsapp',
+            to: target,
+            body,
+            orderId,
+            templateId: template.name,
+            variables: template.variables,
+          });
+          if (waTpl.success) return { success: true, channel: 'whatsapp' };
+        }
+      } catch { /* yoksay */ }
+    }
     try {
-      const sms = await this.outbound.send({ tenantId, channel: 'sms', to, body, orderId });
+      const sms = await this.outbound.send({ tenantId, channel: 'sms', to: target, body, orderId });
       if (sms.success) return { success: true, channel: 'sms' };
     } catch { /* yoksay */ }
     return { success: false, channel: 'none' };
