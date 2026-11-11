@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from './supabase.client';
+import { AliasEngineService } from '../alias-engine/alias-engine.service';
 
 /**
  * Ürün adı → tek kanonik ürün satırı.
@@ -8,7 +9,10 @@ import { SupabaseService } from './supabase.client';
  */
 @Injectable()
 export class ProductLookupService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly aliasEngine: AliasEngineService,
+  ) {}
 
   async listActive(tenantId: string): Promise<Record<string, unknown>[]> {
     const { data } = await this.supabase.db
@@ -36,8 +40,19 @@ export class ProductLookupService {
   }
 
   async findByName(tenantId: string, name: string): Promise<Record<string, unknown> | null> {
-    const clean = String(name || '').trim();
+    let clean = String(name || '').trim();
     if (!clean) return null;
+
+    // "sucuk" tek başına belirsiz: çeşit sorulmalı, varsayılan ürün seçilmemeli.
+    const key = clean.toLocaleLowerCase('tr-TR');
+    const hasType = /kangal|sap|acısız|acisiz|acılı|acili|normal|dana|parmak|kuzu|ceviz|isot|bahar/.test(key);
+    if (key === 'sucuk' || (key.includes('sucuk') && !hasType)) return null;
+
+    // Alias: sap/acısız/normal/kangal sucuk -> kanonik ürün (örn. Kangal Sucuk).
+    try {
+      const resolved = await this.aliasEngine.resolve(tenantId, clean);
+      if (resolved.matched) clean = resolved.productName;
+    } catch { /* yoksay */ }
 
     const { data } = await this.supabase.db
       .from('products')
