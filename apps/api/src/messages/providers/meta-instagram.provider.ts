@@ -5,7 +5,7 @@ import { OutboundChannel, OutboundMessage, OutboundSendResult, OutboundHealth } 
 
 interface MetaInstagramCredentials {
   token: string;
-  pageId: string;
+  igId: string;
 }
 
 /**
@@ -22,19 +22,21 @@ export class MetaInstagramProvider implements OutboundChannel {
     private readonly config: ConfigService,
     private readonly supabase: SupabaseService,
   ) {
-    this.graphUrl = this.config.get<string>('INSTAGRAM_GRAPH_URL', 'https://graph.facebook.com/v19.0');
+    this.graphUrl = this.config.get<string>('INSTAGRAM_GRAPH_URL', 'https://graph.instagram.com/v23.0').replace(/\/+$/, '');
   }
 
   async getCredentials(tenantId: string): Promise<MetaInstagramCredentials | null> {
     const { data } = await this.supabase.db
       .from('api_keys')
-      .select('api_key, api_secret')
+      .select('api_key, api_secret, extra_config')
       .eq('tenant_id', tenantId)
       .eq('provider', 'meta_instagram')
       .maybeSingle();
 
     if (!data?.api_key) return null;
-    return { token: data.api_key as string, pageId: (data.api_secret as string) || '' };
+    const extra = (data.extra_config as Record<string, unknown> | null) || {};
+    const igId = String(extra.ig_id || data.api_secret || '').trim();
+    return { token: data.api_key as string, igId };
   }
 
   async isConfigured(tenantId: string): Promise<boolean> {
@@ -49,7 +51,9 @@ export class MetaInstagramProvider implements OutboundChannel {
     if (!message.to) return { success: false, error: 'Instagram hedef yok' };
 
     try {
-      const response = await fetch(`${this.graphUrl}/me/messages`, {
+      // Instagram API with Instagram Login: graph.instagram.com, IG user token, /<IG_ID>/messages.
+      const endpoint = creds.igId ? `${this.graphUrl}/${creds.igId}/messages` : `${this.graphUrl}/me/messages`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${creds.token}`,
@@ -61,13 +65,17 @@ export class MetaInstagramProvider implements OutboundChannel {
         }),
       });
 
+      const json = (await response.json().catch(() => ({}))) as {
+        recipient_id?: string;
+        message_id?: string;
+        error?: { message?: string };
+      };
       if (!response.ok) {
-        const json = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
         this.logger.warn(`Meta Instagram send failed: ${json.error?.message || response.statusText}`);
         return { success: false, provider: 'meta_instagram', error: json.error?.message || `HTTP ${response.status}` };
       }
 
-      return { success: true, provider: 'meta_instagram' };
+      return { success: true, provider: 'meta_instagram', providerMessageId: json.message_id };
     } catch (err) {
       this.logger.error(`Meta Instagram send error: ${(err as Error).message}`);
       return { success: false, provider: 'meta_instagram', error: (err as Error).message };

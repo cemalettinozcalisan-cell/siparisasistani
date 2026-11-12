@@ -3,9 +3,10 @@ import { InstagramController } from './instagram.controller';
 import { InstagramService } from './instagram.service';
 import { SupabaseService } from '../common/supabase.client';
 import { AiBrainModule } from '../ai/brain/ai-brain.module';
+import { MessagesModule } from '../messages/messages.module';
 
 @Module({
-  imports: [AiBrainModule],
+  imports: [AiBrainModule, MessagesModule],
   controllers: [InstagramController],
   providers: [InstagramService, SupabaseService],
   exports: [InstagramService],

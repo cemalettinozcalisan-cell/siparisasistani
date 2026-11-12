@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { SupabaseService } from '../common/supabase.client';
 import { AiBrainService } from '../ai/brain/ai-brain.service';
 import { WebhookDedupService } from '../webhook/webhook-dedup.service';
 import { ChannelHealthService } from '../channel-health/channel-health.service';
+import { OutboundService } from '../messages/outbound.service';
+import { OutboundSendResult } from '../messages/outbound-channel.interface';
 import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../common/chat-session';
 
 @Injectable()
@@ -14,12 +17,63 @@ export class InstagramService {
     private readonly brain: AiBrainService,
     private readonly dedup: WebhookDedupService,
     private readonly channelHealth: ChannelHealthService,
+    private readonly outbound: OutboundService,
   ) {}
+
+  private async getTenantConfig(tenantId: string): Promise<{
+    token: string;
+    igId: string;
+    verifyToken: string;
+    appSecret: string;
+  }> {
+    const { data } = await this.supabase.db
+      .from('api_keys')
+      .select('api_key, api_secret, extra_config')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'meta_instagram')
+      .maybeSingle();
+
+    const extra = (data?.extra_config as Record<string, unknown> | null) || {};
+    return {
+      token: String(data?.api_key || ''),
+      igId: String(extra.ig_id || data?.api_secret || '').trim(),
+      verifyToken: String(extra.verify_token || '').trim(),
+      appSecret: String(extra.app_secret || '').trim(),
+    };
+  }
+
+  /** Meta GET webhook doğrulaması: hub.challenge yalnızca tenant'ın verify token'ı ile döner. */
+  async verifyWebhook(tenantId: string, mode: string, token: string, challenge: string): Promise<{ ok: boolean; challenge: string }> {
+    const cfg = await this.getTenantConfig(tenantId);
+    if (!cfg.verifyToken || mode !== 'subscribe' || token !== cfg.verifyToken) {
+      this.logger.warn(`Instagram webhook verification failed for tenant ${tenantId}`);
+      return { ok: false, challenge: '' };
+    }
+    return { ok: true, challenge };
+  }
+
+  /** Meta POST webhook imzası: X-Hub-Signature-256, tenant'ın app secret'ı ile doğrulanır. */
+  async verifySignature(tenantId: string, rawBody: Buffer | string | undefined, signature: string | undefined): Promise<boolean> {
+    if (!rawBody || !signature) return false;
+    const cfg = await this.getTenantConfig(tenantId);
+    if (!cfg.appSecret) return false;
+    const expected = `sha256=${crypto.createHmac('sha256', cfg.appSecret).update(rawBody).digest('hex')}`;
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }
 
   async handleWebhook(tenantId: string, body: Record<string, unknown>) {
     this.logger.log(`Instagram webhook received for tenant ${tenantId}`);
+    const cfg = await this.getTenantConfig(tenantId);
     const entries = body.entry as Record<string, unknown>[] || [];
     for (const entry of entries) {
+      // Tenant izolasyonu: yalnızca bu tenant'a kayıtlı Instagram hesabının event'i işlenir.
+      const entryId = String(entry.id || '').trim();
+      if (!cfg.igId || entryId !== cfg.igId) {
+        this.logger.warn(`Instagram webhook tenant mismatch: tenant=${tenantId} entry=${entryId || '-'} expected=${cfg.igId || '-'}`);
+        continue;
+      }
       const messaging = entry.messaging as Record<string, unknown>[] || [];
       for (const event of messaging) {
         const sender = event.sender as Record<string, unknown>;
@@ -97,8 +151,7 @@ export class InstagramService {
           if (isNewSession && !resetCommand) {
             try {
               welcomeBody = await this.brain.buildTextWelcome(tenantId);
-              await this.saveMessage(conv.id, tenantId, 'outgoing', welcomeBody);
-              await this.sendMessage(conv.id, tenantId, welcomeBody);
+              await this.sendMessage(conv.id, tenantId, welcomeBody, igUserId);
             } catch (e) {
               this.logger.warn(`Instagram KVKK/karşılama gönderilemedi: ${(e as Error).message}`);
             }
@@ -159,8 +212,7 @@ export class InstagramService {
               })
               .eq('id', effectiveSessionId);
 
-            await this.saveMessage(conv.id, tenantId, 'outgoing', aiReply);
-            await this.sendMessage(conv.id, tenantId, aiReply);
+            await this.sendMessage(conv.id, tenantId, aiReply, igUserId);
 
             this.logger.log(`Instagram DM reply sent to ${username}: ${aiReply.substring(0, 80)}`);
             await this.channelHealth.record(tenantId, 'instagram', true);
@@ -203,9 +255,37 @@ export class InstagramService {
     });
   }
 
-  async sendMessage(conversationId: string, tenantId: string, text: string) {
+  async sendMessage(conversationId: string, tenantId: string, text: string, to?: string): Promise<OutboundSendResult> {
+    let igUserId = String(to || '').trim();
+    if (!igUserId) {
+      const { data } = await this.supabase.db
+        .from('instagram_conversations')
+        .select('instagram_user_id')
+        .eq('tenant_id', tenantId)
+        .eq('id', conversationId)
+        .maybeSingle();
+      igUserId = String((data as Record<string, unknown> | null)?.instagram_user_id || '').trim();
+    }
+
+    // Tek kayıt: mesajı burada kaydet, çağıran taraflar tekrar kaydetmesin.
     await this.saveMessage(conversationId, tenantId, 'outgoing', text);
-    // Not: Meta Graph API entegrasyonu canlı ortamda yapılandırılmalı
-    this.logger.log(`Instagram DM out: conv=${conversationId}, text=${text.substring(0, 80)}`);
+
+    if (!igUserId) {
+      this.logger.warn(`Instagram DM hedef IGSID bulunamadı: conv=${conversationId}`);
+      return { success: false, provider: 'meta_instagram', error: 'INSTAGRAM_RECIPIENT_MISSING' };
+    }
+
+    const result = await this.outbound.send({
+      tenantId,
+      channel: 'instagram',
+      to: igUserId,
+      body: text,
+    });
+    if (result.success) {
+      this.logger.log(`Instagram DM out: conv=${conversationId}, to=${igUserId}, text=${text.substring(0, 80)}`);
+    } else {
+      this.logger.warn(`Instagram DM gönderilemedi: conv=${conversationId}, error=${result.error}`);
+    }
+    return result;
   }
 }

@@ -26,7 +26,7 @@ async function bootstrap() {
     console.warn('SENTRY_DSN not configured - crash monitoring disabled');
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api');
   app.enableCors({
