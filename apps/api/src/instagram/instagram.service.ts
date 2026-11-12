@@ -77,11 +77,34 @@ export class InstagramService {
       const messaging = entry.messaging as Record<string, unknown>[] || [];
       for (const event of messaging) {
         const sender = event.sender as Record<string, unknown>;
-        const message = event.message as Record<string, unknown>;
-        if (!sender || !message) continue;
+        const message = event.message as Record<string, unknown> | undefined;
+        const postback = event.postback as Record<string, unknown> | undefined;
+        if (!sender || (!message && !postback)) continue;
+        // Sayfanın kendi gönderdiği mesajlar (echo) müşteri mesajı değildir.
+        if (message && (message as Record<string, unknown>).is_echo) continue;
+
+        const attachments = Array.isArray((message as Record<string, unknown> | undefined)?.attachments)
+          ? ((message as Record<string, unknown>).attachments as Record<string, unknown>[])
+          : [];
+        const firstAttachment = attachments[0] || {};
+        const attachmentType = String((firstAttachment.payload as Record<string, unknown> | undefined)?.type || '');
+        const attachmentUrl = String((firstAttachment.payload as Record<string, unknown> | undefined)?.url || '');
+        const quickReply = (message as Record<string, unknown> | undefined)?.quick_reply as Record<string, unknown> | undefined;
+        const text = String(
+          (message as Record<string, unknown> | undefined)?.text ||
+          quickReply?.payload ||
+          postback?.title ||
+          postback?.payload ||
+          '',
+        ).trim();
+        if (!text && attachments.length === 0) continue;
 
         // Idempotency: Meta aynı mesajı retry ederse çift işleme engelle
-        const messageId = String((message as any).mid || '');
+        const messageId = String(
+          (message as Record<string, unknown> | undefined)?.mid ||
+          postback?.mid ||
+          `${sender.id}:${event.timestamp || ''}`,
+        );
         if (messageId) {
           const isDuplicate = await this.dedup.claim(tenantId, 'instagram', messageId);
           if (isDuplicate) {
@@ -91,14 +114,14 @@ export class InstagramService {
         }
 
         const igUserId = String(sender.id);
-        const text = String(message.text || '');
         const username = String((sender as any).name || igUserId);
+        const inboundBody = `${text || '[GÖRSEL]'}${attachmentUrl ? ` (${attachmentUrl})` : ''}`;
 
         // Find or create conversation
         const conv = await this.findOrCreateConversation(tenantId, igUserId, username);
 
         // Save incoming message
-        await this.saveMessage(conv.id, tenantId, 'incoming', text);
+        await this.saveMessage(conv.id, tenantId, 'incoming', inboundBody);
 
         // Faz 3.3: Route to AI Brain for response
         try {
@@ -106,7 +129,7 @@ export class InstagramService {
           const run = (windowColumn: 'updated_at' | 'created_at') =>
             this.supabase.db
               .from('conversation_sessions')
-              .select('id, messages')
+              .select('id, messages, order_id')
               .eq('tenant_id', tenantId)
               .eq('phone', igUserId)
               .eq('channel', 'instagram')
@@ -147,6 +170,21 @@ export class InstagramService {
           }
 
           const resetCommand = isResetCommand(text);
+          // Görsel attachment'ı, bekleyen IBAN siparişi varsa dekont olarak işle.
+          let effectiveText = text || (attachments.length > 0 ? '[GÖRSEL]' : '');
+          const sessionOrderId = String(((session?.[0] as Record<string, unknown> | undefined)?.order_id) || '').trim();
+          if (sessionOrderId && attachments.length > 0 && (attachmentType === 'image' || !attachmentType)) {
+            try {
+              const { data: orderRow } = await this.supabase.db
+                .from('orders')
+                .select('payment_status')
+                .eq('id', sessionOrderId)
+                .maybeSingle();
+              if (String((orderRow as Record<string, unknown> | null)?.payment_status || '') === 'awaiting_dekont') {
+                effectiveText = 'dekont gönderdim';
+              }
+            } catch { /* yoksay */ }
+          }
           let welcomeBody = '';
           if (isNewSession && !resetCommand) {
             try {
@@ -157,11 +195,13 @@ export class InstagramService {
             }
           }
 
-          history.push({ role: 'customer', content: text });
+          history.push({ role: 'customer', content: effectiveText });
 
           const result = await this.brain.process({
             tenantId,
-            phone: igUserId,
+            // Instagram'da oturum kimliği IGSID'dir; gerçek telefon sipariş sırasında ayrıca toplanır.
+            phone: '',
+            channelUserId: igUserId,
             sessionId,
             messages: history.map((m) => ({
               role: m.role === 'customer' || m.role === 'user' ? 'user' : 'assistant',

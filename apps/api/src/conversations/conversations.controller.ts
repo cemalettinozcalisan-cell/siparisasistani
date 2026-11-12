@@ -32,6 +32,55 @@ export class ConversationsController {
   @Get('detail/:tenantId/:sessionId')
   async detail(@Param('tenantId') tenantId: string, @Param('sessionId') sessionId: string) {
     try {
+      // Instagram sohbetleri instagram_conversations/instagram_messages üzerinden gösterilir.
+      if (sessionId.startsWith('ig-')) {
+        const igConvId = sessionId.slice(3);
+        const { data: igConv } = await this.supabase.db
+          .from('instagram_conversations')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('id', igConvId)
+          .maybeSingle();
+        if (!igConv) return { session: null, recording: null, transcript: [], whatsappMessages: [] };
+
+        const { data: igMessages } = await this.supabase.db
+          .from('instagram_messages')
+          .select('id, direction, body, created_at')
+          .eq('tenant_id', tenantId)
+          .eq('conversation_id', igConvId)
+          .order('created_at', { ascending: true })
+          .limit(500);
+
+        const messages = ((igMessages || []) as Record<string, unknown>[]).map((m) => ({
+          id: String(m.id || ''),
+          direction: String(m.direction || ''),
+          body: String(m.body || ''),
+          mediaUrl: undefined,
+          createdAt: String(m.created_at || ''),
+        }));
+        const conv = igConv as Record<string, unknown>;
+
+        return {
+          session: {
+            id: sessionId,
+            channel: 'instagram',
+            phone: String(conv.instagram_user_id || ''),
+            username: String(conv.username || ''),
+            status: String(conv.status || 'active'),
+            session_label: String(conv.username || ''),
+            created_at: conv.created_at,
+          },
+          recording: null,
+          transcript: messages.map((m) => ({
+            user_message: m.direction === 'incoming' ? m.body : '',
+            raw_response: m.direction === 'outgoing' ? m.body : '',
+            confidence: 0,
+            created_at: m.createdAt,
+          })),
+          whatsappMessages: messages,
+        };
+      }
+
       const { data: session } = await this.supabase.db
         .from('conversation_sessions')
         .select('*, messages, session_data')

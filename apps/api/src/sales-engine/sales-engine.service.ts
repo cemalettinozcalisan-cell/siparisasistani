@@ -45,8 +45,11 @@ export class SalesEngineService {
       for (const row of (sessions || []) as Record<string, unknown>[]) {
         const sessionId = String(row.id || '');
         const tenantId = String(row.tenant_id || '');
-        const phone = this.normalizePhone(String(row.phone || ''));
         const channel = String(row.channel || '');
+        // Instagram'da phone alanı IGSID'dir; telefon normalizasyonu uygulanmaz.
+        const phone = channel === 'instagram'
+          ? String(row.phone || '').trim()
+          : this.normalizePhone(String(row.phone || ''));
         if (!sessionId || !tenantId || !phone) continue;
         if (!['whatsapp', 'sms', 'phone', 'instagram'].includes(channel)) continue;
 
@@ -166,6 +169,7 @@ export class SalesEngineService {
           phone,
           body,
           sessionId,
+          channel,
           reminder: 'incomplete_order',
           stage,
         });
@@ -236,12 +240,16 @@ export class SalesEngineService {
           'Havaleyi yaptıysanız dekontu ileterek siparişinizi oluşturabiliriz.',
         ].join(' ');
 
-        const sessionId = await this.findLatestSessionId(tenantId, phone, 'whatsapp');
+        const session = await this.findSessionForOrder(tenantId, String(row.id));
+        const channel = String(session?.channel || 'whatsapp');
+        const targetPhone = channel === 'instagram' ? String(session?.phone || '') : phone;
+        const sessionId = session?.id;
         const sent = await this.sendSystemMessage({
           tenantId,
-          phone,
+          phone: targetPhone || phone,
           body,
           sessionId,
+          channel,
           orderId: String(row.id),
           reminder: 'dekont_reminder',
         });
@@ -570,6 +578,30 @@ export class SalesEngineService {
     }
   }
 
+  private async findSessionForOrder(
+    tenantId: string,
+    orderId: string,
+  ): Promise<{ id: string; phone: string; channel: string } | undefined> {
+    try {
+      const { data } = await this.supabase.db
+        .from('conversation_sessions')
+        .select('id, phone, channel')
+        .eq('tenant_id', tenantId)
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const row = data?.[0] as Record<string, unknown> | undefined;
+      if (!row) return undefined;
+      return {
+        id: String(row.id || ''),
+        phone: String(row.phone || ''),
+        channel: String(row.channel || ''),
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
   private async findLatestSessionId(
     tenantId: string,
     phone: string,
@@ -600,39 +632,56 @@ export class SalesEngineService {
     phone: string;
     body: string;
     sessionId?: string;
+    channel?: string;
     orderId?: string;
     reminder: string;
     stage?: number;
   }): Promise<boolean> {
+    const isInstagram = params.channel === 'instagram';
     let conversationId: string | undefined;
     let messageId: string | undefined;
 
     try {
-      conversationId = await this.whatsapp.findOrCreate(params.tenantId, params.phone);
-      messageId = await this.whatsapp.addMessage({
-        tenantId: params.tenantId,
-        conversationId,
-        direction: 'outgoing',
-        body: params.body,
-        status: 'sending',
-      });
+      if (isInstagram) {
+        conversationId = await this.findOrCreateInstagramConversation(params.tenantId, params.phone);
+      } else {
+        conversationId = await this.whatsapp.findOrCreate(params.tenantId, params.phone);
+        messageId = await this.whatsapp.addMessage({
+          tenantId: params.tenantId,
+          conversationId,
+          direction: 'outgoing',
+          body: params.body,
+          status: 'sending',
+        });
+      }
     } catch (e) {
       this.logger.warn(`System message conversation save failed: ${(e as Error).message}`);
     }
 
     let sent = false;
-    let channel: 'whatsapp' | 'sms' = 'whatsapp';
-    try {
-      const wa = await this.outbound.send({
-        tenantId: params.tenantId,
-        channel: 'whatsapp',
-        to: params.phone,
-        body: params.body,
-        orderId: params.orderId,
-      });
-      sent = wa.success;
-    } catch (e) {
-      this.logger.warn(`System WhatsApp send failed: ${(e as Error).message}`);
+    let channel: 'whatsapp' | 'sms' | 'instagram' = isInstagram ? 'instagram' : 'whatsapp';
+    if (isInstagram) {
+      try {
+        if (conversationId) {
+          const ig = await this.instagram.sendMessage(conversationId, params.tenantId, params.body, params.phone);
+          sent = ig.success;
+        }
+      } catch (e) {
+        this.logger.warn(`System Instagram send failed: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        const wa = await this.outbound.send({
+          tenantId: params.tenantId,
+          channel: 'whatsapp',
+          to: params.phone,
+          body: params.body,
+          orderId: params.orderId,
+        });
+        sent = wa.success;
+      } catch (e) {
+        this.logger.warn(`System WhatsApp send failed: ${(e as Error).message}`);
+      }
     }
 
     if (messageId) {
@@ -642,7 +691,7 @@ export class SalesEngineService {
         .eq('id', messageId);
     }
 
-    if (!sent) {
+    if (!sent && !isInstagram) {
       channel = 'sms';
       try {
         const sms = await this.outbound.send({
@@ -690,6 +739,24 @@ export class SalesEngineService {
     }
 
     return sent;
+  }
+
+  private async findOrCreateInstagramConversation(tenantId: string, igUserId: string): Promise<string> {
+    const { data } = await this.supabase.db
+      .from('instagram_conversations')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('instagram_user_id', igUserId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (data?.id) return String(data.id);
+
+    const { data: created } = await this.supabase.db
+      .from('instagram_conversations')
+      .insert({ tenant_id: tenantId, instagram_user_id: igUserId })
+      .select('id')
+      .single();
+    return String(created?.id || '');
   }
 
   private normalizePhone(value: string): string {

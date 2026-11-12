@@ -19,6 +19,8 @@ export interface BrainInput {
   channel: 'phone' | 'whatsapp' | 'sms' | 'instagram';
   channelSource?: string;
   phone: string;
+  /** Instagram/kanal kimliği (örn. IGSID). Oturum anahtarı olarak kullanılır; gerçek telefon değildir. */
+  channelUserId?: string;
   messages: { role: string; content: string }[];
   sessionId?: string;
   language?: string;
@@ -86,6 +88,7 @@ export class AiBrainService {
   async process(input: BrainInput): Promise<BrainOutput> {
     const start = Date.now();
     let sessionId = input.sessionId;
+    const sessionPhone = input.channelUserId || input.phone;
     const lastMessage = input.messages[input.messages.length - 1]?.content || '';
 
     const settings = await this.getSettings(input.tenantId);
@@ -118,7 +121,7 @@ export class AiBrainService {
 
     // Step 4: Session Management
     if (!sessionId) {
-      sessionId = await this.createSession(input.tenantId, input.channel, input.phone, input.channelSource);
+      sessionId = await this.createSession(input.tenantId, input.channel, sessionPhone, input.channelSource);
     }
 
     // "Yeni sipariş / sıfırla / baştan" komutu: yeni ve temiz bir oturum aç,
@@ -129,7 +132,7 @@ export class AiBrainService {
       const newSessionId = await this.createSession(
         input.tenantId,
         input.channel,
-        input.phone,
+        sessionPhone,
         input.channelSource,
       );
       if (skipMemory) {
@@ -148,7 +151,7 @@ export class AiBrainService {
           ended_at: new Date().toISOString(),
         })
         .eq('tenant_id', input.tenantId)
-        .eq('phone', input.phone)
+        .eq('phone', sessionPhone)
         .eq('channel', input.channel)
         .eq('status', 'active')
         .neq('id', newSessionId);

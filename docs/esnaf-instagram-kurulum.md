@@ -141,3 +141,28 @@ Content-Type: application/json
 - **Recipient missing:** webhook'tan gelen IGSID bulunamadı.
 - **Token/permission:** Instagram User token geçersiz veya mesaj izni yok.
 - **Pencere kapalı:** müşteri konuşmayı başlatmamış; standart pencere dışında gönderim reddedilir.
+
+## 11. IGSID ve gerçek telefon
+- **IGSID**: Instagram kullanıcısının o Meta app’e özel kimliğidir; telefon değildir, kullanıcı adı değildir.
+- Instagram oturumu/outbound için IGSID kullanılır.
+- Sipariş, kargo, SMS ve telefon için müşterinin verdiği **gerçek telefon** kullanılır.
+- AI, Instagram’da gerçek telefonu ayrıca sorar; IGSID sipariş telefonu olarak yazılmaz.
+- Instagram hatırlatmaları IGSID’e Instagram üzerinden gider; SMS/telefon yalnızca gerçek telefon varsa çalışır.
+
+## 12. Token yenileme
+- Instagram User access token ~60 gün geçerlidir.
+- `InstagramTokenRefreshService` günlük çalışır; süresi yaklaşan token’ı `refresh_access_token` ile yeniler.
+- Yenilenen token ve `expires_at` tenant’ın `api_keys.meta_instagram` kaydına yazılır.
+- Refresh sırasında hata olursa panel/log üzerinden takip edilmelidir.
+
+## 13. Quick reply / postback
+- Webhook yalnızca `messages` değil, `postback` ve `quick_reply` payload’larını da işler.
+- Buton/hızlı yanıt kullanılırsa gelen değer AI’ya metin olarak iletilir.
+- `delivery` ve `read` event’leri mesaj olarak işlenmez.
+- Sayfanın kendi mesajları (`is_echo`) müşteri mesajı sayılmaz.
+
+## 14. App review / Advanced Access
+- Her esnaf kendi Meta app’ini kullanır.
+- Yalnızca kendi hesabını yöneten app’lerde Standard Access genellikle yeterlidir.
+- Başka hesaplara hizmet verilecekse `instagram_manage_messages` için Advanced Access ve app review gerekir.
+- Canlıya geçmeden önce izinler, işletme doğrulaması ve 24 saat/human agent penceresi kontrol edilir.
