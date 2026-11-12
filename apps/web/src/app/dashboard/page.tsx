@@ -362,8 +362,10 @@ export default function DashboardPage() {
     loadDashboard();
     const onRefresh = () => { void loadDashboard(); };
     window.addEventListener('data-refresh', onRefresh);
-    // Tarayıcı-bağımsız yedek: SSE çalışmasa bile en geç 12 sn'de güncellenir
-    const iv = setInterval(() => { void loadDashboard(); }, 12000);
+    // Tarayıcı-bağımsız yedek: SSE çalışmasa bile en geç 60 sn'de güncellenir.
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') void loadDashboard();
+    }, 60000);
     return () => { window.removeEventListener('data-refresh', onRefresh); clearInterval(iv); };
   }, []);
 

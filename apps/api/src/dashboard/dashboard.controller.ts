@@ -24,7 +24,8 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       const [orders, customers, payments, conversations] = await Promise.all([
         this.supabase.db
           .from('orders')
-          .select('*, customer_name, customer_phone, customer_address, customer_city, customer_district, customer:customer_id(name, phone, city, address, identity_number), items:order_items(product_name, quantity, unit, unit_price)')
+          // Dashboard icin gerekli kolonlar; items/customer detaylari ayrica ve sadece modal listeleri icin cekilir.
+          .select('id, order_number, total_price, status, channel, source, payment_method, payment_status, cargo_company, tracking_number, cargo_status, created_at, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city, address, identity_number)')
           .eq('tenant_id', tenantId),
         this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId),
         this.supabase.db.from('payments').select('amount, status, created_at').eq('tenant_id', tenantId).eq('status', 'paid'),
@@ -70,7 +71,7 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       let data = this.computeStats(allOrders, customers.data || [], payments.data || [], conversations.data || [], complaints, todayIso, websiteEnabled);
       const DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
       if (!hasRealOrders && (tenantId === DEMO_TENANT_ID || String(tenantId).startsWith('demo'))) data = this.getMockStats();
-
+      await this.attachOrderItems(data);
       return data;
     }
 
@@ -279,6 +280,47 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
         completed: orders.filter((o) => normalizeStatus(o.status) === 'DELIVERED' || normalizeStatus(o.status) === 'COMPLETED').length,
       },
     };
+  }
+
+  /** Dashboard modal listeleri icin siparis kalemlerini yalnizca gerekli order_id'lerle ceker. */
+  private async attachOrderItems(data: Record<string, any>): Promise<void> {
+    const lists = [data.todayOrdersList, data.cargoTrackingList, data.cargoDeliveredList]
+      .filter(Array.isArray) as Record<string, any>[][];
+    if (!lists.length) return;
+
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const ids = Array.from(new Set(
+      lists.flat().map((o) => String(o?.id || '')).filter((id) => uuidRe.test(id)),
+    ));
+    if (!ids.length) return;
+
+    try {
+      const { data: rows } = await this.supabase.db
+        .from('order_items')
+        .select('order_id, product_name, quantity, unit, unit_price')
+        .in('order_id', ids);
+      const byOrder = new Map<string, Record<string, unknown>[]>();
+      for (const row of rows || []) {
+        const id = String((row as Record<string, unknown>).order_id || '');
+        if (!id) continue;
+        const list = byOrder.get(id) || [];
+        const qty = Number((row as Record<string, unknown>).quantity || 0);
+        const price = Number((row as Record<string, unknown>).unit_price || 0);
+        list.push({
+          product_name: (row as Record<string, unknown>).product_name,
+          quantity: (row as Record<string, unknown>).quantity,
+          unit: (row as Record<string, unknown>).unit,
+          unit_price: (row as Record<string, unknown>).unit_price,
+          total: qty * price,
+        });
+        byOrder.set(id, list);
+      }
+      for (const list of lists) {
+        for (const order of list) order.items = byOrder.get(String(order.id)) || [];
+      }
+    } catch {
+      // Dashboard calismaya devam etsin; kalemler bos kalabilir.
+    }
   }
 
   private mapOrder(o: Record<string, any>) {
