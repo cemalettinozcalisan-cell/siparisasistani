@@ -36,11 +36,13 @@ export class ProductCatalogComponent {
       if (minOrder > 0) line += ` [Min. Sipariş: ${minOrder} ${saleTypes[0]}]`;
       if (category) line += ` (${category})`;
 
-      if (variableWeight && saleTypes.includes('SAP')) {
-        const avg = p['avg_weight_gr'];
-        const minW = p['min_weight_gr'];
-        const maxW = p['max_weight_gr'];
-        line += ` [Değişken ağırlıklı ürün: sap başına ~${avg || '?'}gr (${minW || '?'}-${maxW || '?'}gr arası)]`;
+      if (saleTypes.includes('SAP')) {
+        const avg = Number(p['avg_weight_gr']) || 0;
+        const minW = Number(p['min_weight_gr']) || 0;
+        const maxW = Number(p['max_weight_gr']) || 0;
+        if (avg || minW || maxW) {
+          line += ` [Değişken ağırlıklı ürün: sap başına ~${avg || '?'}gr (${minW || '?'}-${maxW || '?'}gr arası)]`;
+        }
       }
 
       if (aiRules) {
@@ -68,6 +70,8 @@ export class ProductCatalogComponent {
     lines.push('- Ürün bilgisi verirken SADECE ürün adı + fiyat olarak paylaş. Link, URL, web adresi, görsel, QR veya sayfa bağlantısı KESİNLİKLE paylaşMA.');
     lines.push('- Her ürünün birden çok satış tipi olabilir. Müşterinin söylediği birime göre satış tipini belirle.');
 
+    lines.push('- KG/ADET/KOLI/TEPSI/PALET: toplam KESIN; "yaklasik" deme.');
+    lines.push('- SAP: panelde avg/min/max gramaj varsa ortalama/tahmini fiyat; yoksa tutar soyleme, kesin tutar tartimdan sonra.');
     return lines.join('\n');
   }
 

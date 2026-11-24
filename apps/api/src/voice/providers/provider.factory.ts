@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { VoiceProvider, VoiceHealthStatus } from './voice-provider.interface';
 import { ElevenLabsProvider } from './elevenlabs.provider';
 import { OpenAiTtsProvider } from './openai-tts.provider';
+import { FishAudioProvider } from './fishaudio.provider';
 
 @Injectable()
 export class VoiceProviderFactory {
@@ -15,6 +16,7 @@ export class VoiceProviderFactory {
   constructor(private config: ConfigService) {
     this.register('elevenlabs', new ElevenLabsProvider(config));
     this.register('openai', new OpenAiTtsProvider(config));
+    this.register('fishaudio', new FishAudioProvider(config));
 
     this.primaryProviderName = this.config.get<string>('VOICE_PRIMARY_PROVIDER', 'elevenlabs');
     this.fallbackProviderName = this.config.get<string>('VOICE_FALLBACK_PROVIDER', 'openai');

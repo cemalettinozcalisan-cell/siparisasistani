@@ -53,34 +53,62 @@ function resolvePlayback(v: boolean) {
   if (playbackResolve) { const r = playbackResolve; playbackResolve = null; r(v); }
 }
 
+export async function playUrlAndWait(url: string): Promise<boolean> {
+  stopPlayback();
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    const audio = new Audio(url);
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (activeAudio === audio) activeAudio = null;
+      if (playbackResolve === finish) playbackResolve = null;
+      resolve(ok);
+    };
+    audio.preload = 'auto';
+    audio.volume = 1;
+    audio.onended = () => finish(true);
+    audio.onerror = () => finish(false);
+    activeAudio = audio;
+    playbackResolve = finish;
+    audio.play().catch(() => finish(false));
+  });
+}
+
 /** URL'deki sesi çalar. Başarı = true. */
 export async function playUrl(url: string): Promise<boolean> {
-  // 1) Web Audio (autoplay-safe, click ile unlocked)
-  if (ctx) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const buf = await res.arrayBuffer();
-        const audioBuf = await ctx.decodeAudioData(buf);
-        const src = ctx.createBufferSource();
-        src.buffer = audioBuf;
-        src.connect(ctx.destination);
-        activeSrc = src;
-        src.onended = () => { if (activeSrc === src) activeSrc = null; resolvePlayback(true); };
-        src.start(0);
-        return new Promise<boolean>((resolve) => { playbackResolve = resolve; });
-      }
-    } catch {
-      /* audio elementine düş */
-    }
-  }
-  // 2) Fallback: <audio>
+  // 1) <audio> — kullanıcı jestinden sonra en güvenilir oynatma yolu
   try {
     const a = new Audio(url);
+    a.preload = 'auto';
+    a.volume = 1;
     activeAudio = a;
     await a.play();
     return true;
   } catch {
-    return false;
+    /* Web Audio'ya düş */
   }
+  // 2) Fallback: Web Audio
+  if (ctx) {
+    try {
+      if (ctx.state !== 'running') await ctx.resume();
+      if (ctx.state === 'running') {
+        const res = await fetch(url);
+        if (res.ok) {
+          const buf = await res.arrayBuffer();
+          const audioBuf = await ctx.decodeAudioData(buf);
+          const src = ctx.createBufferSource();
+          src.buffer = audioBuf;
+          src.connect(ctx.destination);
+          activeSrc = src;
+          src.onended = () => { if (activeSrc === src) activeSrc = null; resolvePlayback(true); };
+          src.start(0);
+          return new Promise<boolean>((resolve) => { playbackResolve = resolve; });
+        }
+      }
+    } catch {
+      /* sessiz */
+    }
+  }
+  return false;
 }

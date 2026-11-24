@@ -26,8 +26,8 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
           .from('orders')
           // Dashboard icin gerekli kolonlar; items/customer detaylari ayrica ve sadece modal listeleri icin cekilir.
           .select('id, order_number, total_price, status, channel, source, payment_method, payment_status, cargo_company, tracking_number, cargo_status, created_at, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city, address, identity_number)')
-          .eq('tenant_id', tenantId),
-        this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId),
+          .eq('tenant_id', tenantId).is('deleted_at', null),
+        this.supabase.db.from('customers').select('id, created_at').eq('tenant_id', tenantId).is('deleted_at', null),
         this.supabase.db.from('payments').select('amount, status, created_at').eq('tenant_id', tenantId).eq('status', 'paid'),
         this.supabase.db
           .from('conversation_sessions')
@@ -95,6 +95,7 @@ const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'completed', 'CANCELLED', 
       const { data: custRows } = await this.supabase.db
         .from('customers')
         .select('phone, name, city, address')
+        .eq('tenant_id', tenantId).is('deleted_at', null)
         .in('phone', phones);
       for (const row of custRows || []) {
         customerIndex[String((row as any).phone)] = row as Record<string, unknown>;

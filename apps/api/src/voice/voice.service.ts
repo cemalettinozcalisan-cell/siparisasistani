@@ -37,11 +37,12 @@ export class VoiceService {
   async generateSpeech(text: string, tenantId?: string, language?: string): Promise<GenerateSpeechResult> {
     const settings = tenantId ? await this.getVoiceSettings(tenantId) : null;
     const persona = settings?.voicePersona || 'zeynep';
-    const providerName = settings?.voiceProvider || this.factory.listProviders()[0];
+    const providerName = settings?.voicePersonaData?.provider || settings?.voiceProvider || this.factory.listProviders()[0];
+    const speed = Number(settings?.voicePersonaData?.speed ?? settings?.speed ?? 1.0);
 
     const config: VoiceConfig = {
       persona,
-      speed: settings?.speed ?? 1.0,
+      speed,
       stability: settings?.stability ?? 0.5,
       style: settings?.style ?? 0.5,
       similarity: settings?.similarity ?? 0.75,
@@ -54,7 +55,7 @@ export class VoiceService {
     // SSML wrapping for natural speech (adds pauses and prosody).
     // ElevenLabs SSML desteklemez; SSML gönderilirse "Çankaya" gibi Türkçe
     // kelimeler ve duraklamalar bozuluyor. Sadece destekleyen sağlayıcılarda kullan.
-    const supportsSsml = providerName !== 'elevenlabs';
+    const supportsSsml = providerName !== 'elevenlabs' && providerName !== 'fishaudio';
     const withSSML = settings?.voice_gender && supportsSsml ? this.wrapSSML(normalized) : normalized;
 
     const hashKey = this.cache.hashKey(withSSML, persona);
@@ -122,12 +123,13 @@ export class VoiceService {
   private async getVoiceSettings(tenantId: string) {
     const { data } = await this.supabase.db
       .from('tenant_settings')
-      .select('voice_provider, voice_persona, voice_speed, voice_stability, voice_style, voice_similarity, voice_pitch, voice_cache_enabled, voice_fallback_enabled, voice_gender')
+      .select('voice_provider, voice_persona, voice_persona_data, voice_speed, voice_stability, voice_style, voice_similarity, voice_pitch, voice_cache_enabled, voice_fallback_enabled, voice_gender')
       .eq('tenant_id', tenantId)
       .single();
     return data ? {
       voiceProvider: data.voice_provider || 'elevenlabs',
       voicePersona: data.voice_persona || 'zeynep',
+      voicePersonaData: (data.voice_persona_data || null) as { provider?: string; voiceId?: string; speed?: number } | null,
       speed: Number(data.voice_speed) || 1.0,
       stability: Number(data.voice_stability) ?? 0.5,
       style: Number(data.voice_style) ?? 0.5,

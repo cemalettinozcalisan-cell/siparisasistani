@@ -7,6 +7,7 @@ import { AuthService } from '../auth/auth.service';
 import { PromptEngineService } from '../ai/prompt-engine/prompt-engine.service';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderAiToolsService } from './order-ai-tools.service';
+import { RealtimeGateway } from '../ai-employee/realtime.gateway';
 
 /**
  * F1: Sipariş AI — Gemini Live realtime (İZOLE).
@@ -24,7 +25,7 @@ const ORDER_TOOL: any = {
     'Musteri siparis islemleri. Siparis alirken SIRAYLA cagir: ' +
     'set_customer {name, phone} (musteri adi/telefonu), ' +
     'add_item {product_name, quantity, unit} (her urun icin; unit: KG|ADET|KOLI|TEPSI), ' +
-    'set_address {address, city} (teslimat adresi), ' +
+    'set_address {address, city, district} (teslimat adresi; il ve ilçe zorunlu), ' +
     'set_payment {payment} (iban|website|paytr|iyzico|cash_on_delivery|kapida_kart), ' +
     'set_invoice {company_name, tax_number} (fatura icin firma adi/vergi no), ' +
     'confirm_order {} (musteri ACIKCA onaylayinca), ' +
@@ -56,6 +57,7 @@ export class OrderAiGateway implements OnApplicationBootstrap {
     private readonly promptEngine: PromptEngineService,
     private readonly supabase: SupabaseService,
     private readonly tools: OrderAiToolsService,
+    private readonly aiEmployeeRealtime: RealtimeGateway,
   ) {}
 
   onApplicationBootstrap() {
@@ -73,11 +75,15 @@ export class OrderAiGateway implements OnApplicationBootstrap {
       server.removeAllListeners('upgrade');
       server.on('upgrade', (req: any, socket: any, head: any) => {
         const pathname = String(req.url || '').split('?')[0];
+        if (pathname === '/api/ai-employee/realtime') {
+          this.aiEmployeeRealtime.handleUpgrade(req, socket, head);
+          return;
+        }
         if (pathname === '/api/order-ai/realtime') {
           this.wss!.handleUpgrade(req, socket, head, (ws) => this.wss!.emit('connection', ws, req));
-        } else {
-          for (const l of prior) { try { l.call(server, req, socket, head); } catch { /* yoksay */ } }
+          return;
         }
+        for (const l of prior) { try { l.call(server, req, socket, head); } catch { /* yoksay */ } }
       });
       this.wss.on('connection', (socket, req) => { void this.handleConnection(socket, req); });
       this.logger.log('Order AI Realtime WS hazir: /api/order-ai/realtime');

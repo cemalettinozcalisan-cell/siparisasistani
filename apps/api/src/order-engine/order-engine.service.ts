@@ -404,20 +404,15 @@ export class OrderEngineService {
     const items: Array<Record<string, unknown>> = await Promise.all(
       products.map(async (p) => {
         const product = await this.productLookup.findByName(tenantId, p.product_name);
-        const unitPrice = this.resolveUnitPrice(
-          product as
-            | { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null }
-            | null,
-          p.quantity,
-        );
+        const line = this.calculateLinePrice(product, p);
         return {
           order_id: orderId,
           product_id: product?.id || null,
           product_name: p.product_name,
           quantity: p.quantity,
           unit: p.unit,
-          unit_price: unitPrice,
-          total: unitPrice * p.quantity,
+          unit_price: line.unitPrice,
+          total: line.total,
         };
       }),
     );
@@ -493,6 +488,37 @@ export class OrderEngineService {
     return base;
   }
 
+  private calculateLinePrice(
+    product: Record<string, unknown> | null,
+    p: AiOrderInput['products'][number],
+  ): { unitPrice: number; total: number; pricing: 'exact' | 'estimated' | 'pending' } {
+    const price = this.resolveUnitPrice(
+      product as
+        | { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null }
+        | null,
+      p.quantity,
+    );
+    const unit = String(p.unit || '').toUpperCase();
+    const isSap = unit === 'SAP';
+
+    if (!isSap) {
+      const total = Math.round(price * p.quantity * 100) / 100;
+      return { unitPrice: price, total, pricing: 'exact' };
+    }
+
+    const avg = Number(product?.avg_weight_gr) || 0;
+    const min = Number(product?.min_weight_gr) || 0;
+    const max = Number(product?.max_weight_gr) || 0;
+    const grams = avg > 0 ? avg : (min > 0 && max > 0 ? (min + max) / 2 : (min || max));
+    if (!grams || !price) {
+      return { unitPrice: 0, total: 0, pricing: 'pending' };
+    }
+
+    const unitPrice = Math.round(price * (grams / 1000) * 100) / 100;
+    const total = Math.round(unitPrice * p.quantity * 100) / 100;
+    return { unitPrice, total, pricing: 'estimated' };
+  }
+
   async calculateTotal(
     input: AiOrderInput,
     tenantId: string,
@@ -501,16 +527,10 @@ export class OrderEngineService {
 
     for (const p of input.products) {
       const product = await this.productLookup.findByName(tenantId, p.product_name);
-      const price = this.resolveUnitPrice(
-        product as
-          | { price?: number | string | null; wholesale_price?: number | string | null; wholesale_min_qty?: number | string | null }
-          | null,
-        p.quantity,
-      );
-      total += price * p.quantity;
+      total += this.calculateLinePrice(product, p).total;
     }
 
-    return total;
+    return Math.round(total * 100) / 100;
   }
 
   private async createNotification(

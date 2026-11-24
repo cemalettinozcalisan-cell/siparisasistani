@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
-import { unlockAudio, playUrl, stopPlayback } from '@/lib/voice-playback';
+import { unlockAudio, playUrlAndWait, stopPlayback } from '@/lib/voice-playback';
 import { createClapDetector } from '@/lib/clap-detect';
 import { openRealtime, createAudioPlayer, primeRealtimeAudio, type RealtimeHandle, type AudioPlayer } from '@/lib/gemini-realtime';
 
@@ -64,15 +64,15 @@ const VAD = {
   speechRms: 0.035,
   sustainMs: 200,
   minSpeechMs: 350,
-  silenceMs: 2000,
+  silenceMs: 1500,
   maxMs: 15000,
-  bargeRms: 0.05,
-  bargeSustainMs: 250,
+  bargeRms: 0.06,
+  bargeSustainMs: 300,
 };
 
 export function AiEmployeeChat() {
   const tid = getTenantId();
-  const [cfg, setCfg] = useState<{ enabled: boolean; wake_enabled: boolean; push_to_talk_enabled: boolean; name: string } | null>(null);
+  const [cfg, setCfg] = useState<{ enabled: boolean; wake_enabled: boolean; push_to_talk_enabled: boolean; name: string; wake_word: string } | null>(null);
   const [sleeping, setSleeping] = useState(true);
   const [listening, setListening] = useState(false); // aktif oturum dinleme
   const [waking, setWaking] = useState(false); // alkış sonrası isim dinliyor
@@ -103,6 +103,9 @@ export function AiEmployeeChat() {
   const recRef = useRef<MediaRecorder | null>(null);
   const recChunksRef = useRef<Blob[]>([]);
   const busyRef = useRef(false); // aynı anda tek kayıt
+  const pttAbortRef = useRef<AbortController | null>(null);
+  const pttBusyRef = useRef(false);
+  const sessionIdRef = useRef<string>(`s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
   const rtHandleRef = useRef<RealtimeHandle | null>(null);
   const rtPlayerRef = useRef<AudioPlayer | null>(null);
   const rtActiveRef = useRef(false);
@@ -117,7 +120,13 @@ export function AiEmployeeChat() {
     fetch(`/api/ai-employee/${tid}`)
       .then((r) => r.json())
       .then((d) => {
-        setCfg({ enabled: !!d.enabled, wake_enabled: !!d.wake_enabled, push_to_talk_enabled: !!d.push_to_talk_enabled, name: String(d.name || 'Bilge') });
+        setCfg({
+          enabled: !!d.enabled,
+          wake_enabled: !!d.wake_enabled,
+          push_to_talk_enabled: !!d.push_to_talk_enabled,
+          name: String(d.name || 'Bilge'),
+          wake_word: String(d.wake_word || d.name || 'Bilge'),
+        });
       })
       .catch(() => {});
     return () => { aliveRef.current = false; stopAll(); };
@@ -232,7 +241,7 @@ export function AiEmployeeChat() {
    * - birikmiş konuşma < minSpeechMs ise gürültü (speech:false) → transcribe edilmez.
    * - sessizlik (silenceMs) gerçek konuşmadan sonra utterance'ı bitirir (duraklamalar korunur).
    */
-  const recordUtterance = (opts: { maxMs?: number; silenceMs?: number; sustainMs?: number; minSpeechMs?: number } = {}): Promise<{ blob: Blob | null; speech: boolean }> => {
+  const recordUtterance = (opts: { maxMs?: number; silenceMs?: number; sustainMs?: number; minSpeechMs?: number; stopSignal?: AbortSignal } = {}): Promise<{ blob: Blob | null; speech: boolean }> => {
     const maxMs = opts.maxMs || VAD.maxMs;
     const silenceMs = opts.silenceMs || VAD.silenceMs;
     const sustainMs = opts.sustainMs || VAD.sustainMs;
@@ -280,6 +289,10 @@ export function AiEmployeeChat() {
             for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
             const rms = Math.sqrt(sum / data.length);
             const now = Date.now();
+            if (opts.stopSignal?.aborted) {
+              finish(isReal(sawSpeech, totalSpeechMs));
+              return;
+            }
             if (rms > VAD.speechRms) {
               // sesli bölge
               if (!segStart) { segStart = now; segSince = now; silenceSince = 0; }
@@ -334,7 +347,8 @@ export function AiEmployeeChat() {
       if (!aliveRef.current) return;
       setWakeDiag(`Tanındı: "${text}"`);
       const name = (cfgRef.current?.name || 'Bilge').toLowerCase();
-      const ww = name.replace(/\s+/g, '');
+      const wake = (cfgRef.current?.wake_word || cfgRef.current?.name || 'Bilge').toLowerCase();
+      const ww = wake.replace(/\s+/g, '');
       const norm = text.toLowerCase().replace(/\s+/g, '');
       if (nameMatches(norm, name, ww)) {
         startSession();
@@ -359,6 +373,11 @@ export function AiEmployeeChat() {
 
   // Gemini Live oturumu — bağlanamazsa B'ye (Whisper+VAD) düşer
   const startRealtime = () => {
+    if (process.env.NEXT_PUBLIC_AI_EMPLOYEE_REALTIME === 'false') {
+      setSessionDiag('');
+      beginListen();
+      return;
+    }
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (!token || !tid) { beginListen(); return; }
     // Bağlanana kadar UI boş kalmasın — gösterge hemen açık
@@ -404,6 +423,10 @@ export function AiEmployeeChat() {
           clearTimeout(fallbackTimer);
           rtHandleRef.current?.close();
           rtHandleRef.current = null;
+          rtPlayerRef.current?.close();
+          rtPlayerRef.current = null;
+          setRtActive(false);
+          setSessionDiag('');
           if (aliveRef.current && sessionOpenRef.current && !processingRef.current) beginListen();
         } else {
           setSessionDiag(`Hata: ${msg}`);
@@ -411,6 +434,16 @@ export function AiEmployeeChat() {
       },
       onClose: () => {
         clearTimeout(fallbackTimer);
+        if (!setupDone) {
+          rtHandleRef.current?.close();
+          rtHandleRef.current = null;
+          rtPlayerRef.current?.close();
+          rtPlayerRef.current = null;
+          setRtActive(false);
+          setSessionDiag('');
+          if (aliveRef.current && sessionOpenRef.current && !processingRef.current) beginListen();
+          return;
+        }
         if (rtActiveRef.current) {
           rtActiveRef.current = false;
           setRtActive(false);
@@ -418,7 +451,7 @@ export function AiEmployeeChat() {
           rtPlayerRef.current = null;
           // Ani kapanış (1006 vb.) → tek seferlik otomatik yeniden bağlanma; olmazsa Whisper'a düş
           if (aliveRef.current && sessionOpenRef.current && !processingRef.current) {
-            if (rtReconnectRef.current < 1 && setupDone) {
+            if (rtReconnectRef.current < 1) {
               rtReconnectRef.current++;
               setSessionDiag('Bağlantı koptu, yeniden bağlanıyor...');
               setTimeout(() => { if (aliveRef.current && sessionOpenRef.current) startRealtime(); }, 600);
@@ -501,7 +534,7 @@ export function AiEmployeeChat() {
     setLastReply(''); setLastPending(false); setSessionDiag(''); setPttActive(false);
   };
 
-  const ask = async (text: string) => {
+  const ask = async (text: string, opts: { resume?: boolean } = {}) => {
     processingRef.current = true;
     setProcessing(true);
     try {
@@ -509,7 +542,7 @@ export function AiEmployeeChat() {
       let rateLimited = false;
       const r = await fetch(`/api/ai-employee/${tid}/conversation`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, sessionId: sessionIdRef.current }),
       }).then(async (res) => {
         const j = await res.json().catch(() => null);
         if (res.ok) return j;
@@ -527,9 +560,8 @@ export function AiEmployeeChat() {
           const res = await playWithBargeIn(sp.audioUrl, reply);
           if (res === '__sleep__') { endSession(); return; }
           if (typeof res === 'string') {
-            // kullanıcı araya girdi → yeni soruyu hemen işle
             setLastText(res);
-            await ask(res);
+            await ask(res, opts);
             return;
           }
         }
@@ -538,8 +570,7 @@ export function AiEmployeeChat() {
     finally {
       processingRef.current = false;
       setProcessing(false);
-      // cevap bittikten sonra dinlemeye geri dön
-      if (aliveRef.current && sessionOpenRef.current) restartTimerRef.current = setTimeout(beginListen, 300);
+      if (opts.resume !== false && aliveRef.current && sessionOpenRef.current) restartTimerRef.current = setTimeout(beginListen, 300);
     }
   };
 
@@ -625,19 +656,63 @@ export function AiEmployeeChat() {
           loop();
         } catch { /* VAD çalışamadı → normal çal */ }
       };
-      playUrl(url).then(() => {
-        if (!done) { done = true; cleanup(); resolve(true); }
+      playUrlAndWait(url).then((ok) => {
+        if (!done) { done = true; cleanup(); resolve(ok); }
       });
-      setTimeout(() => { if (!done) startVad(); }, 400);
+      setTimeout(() => { if (!done) startVad(); }, 600);
     });
   };
 
-  const ptt = () => {
-    if (processing) return;
-    if (pttActive) { setPttActive(false); endSession(); return; } // açıkken → kapat
+  const pttDown = async () => {
+    if (!cfgRef.current?.enabled || !cfgRef.current?.push_to_talk_enabled) return;
+    if (processingRef.current || pttBusyRef.current) return;
     unlockAudio();
-    setPttActive(true);
-    startSession(); // PTT: uyanma gerektirmeyen realtime oturum
+    if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
+    stopClap();
+    stopRealtime();
+    stopMicStream();
+    sessionOpenRef.current = false;
+    setSleeping(false); setListening(true); setMicOn(true); setPttActive(true);
+    setHint(''); setSessionDiag('Dinliyorum...');
+    pttBusyRef.current = true;
+    const ctrl = new AbortController();
+    pttAbortRef.current = ctrl;
+    try {
+      await getMicStream();
+      const { blob, speech } = await recordUtterance({
+        maxMs: 60000, silenceMs: 1500, sustainMs: 200, minSpeechMs: 300, stopSignal: ctrl.signal,
+      });
+      if (!aliveRef.current) return;
+      if (!blob || !speech) {
+        setSessionDiag('Ses algılanmadı');
+        return;
+      }
+      const text = await transcribe(blob);
+      if (!aliveRef.current) return;
+      const t = (text || '').trim();
+      if (!t) {
+        setSessionDiag('Ses anlaşılamadı');
+        return;
+      }
+      setLastText(t);
+      setSessionDiag(`Ses: "${t}"`);
+      await ask(t, { resume: false });
+    } catch {
+      if (aliveRef.current) setSessionDiag('Mikrofon hatası');
+    } finally {
+      pttBusyRef.current = false;
+      pttAbortRef.current = null;
+      if (aliveRef.current) {
+        stopRealtime();
+        stopMicStream();
+        sessionOpenRef.current = false;
+        setListening(false); setMicOn(false); setSleeping(true); setPttActive(false);
+      }
+    }
+  };
+
+  const pttUp = () => {
+    pttAbortRef.current?.abort();
   };
 
   const submitTyped = () => {
@@ -653,7 +728,7 @@ export function AiEmployeeChat() {
   };
 
   const showMic = micOn || waking || listening || processing || (!!cfg?.enabled && !!cfg?.wake_enabled && sleeping);
-  const showPtt = !!cfg?.push_to_talk_enabled && (pttActive || (!listening && !waking && !processing));
+  const showPtt = !!cfg?.enabled && !!cfg?.push_to_talk_enabled && (pttActive || (!listening && !waking && !processing));
 
   return (
     <>
@@ -664,8 +739,17 @@ export function AiEmployeeChat() {
       ) : (
         <>
           {showPtt && (
-            <button onClick={ptt} aria-label="Bas ve Konuş"
-              className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all border-2 bg-indigo-600 border-indigo-400/60 hover:bg-indigo-700">
+            <button
+              aria-label="Basılı tut ve konuş"
+              aria-pressed={pttActive}
+              onPointerDown={(e) => { e.preventDefault(); void pttDown(); }}
+              onPointerUp={pttUp}
+              onPointerLeave={pttUp}
+              onPointerCancel={pttUp}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ touchAction: 'none' }}
+              className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all border-2 ${pttActive ? 'bg-red-600 border-red-300 scale-110' : 'bg-indigo-600 border-indigo-400/60 hover:bg-indigo-700'}`}
+            >
               <Mic className="w-6 h-6 text-white" />
             </button>
           )}

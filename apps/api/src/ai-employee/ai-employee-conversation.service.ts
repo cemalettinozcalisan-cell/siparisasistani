@@ -37,7 +37,7 @@ const COMMAND_SCHEMA = [
   'DELETE_ORDER {"order_number":"..."}',
   'CREATE_SHIPPING {"order_number":"..."}',
   'CONVERSATION_SUMMARY {"customer":"müşteri adı"}',
-  'RECENT_CONVERSATIONS {"count":3}',
+  'RECENT_CONVERSATIONS {"count":3} - "son görüşmeler" için 3; "son görüşme" için {"count":1}',
   'SEND_MESSAGE {"customer":"müşteri adı","channel":"whatsapp|sms","message":"mesaj"}',
   'REPORT {"period":"today|weekly|last_week|monthly|top_products","metric":"amount|weight"} — "kaç kg/kilo sattık" isteklerinde metric=weight (kg/adet raporu); tutar raporu için amount',
   'REPORT_COMPARE {"period":"weekly|monthly"} — "bu hafta/ay ile geçen hafta/ayı karşılaştır, analiz et" isteklerinde kullan',
@@ -72,12 +72,69 @@ const MAX_ATTEMPTS = 2;
 
 // Bilgi komutları (onay gerektirmez)
 const READ_COMMANDS = new Set(['ORDER_DETAIL', 'ORDER_LIST', 'CONVERSATION_SUMMARY', 'RECENT_CONVERSATIONS', 'REPORT', 'REPORT_COMPARE', 'PRODUCT_LIST', 'CUSTOMER_LIST', 'CUSTOMER_DETAIL', 'CUSTOMER_ORDERS', 'CUSTOMER_CARGO', 'CUSTOMER_COMPLAINTS', 'COMPLAINTS_LIST', 'CARGO_STATUS', 'DAILY_BRIEFING', 'SUBSCRIPTION_STATUS']);
+const ORDER_NUMBER_COMMANDS = new Set(['ORDER_DETAIL', 'CANCEL_ORDER', 'DELETE_ORDER', 'CREATE_SHIPPING']);
 
 // Siparişin geldiği kanal `source` kolonundadır (channel ayrı bir alan). Türkçe etiket.
 const SOURCE_LABEL: Record<string, string> = {
   INSTAGRAM: 'Instagram', WEBSITE: 'Web', PHONE: 'Telefon', WHATSAPP: 'WhatsApp', SMS: 'SMS', WHOLESALE: 'Toptan',
 };
 const sourceLabel = (s: unknown): string => SOURCE_LABEL[String(s || '').toUpperCase()] || String(s || '').toUpperCase();
+
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  new: 'Yeni',
+  payment_waiting: 'Ödeme Bekliyor',
+  pending: 'Bekliyor',
+  no_confirm: 'Onay Bekliyor',
+  confirmed: 'Onaylandı',
+  preparing: 'Hazırlanıyor',
+  shipped: 'Kargoda',
+  delivered: 'Teslim Edildi',
+  completed: 'Tamamlandı',
+  cancelled: 'İptal Edildi',
+  canceled: 'İptal Edildi',
+  returned: 'İade Edildi',
+  refunded: 'İade Edildi',
+  abandoned: 'Terk Edildi',
+  failed: 'Başarısız',
+};
+const statusLabel = (value: unknown): string => {
+  const raw = String(value || '').trim();
+  return ORDER_STATUS_LABEL[raw.toLowerCase()] || raw;
+};
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  iban: 'Havale/EFT',
+  cash_on_delivery: 'Kapıda Nakit',
+  cod: 'Kapıda Ödeme',
+  kapida_kart: 'Kapıda Kart',
+  paytr: 'PayTR',
+  iyzico: 'iyzico',
+  website: 'Web',
+};
+const paymentMethodLabel = (value: unknown): string => {
+  const raw = String(value || '').trim();
+  return PAYMENT_METHOD_LABEL[raw.toLowerCase()] || raw;
+};
+
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pending: 'Bekliyor',
+  waiting: 'Bekliyor',
+  awaiting_dekont: 'Dekont Bekliyor',
+  dekont_alindi: 'Dekont Alındı',
+  paid: 'Ödendi',
+  failed: 'Başarısız',
+  refunded: 'İade Edildi',
+};
+const paymentStatusLabel = (value: unknown): string => {
+  const raw = String(value || '').trim();
+  return PAYMENT_STATUS_LABEL[raw.toLowerCase()] || raw;
+};
+
+const AI_EMPLOYEE_STT_KEYTERMS = [
+  'Kangal sucuk', 'sucuk', 'kuzu sucuk', 'dana sucuk', 'acılı parmak sucuk', 'kuru sucuk',
+  'pastırma', 'kavurma', 'kaymak', 'lokum', 'sipariş', 'talep', 'fiş', 'iptal', 'onay',
+  'dekont', 'havale', 'kargo', 'müşteri', 'ürün',
+];
 
 // complaints.channel (küçük harf) → Türkçe etiket
 const COMPLAINT_CHANNEL_LABEL: Record<string, string> = {
@@ -266,6 +323,8 @@ interface PendingAction {
 export class AiEmployeeConversationService {
   private readonly logger = new Logger(AiEmployeeConversationService.name);
   private pending = new Map<string, PendingAction>();
+  private clarifications = new Map<string, { intent: string; params: Record<string, unknown>; role: string; candidates: any[]; expiresAt: number }>();
+  private histories = new Map<string, { role: 'user' | 'assistant'; content: string }[]>();
   private readonly yesWords = /^(evet|onayl[ıi]yorum|tamam|olur|onayla|gönder|gonder|yap|kabul|evet onayl[ıi]yorum)/i;
   private readonly noWords = /^(hay[ıi]r|iptal|vazge[çc]|kapat|olmaz|yok|dur)/i;
 
@@ -280,7 +339,15 @@ private readonly campaigns: CampaignsService,
   private readonly pricing: AiPricingService,
   ) {}
 
-  async converse(tenantId: string, text: string, role = 'staff'): Promise<{ reply: string; pending?: boolean }> {
+  async converse(tenantId: string, text: string, role = 'staff', sessionId?: string): Promise<{ reply: string; pending?: boolean }> {
+    const started = Date.now();
+    const key = `${tenantId}:${sessionId || 'default'}`;
+    const result = await this.converseInternal(tenantId, text, role, key);
+    await this.recordTurnLatency(tenantId, key, Date.now() - started);
+    return result;
+  }
+
+  private async converseInternal(tenantId: string, text: string, role: string, historyKey: string): Promise<{ reply: string; pending?: boolean }> {
     const cfg = await this.aiEmployee.get(tenantId);
     const sal = this.salutation(cfg);
 
@@ -313,8 +380,26 @@ private readonly campaigns: CampaignsService,
       return { reply: `${sal}, önceki onayınızın süresi doldu. İşlemi yeniden söyleyip onaylamanız gerekiyor.` };
     }
 
+    const clar = this.clarifications.get(tenantId);
+    if (clar) {
+      if (Date.now() >= clar.expiresAt) {
+        this.clarifications.delete(tenantId);
+      } else {
+        const chosen = this.matchOrderCandidate(text, clar.candidates);
+        if (chosen) {
+          this.clarifications.delete(tenantId);
+          return this.handleCommand(
+            tenantId, clar.role, sal, clar.intent,
+            { ...clar.params, order_number: chosen.order_number }, '', true,
+          );
+        }
+        this.clarifications.delete(tenantId);
+      }
+    }
+
     // 2) DeepSeek
-    const parsed = await this.askAI(cfg, tenantId, text);
+    const history = this.histories.get(historyKey) || [];
+    const parsed = await this.askAI(cfg, tenantId, text, history);
     if (!parsed) return { reply: `${sal}, şu anda yanıtlayamadım. Siparişler, müşteriler, ürünler, kargolar, kampanyalar veya raporlar hakkında sorabilirsiniz.` };
 
     if (parsed.type === 'command' && parsed.intent && parsed.params) {
@@ -336,13 +421,17 @@ private readonly campaigns: CampaignsService,
 
     await this.recordUsage(tenantId, text, 'conversation');
     const answer = (parsed.reply || '').trim();
-    if (answer) return { reply: answer };
+    if (answer) {
+      this.remember(historyKey, text, answer);
+      return { reply: answer };
+    }
     return { reply: `${sal}, tam anlayamadım. Siparişlerden mi, müşterilerden mi, ürünlerden mi, kargolardan mı, kampanyalardan mı yoksa raporlardan mı bahsetmek istiyorsunuz? Örneğin "Bugün kaç sipariş aldık?" diyebilirsiniz.` };
   }
 
   private async handleCommand(
     tenantId: string, role: string, sal: string,
     intent: string, params: Record<string, unknown>, preview: string,
+    skipOrderClarify = false,
   ): Promise<{ reply: string; pending?: boolean }> {
     if (!TOOL_ROLES[intent] && !READ_COMMANDS.has(intent)) return { reply: `${sal}, bu komutu bilmiyorum.` };
 
@@ -358,11 +447,28 @@ private readonly campaigns: CampaignsService,
     const vErr = this.validate(intent, params);
     if (vErr) return { reply: `${sal}, ${vErr}` };
 
+    if (ORDER_NUMBER_COMMANDS.has(intent) && params.order_number) {
+      const resolved = await this.resolveOrderNumber(tenantId, String(params.order_number));
+      if (!resolved.order) {
+        return { reply: `${sal}, #${params.order_number} siparişini bulamadım. Numarayı tekrar söyler misiniz?` };
+      }
+      if (resolved.ambiguous && !skipOrderClarify) {
+        this.clarifications.set(tenantId, {
+          intent, params: { ...params }, role, candidates: resolved.candidates,
+          expiresAt: Date.now() + PENDING_TTL_MS,
+        });
+        return { reply: this.orderClarification(sal, resolved.candidates) };
+      }
+      params.order_number = resolved.order.order_number;
+      if (WRITE_COMMANDS.has(intent)) preview = this.orderActionPreview(sal, intent, resolved.order);
+    }
+
     // Bilgi komutları → direkt çalıştır (yalnızca READ; yazma komutu asla buraya giremez)
     if (READ_COMMANDS.has(intent)) {
       try {
         const result = await this.execTool(tenantId, intent, params, false);
         await this.recordUsage(tenantId, `read:${intent}`, 'conversation');
+        await this.logAudit(undefined, 'read', `read:${intent}`, tenantId, intent, params, String(result || '').slice(0, 2000));
         return { reply: result };
       } catch (e) {
         return { reply: `${sal}, ${(e as Error).message}` };
@@ -458,9 +564,9 @@ private readonly campaigns: CampaignsService,
         const payLabel = String(o.payment_status || '');
         const items = ((o as any).order_items || []) as any[];
         const itemStr = items.length
-          ? ' - ÜRÜNLER: ' + items.map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}${it.unit_price ? ' × ' + Number(it.unit_price).toLocaleString('tr-TR') + ' TL' : ''}`).join(', ')
+          ? ' - ÜRÜNLER: ' + items.map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}${it.unit_price ? ' - ' + Number(it.unit_price).toLocaleString('tr-TR') + ' TL' : ''}`).join(', ')
           : '';
-        return `#${o.order_number} - ${custName}${custPhone ? ' (' + custPhone + ')' : ''}${custCity ? ' — İl: ' + custCity : ''} - ${Number(o.total_price).toLocaleString('tr-TR')} TL - durum: ${o.status}${chanLabel ? ' - kanal: ' + chanLabel : ''}${o.payment_method ? ' - ödeme: ' + o.payment_method + (payLabel ? ' (' + payLabel + ')' : '') : ''}${o.cargo_company ? ' - kargo: ' + o.cargo_company : ''}${o.tracking_number ? ' - takip: ' + o.tracking_number : ''}${itemStr}`;
+        return `#${o.order_number} - ${custName}${custPhone ? ' (' + custPhone + ')' : ''}${custCity ? ' - İl: ' + custCity : ''} - ${Number(o.total_price).toLocaleString('tr-TR')} TL - durum: ${statusLabel(o.status)}${chanLabel ? ' - kanal: ' + chanLabel : ''}${o.payment_method ? ' - ödeme: ' + paymentMethodLabel(o.payment_method) + (payLabel ? ' (' + paymentStatusLabel(payLabel) + ')' : '') : ''}${o.cargo_company ? ' - kargo: ' + o.cargo_company : ''}${o.tracking_number ? ' - takip: ' + o.tracking_number : ''}${itemStr}`;
       }
       case 'ORDER_LIST': {
         const scope = String(params.scope || 'active').toLowerCase();
@@ -475,7 +581,7 @@ private readonly campaigns: CampaignsService,
         const rows = (data || []) as any[];
         if (!rows.length) return scope === 'active' ? 'Aktif (bekleyen) sipariş yok.' : scope === 'today' ? 'Bugün sipariş yok.' : 'Sipariş bulunamadı.';
         const label = scope === 'active' ? 'Aktif (bekleyen) siparişler' : scope === 'today' ? 'Bugünkü siparişler' : scope === 'all' ? 'Son siparişler' : 'Siparişler';
-        return `${label} (${rows.length}): ` + rows.map((r) => `#${r.order_number} - ${r.customer_name || r.customer?.name || 'Müşteri'}${(r.customer_city || r.customer?.city) ? ' (' + (r.customer_city || r.customer?.city) + ')' : ''} - ${Number(r.total_price).toLocaleString('tr-TR')} TL (${r.status}${sourceLabel(r.source) ? ', ' + sourceLabel(r.source) : ''})`).join(' | ');
+        return `${label} (${rows.length}): ` + rows.map((r) => `#${r.order_number} - ${r.customer_name || r.customer?.name || 'Müşteri'}${(r.customer_city || r.customer?.city) ? ' (' + (r.customer_city || r.customer?.city) + ')' : ''} - ${Number(r.total_price).toLocaleString('tr-TR')} TL (${statusLabel(r.status)}${sourceLabel(r.source) ? ', ' + sourceLabel(r.source) : ''})`).join(' | ');
       }
       case 'CANCEL_ORDER': {
         const o = await this.findOrder(tenantId, String(params.order_number));
@@ -514,20 +620,34 @@ private readonly campaigns: CampaignsService,
         }).join(' | ');
       }
       case 'RECENT_CONVERSATIONS': {
-        const count = Math.min(Number(params.count) || 5, 10);
+        const count = Math.min(Math.max(Number(params.count) || 5, 1), 10);
         const { data } = await this.supabase.db.from('conversation_sessions')
           .select('channel,phone,created_at,session_data,order_id')
-          .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(count);
+          .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(Math.min(count + 10, 20));
         const rows = (data || []) as any[];
         if (!rows.length) return 'Henüz görüşme yok.';
         const itemMap = await this.itemsByOrder(tenantId, rows.map((r) => r.order_id));
-        return 'Son görüşmeler: ' + rows.map((r) => {
-          const sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
-          const sum = sd.summary || sd.shortSummary || '';
+        const seen = new Set<string>();
+        const lines: string[] = [];
+        for (const r of rows) {
+          let sd: any = {};
+          try {
+            sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
+          } catch {
+            sd = {};
+          }
+          const sum = String(sd.shortSummary || sd.summary || '').trim();
           const prods = (itemMap[r.order_id] && itemMap[r.order_id].length) ? itemMap[r.order_id] : (Array.isArray(sd.products) ? sd.products : []);
+          if (!sum && !prods.length && !r.order_id) continue;
+          const key = `${r.order_id || ''}|${r.phone || ''}|${sum}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
           const prodStr = prods.length ? ` [ürünler: ${prods.join(', ')}]` : '';
-          return `${sd.customer_name || r.phone} (${r.channel || '-'}): ${sum || 'özet yok'}${prodStr}`;
-        }).join(' | ');
+          lines.push(`${sd.customer_name || r.phone} (${r.channel || '-'}): ${sum || 'özet yok'}${prodStr}`);
+          if (lines.length >= count) break;
+        }
+        if (!lines.length) return 'Özetli son görüşme yok.';
+        return (count === 1 ? 'Son görüşme: ' : 'Son görüşmeler: ') + lines.join(' | ');
       }
       case 'SEND_MESSAGE': {
         const cust = await this.findCustomer(tenantId, String(params.customer));
@@ -627,7 +747,7 @@ private readonly campaigns: CampaignsService,
         return bits.length ? bits.join(', ') : `${c.name} müşteri kaydı var.`;
       }
       case 'COMPLAINTS_LIST': {
-        const limit = Math.min(Number(params.count) || 10, 20);
+        const limit = Math.min(Number(params.count) || 5, 5);
         const { data } = await this.supabase.db.from('complaints')
           .select('description, category, severity, status, created_at, customer_name, customer_phone, channel')
           .eq('tenant_id', tenantId)
@@ -635,9 +755,11 @@ private readonly campaigns: CampaignsService,
           .limit(limit);
         const rows = (data || []) as any[];
         if (!rows.length) return 'Bekleyen talep veya şikâyet yok.';
-        return `Son talep/şikâyetler (${rows.length}): ` + rows.map((r) =>
-          `${r.customer_name || r.customer_phone || 'Müşteri'}: ${String(r.description || '').slice(0, 60)}${r.channel ? ` (${channelLabel(r.channel)})` : ''}`,
-        ).join(' | ');
+        return `Son talep/şikâyetler (${rows.length}): ` + rows.map((r) => {
+          const who = r.customer_name || 'İsimsiz müşteri';
+          const phone = r.customer_phone ? `, telefon ${r.customer_phone}` : '';
+          return `${who}${phone}: ${String(r.description || '').slice(0, 70)}${r.channel ? ` (${channelLabel(r.channel)})` : ''}`;
+        }).join(' | ');
       }
       case 'CARGO_STATUS': {
         const statusMap: Record<string, string> = { 
@@ -698,7 +820,7 @@ private readonly campaigns: CampaignsService,
         return `${cust.name}${cil} müşterisinin siparişleri: ` + rows.map((r) => {
           const its = (r.order_items || []) as any[];
           const prodStr = its.length ? ' - ÜRÜNLER: ' + its.map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}`).join(', ') : ' - ürün kaydı yok';
-          return `#${r.order_number} ${Number(r.total_price).toLocaleString('tr-TR')} TL (${r.status}, kanal ${sourceLabel(r.source)}, ödeme ${r.payment_method}${r.payment_status ? ' - ' + r.payment_status : ''})${prodStr}`;
+          return `#${r.order_number} ${Number(r.total_price).toLocaleString('tr-TR')} TL (${statusLabel(r.status)}, kanal ${sourceLabel(r.source)}, ödeme ${paymentMethodLabel(r.payment_method)}${r.payment_status ? ' - ' + paymentStatusLabel(r.payment_status) : ''})${prodStr}`;
         }).join(' | ');
       }
       case 'CUSTOMER_COMPLAINTS': {
@@ -840,16 +962,23 @@ private readonly campaigns: CampaignsService,
     return `${label}: ${rows.length} sipariş, toplam ${total.toLocaleString('tr-TR')} TL (${paid} teslim/kargoda).`;
   }
 
-  private async askAI(cfg: AiEmployeeConfig, tenantId: string, text: string): Promise<{ type: string; reply?: string; intent?: string; params?: Record<string, unknown> } | null> {
+  private async askAI(
+    cfg: AiEmployeeConfig, tenantId: string, text: string,
+    history: { role: 'user' | 'assistant'; content: string }[] = [],
+  ): Promise<{ type: string; reply?: string; intent?: string; params?: Record<string, unknown> } | null> {
     const snapshot = await this.buildSnapshot(tenantId);
     const system = `${ANAYASA}\n\n[PERSONA]\nAd: ${cfg.name}\nSize hitap: ${this.salutation(cfg)}\nTon: ${cfg.tone}\n\n[İŞLETME DURUMU]\n${snapshot}\n\n${COMMAND_SCHEMA}`;
     const apiKey = this.config.get<string>('DEEPSEEK_API_KEY');
     if (!apiKey) return null;
-    const client = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com/v1', timeout: 20000, maxRetries: 2 });
+    const client = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com/v1', timeout: 12000, maxRetries: 1 });
     const resp = await client.chat.completions.create({
       model: this.config.get<string>('DEEPSEEK_MODEL', 'deepseek-chat'),
-      messages: [{ role: 'system', content: system }, { role: 'user', content: text }],
-      temperature: 0.3, max_tokens: 600,
+      messages: [
+        { role: 'system', content: system },
+        ...history.slice(-6),
+        { role: 'user', content: text },
+      ],
+      temperature: 0.3, max_tokens: 350,
       response_format: { type: 'json_object' },
     });
     const content = resp.choices?.[0]?.message?.content || '';
@@ -960,6 +1089,7 @@ private readonly campaigns: CampaignsService,
       try {
         const result = await this.execTool(tenantId, intent, params, false);
         await this.recordUsage(tenantId, `read:${intent}`, 'conversation');
+        await this.logAudit(undefined, 'read', `read:${intent}`, tenantId, intent, params, String(result || '').slice(0, 2000));
         return { result };
       } catch (e) { return { error: (e as Error).message }; }
     }
@@ -1011,8 +1141,56 @@ private readonly campaigns: CampaignsService,
    *  Provider: STT_PROVIDER=groq (varsayılan, ücretsiz whisper-large-v3-turbo) | openai (gpt-4o-transcribe/whisper-1). */
   async transcribeAudio(tenantId: string, file: any): Promise<string> {
     if (!file || !file.buffer) throw new Error('Ses dosyası yok');
-    const provider = this.config.get<string>('STT_PROVIDER', 'groq').toLowerCase();
+    let provider = (
+      this.config.get<string>('AI_EMPLOYEE_STT_PROVIDER')
+      || this.config.get<string>('STT_PROVIDER')
+      || 'groq'
+    ).toLowerCase();
     const seconds = Math.max(1, Math.round((file.size || 0) / 32000));
+    const started = Date.now();
+
+    if (provider === 'deepgram') {
+      const deepgramKey = this.config.get<string>('DEEPGRAM_API_KEY');
+      const deepgramModel = this.config.get<string>('AI_EMPLOYEE_STT_MODEL') || 'nova-3';
+      if (deepgramKey) {
+        try {
+          const params = new URLSearchParams({
+            model: deepgramModel,
+            language: 'tr',
+            smart_format: 'true',
+            punctuate: 'true',
+          });
+          for (const term of AI_EMPLOYEE_STT_KEYTERMS) params.append('keyterm', term);
+          const contentType = String(file.mimetype || 'audio/webm').split(';')[0];
+          const res = await fetch(`https://api.deepgram.com/v1/listen?${params.toString()}`, {
+            method: 'POST',
+            headers: { Authorization: `Token ${deepgramKey}`, 'Content-Type': contentType },
+            body: file.buffer,
+            signal: AbortSignal.timeout(45000),
+          });
+          if (!res.ok) throw new Error(`Deepgram HTTP ${res.status}`);
+          const payload = await res.json() as any;
+          const transcript = String(payload?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '').trim();
+          if (transcript) {
+            try {
+              await this.supabase.db.from('ai_employee_usage').insert({
+                tenant_id: tenantId, kind: 'stt', duration_sec: seconds, latency_ms: Date.now() - started,
+                input_tokens: seconds, output_tokens: 0, provider: 'deepgram', cost_estimate: (seconds / 60) * 0.0043,
+                note: `transcribe:${deepgramModel}`,
+              });
+            } catch { /* sessiz */ }
+            return transcript;
+          }
+          throw new Error('Deepgram bos sonuc');
+        } catch (e) {
+          this.logger.warn(`AI employee Deepgram STT basarisiz, Groq fallback: ${(e as Error).message}`);
+          provider = 'groq';
+        }
+      } else {
+        this.logger.warn('AI employee Deepgram STT anahtari yok, Groq fallback');
+        provider = 'groq';
+      }
+    }
 
     let apiKey: string | undefined;
     let baseURL: string | undefined;
@@ -1024,7 +1202,7 @@ private readonly campaigns: CampaignsService,
     } else {
       apiKey = this.config.get<string>('GROQ_API_KEY');
       baseURL = 'https://api.groq.com/openai/v1';
-      models = ['whisper-large-v3-turbo', 'whisper-large-v3'];
+      models = ['whisper-large-v3', 'whisper-large-v3-turbo'];
     }
     if (!apiKey) throw new Error(`${provider === 'openai' ? 'OPENAI_API_KEY' : 'GROQ_API_KEY'} tanımlı değil`);
 
@@ -1045,8 +1223,8 @@ private readonly campaigns: CampaignsService,
     try {
       const cost = (seconds / 60) * (provider === 'openai' ? 0.006 : 0.0); // groq ücretsiz
       await this.supabase.db.from('ai_employee_usage').insert({
-        tenant_id: tenantId, kind: 'stt', duration_sec: seconds, input_tokens: seconds, output_tokens: 0,
-        provider, cost_estimate: cost, note: `transcribe:${usedModel}`,
+        tenant_id: tenantId, kind: 'stt', duration_sec: seconds, latency_ms: Date.now() - started,
+        input_tokens: seconds, output_tokens: 0, provider, cost_estimate: cost, note: `transcribe:${usedModel}`,
       });
     } catch { /* sessiz */ }
     return text;
@@ -1134,10 +1312,92 @@ private readonly campaigns: CampaignsService,
     // 3) "X müşterisi / X'in adresi" kalıbı
     return extractNamePattern(hint || joined);
   }
+  private orderNorm(value: string): string {
+    return String(value || '').replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
+  }
+
+  private orderDistance(a: string, b: string): number {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let last = prev[0];
+      prev[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const old = prev[j];
+        prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, last + (a[i - 1] === b[j - 1] ? 0 : 1));
+        last = old;
+      }
+    }
+    return prev[b.length];
+  }
+
+  private async resolveOrderNumber(tenantId: string, raw: string): Promise<{ order?: any; ambiguous?: boolean; candidates: any[] }> {
+    const digits = this.orderNorm(raw);
+    if (!digits) return { candidates: [] };
+    const short = digits.length <= 5;
+    const { data } = await this.supabase.db.from('orders')
+      .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
+      .eq('tenant_id', tenantId).is('deleted_at', null)
+      .order('created_at', { ascending: false }).limit(250);
+    const rows = (data || []) as any[];
+    const exact = rows.filter((o) => {
+      const n = this.orderNorm(o.order_number);
+      return n === digits || (short && n.endsWith(digits));
+    });
+    const near = rows.filter((o) => {
+      if (exact.some((e) => e.id === o.id)) return false;
+      const n = this.orderNorm(o.order_number);
+      const a = n.slice(-3);
+      const b = digits.slice(-3);
+      return a.length === 3 && b.length === 3 && Math.abs(Number(a) - Number(b)) <= 1;
+    });
+    const seen = new Set<string>();
+    const candidates = [...exact, ...near].filter((o) => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+    if (!candidates.length) return { candidates: [] };
+    return { order: exact[0] || near[0], ambiguous: candidates.length > 1, candidates };
+  }
+
+  private orderClarification(sal: string, candidates: any[]): string {
+    const options = candidates.slice(0, 2).map((o) => {
+      const name = o.customer_name || o.customer?.name || 'Müşteri';
+      return `#${o.order_number} (${name})`;
+    });
+    return `${sal}, ${options.join(' mı, ')} mi? Sipariş numarasını netleştirir misiniz?`;
+  }
+
+  private matchOrderCandidate(text: string, candidates: any[]): any | null {
+    const lower = String(text || '').toLowerCase();
+    if (/birinci|ilk/.test(lower)) return candidates[0] || null;
+    if (/ikinci|sonraki/.test(lower)) return candidates[1] || null;
+    if (/üçüncü|ucuncu/.test(lower)) return candidates[2] || null;
+    const digits = this.orderNorm(text);
+    if (!digits) return null;
+    return candidates.find((o) => {
+      const n = this.orderNorm(o.order_number);
+      return n === digits || n.endsWith(digits) || (digits.length >= 3 && n.endsWith(digits.slice(-3)));
+    }) || null;
+  }
+
+  private orderActionPreview(sal: string, intent: string, order: any): string {
+    const who = order.customer_name || order.customer?.name || 'Müşteri';
+    const total = Number(order.total_price || 0).toLocaleString('tr-TR');
+    const action = intent === 'CREATE_SHIPPING' ? 'kargoya veriyorum'
+      : intent === 'CANCEL_ORDER' ? 'iptal ediyorum'
+      : intent === 'DELETE_ORDER' ? 'siliyorum'
+      : 'işleme alıyorum';
+    return `${sal}, #${order.order_number} - ${who} - ${total} TL ${action}.`;
+  }
+
   private async findOrder(tenantId: string, orderNumber: string) {
     const raw = String(orderNumber || '').trim();
-    const digits = raw.replace(/[^0-9a-zA-Z]/g, '').toUpperCase(); // 25/00099 → 2500099
-    const tail5 = digits.slice(-5); // son 5 hane (ör. 00099)
+    const digits = this.orderNorm(raw);
+    const tail5 = digits.slice(-5);
     const tail4 = digits.slice(-4);
     const { data } = await this.supabase.db.from('orders')
         .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
@@ -1146,15 +1406,12 @@ private readonly campaigns: CampaignsService,
       .limit(30);
     const rows = (data || []) as any[];
     if (!rows.length) return null;
-    const norm = (s: string) => String(s).replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
-    const t = norm(digits);
-    const t5 = t.slice(-5);
-    const t4 = t.slice(-4);
-    return rows.find((o) => norm(o.order_number) === t)
-      || rows.find((o) => norm(o.order_number).includes(t) || t.includes(norm(o.order_number)))
-      || rows.find((o) => norm(o.order_number).slice(-5) === t5)  // son-hane eşleşmesi
-      || (rows.filter((o) => norm(o.order_number).slice(-4) === t4).length === 1 ? rows.find((o) => norm(o.order_number).slice(-4) === t4) : undefined) // son 4 hane BENZERSİZSE
-      || rows[0];
+    const exact = rows.find((o) => this.orderNorm(o.order_number) === digits);
+    if (exact) return exact;
+    const byTail5 = rows.filter((o) => this.orderNorm(o.order_number).slice(-5) === tail5);
+    if (byTail5.length === 1) return byTail5[0];
+    const byTail4 = rows.filter((o) => this.orderNorm(o.order_number).slice(-4) === tail4);
+    return byTail4.length === 1 ? byTail4[0] : null;
   }
 
   private async buildSnapshot(tenantId: string): Promise<string> {
@@ -1209,6 +1466,28 @@ private readonly campaigns: CampaignsService,
       const { data } = await this.supabase.db.from('ai_employee_audit').insert({ tenant_id: tenantId, command: intent, intent, params: params || {}, preview: preview || null, status, confirmed: status === 'confirmed', result: result || null }).select('id').single();
       return data?.id;
     } catch { return undefined; }
+  }
+
+  private remember(key: string, user: string, assistant: string): void {
+    const list = this.histories.get(key) || [];
+    list.push({ role: 'user', content: user }, { role: 'assistant', content: assistant });
+    this.histories.set(key, list.slice(-8));
+  }
+
+  private async recordTurnLatency(tenantId: string, key: string, latencyMs: number): Promise<void> {
+    try {
+      await this.supabase.db.from('ai_employee_usage').insert({
+        tenant_id: tenantId,
+        kind: 'conversation',
+        duration_sec: Math.max(0, Math.round(latencyMs / 1000)),
+        latency_ms: latencyMs,
+        input_tokens: 0,
+        output_tokens: 0,
+        provider: 'deepseek',
+        cost_estimate: 0,
+        note: `turn:${key.slice(0, 80)}`,
+      });
+    } catch { /* sessiz */ }
   }
 
   /** Kullanım metriği kaydı (latency, token, maliyet) — 065 kolonları + ai_pricing config. */

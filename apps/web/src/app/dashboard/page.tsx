@@ -282,6 +282,7 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState<Record<string, unknown>[]>([]);
   const [mounted, setMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const tid = getTenantId();
 
   // Modal state
@@ -345,16 +346,26 @@ export default function DashboardPage() {
   }, [mounted]);
 
   const loadDashboard = async () => {
+    if (!tid) return;
     try {
-      const [d, tl, h] = await Promise.all([
-        fetch(`/api/dashboard/${tid}`, { headers: authHeaders() }).then(r => r.json()),
-        fetch(`/api/timeline/recent/${tid}`, { headers: authHeaders() }).then(r => r.json()),
-        fetch(`/api/health/${tid}`, { headers: authHeaders() }).then(r => r.json()).catch(() => ({})),
+      const [dr, tlr, hr] = await Promise.all([
+        fetch(`/api/dashboard/${tid}`, { headers: authHeaders() }),
+        fetch(`/api/timeline/recent/${tid}`, { headers: authHeaders() }),
+        fetch(`/api/health/${tid}`, { headers: authHeaders() }),
       ]);
+      if (!dr.ok) throw new Error(`dashboard ${dr.status}`);
+      const d = await dr.json();
+      if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('dashboard payload');
+      const tl = tlr.ok ? await tlr.json().catch(() => []) : [];
+      const h = hr.ok ? await hr.json().catch(() => ({})) : {};
       setStats({ ...d, ...h });
       setRecent(Array.isArray(tl) ? tl : []);
+      setLoadError(false);
       setTimeout(() => setLoaded(true), 50);
-    } catch { /* sessiz */ }
+    } catch {
+      setLoadError(true);
+      setLoaded(true);
+    }
   };
 
   useEffect(() => {
@@ -367,7 +378,7 @@ export default function DashboardPage() {
       if (document.visibilityState === 'visible') void loadDashboard();
     }, 60000);
     return () => { window.removeEventListener('data-refresh', onRefresh); clearInterval(iv); };
-  }, []);
+  }, [tid]);
 
   useEffect(() => {
     if (!toast) return;
@@ -376,17 +387,17 @@ export default function DashboardPage() {
   }, [toast]);
 
   const today = stats.today as Record<string, unknown> || {};
-  const totalOrders = (stats.todayOrders as number) ?? 37;
-  const todayRevenue = Number(stats.todayRevenue ?? 28760);
-  const aiSuccessRate = (stats.aiSuccessRate as number) ?? (today.aiSuccessRate as number) ?? 97;
-  const aiRevenue = Number(stats.aiRevenue ?? 24800);
-  const aiCustomers = Number(stats.aiCustomers ?? 15);
-  const cargoTracking = Number(stats.cargoTracking ?? 3);
-  const rawComplaints = stats.complaints24h;
-  const complaints24h = Array.isArray(rawComplaints) ? (rawComplaints as Record<string, any>[]) : [];
-  const complaintsCount = Array.isArray(rawComplaints) ? complaints24h.length : 5;
   const todayOrdersList = (stats.todayOrdersList as Record<string, any>[]) || [];
   const cargoAllList = (stats.cargoTrackingList as Record<string, any>[]) || [];
+  const totalOrders = Number(stats.todayOrders ?? todayOrdersList.length) || todayOrdersList.length;
+  const todayRevenue = Number(stats.todayRevenue ?? 0);
+  const aiSuccessRate = Number(stats.aiSuccessRate ?? today.aiSuccessRate ?? 0);
+  const aiRevenue = Number(stats.aiRevenue ?? 0);
+  const aiCustomers = Number(stats.aiCustomers ?? 0);
+  const cargoTracking = Number(stats.cargoTracking ?? 0);
+  const rawComplaints = stats.complaints24h;
+  const complaints24h = Array.isArray(rawComplaints) ? (rawComplaints as Record<string, any>[]) : [];
+  const complaintsCount = Array.isArray(rawComplaints) ? complaints24h.length : 0;
 
   const channelRevenue = (stats.channelRevenue as Record<string, any>[]) || [];
   const paymentDistribution = (stats.paymentDistribution as Record<string, any>[]) || [];
@@ -400,7 +411,7 @@ export default function DashboardPage() {
   const revenueChangePct = Number(stats.revenueChangePct ?? 0);
   const ordersChangePct = Number(stats.ordersChangePct ?? 0);
   const avgBasketChangePct = Number(stats.avgBasketChangePct ?? 0);
-  const websiteEnabled = Boolean(stats.websiteEnabled ?? true);
+  const websiteEnabled = Boolean(stats.websiteEnabled ?? false);
 
   const cargoFilteredList = cargoAllList.filter((o) => {
     if (cargoFilter === 'in_transit') return String(o.cargo_status).toLowerCase() === 'in_transit';
@@ -425,23 +436,30 @@ export default function DashboardPage() {
     if (!win) window.open(url, '_blank', 'noreferrer');
   };
 
-  const totalRevenue = Number(stats.totalRevenue ?? 24800);
-  const totalCustomers = Number(stats.totalCustomers ?? 126);
+  const totalRevenue = Number(stats.totalRevenue ?? 0);
+  const totalCustomers = Number(stats.totalCustomers ?? 0);
+  const signedPct = (v: number) => `${v >= 0 ? '↑' : '↓'} %${Math.abs(v)}`;
 
   const kpis = [
-    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '↑ %19', onClick: () => setShowTodayModal(true) },
-    { label: 'Kargo Takibi', value: cargoTracking, icon: Truck, gradient: 'from-amber-500 to-orange-600', cardBorder: 'border-amber-200 dark:border-amber-500/40', trend: '↑ %12', onClick: () => setShowCargoModal(true) },
-    { label: 'Talep & İstek', value: complaintsCount, icon: AlertCircle, gradient: 'from-pink-500 to-rose-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', trend: '↑ %14', onClick: () => setShowComplaintsModal(true) },
-    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, gradient: 'from-emerald-500 to-green-600', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: '↑ %22', suffix: ' TL', onClick: () => setShowRevenueModal(true) },
-    { label: 'AI Müşteri', value: aiCustomers, icon: User, gradient: 'from-purple-500 to-violet-600', cardBorder: 'border-purple-200 dark:border-purple-500/40', trend: '↑ %33' },
-    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '↑ %28', suffix: ' TL' },
-    { label: 'AI Başarı', value: 97, icon: Target, gradient: 'from-teal-500 to-emerald-600', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: '↑ %4', suffix: '%' },
+    { label: 'Bugünkü Sipariş', value: totalOrders, icon: ShoppingCart, gradient: 'from-blue-500 to-cyan-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: signedPct(ordersChangePct), onClick: () => setShowTodayModal(true) },
+    { label: 'Kargo Takibi', value: cargoTracking, icon: Truck, gradient: 'from-amber-500 to-orange-600', cardBorder: 'border-amber-200 dark:border-amber-500/40', trend: '', onClick: () => setShowCargoModal(true) },
+    { label: 'Talep & İstek', value: complaintsCount, icon: AlertCircle, gradient: 'from-pink-500 to-rose-600', cardBorder: 'border-pink-200 dark:border-pink-500/40', trend: '', onClick: () => setShowComplaintsModal(true) },
+    { label: 'Bugünkü Ciro', value: todayRevenue, icon: Wallet, gradient: 'from-emerald-500 to-green-600', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: signedPct(revenueChangePct), suffix: ' TL', onClick: () => setShowRevenueModal(true) },
+    { label: 'AI Müşteri', value: aiCustomers, icon: User, gradient: 'from-purple-500 to-violet-600', cardBorder: 'border-purple-200 dark:border-purple-500/40', trend: '' },
+    { label: 'AI Satış', value: aiRevenue, icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600', cardBorder: 'border-blue-200 dark:border-blue-500/40', trend: '', suffix: ' TL' },
+    { label: 'AI Başarı', value: aiSuccessRate, icon: Target, gradient: 'from-teal-500 to-emerald-600', cardBorder: 'border-emerald-200 dark:border-emerald-500/40', trend: '', suffix: '%' },
   ];
 
   if (!mounted) return <div className="p-6" />;
 
   return (
     <div className="relative overflow-hidden min-h-[calc(100vh-4rem)] lg:min-h-screen bg-gradient-to-tr from-[#F1F5F9] via-[#F8FAFC] to-[#EFF6FF] dark:from-[#020410] dark:via-[#05081C] dark:to-[#0A0E2E] text-slate-900 dark:text-white px-4 md:px-8 pt-1 md:pt-2 pb-4 md:pb-8 space-y-8 w-full animate-fade-in">
+      {loadError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+          Panel verisi alınamadı; gerçek veriler yüklenene kadar sayaçlar boş kalır.
+          <button onClick={() => { void loadDashboard(); }} className="ml-2 font-bold underline">Tekrar dene</button>
+        </div>
+      )}
       {/* Ambient glow orbs */}
       <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-indigo-100/70 dark:bg-indigo-600/10 blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-100/60 dark:bg-purple-600/10 blur-3xl" />
@@ -575,9 +593,11 @@ export default function DashboardPage() {
                   {loaded ? <AnimatedCounter target={kpi.value} suffix={kpi.suffix || ''} /> : 0}
                 </div>
                 <div className="flex items-center justify-center">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                    {kpi.trend}
-                  </span>
+                  {kpi.trend ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      {kpi.trend}
+                    </span>
+                  ) : <span className="h-5" />}
                 </div>
               </button>
             );
@@ -664,14 +684,7 @@ export default function DashboardPage() {
       {showTodayModal && (
         <Modal title="Bugünkü Siparişler" icon={<ShoppingCart size={15} />} gradient="from-blue-500 to-cyan-600" onClose={() => setShowTodayModal(false)} wide>
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-            {(todayOrdersList.length > 0 ? todayOrdersList : [
-              { id: 'demo-1', order_number: '26-00001', total_price: 1780, status: 'new', channel: 'phone', payment_method: 'iban', customer_name: 'Zafer Ayyıldız', customer_phone: '05321234567', customer_city: 'Afyonkarahisar', customer_address: 'Atatürk Cad. No:42', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }] },
-              { id: 'demo-2', order_number: '26-00002', total_price: 4500, status: 'PAYMENT_WAITING', channel: 'whatsapp', payment_method: 'Kapıda Nakit', customer_name: 'Mehmet Öztürk', customer_phone: '05339876543', customer_city: 'Afyonkarahisar', customer_address: 'Zafer Mah.', created_at: new Date().toISOString(), items: [{ product_name: 'Pastırma', quantity: 3, unit: 'KG', total: 3600 }, { product_name: 'Dana Parmak Sucuk', quantity: 1, unit: 'KG', total: 890 }] },
-              { id: 'demo-3', order_number: '26-00003', total_price: 6800, status: 'PACKAGING', channel: 'instagram', payment_method: 'Kapıda Kredi Kartı', customer_name: 'Ayşe Demir', customer_phone: '05351234455', customer_city: 'İzmir', customer_address: 'Alsancak Mah. No:7', created_at: new Date().toISOString(), items: [{ product_name: 'Köy Yumurtası', quantity: 10, unit: 'KOLİ', total: 6500 }, { product_name: 'Kaymak', quantity: 1, unit: 'KG', total: 300 }] },
-              { id: 'demo-4', order_number: '26-00004', total_price: 920, status: 'SHIPPED', channel: 'website', payment_method: 'paytr', customer_name: 'Ali Kaya', customer_phone: '05411223344', customer_city: 'İstanbul', customer_address: 'Kadıköy, Moda Cad. No:15', created_at: new Date().toISOString(), items: [{ product_name: 'Dana Sucuk', quantity: 1, unit: 'KG', total: 920 }] },
-              { id: 'demo-5', order_number: '26-00005', total_price: 2650, status: 'new', channel: 'sms', payment_method: 'havale', customer_name: 'Fatma Şahin', customer_phone: '05051239876', customer_city: 'Ankara', customer_address: 'Çankaya, Kızılay Mah.', created_at: new Date().toISOString(), items: [{ product_name: 'Çiğköfte (Karışık)', quantity: 5, unit: 'KG', total: 2650 }] },
-              { id: 'demo-6', order_number: '26-00006', total_price: 3990, status: 'DELIVERED', channel: 'panel', payment_method: 'iyzico', customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', customer_address: 'Keçiören, Fatih Mah. No:8', created_at: new Date().toISOString(), items: [{ product_name: 'Bükme (Patatesli)', quantity: 6, unit: 'TEPİ', total: 3600 }, { product_name: 'Haşhaş Ezmesi', quantity: 1, unit: 'KG', total: 390 }] },
-            ]).map((o) => {
+            {todayOrdersList.map((o) => {
               const sm = orderStatusMeta(o.status);
               return (
               <div key={o.id} className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
@@ -752,11 +765,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-            {(cargoAllList.length > 0 ? cargoFilteredList : [
-              { id: 'demo-p1', order_number: '26-00004', total_price: 15600, status: 'SHIPPED', customer_name: 'Hatice Çelik', customer_phone: '05328765432', customer_city: 'Ankara', cargo_company: 'ptt', tracking_number: 'PTT12345', cargo_status: 'pending', items: [{ product_name: 'Bükme (Patatesli)', quantity: 12, unit: 'TEPİ', total: 7200 }, { product_name: 'Haşhaş Ezmesi', quantity: 20, unit: 'KG', total: 8400 }] },
-              { id: 'demo-p2', order_number: '26-00006', total_price: 3200, status: 'SHIPPED', customer_name: 'Mustafa Öztürk', customer_phone: '05551234567', customer_city: 'Afyonkarahisar', cargo_company: 'surat', tracking_number: 'SUR1234', cargo_status: 'in_transit', items: [{ product_name: 'Dana Parmak Sucuk', quantity: 2, unit: 'KG', total: 1780 }, { product_name: 'Pastırma', quantity: 1, unit: 'KG', total: 1200 }] },
-              { id: 'demo-p3', order_number: '26-00008', total_price: 6800, status: 'SHIPPED', customer_name: 'Ayşe Demir', customer_phone: '05339876543', customer_city: 'İzmir', cargo_company: 'yurtici', tracking_number: 'YT11223344', cargo_status: 'out_for_delivery', items: [{ product_name: 'Köy Yumurtası', quantity: 10, unit: 'KOLİ', total: 6500 }, { product_name: 'Kaymak', quantity: 1, unit: 'KG', total: 300 }] },
-            ]).map((o) => {
+            {cargoFilteredList.map((o) => {
               const cMeta = CARGO_STATUS_META[String(o.cargo_status || '')] || CARGO_STATUS_META.IN_TRANSIT;
               const badge = cargoFirmaBadge(o.cargo_company);
               const step = cargoStep(o.cargo_status);

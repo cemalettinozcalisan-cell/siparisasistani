@@ -16,6 +16,6 @@ import { SaasModule } from '../saas/saas.module';
   imports: [VoiceModule, CargoTrackingModule, MessagesModule, CampaignsModule, SaasModule],
   controllers: [AiEmployeeController],
   providers: [AiEmployeeService, VoiceNotificationService, AiEmployeeConversationService, SupabaseService, AiPricingService, RealtimeGateway],
-  exports: [AiEmployeeService, VoiceNotificationService],
+  exports: [AiEmployeeService, VoiceNotificationService, RealtimeGateway],
 })
 export class AiEmployeeModule {}

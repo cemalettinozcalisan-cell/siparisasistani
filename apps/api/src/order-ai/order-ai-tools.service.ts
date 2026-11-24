@@ -9,6 +9,7 @@ import { OutboundService } from '../messages/outbound.service';
 import { ComplaintProcessorService } from '../complaint-processor/complaint-processor.service';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { AliasEngineService } from '../alias-engine/alias-engine.service';
+import { resolveTrCity, resolveTrDistrict } from '../geo/tr-geo';
 import { AiOrderInput, PaymentMethod } from '@siparis/types';
 
 /**
@@ -211,15 +212,45 @@ export class OrderAiToolsService {
           try {
             total = await this.orderEngine.calculateTotal({ products: d.products } as AiOrderInput, tenantId);
           } catch { /* yoksay */ }
-          return { ok: true, result: { products: d.products, total } };
+          const hasSap = d.products.some((p) => String(p.unit || '').toUpperCase() === 'SAP');
+          const pricing = hasSap ? (total > 0 ? 'estimated' : 'pending') : 'exact';
+          return { ok: true, result: { products: d.products, total, pricing } };
         }
         case 'set_address': {
           const address = String(args.address || '').trim();
           const city = String(args.city || '').trim();
           const district = String(args.district || args.ilce || '').trim();
+          const oldCity = d.customer.city;
+          let nextCity = oldCity;
+          let nextDistrict = d.customer.district;
+
+          if (city) {
+            const resolvedCity = resolveTrCity(city);
+            if (!resolvedCity) {
+              return { ok: false, error: `"${city}" geçerli bir il değil. Müşteriden ili tekrar sorun.` };
+            }
+            nextCity = resolvedCity;
+            if (!district && nextCity !== oldCity) nextDistrict = undefined;
+          }
+
+          if (district) {
+            if (!nextCity) {
+              nextDistrict = district;
+            } else {
+              const resolvedDistrict = resolveTrDistrict(nextCity, district);
+              if (!resolvedDistrict) {
+                return {
+                  ok: false,
+                  error: `${nextCity} için "${district}" geçerli bir ilçe değil. Müşteriden ilçeyi tekrar sorun; "Merkez" metropolitan illerde geçerli değildir.`,
+                };
+              }
+              nextDistrict = resolvedDistrict;
+            }
+          }
+
           if (address) d.customer.address = address;
-          if (city) d.customer.city = city;
-          if (district) d.customer.district = district;
+          if (nextCity) d.customer.city = nextCity;
+          if (district || (city && !district && nextCity !== oldCity)) d.customer.district = nextDistrict;
           const missing = missingAddressParts(d.customer.address || '', d.customer.city, d.customer.district);
           return { ok: true, result: { address: d.customer.address, city: d.customer.city, district: d.customer.district, missing } };
         }
@@ -300,36 +331,50 @@ export class OrderAiToolsService {
           };
         }
         case 'update_order': {
-          if (!d.confirmed || !d.order) {
-            return { ok: false, error: 'Henüz onaylanmış sipariş yok. Önce siparişi onayla (confirm_order); sipariş oluştuktan SONRA değişiklik olursa update_order kullan.' };
+          const found = await this.findOrderForCaller(tenantId, d, args);
+          if (!found) return { ok: false, error: 'Siparis bulunamadi. Siparis numarasini veya arayan telefonu teyit edin.' };
+          if (['shipped', 'completed', 'delivered', 'cancelled'].includes(String(found.status || '').toLowerCase())) {
+            return { ok: false, error: `#${found.orderNumber} kargoda/teslim/iptal; guncellenemez.` };
           }
+          const { data: currentOrder } = await this.supabase.db.from('orders').select('*, customer:customer_id(name, phone)')
+            .eq('tenant_id', tenantId).eq('id', found.orderId).maybeSingle();
+          if (!currentOrder) return { ok: false, error: 'Siparis kaydi bulunamadi.' };
+          const co = currentOrder as any;
+          const { data: currentItemsData } = await this.supabase.db.from('order_items')
+            .select('product_name, quantity, unit').eq('order_id', found.orderId);
+          const currentItems = ((currentItemsData || []) as any[]).map((it) => ({
+            product_name: String(it.product_name || ''),
+            quantity: Number(it.quantity || 0),
+            unit: String(it.unit || 'KG'),
+          }));
+          const currentPayment = String(co.payment_method || 'iban');
+          const payment = (d.payment || (currentPayment === 'cod' ? 'cash_on_delivery' : currentPayment)) as PaymentMethod;
+          const cc = co.customer || {};
           const input: AiOrderInput = {
             customer: {
-              name: String(d.customer.name || '').trim(),
-              phone: String(d.customer.phone || '').replace(/[^\d]/g, ''),
-              address: d.customer.address || undefined,
-              city: d.customer.city || undefined,
-              district: d.customer.district || undefined,
-              company_name: d.invoice?.company_name || undefined,
-              identity_number: d.invoice?.tax_number || undefined,
+              name: String(d.customer.name || co.customer_name || cc.name || '').trim(),
+              phone: String(d.customer.phone || co.customer_phone || cc.phone || '').replace(/[^\d]/g, ''),
+              address: d.customer.address || co.customer_address || undefined,
+              city: d.customer.city || co.customer_city || undefined,
+              district: d.customer.district || co.customer_district || undefined,
+              company_name: d.invoice?.company_name || co.company_name || undefined,
+              identity_number: d.invoice?.tax_number || co.tax_number || undefined,
             },
-            products: d.products,
-            payment: d.payment as PaymentMethod,
+            products: d.products.length ? d.products : currentItems,
+            payment,
             confirmed: true,
             confidence: 90,
             channel: 'phone',
             source: 'PHONE',
-            notes: d.notes,
+            notes: d.notes || co.customer_note || undefined,
           };
           const uv = this.validator.validate(input);
-          if (!uv.valid) {
-            const errs = uv.errors.join(' | ');
-            return { ok: false, error: `EKSİK/GEÇERSİZ BİLGİ: ${errs}. Sipariş GÜNCELLENMEDİ; eksik bilgiyi isteyip ilgili araçla kaydet, SONRA update_order'ı çağır.` };
-          }
-          const updated = await this.orderEngine.updateOrder(d.order.orderId, uv.data, tenantId);
+          if (!uv.valid) return { ok: false, error: `EKSIK/GECERSIZ BILGI: ${uv.errors.join(' | ')}. Siparis GUNCELLENMEDI.` };
+          const updated = await this.orderEngine.updateOrder(found.orderId, uv.data, tenantId);
+          d.confirmed = true;
           d.order = { orderNumber: updated.order_number, orderId: updated.order_id, total: updated.total_price, status: updated.status };
           await this.recordSession(tenantId, sid, d, updated);
-          const isIbanUpdate = String(d.payment || '').toLowerCase() === 'iban';
+          const isIbanUpdate = String(payment).toLowerCase() === 'iban';
           return {
             ok: true,
             result: {

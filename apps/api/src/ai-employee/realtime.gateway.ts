@@ -1,5 +1,4 @@
 ﻿import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
 import { WebSocketServer, WebSocket } from 'ws';
 import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 import { ConfigService } from '@nestjs/config';
@@ -20,7 +19,7 @@ import { AiEmployeeConversationService } from './ai-employee-conversation.servic
 const BUSINESS_TOOL: any = {
   name: 'business_tool',
 description:
-    'Isletme islemleri. READ (bilgi, aninda): REPORT (period ZORUNLU: bugun->today, bu hafta->weekly, gecen hafta->last_week, bu ay->monthly, en cok satan->top_products; metric: tutar icin amount, "kac kg/kilo" icin weight), REPORT_COMPARE {period: weekly|monthly} (bu hafta/ay vs gecen hafta/ay karsilastirma), PRODUCT_LIST, CUSTOMER_LIST, CUSTOMER_DETAIL (tek musteri: {customer}; coklu isimde telefonlariyla listeler), CUSTOMER_ORDERS {customer}, CUSTOMER_CARGO {customer}, CUSTOMER_COMPLAINTS {customer}, CARGO_STATUS (tum kargolar durum gruplariyla), COMPLAINTS_LIST (talep/sikayet), ORDER_LIST {scope: active|recent|today|all} (siparis listesi; aktif/bekleyen icin scope=active, bugun icin scope=today), ORDER_DETAIL {order_number}, SUBSCRIPTION_STATUS, DAILY_BRIEFING, RECENT_CONVERSATIONS. ' +
+    'Isletme islemleri. READ (bilgi, aninda): REPORT (period ZORUNLU: bugun->today, bu hafta->weekly, gecen hafta->last_week, bu ay->monthly, en cok satan->top_products; metric: tutar icin amount, "kac kg/kilo" icin weight), REPORT_COMPARE {period: weekly|monthly} (bu hafta/ay vs gecen hafta/ay karsilastirma), PRODUCT_LIST, CUSTOMER_LIST, CUSTOMER_DETAIL (tek musteri: {customer}; coklu isimde telefonlariyla listeler), CUSTOMER_ORDERS {customer}, CUSTOMER_CARGO {customer}, CUSTOMER_COMPLAINTS {customer}, CARGO_STATUS (tum kargolar durum gruplariyla), COMPLAINTS_LIST (talep/sikayet), ORDER_LIST {scope: active|recent|today|all} (siparis listesi; aktif/bekleyen icin scope=active, bugun icin scope=today), ORDER_DETAIL {order_number}, SUBSCRIPTION_STATUS, DAILY_BRIEFING, RECENT_CONVERSATIONS (son görüşmeler; tek son görüşme için params.count=1). ' +
     'WRITE (islem, ONAY SART): CREATE_PRODUCT {name, price, unit}, UPDATE_PRODUCT_PRICE {product, price}, DELETE_PRODUCT {product}, CREATE_CUSTOMER {name, surname, phone, address}, SET_CUSTOMER_PRICE {customer, product, price}, CANCEL_ORDER/DELETE_ORDER/CREATE_SHIPPING {order_number}, SEND_MESSAGE {customer, message}, CREATE_CAMPAIGN {title, message}, SEND_CAMPAIGN {channel, message}, UPGRADE_SUBSCRIPTION {plan_code}. ' +
     'ONEMLI: Kampanya/urun/musteri ekleme isteginde gerekli bilgiler toplaninca business_tool cagrisini MUTLAKA yap; araci cagirmadan sonuc uydurma ("sistem hatasi" deme). Kullanici onaylayinca AYNI komutu AYNI parametrelerle confirm=true ile hemen tekrar cagir. CUSTOMER_DETAIL/CUSTOMER_ORDERS/CUSTOMER_CARGO/CUSTOMER_COMPLAINTS/CONVERSATION_SUMMARY icin "customer" alanini MUTLAKA doldur (kullanicinin soyledigi ad veya telefon). ' +
     'SLEEP: kullanici kapanma/sessize gecme ifadesi soylerse cagir. ' +
@@ -48,7 +47,6 @@ export class RealtimeGateway implements OnApplicationBootstrap {
   private toolCallLoop = new WeakMap<WebSocket, { key: string; count: number }>();
 
   constructor(
-    private readonly adapterHost: HttpAdapterHost,
     private readonly config: ConfigService,
     private readonly auth: AuthService,
     private readonly aiEmployee: AiEmployeeService,
@@ -58,13 +56,20 @@ export class RealtimeGateway implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     if (this.config.get('REALTIME_ENABLED') !== 'true') return;
     try {
-      const server = this.adapterHost.httpAdapter.getHttpServer();
-      this.wss = new WebSocketServer({ server, path: '/api/ai-employee/realtime' });
+      this.wss = new WebSocketServer({ noServer: true });
       this.wss.on('connection', (socket, req) => { void this.handleConnection(socket, req); });
       this.logger.log('Realtime WS hazir: /api/ai-employee/realtime');
     } catch (e) {
       this.logger.warn(`Realtime WS baslatilamadi: ${(e as Error).message}`);
     }
+  }
+
+  handleUpgrade(req: any, socket: any, head: any) {
+    if (!this.wss) {
+      try { socket.end('HTTP/1.1 503 Service Unavailable\r\n\r\n'); } catch { /* kapali */ }
+      return;
+    }
+    this.wss.handleUpgrade(req, socket, head, (ws) => this.wss!.emit('connection', ws, req));
   }
 
   private safeSend(socket: WebSocket, obj: unknown) {

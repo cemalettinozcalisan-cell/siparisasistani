@@ -48,7 +48,7 @@ export class OrderSummaryService {
       if (input.cargoPrice) {
         parts.push(`Kargo ücreti: ${input.cargoPrice.toLocaleString('tr-TR')} TL`);
       }
-      parts.push(`Güncel fiyatlara göre yaklaşık ${total.toLocaleString('tr-TR')} TL tutuyor.`);
+      parts.push(`Toplam: ${total.toLocaleString('tr-TR')} TL`);
     }
 
     if (input.missingFields.length > 0) {
@@ -84,7 +84,7 @@ export class OrderSummaryService {
 
     if (input.totalPrice) {
       const total = input.totalPrice + (input.cargoPrice || 0);
-      parts.push(`• Toplam: yaklaşık ${total.toLocaleString('tr-TR')} TL`);
+      parts.push(`Toplam: ${total.toLocaleString('tr-TR')} TL`);
     }
 
     parts.push('');

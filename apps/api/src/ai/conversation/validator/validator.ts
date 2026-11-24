@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { AiOrderInput } from '@siparis/types';
+import { validateTrLocation } from '../../../geo/tr-geo';
 
 const OrderSchema = z.object({
   customer: z.object({
@@ -15,7 +16,17 @@ const OrderSchema = z.object({
   }).refine(
     (c) => !c.address || !!(c.district && c.district.trim().length >= 2),
     { message: 'Adres için İLÇE zorunlu; müşteriden ilçe bilgisini isteyin', path: ['district'] },
-  ),
+  ).superRefine((c, ctx) => {
+    if (!c.address || !c.district?.trim()) return;
+    const geo = validateTrLocation(c.city, c.district);
+    if (!geo.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['district'],
+        message: geo.error || 'Geçersiz il/ilçe',
+      });
+    }
+  }),
   products: z
     .array(
       z.object({

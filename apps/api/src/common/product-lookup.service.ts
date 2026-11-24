@@ -56,7 +56,7 @@ export class ProductLookupService {
 
     const { data } = await this.supabase.db
       .from('products')
-      .select('id, product_name, price, wholesale_price, wholesale_min_qty, active')
+      .select('id, product_name, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, wholesale_price, wholesale_min_qty, active')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       .eq('product_name', clean)
@@ -66,7 +66,7 @@ export class ProductLookupService {
 
     const fallback = await this.supabase.db
       .from('products')
-      .select('id, product_name, price, wholesale_price, wholesale_min_qty, active')
+      .select('id, product_name, price, unit, sale_types, variable_weight, avg_weight_gr, min_weight_gr, max_weight_gr, wholesale_price, wholesale_min_qty, active')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       .ilike('product_name', `%${clean}%`)

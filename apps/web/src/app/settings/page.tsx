@@ -177,6 +177,7 @@ export default function SettingsPage() {
   const [aiEmp, setAiEmp] = useState<Record<string, any> | null>(null);
   const [aiEmpSaved, setAiEmpSaved] = useState(false);
   const [aiEmpTest, setAiEmpTest] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
+  const [aiEmpNotifyTest, setAiEmpNotifyTest] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [orderAiCategory, setOrderAiCategory] = useState('samimi');
   const [orderAiTest, setOrderAiTest] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
   const tid = getTenantId();
@@ -269,9 +270,55 @@ export default function SettingsPage() {
     } catch { setState('error'); }
   };
 
-  const testAiEmp = () => {
+  const testAiEmp = async () => {
     if (aiEmpTest === 'loading') return;
-    void previewVoice(String(aiEmp?.voice || ''), setAiEmpTest);
+    unlockAudio();
+    setAiEmpTest('loading');
+    try {
+      const r = await fetch(`/api/ai-employee/${tid}/voice/test`, { method: 'POST' });
+      const j = await r.json().catch(() => null);
+      if (!j?.audioUrl) { setAiEmpTest('error'); return; }
+      const played = await playUrl(String(j.audioUrl));
+      if (!played) { setAiEmpTest('error'); return; }
+      setAiEmpTest('playing');
+      setTimeout(() => setAiEmpTest('idle'), 6000);
+    } catch {
+      setAiEmpTest('error');
+    }
+  };
+
+  const testAiEmpNotification = async () => {
+    if (aiEmpNotifyTest === 'loading') return;
+    unlockAudio();
+    setAiEmpNotifyTest('loading');
+    try {
+      const r = await fetch(`/api/ai-employee/${tid}/voice/test-notification`, { method: 'POST' });
+      const j = await r.json().catch(() => null);
+      if (!j?.ok) { setAiEmpNotifyTest('error'); return; }
+      const pending = await fetch(`/api/ai-employee/${tid}/voice/pending`).then((x) => x.json());
+      const items = Array.isArray(pending?.items) ? pending.items : [];
+      const text = items.map((it: { voice_text?: string }) => String(it.voice_text || '').trim()).filter(Boolean).join(' ... ') || pending?.summary || '';
+      if (!text) { setAiEmpNotifyTest('error'); return; }
+      const sp = await fetch(`/api/ai-employee/${tid}/voice/speak`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      }).then((x) => x.json());
+      if (!sp?.audioUrl) { setAiEmpNotifyTest('error'); return; }
+      const played = await playUrl(String(sp.audioUrl));
+      if (!played) { setAiEmpNotifyTest('error'); return; }
+      for (const it of items) {
+        await fetch(`/api/ai-employee/${tid}/voice/ack`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: it.id }),
+        }).catch(() => {});
+      }
+      setAiEmpNotifyTest('ok');
+      setTimeout(() => setAiEmpNotifyTest('idle'), 4000);
+    } catch {
+      setAiEmpNotifyTest('error');
+    }
   };
 
   const testOrderAi = () => {
@@ -511,6 +558,7 @@ export default function SettingsPage() {
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
               {AI_EMP_VOICES.map((v) => (<option key={v.value} value={v.value}>{v.label} — {v.desc}</option>))}
             </select>
+            <p className="mt-1 text-[10px] text-slate-400">Gemini Live kapalı. AI çalışan sesi şu an FishAudio Bilge 8.</p>
           </div>
           {/* Ton */}
           <div>
@@ -639,10 +687,16 @@ export default function SettingsPage() {
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">AI Çalışanımı Test Et</p>
             <p className="text-[11px] text-slate-400">{aiEmpTest === 'error' ? 'Ses oluşturulamadı — sayfada bir yere tıklayıp tekrar deneyin.' : 'Seçtiğiniz ses ile kısa bir örnek seslendirilir (AI Çalışanım kapalı olsa da çalışır).'}</p>
           </div>
-          <button onClick={testAiEmp} disabled={aiEmpTest === 'loading'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
-            <Mic size={13} /> {aiEmpTest === 'loading' ? 'Seslendiriliyor...' : aiEmpTest === 'playing' ? 'Çalıyor...' : 'Test Et'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={testAiEmp} disabled={aiEmpTest === 'loading'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
+              <Mic size={13} /> {aiEmpTest === 'loading' ? 'Seslendiriliyor...' : aiEmpTest === 'playing' ? 'Çalıyor...' : 'Test Et'}
+            </button>
+            <button onClick={testAiEmpNotification} disabled={aiEmpNotifyTest === 'loading'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold transition-all disabled:opacity-50">
+              <Bell size={13} /> {aiEmpNotifyTest === 'loading' ? 'Gönderiliyor...' : aiEmpNotifyTest === 'ok' ? 'Bildirim Gönderildi' : aiEmpNotifyTest === 'error' ? 'Tekrar Dene' : 'Sesli Bildirim Testi'}
+            </button>
+          </div>
         </div>
       </div>
       ) : null}

@@ -49,6 +49,12 @@ export class AiEmployeeController {
   }
 
   @Roles('owner', 'manager')
+  @Post(':tenantId/voice/test-notification')
+  async testNotification(@Param('tenantId') tenantId: string) {
+    return this.voice.enqueueTest(tenantId);
+  }
+
+  @Roles('owner', 'manager')
   @Post(':tenantId/voice/test')
   async test(@Param('tenantId') tenantId: string) {
     const cfg = await this.service.get(tenantId);
@@ -59,9 +65,9 @@ export class AiEmployeeController {
 
   @Roles('owner', 'manager')
   @Post(':tenantId/conversation')
-  async converse(@Param('tenantId') tenantId: string, @Body() body: { text: string }, @Req() req: Request) {
+  async converse(@Param('tenantId') tenantId: string, @Body() body: { text: string; sessionId?: string }, @Req() req: Request) {
     const role = ((req as any).user as any)?.role || 'staff';
-    return this.conversation.converse(tenantId, String(body?.text || '').trim(), role);
+    return this.conversation.converse(tenantId, String(body?.text || '').trim(), role, body?.sessionId);
   }
 
   @Roles('owner', 'manager')

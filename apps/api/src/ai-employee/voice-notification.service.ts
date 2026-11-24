@@ -34,6 +34,7 @@ const EVENT_LABEL: Record<string, string> = {
   REQUEST_CREATED: 'müşteri talebi',
   COMPLAINT_CREATED: 'müşteri şikâyeti',
   SUBSCRIPTION_THRESHOLD: 'abonelik uyarısı',
+  TEST: 'test bildirimi',
 };
 
 const CHANNEL_LABEL: Record<string, string> = {
@@ -108,13 +109,72 @@ function readOrderNumber(value: string): string {
   return parts.filter(Boolean).join(', ');
 }
 
+function readPhoneNumber(value: string): string {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return value;
+  const parts: string[] = [];
+  let rest = digits;
+  if (rest.startsWith('90') && rest.length >= 12) {
+    parts.push(trNumber(90));
+    rest = rest.slice(2);
+  } else if (rest.startsWith('0') && rest.length === 11) {
+    parts.push('sıfır');
+    rest = rest.slice(1);
+  }
+  const sizes = rest.length === 10 ? [3, 3, 2, 2] : rest.length === 9 ? [3, 3, 3] : [];
+  if (sizes.length) {
+    let offset = 0;
+    for (const size of sizes) {
+      const group = rest.slice(offset, offset + size);
+      if (group) parts.push(trNumber(parseInt(group, 10) || 0));
+      offset += size;
+    }
+  } else {
+    for (let i = 0; i < rest.length; i += 3) {
+      const group = rest.slice(i, i + 3);
+      parts.push(trNumber(parseInt(group, 10) || 0));
+    }
+  }
+  return parts.filter(Boolean).join(', ');
+}
+
+function normalizePronunciation(text: string): string {
+  let out = text;
+  const fixes: Array<[RegExp, string]> = [
+    [/\bC\s+Tire\b/gi, 'ce'],
+    [/\bCd\.?\b/gi, 'Caddesi'],
+    [/\bSok\.?\b/gi, 'Sokak'],
+    [/\bMah\.?\b/gi, 'Mahallesi'],
+    [/\bApt\.?\b/gi, 'Apartman\u0131'],
+    [/\bBlv\.?\b/gi, 'Bulvar\u0131'],
+    [/\bBlk\.?\b/gi, 'Blok'],
+    [/\bNo\.?\b/gi, 'Numara'],
+    [/\bA\s+(Blok|Blk)\b/gi, 'a $1'],
+    [/\bB\s+(Blok|Blk)\b/gi, 'be $1'],
+    [/\bC\s+(Blok|Blk)\b/gi, 'ce $1'],
+    [/\bD\s+(Blok|Blk)\b/gi, 'de $1'],
+    [/\bE\s+(Blok|Blk)\b/gi, 'e $1'],
+    [/\bF\s+(Blok|Blk)\b/gi, 'fe $1'],
+    [/\bG\s+(Blok|Blk)\b/gi, 'ge $1'],
+    [/\bH\s+(Blok|Blk)\b/gi, 'he $1'],
+    [/\bJ\b/g, 'je'],
+    [/\bQ\b/g, 'kü'],
+    [/\bW\b/g, 'dabılyu'],
+    [/\bX\b/g, 'iks'],
+    [/\bC\b/g, 'ce'],
+  ];
+  for (const [re, rep] of fixes) out = out.replace(re, rep);
+  return out;
+}
+
 function normalizeTrNumbers(text: string): string {
   // Sipariş no (ör. 26-00197): genel sayı dönüşümünden ÖNCE, sıfırları koruyarak oku.
+  text = text.replace(/\b(2[0-9])[ .](\d{2})[ .](\d{3})\b/g, (_m, a, b, c) => readOrderNumber(`${a}-${b}${c}`));
   text = text.replace(/\b(\d{1,4})-(\d{3,})\b/g, (_m, a, b) => readOrderNumber(`${a}-${b}`));
-  // Telefon numaraları: para gibi değil, rakam rakam okunur (9-13 hane)
+  text = text.replace(/#\s*(2[0-9])(\d{2})(\d{3})\b/g, (_m, a, b, c) => `#${readOrderNumber(`${a}-${b}${c}`)}`);
   text = text.replace(/(\+?\d[\d\s-]{9,16})/g, (m) => {
     const digits = m.replace(/[^\d]/g, '');
-    if (digits.length >= 9 && digits.length <= 13) return digits.split('').map(trDigit).join(' ');
+    if (digits.length >= 9 && digits.length <= 13) return readPhoneNumber(digits);
     return m;
   });
   return text
@@ -199,6 +259,27 @@ export class VoiceNotificationService {
   }
 
   /** Bekleyen bildirimleri gruplar, özet üretir ve delivered'a geçirir. */
+  async enqueueTest(tenantId: string): Promise<{ ok: boolean; id?: string; error?: string }> {
+    try {
+      const { data, error } = await this.supabase.db
+        .from('ai_voice_notifications')
+        .insert({
+          tenant_id: tenantId,
+          event_type: 'TEST',
+          voice_text: 'Patron, sesli bildirim testi başarılı.',
+          priority: 1,
+          status: 'pending',
+          dedup_key: `TEST:${Date.now()}`,
+        })
+        .select('id')
+        .single();
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, id: data?.id };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  }
+
   async getPending(tenantId: string): Promise<{ quiet: boolean; summary: string | null; items: { id: string; event_type: string; voice_text: string }[] }> {
     const cfg = await this.aiEmployee.get(tenantId).catch(() => null);
     const quiet = cfg ? this.isQuietHours(cfg) : false;
@@ -219,16 +300,7 @@ export class VoiceNotificationService {
 
     // Aynı bildirimin tekrar tekrar seslendirilmesini önle:
     // getPending döndürdüğü satırları doğrudan acknowledged yap; bir sonraki çağrıda gelmez.
-    const ids = rows.map((r) => r.id);
-    const acknowledgedAt = new Date().toISOString();
-    await this.supabase.db
-      .from('ai_voice_notifications')
-      .update({
-        status: 'acknowledged',
-        acknowledged_at: acknowledgedAt,
-        delivered_at: acknowledgedAt,
-      })
-      .in('id', ids);
+
 
     // Grup özeti
     const counts: Record<string, number> = {};
@@ -255,7 +327,7 @@ export class VoiceNotificationService {
   /** Metni seslendirir ve oynatılabilir URL döner. */
   async speak(tenantId: string, text: string): Promise<string | null> {
     try {
-      const normalized = normalizeTrNumbers(text);
+      const normalized = normalizePronunciation(normalizeTrNumbers(text));
       const result = await this.voice.generateSpeech(normalized, tenantId);
       const fileName = `voice/ai-employee/${tenantId}/${Date.now()}.mp3`;
 

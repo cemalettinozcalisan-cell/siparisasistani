@@ -12,6 +12,7 @@ import { ComplaintProcessorModule } from '../complaint-processor/complaint-proce
 import { AliasEngineModule } from '../alias-engine/alias-engine.module';
 import { OrderValidatorService } from '../ai/conversation/validator/validator';
 import { SupabaseService } from '../common/supabase.client';
+import { AiEmployeeModule } from '../ai-employee/ai-employee.module';
 
 /**
  * Sipariş AI (İZOLE modül). Mevcut ai-employee/AiBrain modüllerine dokunmaz.
@@ -19,7 +20,7 @@ import { SupabaseService } from '../common/supabase.client';
  * AuthService @Global olduğu için ayrıca import gerekmez.
  */
 @Module({
-  imports: [OrderEngineModule, PromptEngineModule, MessagesModule, ComplaintProcessorModule, AliasEngineModule],
+  imports: [OrderEngineModule, PromptEngineModule, MessagesModule, ComplaintProcessorModule, AliasEngineModule, AiEmployeeModule],
   controllers: [OrderAiDevController, OrderAiPreviewController, OrderAiAgentController],
   providers: [OrderAiToolsService, OrderAiGateway, OrderAiVoicePreviewService, OrderValidatorService, SupabaseService],
   exports: [OrderAiToolsService],

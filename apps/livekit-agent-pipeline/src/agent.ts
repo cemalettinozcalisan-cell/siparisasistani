@@ -58,6 +58,27 @@ const PRONUNCIATION_FIXES: Array<[RegExp, string]> = [
   ...NAMES_C.map(
     (n) => [new RegExp(`\\b${n}\\b`, 'gi'), n.replace(/^C/i, 'J')] as [RegExp, string],
   ),
+  [/\bC\s+Tire\b/gi, 'ce'],
+  [/\bCd\.?\b/gi, 'Caddesi'],
+  [/\bSok\.?\b/gi, 'Sokak'],
+  [/\bMah\.?\b/gi, 'Mahallesi'],
+  [/\bApt\.?\b/gi, 'Apartman\u0131'],
+  [/\bBlv\.?\b/gi, 'Bulvar\u0131'],
+  [/\bBlk\.?\b/gi, 'Blok'],
+  [/\bNo\.?\b/gi, 'Numara'],
+  [/\bA\s+(Blok|Blk)\b/gi, 'a $1'],
+  [/\bB\s+(Blok|Blk)\b/gi, 'be $1'],
+  [/\bC\s+(Blok|Blk)\b/gi, 'ce $1'],
+  [/\bD\s+(Blok|Blk)\b/gi, 'de $1'],
+  [/\bE\s+(Blok|Blk)\b/gi, 'e $1'],
+  [/\bF\s+(Blok|Blk)\b/gi, 'fe $1'],
+  [/\bG\s+(Blok|Blk)\b/gi, 'ge $1'],
+  [/\bH\s+(Blok|Blk)\b/gi, 'he $1'],
+  [/\bJ\b/g, 'je'],
+  [/\bQ\b/g, 'kü'],
+  [/\bW\b/g, 'dabılyu'],
+  [/\bX\b/g, 'iks'],
+  [/\bC\b/g, 'ce'],
 ];
 function fixPronunciationText(text: string): string {
   let out = text;
@@ -351,8 +372,7 @@ function buildOrderTools(tenantId: string, sessionId: string, onToolCall?: (acti
     llm.tool({
       name: 'add_item',
       description:
-        'Siparişe ürün ekler. Müşteri ürün adı ve miktarı söyleyince çağır. ' +
-        'product_name katalogdaki TAM ürün adı olmalı. unit: kg|adet|sap|koli|tepsi. Tek turda yalnızca bu aracı çağır.',
+        'Siparise urun ekler ve sunucu toplamini dondurur. Musteri urun+miktar soyleyince VEYA fiyat/hesap sorunca hemen cagir. product_name katalogdaki TAM urun adi olmali. unit: kg|adet|sap|koli|tepsi. Fiyati yalnizca bu aracin total degerinden soyle; kendi hesaplama yapma. Tek turda yalnizca bu araci cagir.',
       parameters: z.object({
         product_name: z.string().describe('Katalogdaki tam ürün adı'),
         quantity: z.number().describe('Miktar (sayı)'),
@@ -408,8 +428,11 @@ function buildOrderTools(tenantId: string, sessionId: string, onToolCall?: (acti
     llm.tool({
       name: 'update_order',
       description:
-        'Sipariş OLUŞTURULDUKTAN sonra müşteri ürün/miktar/ödeme değiştirirse, bu değişikliği mevcut siparişe kaydeder (günceller). Sipariş henüz oluşmadıysa ÇAĞIRMA (onun için confirm_order). Önce ilgili değişikliği add_item/set_payment ile taslağa işle, sonra update_order çağır. Parametre almaz.',
-      execute: async () => call('update_order', {}),
+        'Sipariş OLUŞTURULDUKTAN sonra müşteri ürün/miktar/ödeme/adres/not değiştirirse, bu değişikliği mevcut siparişe kaydeder. Sipariş henüz oluşmadıysa ÇAĞIRMA. Arayan telefonla son siparişi bulabilir; sipariş numarası biliniyorsa order_number ver. Önce değişikliği add_item/set_payment/set_address ile taslağa işle, sonra update_order çağır. Başarısızsa "güncelledim" deme.',
+      parameters: z.object({
+        order_number: z.string().optional().describe('Sipariş numarası (biliniyorsa)'),
+      }),
+      execute: async (args) => call('update_order', args as Record<string, unknown>),
     }),
     llm.tool({
       name: 'get_order_status',
