@@ -255,6 +255,73 @@ const extractPhone = (text: string): string | null => {
   return null;
 };
 
+const TR_NUMBER_WORDS: Record<string, number> = {
+  sifir: 0, bir: 1, iki: 2, uc: 3, dort: 4, bes: 5, alti: 6, yedi: 7, sekiz: 8, dokuz: 9,
+  on: 10, yirmi: 20, otuz: 30, kirk: 40, elli: 50, altmis: 60, yetmis: 70, seksen: 80, doksan: 90,
+  yuz: 100, bin: 1000,
+};
+
+const parseTurkishNumberSequence = (text: string): string | null => {
+  const tokens = asciiFold(String(text || '').toLowerCase()).match(/[a-z]+/g) || [];
+  const groups: number[] = [];
+  let current = 0;
+  let has = false;
+  let lastWasUnit = false;
+  const flush = () => {
+    if (!has) return;
+    groups.push(current);
+    current = 0;
+    has = false;
+  };
+  for (const token of tokens) {
+    const value = TR_NUMBER_WORDS[token];
+    if (value === undefined) {
+      flush();
+      lastWasUnit = false;
+      continue;
+    }
+    if (token === 'yuz') {
+      current = (current || 1) * 100;
+      has = true;
+      lastWasUnit = false;
+    } else if (token === 'bin') {
+      current = (current || 1) * 1000;
+      has = true;
+      lastWasUnit = false;
+    } else if (value >= 10) {
+      if (has && lastWasUnit) flush();
+      current += value;
+      has = true;
+      lastWasUnit = false;
+    } else {
+      if (has && lastWasUnit) flush();
+      current += value;
+      has = true;
+      lastWasUnit = true;
+    }
+  }
+  flush();
+  const digits = groups.map((n) => String(n)).join('');
+  return digits.length >= 3 ? digits : null;
+};
+
+const digitsFromOrderText = (text: string): string | null => {
+  const raw = String(text || '');
+  const separated = raw.match(/\b\d{1,4}[-/ ]\d{2,6}\b/);
+  if (separated) return separated[0].replace(/\D/g, '');
+  const compact = raw.match(/\b\d{3,7}\b/);
+  if (compact) return compact[0];
+  return parseTurkishNumberSequence(raw);
+};
+
+const inferExplicitOrderIntent = (text: string): string | null => {
+  const p = asciiFold(String(text || '').toLowerCase());
+  if (/(^|\s)kargola\b|kargoya ver|kargo yap/.test(p)) return 'CREATE_SHIPPING';
+  if (/(^|\s)iptal et\b|sipari[sş]i iptal/.test(p)) return 'CANCEL_ORDER';
+  if (/sipari[sş]i sil|sipari[sş] sil/.test(p)) return 'DELETE_ORDER';
+  return null;
+};
+
 /** Cümledeki ismi verilen bilinen müşteri adlarıyla eşleştirir (P35). */
 const matchKnownName = (text: string, names: string[]): string | null => {
   const t = asciiFold(text.toLowerCase());
@@ -323,7 +390,7 @@ interface PendingAction {
 export class AiEmployeeConversationService {
   private readonly logger = new Logger(AiEmployeeConversationService.name);
   private pending = new Map<string, PendingAction>();
-  private clarifications = new Map<string, { intent: string; params: Record<string, unknown>; role: string; candidates: any[]; expiresAt: number }>();
+  private clarifications = new Map<string, { intent: string; params: Record<string, unknown>; role: string; candidates: any[]; expiresAt: number; attempts: number; reason: string }>();
   private histories = new Map<string, { role: 'user' | 'assistant'; content: string }[]>();
   private readonly yesWords = /^(evet|onayl[ıi]yorum|tamam|olur|onayla|gönder|gonder|yap|kabul|evet onayl[ıi]yorum)/i;
   private readonly noWords = /^(hay[ıi]r|iptal|vazge[çc]|kapat|olmaz|yok|dur)/i;
@@ -380,20 +447,35 @@ private readonly campaigns: CampaignsService,
       return { reply: `${sal}, önceki onayınızın süresi doldu. İşlemi yeniden söyleyip onaylamanız gerekiyor.` };
     }
 
-    const clar = this.clarifications.get(tenantId);
+    const clar = this.clarifications.get(historyKey);
     if (clar) {
       if (Date.now() >= clar.expiresAt) {
-        this.clarifications.delete(tenantId);
+        this.clarifications.delete(historyKey);
       } else {
-        const chosen = this.matchOrderCandidate(text, clar.candidates);
+        const t = text.trim();
+        let chosen = this.matchOrderCandidate(t, clar.candidates);
+        if (!chosen && this.yesWords.test(t) && clar.candidates.length === 1) chosen = clar.candidates[0];
         if (chosen) {
-          this.clarifications.delete(tenantId);
+          this.clarifications.delete(historyKey);
           return this.handleCommand(
             tenantId, clar.role, sal, clar.intent,
-            { ...clar.params, order_number: chosen.order_number }, '', true,
+            { ...clar.params, order_number: chosen.order_number }, '', true, historyKey,
           );
         }
-        this.clarifications.delete(tenantId);
+        if (this.noWords.test(t)) {
+          this.clarifications.delete(historyKey);
+          return { reply: `${sal}, sipariş netleştirmeyi iptal ettim.` };
+        }
+        if (/neden|niye|ne iin|ne icin/.test(t.toLowerCase())) {
+          return { reply: this.orderClarification(sal, clar.candidates, clar.reason) };
+        }
+        clar.attempts += 1;
+        clar.expiresAt = Date.now() + PENDING_TTL_MS;
+        if (clar.attempts >= 3) {
+          this.clarifications.delete(historyKey);
+          return { reply: `${sal}, sipariş numarası netleşmedi; işlemi iptal ettim. Hazır olduğunuzda tekrar söyleyin.` };
+        }
+        return { reply: this.orderClarification(sal, clar.candidates, clar.reason) };
       }
     }
 
@@ -401,6 +483,21 @@ private readonly campaigns: CampaignsService,
     const history = this.histories.get(historyKey) || [];
     const parsed = await this.askAI(cfg, tenantId, text, history);
     if (!parsed) return { reply: `${sal}, şu anda yanıtlayamadım. Siparişler, müşteriler, ürünler, kargolar, kampanyalar veya raporlar hakkında sorabilirsiniz.` };
+
+    const explicitIntent = inferExplicitOrderIntent(text);
+    if (explicitIntent) {
+      const orderNo = digitsFromOrderText(text) || String((parsed.params || {}).order_number || '').trim();
+      if (!orderNo) {
+        const action = explicitIntent === 'CREATE_SHIPPING' ? 'kargolamamı'
+          : explicitIntent === 'CANCEL_ORDER' ? 'iptal etmemi'
+          : 'silmemi';
+        return { reply: `${sal}, hangi siparişi ${action} istediğinizi söyler misiniz?` };
+      }
+      return this.handleCommand(
+        tenantId, role, sal, explicitIntent,
+        { ...(parsed.params || {}), order_number: orderNo }, '', false, historyKey,
+      );
+    }
 
     if (parsed.type === 'command' && parsed.intent && parsed.params) {
       if (parsed.intent === 'REPORT') {
@@ -416,7 +513,7 @@ private readonly campaigns: CampaignsService,
         const inferred = await this.inferCustomerArg(tenantId, text);
         if (inferred) parsed.params.customer = inferred;
       }
-      return this.handleCommand(tenantId, role, sal, parsed.intent, parsed.params, parsed.reply || '');
+      return this.handleCommand(tenantId, role, sal, parsed.intent, parsed.params, parsed.reply || '', false, historyKey);
     }
 
     await this.recordUsage(tenantId, text, 'conversation');
@@ -431,7 +528,7 @@ private readonly campaigns: CampaignsService,
   private async handleCommand(
     tenantId: string, role: string, sal: string,
     intent: string, params: Record<string, unknown>, preview: string,
-    skipOrderClarify = false,
+    skipOrderClarify = false, clarificationKey = tenantId,
   ): Promise<{ reply: string; pending?: boolean }> {
     if (!TOOL_ROLES[intent] && !READ_COMMANDS.has(intent)) return { reply: `${sal}, bu komutu bilmiyorum.` };
 
@@ -453,11 +550,14 @@ private readonly campaigns: CampaignsService,
         return { reply: `${sal}, #${params.order_number} siparişini bulamadım. Numarayı tekrar söyler misiniz?` };
       }
       if (resolved.ambiguous && !skipOrderClarify) {
-        this.clarifications.set(tenantId, {
+        const reason = intent === 'CREATE_SHIPPING'
+          ? 'Kargolama için sipariş numarasını netleştiriyorum.'
+          : 'Doğru siparişi bulmak için numarayı netleştiriyorum.';
+        this.clarifications.set(clarificationKey, {
           intent, params: { ...params }, role, candidates: resolved.candidates,
-          expiresAt: Date.now() + PENDING_TTL_MS,
+          expiresAt: Date.now() + PENDING_TTL_MS, attempts: 0, reason,
         });
-        return { reply: this.orderClarification(sal, resolved.candidates) };
+        return { reply: this.orderClarification(sal, resolved.candidates, reason) };
       }
       params.order_number = resolved.order.order_number;
       if (WRITE_COMMANDS.has(intent)) preview = this.orderActionPreview(sal, intent, resolved.order);
@@ -1334,7 +1434,7 @@ private readonly campaigns: CampaignsService,
   }
 
   private async resolveOrderNumber(tenantId: string, raw: string): Promise<{ order?: any; ambiguous?: boolean; candidates: any[] }> {
-    const digits = this.orderNorm(raw);
+    const digits = digitsFromOrderText(raw);
     if (!digits) return { candidates: [] };
     const short = digits.length <= 5;
     const { data } = await this.supabase.db.from('orders')
@@ -1363,12 +1463,12 @@ private readonly campaigns: CampaignsService,
     return { order: exact[0] || near[0], ambiguous: candidates.length > 1, candidates };
   }
 
-  private orderClarification(sal: string, candidates: any[]): string {
+  private orderClarification(sal: string, candidates: any[], reason = 'Sipariş numarasını netleştirir misiniz?'): string {
     const options = candidates.slice(0, 2).map((o) => {
       const name = o.customer_name || o.customer?.name || 'Müşteri';
       return `#${o.order_number} (${name})`;
     });
-    return `${sal}, ${options.join(' mı, ')} mi? Sipariş numarasını netleştirir misiniz?`;
+    return `${sal}, ${options.join(' mı, ')} mi? ${reason}`;
   }
 
   private matchOrderCandidate(text: string, candidates: any[]): any | null {
@@ -1376,7 +1476,7 @@ private readonly campaigns: CampaignsService,
     if (/birinci|ilk/.test(lower)) return candidates[0] || null;
     if (/ikinci|sonraki/.test(lower)) return candidates[1] || null;
     if (/üçüncü|ucuncu/.test(lower)) return candidates[2] || null;
-    const digits = this.orderNorm(text);
+    const digits = digitsFromOrderText(text);
     if (!digits) return null;
     return candidates.find((o) => {
       const n = this.orderNorm(o.order_number);
