@@ -7,6 +7,7 @@ import { ChannelHealthService } from '../channel-health/channel-health.service';
 import { WhatsAppConversationsService } from './conversations/conversations.service';
 import { MetaWhatsappProvider } from '../messages/providers/meta-whatsapp.provider';
 import { generateSessionLabel, isResetCommand, sessionWindowStart } from '../common/chat-session';
+import { normalizeTrPhone } from '../common/phone';
 
 interface WaMessage {
   id?: string;
@@ -417,8 +418,6 @@ export class WhatsappService {
   }
 
   private normalizePhone(value: string): string {
-    const digits = value.replace(/\D/g, '');
-    if (digits.startsWith('0') && digits.length === 11) return `9${digits}`;
-    return digits;
+    return normalizeTrPhone(value);
   }
 }

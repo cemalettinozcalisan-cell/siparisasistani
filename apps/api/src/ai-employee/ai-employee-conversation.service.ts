@@ -8,6 +8,23 @@ import { OutboundService } from '../messages/outbound.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { SaasService } from '../saas/saas.service';
 import { AiPricingService } from './ai-pricing.service';
+import { normalizeTrPhone, phoneVariants } from '../common/phone';
+
+const AI_EMPLOYEE_STT_KEYTERMS = [
+  'Kangal sucuk', 'sucuk', 'kuzu sucuk', 'dana sucuk', 'acılı parmak sucuk', 'kuru sucuk',
+  'pastırma', 'kavurma', 'kaymak', 'lokum', 'sipariş', 'talep', 'fiş', 'iptal', 'onay',
+  'dekont', 'havale', 'kargo', 'müşteri', 'ürün',
+];
+
+const STATUS_LABEL: Record<string,string> = { new:'Yeni', approved:'Onaylandı', confirmed:'Onaylandı', payment_waiting:'Ödeme Bekliyor', preparing:'Hazırlanıyor', packaging:'Hazırlanıyor', packaged:'Hazırlanıyor', shipped:'Kargoda', delivered:'Teslim Edildi', completed:'Tamamlandı', cancelled:'İptal Edildi', canceled:'İptal Edildi', returned:'İade Edildi', failed:'Başarısız', abandoned:'Terk Edildi', no_confirm:'Onay Bekliyor' };
+const PAYMENT_LABEL: Record<string,string> = { cod:'Kapıda Ödeme', cash_on_delivery:'Kapıda Nakit', iban:'Havale/EFT', kapida_kart:'Kapıda Kart', website:'Link ile Ödeme', paytr:'Link ile Ödeme', iyzico:'Link ile Ödeme', payment_link:'Link ile Ödeme' };
+const PAYMENT_STATUS_LABEL: Record<string,string> = { waiting:'Bekliyor', pending:'Bekliyor', awaiting_dekont:'Dekont Bekliyor', dekont_alindi:'Dekont Alındı', paid:'Ödendi', failed:'Başarısız', refunded:'İade Edildi' };
+const SOURCE_LABEL: Record<string,string> = { PHONE:'Telefon', WHATSAPP:'WhatsApp', SMS:'SMS', INSTAGRAM:'Instagram', WEBSITE:'Web', PANEL:'Panel', WHOLESALE:'Toptan' };
+const label = (map: Record<string,string>, value: unknown) => map[String(value || '').toLowerCase()] || map[String(value || '').toUpperCase()] || String(value || '-');
+const statusLabel = (value: unknown) => label(STATUS_LABEL, value);
+const paymentLabel = (value: unknown) => label(PAYMENT_LABEL, value);
+const paymentStatusLabel = (value: unknown) => label(PAYMENT_STATUS_LABEL, value);
+const sourceLabel = (value: unknown) => label(SOURCE_LABEL, value);
 
 const ANAYASA = [
   'AI ÇALIŞANIM ANAYASASI',
@@ -32,23 +49,15 @@ const COMMAND_SCHEMA = [
   'CREATE_CUSTOMER {"name":"...","phone":"..."}',
   'SET_CUSTOMER_PRICE {"customer":"müşteri adı","product":"ürün adı","price":sayı}',
   'ORDER_DETAIL {"order_number":"..."}',
-  'ORDER_LIST {"scope":"active|recent|all","count":15} — sipariş listesi; "aktif/bekleyen siparişler neler" → scope=active (numaralarıyla listeler)',
+  'ORDER_LIST {"scope":"today|active|recent","count":10}',
+  'CUSTOMER_DETAIL {"customer":"müşteri adı veya telefonu"}',
   'CANCEL_ORDER {"order_number":"..."}',
   'DELETE_ORDER {"order_number":"..."}',
   'CREATE_SHIPPING {"order_number":"..."}',
   'CONVERSATION_SUMMARY {"customer":"müşteri adı"}',
-  'RECENT_CONVERSATIONS {"count":3} - "son görüşmeler" için 3; "son görüşme" için {"count":1}',
+  'RECENT_CONVERSATIONS {"count":3}',
   'SEND_MESSAGE {"customer":"müşteri adı","channel":"whatsapp|sms","message":"mesaj"}',
-  'REPORT {"period":"today|weekly|last_week|monthly|top_products","metric":"amount|weight"} — "kaç kg/kilo sattık" isteklerinde metric=weight (kg/adet raporu); tutar raporu için amount',
-  'REPORT_COMPARE {"period":"weekly|monthly"} — "bu hafta/ay ile geçen hafta/ayı karşılaştır, analiz et" isteklerinde kullan',
-  'PRODUCT_LIST {} — "ürünler nelerdir / ürün listesi / katalog" denince ürünleri listele',
-  'CUSTOMER_LIST {} — "müşteriler nelerdir / müşteri listesi" denince müşterileri listele',
-  'CUSTOMER_DETAIL {"customer":"müşteri adı/telefon"} — tek müşterinin ad/telefon/adres detayı; çoklu isimde telefonlarıyla listeler',
-  'CUSTOMER_ORDERS {"customer":"müşteri adı"} — müşterinin siparişleri (no, tutar, durum, kanal, ödeme)',
-  'CUSTOMER_CARGO {"customer":"müşteri adı"} — müşterinin kargo durumları',
-  'CUSTOMER_COMPLAINTS {"customer":"müşteri adı"} — müşterinin talep/şikâyetleri',
-  'CARGO_STATUS {} — tüm kargoları durum gruplarıyla (yolda/şubede/dağıtımda) ve müşterisiyle listele',
-  'COMPLAINTS_LIST {"count":10} — talep ve şikâyet listesi',
+  'REPORT {"period":"today|weekly|monthly|top_products"}',
   'CREATE_CAMPAIGN {"title":"...","message":"..."}',
   'SEND_CAMPAIGN {"channel":"whatsapp|sms","message":"..."}',
   'UPGRADE_SUBSCRIPTION {"plan_code":"pro|ultra|mega"}',
@@ -59,301 +68,15 @@ const COMMAND_SCHEMA = [
   'Bilgi/sohbet: {"type":"answer","reply":"kısa Türkçe cevap"}',
   'Komut: {"type":"command","reply":"yapılacak işin kısa önizlemesi (hitap ile başla)","intent":"KOMUT_ADI","params":{...}}',
   'reply Türkçe, kısa, doğal. Kapsam dışı konuda type="answer" ile doğal reddet.',
-  '',
-  'DAVRANIŞ:',
-  '- Kullanıcı sipariş, ürün, müşteri, stok, kargo, kampanya, rapor veya abonelik konusuna değindiyse o konuyla ilgili bilgiyi ver veya ilgili komutu seç (örn. "ürünler" → PRODUCT_LIST, "siparişler" → bugünkü/aktif sipariş özeti veya REPORT).',
-  '- reply alanı ASLA boş olmasın. Anlayamadıysan kısa bir yönlendirme sorusu sor (örn. "Siparişlerden mi, ürünlerden mi, müşterilerden mi yoksa kargolardan mı bahsetmek istiyorsunuz?").',
-  '- "Beni duyabiliyor musun / duyuyor musun / test / merhaba" gibi selam ya da kontrol sorularına doğal kısa cevap ver (örn. "Evet, sizi duyabiliyorum.").',
-  '- Sadece isim söylendiğinde (örn. "Bilge") "Buradayım, nasıl yardımcı olabilirim?" diye karşılık ver.',
 ].join('\n');
 
 const PENDING_TTL_MS = 120 * 1000;
 const MAX_ATTEMPTS = 2;
 
 // Bilgi komutları (onay gerektirmez)
-const READ_COMMANDS = new Set(['ORDER_DETAIL', 'ORDER_LIST', 'CONVERSATION_SUMMARY', 'RECENT_CONVERSATIONS', 'REPORT', 'REPORT_COMPARE', 'PRODUCT_LIST', 'CUSTOMER_LIST', 'CUSTOMER_DETAIL', 'CUSTOMER_ORDERS', 'CUSTOMER_CARGO', 'CUSTOMER_COMPLAINTS', 'COMPLAINTS_LIST', 'CARGO_STATUS', 'DAILY_BRIEFING', 'SUBSCRIPTION_STATUS']);
-const ORDER_NUMBER_COMMANDS = new Set(['ORDER_DETAIL', 'CANCEL_ORDER', 'DELETE_ORDER', 'CREATE_SHIPPING']);
-
-// Siparişin geldiği kanal `source` kolonundadır (channel ayrı bir alan). Türkçe etiket.
-const SOURCE_LABEL: Record<string, string> = {
-  INSTAGRAM: 'Instagram', WEBSITE: 'Web', PHONE: 'Telefon', WHATSAPP: 'WhatsApp', SMS: 'SMS', WHOLESALE: 'Toptan',
-};
-const sourceLabel = (s: unknown): string => SOURCE_LABEL[String(s || '').toUpperCase()] || String(s || '').toUpperCase();
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  new: 'Yeni',
-  payment_waiting: 'Ödeme Bekliyor',
-  pending: 'Bekliyor',
-  no_confirm: 'Onay Bekliyor',
-  confirmed: 'Onaylandı',
-  preparing: 'Hazırlanıyor',
-  shipped: 'Kargoda',
-  delivered: 'Teslim Edildi',
-  completed: 'Tamamlandı',
-  cancelled: 'İptal Edildi',
-  canceled: 'İptal Edildi',
-  returned: 'İade Edildi',
-  refunded: 'İade Edildi',
-  abandoned: 'Terk Edildi',
-  failed: 'Başarısız',
-};
-const statusLabel = (value: unknown): string => {
-  const raw = String(value || '').trim();
-  return ORDER_STATUS_LABEL[raw.toLowerCase()] || raw;
-};
-
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  iban: 'Havale/EFT',
-  cash_on_delivery: 'Kapıda Nakit',
-  cod: 'Kapıda Ödeme',
-  kapida_kart: 'Kapıda Kart',
-  paytr: 'PayTR',
-  iyzico: 'iyzico',
-  website: 'Web',
-};
-const paymentMethodLabel = (value: unknown): string => {
-  const raw = String(value || '').trim();
-  return PAYMENT_METHOD_LABEL[raw.toLowerCase()] || raw;
-};
-
-const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  pending: 'Bekliyor',
-  waiting: 'Bekliyor',
-  awaiting_dekont: 'Dekont Bekliyor',
-  dekont_alindi: 'Dekont Alındı',
-  paid: 'Ödendi',
-  failed: 'Başarısız',
-  refunded: 'İade Edildi',
-};
-const paymentStatusLabel = (value: unknown): string => {
-  const raw = String(value || '').trim();
-  return PAYMENT_STATUS_LABEL[raw.toLowerCase()] || raw;
-};
-
-const AI_EMPLOYEE_STT_KEYTERMS = [
-  'Kangal sucuk', 'sucuk', 'kuzu sucuk', 'dana sucuk', 'acılı parmak sucuk', 'kuru sucuk',
-  'pastırma', 'kavurma', 'kaymak', 'lokum', 'sipariş', 'talep', 'fiş', 'iptal', 'onay',
-  'dekont', 'havale', 'kargo', 'müşteri', 'ürün',
-];
-
-// complaints.channel (küçük harf) → Türkçe etiket
-const COMPLAINT_CHANNEL_LABEL: Record<string, string> = {
-  phone: 'Telefon', whatsapp: 'WhatsApp', instagram: 'Instagram', system: 'Sistem', sms: 'SMS', email: 'E-posta', website: 'Web',
-};
-const channelLabel = (s: unknown): string => COMPLAINT_CHANNEL_LABEL[String(s || '').toLowerCase()] || String(s || '');
-
-// --- Parametre normalizasyonu (P13/P17): model farklı format/anahtar gönderebilir ---
-const UNIT_CANON: Record<string, string> = {
-  kg: 'KG', kilogram: 'KG', kilo: 'KG', kilograms: 'KG', kgs: 'KG',
-  adet: 'ADET', piece: 'ADET', pieces: 'ADET', tane: 'ADET',
-  koli: 'KOLI', kasa: 'KOLI', box: 'KOLI',
-  tepsi: 'TEPSI', tray: 'TEPSI',
-};
-const normalizeUnit = (v: unknown): string => {
-  const k = String(v ?? '').trim().toLowerCase();
-  return UNIT_CANON[k] || (k ? k.toUpperCase() : '');
-};
-
-/** "1.600" | "1,600" | "1600 TL" | "1 600" | "₺1600" | "1.600,50" → sayı */
-const parseTrPrice = (v: unknown): number | undefined => {
-  if (typeof v === 'number') return isFinite(v) ? v : undefined;
-  if (v == null) return undefined;
-  let s = String(v).trim().toLowerCase().replace(/tl|try|₺|lira|türk lirası|turk lirasi/g, '').replace(/\s/g, '');
-  if (!s) return undefined;
-  const hasDot = s.includes('.');
-  const hasComma = s.includes(',');
-  if (hasDot && hasComma) {
-    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  } else if (hasComma) {
-    s = s.replace(',', '.');
-  } else if (hasDot) {
-    const parts = s.split('.');
-    // tek nokta + 3 hane → binlik ayracı ("1.600"); aksi halde ondalık ("1600.50"); çok noktalı → binlik
-    if (parts.length !== 2 || parts[1].length === 3) s = s.replace(/\./g, '');
-  }
-  const n = Number(s);
-  return isFinite(n) ? n : undefined;
-};
-
-const PARAM_ALIASES: Record<string, string[]> = {
-  price: ['fiyat', 'fiyati', 'fiyatı', 'tutar', 'ücret', 'ucret', 'ucreti', 'ücreti'],
-  name: ['ad', 'isim', 'ürün', 'urun', 'urun_adi', 'ürün_adı', 'product', 'product_name'],
-  product: ['ürün', 'urun', 'urun_adi', 'ürün_adı', 'product_name', 'product'],
-  customer: ['müşteri', 'musteri', 'müşteri_adı', 'musteri_adi', 'müşteri adı', 'customer_name', 'isim', 'ad'],
-  message: ['mesaj', 'metin', 'içerik', 'icerik', 'text', 'body', 'content'],
-  order_number: ['sipariş_no', 'siparis_no', 'sipariş numarası', 'sipariş_numarası', 'siparis_numarasi', 'sipariş', 'siparis', 'order', 'order_no', 'no'],
-  quantity: ['adet', 'miktar', 'qty'],
-  unit: ['birim', 'ölçü', 'olcu'],
-  title: ['başlık', 'baslik', 'kampanya_adı', 'kampanya_adi'],
-  phone: ['telefon', 'telefon_no', 'gsm', 'tel'],
-  address: ['adres'],
-  surname: ['soyad', 'soyisim'],
-  plan_code: ['paket', 'paket_kodu', 'plan'],
-  count: ['sayı', 'sayi', 'limit'],
-};
-
-/** Modelin gönderdiği parametreleri kanonik anahtarlara/formatlara çevirir (eksikleri doldurur, mevcutları korur). */
-const normalizeParams = (params: Record<string, unknown>): Record<string, unknown> => {
-  const p: Record<string, unknown> = { ...(params || {}) };
-  const lower: Record<string, unknown> = {};
-  for (const k of Object.keys(p)) lower[k.trim().toLowerCase()] = p[k];
-  for (const canon of Object.keys(PARAM_ALIASES)) {
-    if (p[canon] != null && p[canon] !== '') continue;
-    for (const a of PARAM_ALIASES[canon]) {
-      if (lower[a] != null && lower[a] !== '') { p[canon] = lower[a]; break; }
-    }
-  }
-  if (p.price !== undefined) { const n = parseTrPrice(p.price); if (n !== undefined) p.price = n; }
-  if (p.quantity !== undefined) { const n = Number(String(p.quantity).replace(/[^\d.-]/g, '')); if (isFinite(n)) p.quantity = n; }
-  if (p.count !== undefined) { const n = Number(String(p.count).replace(/[^\d]/g, '')); if (isFinite(n)) p.count = n; }
-  if (p.unit !== undefined) p.unit = normalizeUnit(p.unit);
-  for (const k of ['name', 'product', 'customer', 'message', 'order_number', 'title', 'phone', 'address', 'surname', 'plan_code']) {
-    if (typeof p[k] === 'string') p[k] = (p[k] as string).trim();
-  }
-  return p;
-};
-
-/** Türkçe karakterleri ASCII'ye indirger (bozuk "?" karakterleri de tolere eder). */
-const asciiFold = (s: string): string => String(s || '')
-  .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u')
-  .replace(/Ç/g, 'C').replace(/Ğ/g, 'G').replace(/İ/g, 'I').replace(/Ö/g, 'O').replace(/Ş/g, 'S').replace(/Ü/g, 'U');
-
-/** Kullanıcı cümlesinden rapor dönemini çıkarır (P19). */
-const inferPeriod = (text: string): string => {
-  const p = asciiFold(String(text || '').toLowerCase());
-  if (/gecen|last/.test(p)) return 'last_week';
-  if (/hafta|week|son 7/.test(p)) return 'weekly';
-  if (/bug.n|today/.test(p)) return 'today';
-  if (/(^|[^a-z])ay([^a-z]|$)|aylik|month/.test(p)) return 'monthly';
-  if (/en cok|top/.test(p)) return 'top_products';
-  return 'today';
-};
-
-/** Kullanıcı cümlesinden rapor metriğini çıkarır (P26): kg/kilo → weight. */
-const inferMetric = (text: string): 'amount' | 'weight' => {
-  const p = asciiFold(String(text || '').toLowerCase());
-  return /\b(kg|kilo|kilogram|kilosu)\b/.test(p) ? 'weight' : 'amount';
-};
-
-/** Kullanıcı cümlesinden ORDER_LIST kapsamını çıkarır (P29). */
-const inferOrderScope = (text: string): string | null => {
-  const p = asciiFold(String(text || '').toLowerCase());
-  if (/bug.nk|bug.n|today/.test(p)) return 'today';
-  if (/gecmis|tamamlan|teslim edil/.test(p)) return 'all';
-  if (/aktif|bekleyen|askida|pending/.test(p)) return 'active';
-  return null;
-};
-
-/** Cümlede 9+ haneli telefon numarası varsa döndürür (P35). */
-const extractPhone = (text: string): string | null => {
-  const m = String(text || '').replace(/[^\d\s+()-]/g, ' ').match(/(\+?\d[\d\s()-]{7,}\d)/g);
-  if (!m) return null;
-  for (const raw of m) {
-    const digits = raw.replace(/\D/g, '');
-    if (digits.length >= 10 && digits.length <= 13) return digits;
-  }
-  return null;
-};
-
-const TR_NUMBER_WORDS: Record<string, number> = {
-  sifir: 0, bir: 1, iki: 2, uc: 3, dort: 4, bes: 5, alti: 6, yedi: 7, sekiz: 8, dokuz: 9,
-  on: 10, yirmi: 20, otuz: 30, kirk: 40, elli: 50, altmis: 60, yetmis: 70, seksen: 80, doksan: 90,
-  yuz: 100, bin: 1000,
-};
-
-const parseTurkishNumberSequence = (text: string): string | null => {
-  const tokens = asciiFold(String(text || '').toLowerCase()).match(/[a-z]+/g) || [];
-  const groups: number[] = [];
-  let current = 0;
-  let has = false;
-  let lastWasUnit = false;
-  const flush = () => {
-    if (!has) return;
-    groups.push(current);
-    current = 0;
-    has = false;
-  };
-  for (const token of tokens) {
-    const value = TR_NUMBER_WORDS[token];
-    if (value === undefined) {
-      flush();
-      lastWasUnit = false;
-      continue;
-    }
-    if (token === 'yuz') {
-      current = (current || 1) * 100;
-      has = true;
-      lastWasUnit = false;
-    } else if (token === 'bin') {
-      current = (current || 1) * 1000;
-      has = true;
-      lastWasUnit = false;
-    } else if (value >= 10) {
-      if (has && lastWasUnit) flush();
-      current += value;
-      has = true;
-      lastWasUnit = false;
-    } else {
-      if (has && lastWasUnit) flush();
-      current += value;
-      has = true;
-      lastWasUnit = true;
-    }
-  }
-  flush();
-  const digits = groups.map((n) => String(n)).join('');
-  return digits.length >= 3 ? digits : null;
-};
-
-const digitsFromOrderText = (text: string): string | null => {
-  const raw = String(text || '');
-  const separated = raw.match(/\b\d{1,4}[-/ ]\d{2,6}\b/);
-  if (separated) return separated[0].replace(/\D/g, '');
-  const compact = raw.match(/\b\d{3,7}\b/);
-  if (compact) return compact[0];
-  return parseTurkishNumberSequence(raw);
-};
-
-const inferExplicitOrderIntent = (text: string): string | null => {
-  const p = asciiFold(String(text || '').toLowerCase());
-  if (/(^|\s)kargola\b|kargoya ver|kargo yap/.test(p)) return 'CREATE_SHIPPING';
-  if (/(^|\s)iptal et\b|sipari[sş]i iptal/.test(p)) return 'CANCEL_ORDER';
-  if (/sipari[sş]i sil|sipari[sş] sil/.test(p)) return 'DELETE_ORDER';
-  return null;
-};
-
-/** Cümledeki ismi verilen bilinen müşteri adlarıyla eşleştirir (P35). */
-const matchKnownName = (text: string, names: string[]): string | null => {
-  const t = asciiFold(text.toLowerCase());
-  let best: { name: string; len: number } | null = null;
-  for (const n of names) {
-    const fn = asciiFold(String(n).toLowerCase()).trim();
-    if (fn.length < 3) continue;
-    if (t.includes(fn) && (!best || fn.length > best.len)) best = { name: n, len: fn.length };
-  }
-  return best?.name || null;
-};
-
-/** "X müşterisi / X'in bilgisi / X detayı" kalıbından isim çıkarır (P35). */
-const extractNamePattern = (text: string): string | null => {
-  const t = String(text || '').trim();
-  // "X'in/Yin ...", "X müşterisi/adresi/bilgisi/telefonu/detayı/iletişim..."
-  const patterns = [
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+){0,2})(?:'|’)?(?:in|ın|un|ün|nin|nın)?\s+(?:müşteri|musteri|adres|telefon|iletisim|iletişim|bilgi|detay|sipariş|siparis|kargo|talep|şikayet|sikayet)/i,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+){0,2})\s+(?:müşterisi|musterisi)/i,
-  ];
-  for (const re of patterns) {
-    const m = t.match(re);
-    if (m && m[1]) {
-      const cand = m[1].trim();
-      if (cand.length >= 3 && !/^(bir|bu|şu|su|peki|tamam|hangi|adres|telefon)$/i.test(cand)) return cand;
-    }
-  }
-  return null;
-};
+const READ_COMMANDS = new Set(['ORDER_DETAIL', 'ORDER_LIST', 'CUSTOMER_DETAIL', 'CONVERSATION_SUMMARY', 'RECENT_CONVERSATIONS', 'REPORT', 'DAILY_BRIEFING', 'SUBSCRIPTION_STATUS']);
 
 // Yazma (işlem) komutları — YALNIZCA kullanıcı onayıyla çalışır (execTool confirmed guard)
-const CUSTOMER_FIELD_COMMANDS = new Set(['CUSTOMER_DETAIL', 'CUSTOMER_ORDERS', 'CUSTOMER_CARGO', 'CUSTOMER_COMPLAINTS', 'CONVERSATION_SUMMARY', 'SET_CUSTOMER_PRICE', 'SEND_MESSAGE']);
 const WRITE_COMMANDS = new Set([
   'CREATE_PRODUCT', 'UPDATE_PRODUCT_PRICE', 'DELETE_PRODUCT',
   'CREATE_CUSTOMER', 'SET_CUSTOMER_PRICE',
@@ -390,7 +113,6 @@ interface PendingAction {
 export class AiEmployeeConversationService {
   private readonly logger = new Logger(AiEmployeeConversationService.name);
   private pending = new Map<string, PendingAction>();
-  private clarifications = new Map<string, { intent: string; params: Record<string, unknown>; role: string; candidates: any[]; expiresAt: number; attempts: number; reason: string }>();
   private histories = new Map<string, { role: 'user' | 'assistant'; content: string }[]>();
   private readonly yesWords = /^(evet|onayl[ıi]yorum|tamam|olur|onayla|gönder|gonder|yap|kabul|evet onayl[ıi]yorum)/i;
   private readonly noWords = /^(hay[ıi]r|iptal|vazge[çc]|kapat|olmaz|yok|dur)/i;
@@ -407,10 +129,9 @@ private readonly campaigns: CampaignsService,
   ) {}
 
   async converse(tenantId: string, text: string, role = 'staff', sessionId?: string): Promise<{ reply: string; pending?: boolean }> {
-    const started = Date.now();
     const key = `${tenantId}:${sessionId || 'default'}`;
     const result = await this.converseInternal(tenantId, text, role, key);
-    await this.recordTurnLatency(tenantId, key, Date.now() - started);
+    this.remember(key, text, result.reply);
     return result;
   }
 
@@ -447,88 +168,28 @@ private readonly campaigns: CampaignsService,
       return { reply: `${sal}, önceki onayınızın süresi doldu. İşlemi yeniden söyleyip onaylamanız gerekiyor.` };
     }
 
-    const clar = this.clarifications.get(historyKey);
-    if (clar) {
-      if (Date.now() >= clar.expiresAt) {
-        this.clarifications.delete(historyKey);
-      } else {
-        const t = text.trim();
-        let chosen = this.matchOrderCandidate(t, clar.candidates);
-        if (!chosen && this.yesWords.test(t) && clar.candidates.length === 1) chosen = clar.candidates[0];
-        if (chosen) {
-          this.clarifications.delete(historyKey);
-          return this.handleCommand(
-            tenantId, clar.role, sal, clar.intent,
-            { ...clar.params, order_number: chosen.order_number }, '', true, historyKey,
-          );
-        }
-        if (this.noWords.test(t)) {
-          this.clarifications.delete(historyKey);
-          return { reply: `${sal}, sipariş netleştirmeyi iptal ettim.` };
-        }
-        if (/neden|niye|ne iin|ne icin/.test(t.toLowerCase())) {
-          return { reply: this.orderClarification(sal, clar.candidates, clar.reason) };
-        }
-        clar.attempts += 1;
-        clar.expiresAt = Date.now() + PENDING_TTL_MS;
-        if (clar.attempts >= 3) {
-          this.clarifications.delete(historyKey);
-          return { reply: `${sal}, sipariş numarası netleşmedi; işlemi iptal ettim. Hazır olduğunuzda tekrar söyleyin.` };
-        }
-        return { reply: this.orderClarification(sal, clar.candidates, clar.reason) };
-      }
-    }
-
     // 2) DeepSeek
     const history = this.histories.get(historyKey) || [];
-    const parsed = await this.askAI(cfg, tenantId, text, history);
-    if (!parsed) return { reply: `${sal}, şu anda yanıtlayamadım. Siparişler, müşteriler, ürünler, kargolar, kampanyalar veya raporlar hakkında sorabilirsiniz.` };
-
-    const explicitIntent = inferExplicitOrderIntent(text);
-    if (explicitIntent) {
-      const orderNo = digitsFromOrderText(text) || String((parsed.params || {}).order_number || '').trim();
-      if (!orderNo) {
-        const action = explicitIntent === 'CREATE_SHIPPING' ? 'kargolamamı'
-          : explicitIntent === 'CANCEL_ORDER' ? 'iptal etmemi'
-          : 'silmemi';
-        return { reply: `${sal}, hangi siparişi ${action} istediğinizi söyler misiniz?` };
-      }
-      return this.handleCommand(
-        tenantId, role, sal, explicitIntent,
-        { ...(parsed.params || {}), order_number: orderNo }, '', false, historyKey,
-      );
-    }
+    let parsed: any;
+    try {
+      parsed = await Promise.race([
+        this.askAI(cfg, tenantId, text, history),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('ai-timeout')), 12000)),
+      ]);
+    } catch { return { reply: `${sal}, ?u anda yan?tlayamad?m; k?sa bir s?re sonra tekrar deneyin.` }; }
+    if (!parsed) return { reply: `${sal}, şu anda yanıtlayamadım, tekrar eder misiniz?` };
 
     if (parsed.type === 'command' && parsed.intent && parsed.params) {
-      if (parsed.intent === 'REPORT') {
-        if (parsed.params.period == null || parsed.params.period === '') parsed.params.period = inferPeriod(text);
-        if (parsed.params.metric == null || parsed.params.metric === '') parsed.params.metric = inferMetric(text);
-      }
-      if (parsed.intent === 'ORDER_LIST') {
-        const s = inferOrderScope(text);
-        if (s) parsed.params.scope = s; // kullanıcı cümlesi belirleyici (bugün→today)
-      }
-      // P35: müşteri alanlı komutlarda eksik "customer"ı cümleden çıkar (B-modu)
-      if (CUSTOMER_FIELD_COMMANDS.has(parsed.intent) && !parsed.params.customer && !parsed.params.name) {
-        const inferred = await this.inferCustomerArg(tenantId, text);
-        if (inferred) parsed.params.customer = inferred;
-      }
-      return this.handleCommand(tenantId, role, sal, parsed.intent, parsed.params, parsed.reply || '', false, historyKey);
+      return this.handleCommand(tenantId, role, sal, parsed.intent, parsed.params, parsed.reply || '');
     }
 
     await this.recordUsage(tenantId, text, 'conversation');
-    const answer = (parsed.reply || '').trim();
-    if (answer) {
-      this.remember(historyKey, text, answer);
-      return { reply: answer };
-    }
-    return { reply: `${sal}, tam anlayamadım. Siparişlerden mi, müşterilerden mi, ürünlerden mi, kargolardan mı, kampanyalardan mı yoksa raporlardan mı bahsetmek istiyorsunuz? Örneğin "Bugün kaç sipariş aldık?" diyebilirsiniz.` };
+    return { reply: parsed.reply || `${sal}, anlayamadım.` };
   }
 
   private async handleCommand(
     tenantId: string, role: string, sal: string,
     intent: string, params: Record<string, unknown>, preview: string,
-    skipOrderClarify = false, clarificationKey = tenantId,
   ): Promise<{ reply: string; pending?: boolean }> {
     if (!TOOL_ROLES[intent] && !READ_COMMANDS.has(intent)) return { reply: `${sal}, bu komutu bilmiyorum.` };
 
@@ -539,36 +200,15 @@ private readonly campaigns: CampaignsService,
       return { reply: `${sal}, bu işlem için yetkiniz yok.` };
     }
 
-    // Doğrulama (P13/P17: parametre normalizasyonu — B-modu)
-    params = normalizeParams(params);
+    // Doğrulama
     const vErr = this.validate(intent, params);
     if (vErr) return { reply: `${sal}, ${vErr}` };
-
-    if (ORDER_NUMBER_COMMANDS.has(intent) && params.order_number) {
-      const resolved = await this.resolveOrderNumber(tenantId, String(params.order_number));
-      if (!resolved.order) {
-        return { reply: `${sal}, #${params.order_number} siparişini bulamadım. Numarayı tekrar söyler misiniz?` };
-      }
-      if (resolved.ambiguous && !skipOrderClarify) {
-        const reason = intent === 'CREATE_SHIPPING'
-          ? 'Kargolama için sipariş numarasını netleştiriyorum.'
-          : 'Doğru siparişi bulmak için numarayı netleştiriyorum.';
-        this.clarifications.set(clarificationKey, {
-          intent, params: { ...params }, role, candidates: resolved.candidates,
-          expiresAt: Date.now() + PENDING_TTL_MS, attempts: 0, reason,
-        });
-        return { reply: this.orderClarification(sal, resolved.candidates, reason) };
-      }
-      params.order_number = resolved.order.order_number;
-      if (WRITE_COMMANDS.has(intent)) preview = this.orderActionPreview(sal, intent, resolved.order);
-    }
 
     // Bilgi komutları → direkt çalıştır (yalnızca READ; yazma komutu asla buraya giremez)
     if (READ_COMMANDS.has(intent)) {
       try {
         const result = await this.execTool(tenantId, intent, params, false);
         await this.recordUsage(tenantId, `read:${intent}`, 'conversation');
-        await this.logAudit(undefined, 'read', `read:${intent}`, tenantId, intent, params, String(result || '').slice(0, 2000));
         return { reply: result };
       } catch (e) {
         return { reply: `${sal}, ${(e as Error).message}` };
@@ -631,16 +271,10 @@ private readonly campaigns: CampaignsService,
         return `${p.product_name} ürünü listeden kaldırıldı.`;
       }
       case 'CREATE_CUSTOMER': {
-        const fullName = [String(params.name || ''), String(params.surname || '')].filter(Boolean).join(' ');
-        if (!fullName.trim()) throw new Error('müşteri adı gerekli');
-        const { error } = await this.supabase.db.from('customers').insert({
-          tenant_id: tenantId, name: fullName.trim(),
-          phone: params.phone ? String(params.phone) : null,
-          address: params.address ? String(params.address) : null,
-          city: params.city ? String(params.city) : null,
-        });
+        const phone = params.phone ? normalizeTrPhone(String(params.phone)) : null;
+        const { error } = await this.supabase.db.from('customers').insert({ tenant_id: tenantId, name: String(params.name), phone });
         if (error) throw new Error(error.message);
-        return `${fullName} müşterisi eklendi${params.phone ? ` (${params.phone})` : ''}.`;
+        return `${params.name} müşterisi eklendi.`;
       }
       case 'SET_CUSTOMER_PRICE': {
         const cust = await this.findCustomer(tenantId, String(params.customer));
@@ -656,32 +290,37 @@ private readonly campaigns: CampaignsService,
       }
       case 'ORDER_DETAIL': {
         const o = await this.findOrder(tenantId, String(params.order_number));
-        if (!o) throw new Error(`#${params.order_number} siparişi bulunamadı. Sipariş numarasını tekrar söyler misiniz? Örneğin 25-00099 şeklinde.`);
-        const custName = (o as any).customer_name || (o as any).customer?.name || 'Müşteri';
-        const custPhone = (o as any).customer_phone || (o as any).customer?.phone || '';
-        const custCity = (o as any).customer_city || (o as any).customer?.city || '';
-        const chanLabel = sourceLabel((o as any).source);
-        const payLabel = String(o.payment_status || '');
-        const items = ((o as any).order_items || []) as any[];
-        const itemStr = items.length
-          ? ' - ÜRÜNLER: ' + items.map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}${it.unit_price ? ' - ' + Number(it.unit_price).toLocaleString('tr-TR') + ' TL' : ''}`).join(', ')
-          : '';
-        return `#${o.order_number} - ${custName}${custPhone ? ' (' + custPhone + ')' : ''}${custCity ? ' - İl: ' + custCity : ''} - ${Number(o.total_price).toLocaleString('tr-TR')} TL - durum: ${statusLabel(o.status)}${chanLabel ? ' - kanal: ' + chanLabel : ''}${o.payment_method ? ' - ödeme: ' + paymentMethodLabel(o.payment_method) + (payLabel ? ' (' + paymentStatusLabel(payLabel) + ')' : '') : ''}${o.cargo_company ? ' - kargo: ' + o.cargo_company : ''}${o.tracking_number ? ' - takip: ' + o.tracking_number : ''}${itemStr}`;
+        if (!o) throw new Error(`#${params.order_number} siparişi bulunamadı`);
+        const items = ((o.order_items || []) as any[]).map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}`).join(', ');
+        return `#${o.order_number} - ${o.customer_name || 'Müşteri'} - ${Number(o.total_price).toLocaleString('tr-TR')} TL - durum: ${statusLabel(o.status)} - ödeme: ${paymentLabel(o.payment_method)} (${paymentStatusLabel(o.payment_status)}) - kanal: ${sourceLabel(o.source)}${o.customer_city ? ' - il: ' + o.customer_city : ''}${o.customer_district ? ' - ilçe: ' + o.customer_district : ''}${items ? ' - ürünler: ' + items : ''}${o.cargo_company ? ' - kargo: ' + o.cargo_company : ''}`;
       }
       case 'ORDER_LIST': {
-        const scope = String(params.scope || 'active').toLowerCase();
-        const count = Math.min(Number(params.count) || 15, 30);
+        const scope = String(params.scope || 'today').toLowerCase();
+        const count = Math.min(Number(params.count) || 10, 25);
         let q = this.supabase.db.from('orders')
-          .select('order_number,status,total_price,source,payment_method,created_at,customer_name,customer_city,customer:customer_id(name, city)')
-          .eq('tenant_id', tenantId).is('deleted_at', null)
-          .order('created_at', { ascending: false }).limit(count);
-        if (scope === 'active') q = q.in('status', ['new', 'PAYMENT_WAITING']);
+          .select('order_number,status,total_price,payment_method,payment_status,source,created_at,customer_name,customer_city')
+          .eq('tenant_id', tenantId).is('deleted_at', null);
         if (scope === 'today') { const s = new Date(); s.setHours(0, 0, 0, 0); q = q.gte('created_at', s.toISOString()); }
-        const { data } = await q;
+        else if (scope === 'active') q = q.in('status', ['new', 'approved', 'payment_waiting', 'preparing']);
+        const { data } = await q.order('created_at', { ascending: false }).limit(count);
         const rows = (data || []) as any[];
-        if (!rows.length) return scope === 'active' ? 'Aktif (bekleyen) sipariş yok.' : scope === 'today' ? 'Bugün sipariş yok.' : 'Sipariş bulunamadı.';
-        const label = scope === 'active' ? 'Aktif (bekleyen) siparişler' : scope === 'today' ? 'Bugünkü siparişler' : scope === 'all' ? 'Son siparişler' : 'Siparişler';
-        return `${label} (${rows.length}): ` + rows.map((r) => `#${r.order_number} - ${r.customer_name || r.customer?.name || 'Müşteri'}${(r.customer_city || r.customer?.city) ? ' (' + (r.customer_city || r.customer?.city) + ')' : ''} - ${Number(r.total_price).toLocaleString('tr-TR')} TL (${statusLabel(r.status)}${sourceLabel(r.source) ? ', ' + sourceLabel(r.source) : ''})`).join(' | ');
+        if (!rows.length) return 'Sipariş bulunamadı.';
+        return `${scope === 'today' ? 'Bugünkü' : scope === 'active' ? 'Aktif' : 'Son'} siparişler (${rows.length}): ` + rows.map((o) =>
+          `#${o.order_number} - ${o.customer_name || 'Müşteri'}${o.customer_city ? ' (' + o.customer_city + ')' : ''} - ${Number(o.total_price).toLocaleString('tr-TR')} TL - ${statusLabel(o.status)} - ${paymentLabel(o.payment_method)} - ${sourceLabel(o.source)}`,
+        ).join(' | ');
+      }
+      case 'CUSTOMER_DETAIL': {
+        const c = await this.findCustomer(tenantId, String(params.customer));
+        if (!c) throw new Error(`"${params.customer}" müşterisi bulunamadı`);
+        const { data } = await this.supabase.db.from('orders')
+          .select('order_number,created_at,total_price,status,order_items(product_name,quantity,unit)')
+          .eq('tenant_id', tenantId).eq('customer_id', c.id).is('deleted_at', null)
+          .order('created_at', { ascending: false }).limit(3);
+        const orders = ((data || []) as any[]).map((o) => {
+          const items = ((o.order_items || []) as any[]).map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}`).join(', ');
+          return `#${o.order_number} (${new Date(o.created_at).toLocaleDateString('tr-TR')}) - ${Number(o.total_price).toLocaleString('tr-TR')} TL - ${statusLabel(o.status)}${items ? ' - ' + items : ''}`;
+        }).join(' | ');
+        return `${c.name} - Telefon: ${normalizeTrPhone(c.phone)}${c.city ? ' - İl: ' + c.city : ''}${c.address ? ' - Adres: ' + c.address : ''}${c.note ? ' - Not: ' + c.note : ''}${orders ? ' - Son siparişler: ' + orders : ''}`;
       }
       case 'CANCEL_ORDER': {
         const o = await this.findOrder(tenantId, String(params.order_number));
@@ -707,251 +346,47 @@ private readonly campaigns: CampaignsService,
         const cust = await this.findCustomer(tenantId, String(params.customer));
         if (!cust) throw new Error(`"${params.customer}" müşterisi bulunamadı`);
         const { data } = await this.supabase.db.from('conversation_sessions')
-          .select('channel,created_at,session_data,order_id')
+          .select('channel,created_at,session_data')
           .eq('tenant_id', tenantId).eq('phone', cust.phone).order('created_at', { ascending: false }).limit(3);
         const rows = (data || []) as any[];
         if (!rows.length) return `${cust.name} ile henüz kayıtlı görüşme yok.`;
-        const itemMap = await this.itemsByOrder(tenantId, rows.map((r) => r.order_id));
         return `${cust.name} ile son görüşmeler: ` + rows.map((r) => {
           const sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
-          const prods = (itemMap[r.order_id] && itemMap[r.order_id].length) ? itemMap[r.order_id] : (Array.isArray(sd.products) ? sd.products : []);
-          const prodStr = prods.length ? ` - ürünler: ${prods.join(', ')}` : '';
-          return `${r.channel || 'kanal'} (${new Date(r.created_at).toLocaleDateString('tr-TR')}): ${sd.shortSummary || sd.summary || 'özet yok'}${prodStr}`;
+          return `${r.channel || 'kanal'} (${new Date(r.created_at).toLocaleDateString('tr-TR')}): ${sd.shortSummary || 'özet yok'}`;
         }).join(' | ');
       }
       case 'RECENT_CONVERSATIONS': {
-        const count = Math.min(Math.max(Number(params.count) || 5, 1), 10);
+        const count = Math.min(Number(params.count) || 5, 10);
         const { data } = await this.supabase.db.from('conversation_sessions')
-          .select('channel,phone,created_at,session_data,order_id')
-          .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(Math.min(count + 10, 20));
+          .select('channel,phone,created_at,session_data')
+          .eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(count);
         const rows = (data || []) as any[];
         if (!rows.length) return 'Henüz görüşme yok.';
-        const itemMap = await this.itemsByOrder(tenantId, rows.map((r) => r.order_id));
-        const seen = new Set<string>();
-        const lines: string[] = [];
-        for (const r of rows) {
-          let sd: any = {};
-          try {
-            sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
-          } catch {
-            sd = {};
-          }
-          const sum = String(sd.shortSummary || sd.summary || '').trim();
-          const prods = (itemMap[r.order_id] && itemMap[r.order_id].length) ? itemMap[r.order_id] : (Array.isArray(sd.products) ? sd.products : []);
-          if (!sum && !prods.length && !r.order_id) continue;
-          const key = `${r.order_id || ''}|${r.phone || ''}|${sum}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          const prodStr = prods.length ? ` [ürünler: ${prods.join(', ')}]` : '';
-          lines.push(`${sd.customer_name || r.phone} (${r.channel || '-'}): ${sum || 'özet yok'}${prodStr}`);
-          if (lines.length >= count) break;
-        }
-        if (!lines.length) return 'Özetli son görüşme yok.';
-        return (count === 1 ? 'Son görüşme: ' : 'Son görüşmeler: ') + lines.join(' | ');
+        return 'Son görüşmeler: ' + rows.map((r) => {
+          const sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
+          const sum = sd.summary || sd.shortSummary || '';
+          return `${sd.customer_name || r.phone} (${r.channel || '-'}): ${sum || 'özet yok'}`;
+        }).join(' | ');
       }
       case 'SEND_MESSAGE': {
         const cust = await this.findCustomer(tenantId, String(params.customer));
         if (!cust) throw new Error(`"${params.customer}" müşterisi bulunamadı`);
         if (!cust.phone) throw new Error(`${cust.name} için telefon bilgisi yok`);
         const channel = String(params.channel || 'whatsapp') === 'sms' ? 'sms' : 'whatsapp';
-        const res = await this.outbound.send({ tenantId, channel, to: cust.phone, body: String(params.message), customerId: cust.id });
-        if (!res.success) throw new Error(this.outboundError(res.error, channel));
+        const res = await this.outbound.send({ tenantId, channel, to: normalizeTrPhone(cust.phone), body: String(params.message), customerId: cust.id });
+        if (!res.success) throw new Error(res.error || 'Mesaj gönderilemedi');
         return `${cust.name} müşterisine ${channel === 'sms' ? 'SMS' : 'WhatsApp'} ile mesaj gönderildi.`;
       }
       case 'REPORT': {
         const period = String(params.period || 'today');
-        const metric = String(params.metric || 'amount').toLowerCase() === 'weight' ? 'weight' : 'amount';
-        return this.buildReport(tenantId, period, metric);
-      }
-      case 'REPORT_COMPARE': {
-        const period = String(params.period || 'weekly');
-        const now = new Date();
-        let curStart: Date; let prevStart: Date; let curEnd: Date; let prevEnd: Date;
-        if (period === 'monthly') {
-          curStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          curEnd = now; prevEnd = curStart;
-        } else {
-          curStart = new Date(now); curStart.setDate(now.getDate() - 7); curStart.setHours(0, 0, 0, 0);
-          prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 7);
-          curEnd = now; prevEnd = curStart;
-        }
-        const [cur, prev] = await Promise.all([
-          this.supabase.db.from('orders').select('total_price').eq('tenant_id', tenantId).gte('created_at', curStart.toISOString()).lt('created_at', curEnd.toISOString()).is('deleted_at', null),
-          this.supabase.db.from('orders').select('total_price').eq('tenant_id', tenantId).gte('created_at', prevStart.toISOString()).lt('created_at', prevEnd.toISOString()).is('deleted_at', null),
-        ]);
-        const cRows = (cur.data || []) as any[];
-        const pRows = (prev.data || []) as any[];
-        const cTotal = cRows.reduce((s, o) => s + Number(o.total_price || 0), 0);
-        const pTotal = pRows.reduce((s, o) => s + Number(o.total_price || 0), 0);
-        const diff = cTotal - pTotal;
-        const pct = pTotal > 0 ? Math.round((diff / pTotal) * 100) : (cTotal > 0 ? 100 : 0);
-        const label = period === 'monthly' ? 'Bu ay / Geçen ay' : 'Bu hafta / Geçen hafta';
-        const unit = period === 'monthly' ? 'ay' : 'hafta';
-        const trend = diff > 0 ? 'artış var' : diff < 0 ? 'düşüş var' : 'değişim yok';
-        return `${label}: bu ${unit} ${cRows.length} sipariş / ${cTotal.toLocaleString('tr-TR')} TL (geçen ${unit}: ${pRows.length} sipariş / ${pTotal.toLocaleString('tr-TR')} TL). Fark ${Math.abs(diff).toLocaleString('tr-TR')} TL (${pct >= 0 ? '+' : ''}${pct}%), ${trend}.`;
-      }
-      case 'PRODUCT_LIST': {
-        const { data } = await this.supabase.db.from('products').select('product_name, price, unit').eq('tenant_id', tenantId).is('deleted_at', null).order('product_name', { ascending: true }).limit(25);
-        const rows = (data || []) as any[];
-        if (!rows.length) return 'Ürün listeniz şu an boş.';
-        return `Ürünleriniz (${rows.length}): ` + rows.map((p: any) => `${p.product_name} ${Number(p.price).toLocaleString('tr-TR')} TL/${p.unit || 'KG'}`).join(', ');
-      }
-      case 'CUSTOMER_LIST': {
-        const { data } = await this.supabase.db.from('customers').select('name, phone').eq('tenant_id', tenantId).is('deleted_at', null).order('name', { ascending: true }).limit(40);
-        const seen = new Set<string>();
-        const rows = ((data || []) as any[]).filter((c) => { const k = `${c.name}|${c.phone || ''}`; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 20);
-        if (!rows.length) return 'Müşteri listeniz şu an boş.';
-        return `Müşterileriniz (${rows.length}): ` + rows.map((c: any) => `${c.name}${c.phone ? ' - ' + c.phone : ''}`).join(', ');
-      }
-      case 'CUSTOMER_DETAIL': {
-        const nameOrPhone = String(params.customer || params.name || '').trim();
-        if (!nameOrPhone) return 'Hangi müşteri? Lütfen müşteri adını veya telefon numarasını belirtin.';
-        const phone = nameOrPhone.replace(/\D/g, '');
-        const orQ = phone && phone.length >= 9 ? `phone.eq.${phone}` : `name.ilike.%${nameOrPhone}%`;
-        const { data } = await this.supabase.db.from('customers')
-          .select('id, name, phone, city, address, note')
-          .eq('tenant_id', tenantId).is('deleted_at', null)
-          .or(orQ)
-          .limit(10);
-        const seen = new Set<string>();
-        let rows = ((data || []) as any[]).filter((c) => { const k = `${c.name}|${c.phone || ''}`; if (seen.has(k)) return false; seen.add(k); return true; });
-        // Türkçe harf (ı/İ/ş/ğ) farkı fallback
-        if (!rows.length && !(phone && phone.length >= 9)) {
-          const fq = asciiFold(nameOrPhone.toLowerCase());
-          const { data: all } = await this.supabase.db.from('customers')
-            .select('id, name, phone, city, address, note').eq('tenant_id', tenantId).is('deleted_at', null).limit(300);
-          const seen2 = new Set<string>();
-          rows = ((all || []) as any[]).filter((c) => asciiFold(String(c.name || '').toLowerCase()).includes(fq))
-            .filter((c) => { const k = `${c.name}|${c.phone || ''}`; if (seen2.has(k)) return false; seen2.add(k); return true; });
-        }
-        if (!rows.length) {
-          // Sipariş snapshot'ında ara (müşteri tablosu eski kalabilir; testte aynı numara)
-          const { data: ords } = await this.supabase.db.from('orders')
-            .select('customer_name, customer_phone, customer_city, customer_district, customer_address')
-            .eq('tenant_id', tenantId).is('deleted_at', null)
-            .or(phone && phone.length >= 9 ? `customer_phone.eq.${phone},customer_name.ilike.%${nameOrPhone}%` : `customer_name.ilike.%${nameOrPhone}%`)
-            .order('created_at', { ascending: false }).limit(1);
-          const so = (ords || [])[0] as any;
-          if (so?.customer_name) {
-            const bits = [so.customer_name, so.customer_phone ? `telefon: ${so.customer_phone}` : '', so.customer_city ? `şehir: ${so.customer_city}` : '', so.customer_district ? `ilçe: ${so.customer_district}` : '', so.customer_address ? `adres: ${so.customer_address}` : ''].filter(Boolean);
-            return bits.join(', ');
-          }
-          return `"${nameOrPhone}" müşterisi bulunamadı.`;
-        }
-        if (rows.length > 1) {
-          return `Bu isimde ${rows.length} müşteri var: ` + rows.map((c, i) => `${i + 1}) ${c.name}${c.phone ? ' - ' + c.phone : ''}`).join(' | ') + '. Hangisini istersiniz?';
-        }
-        const c = rows[0];
-        const bits = [c.name, c.phone ? `telefon: ${c.phone}` : '', c.city ? `şehir: ${c.city}` : '', c.address ? `adres: ${c.address}` : '', c.note ? `not: ${c.note}` : ''].filter(Boolean);
-        return bits.length ? bits.join(', ') : `${c.name} müşteri kaydı var.`;
-      }
-      case 'COMPLAINTS_LIST': {
-        const limit = Math.min(Number(params.count) || 5, 5);
-        const { data } = await this.supabase.db.from('complaints')
-          .select('description, category, severity, status, created_at, customer_name, customer_phone, channel')
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false })
-          .limit(limit);
-        const rows = (data || []) as any[];
-        if (!rows.length) return 'Bekleyen talep veya şikâyet yok.';
-        return `Son talep/şikâyetler (${rows.length}): ` + rows.map((r) => {
-          const who = r.customer_name || 'İsimsiz müşteri';
-          const phone = r.customer_phone ? `, telefon ${r.customer_phone}` : '';
-          return `${who}${phone}: ${String(r.description || '').slice(0, 70)}${r.channel ? ` (${channelLabel(r.channel)})` : ''}`;
-        }).join(' | ');
-      }
-      case 'CARGO_STATUS': {
-        const statusMap: Record<string, string> = { 
-          in_transit: 'yolda', 
-          at_branch: 'şubede', 
-          out_for_delivery: 'dağıtımda', 
-          delivered: 'teslim edildi', 
-          pending: 'hazırlanıyor', 
-          on_the_way: 'yolda' 
-        };
-        const { data } = await this.supabase.db
-          .from('orders')
-          .select('order_number, cargo_status, cargo_company, tracking_number, customer_name, customer_city, customer:customer_id(name, city)')
-          .eq('tenant_id', tenantId).is('deleted_at', null)
-          .not('cargo_status', 'is', null)
-          .order('created_at', { ascending: false }).limit(30);
-        const rows = (data || []) as any[];
-        if (!rows.length) return 'Kargodaki paket yok.';
-        const byStatus: Record<string, string[]> = {};
-        for (const r of rows) { 
-          const k = statusMap[r.cargo_status] || r.cargo_status; 
-          (byStatus[k] = byStatus[k] || []).push(`${r.customer_name || r.customer?.name || 'Müşteri'} #${r.order_number}${(r.customer_city || r.customer?.city) ? ' — İl: ' + (r.customer_city || r.customer?.city) : ''}${r.cargo_company ? ' (' + r.cargo_company + ')' : ''}`); 
-        }
-        return Object.entries(byStatus).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' | ');
-      }
-      case 'CUSTOMER_CARGO': {
-        const cust = await this.findCustomer(tenantId, String(params.customer || params.name || ''));
-        if (!cust) return `"${params.customer}" müşterisi bulunamadı.`;
-        const statusMap: Record<string, string> = { 
-          in_transit: 'yolda', 
-          at_branch: 'şubede', 
-          out_for_delivery: 'dağıtımda', 
-          delivered: 'teslim edildi', 
-          pending: 'hazırlanıyor' 
-        };
-        const { data } = await this.supabase.db.from('orders')
-          .select('order_number, cargo_status, cargo_company, tracking_number')
-          .eq('tenant_id', tenantId).eq('customer_id', cust.id).is('deleted_at', null)
-          .not('cargo_status', 'is', null)
-          .order('created_at', { ascending: false }).limit(10);
-        const rows = (data || []) as any[];
-        if (!rows.length) return `${cust.name} müşterisinin kargoda paketi yok.`;
-        const il = cust.city ? ` (İl: ${cust.city})` : '';
-        return `${cust.name}${il} müşterisinin kargoları: ` + rows.map((r) => 
-          `#${r.order_number}: ${statusMap[r.cargo_status] || r.cargo_status}${r.cargo_company ? ' (' + r.cargo_company + ')' : ''}${r.tracking_number ? ' - takip: ' + r.tracking_number : ''}`
-        ).join(', ');
-      }
-      case 'CUSTOMER_ORDERS': {
-        const cust = await this.findCustomer(tenantId, String(params.customer || params.name || ''));
-        if (!cust) return `"${params.customer}" müşterisi bulunamadı.`;
-        const { data } = await this.supabase.db.from('orders')
-          .select('id,order_number,status,total_price,source,payment_method,payment_status,created_at,order_items(product_name,quantity,unit,unit_price)')
-          .eq('tenant_id', tenantId).eq('customer_id', cust.id).is('deleted_at', null)
-          .order('created_at', { ascending: false }).limit(15);
-        const rows = (data || []) as any[];
-        if (!rows.length) return `${cust.name} müşterisinin siparişi yok.`;
-        const cil = cust.city ? ` (İl: ${cust.city})` : '';
-        return `${cust.name}${cil} müşterisinin siparişleri: ` + rows.map((r) => {
-          const its = (r.order_items || []) as any[];
-          const prodStr = its.length ? ' - ÜRÜNLER: ' + its.map((it) => `${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}`).join(', ') : ' - ürün kaydı yok';
-          return `#${r.order_number} ${Number(r.total_price).toLocaleString('tr-TR')} TL (${statusLabel(r.status)}, kanal ${sourceLabel(r.source)}, ödeme ${paymentMethodLabel(r.payment_method)}${r.payment_status ? ' - ' + paymentStatusLabel(r.payment_status) : ''})${prodStr}`;
-        }).join(' | ');
-      }
-      case 'CUSTOMER_COMPLAINTS': {
-        const cust = await this.findCustomer(tenantId, String(params.customer || params.name || ''));
-        if (!cust) return `"${params.customer}" müşterisi bulunamadı.`;
-        const { data } = await this.supabase.db.from('complaints')
-          .select('description, category, severity, status, created_at')
-          .eq('tenant_id', tenantId).eq('customer_phone', cust.phone)
-          .order('created_at', { ascending: false }).limit(10);
-        const rows = (data || []) as any[];
-        if (!rows.length) return `${cust.name} müşterisinin talep/şikâyeti yok.`;
-        return `${cust.name} müşterisinin talep/şikâyetleri: ` + rows.map((r) => `${r.category === 'complaint' ? 'şikâyet' : 'talep'}: ${String(r.description || '').slice(0, 70)} (${r.status})`).join(' | ');
+        return this.buildReport(tenantId, period);
       }
       case 'CREATE_CAMPAIGN': {
-        const title = String(params.title || params.name || 'Kampanya');
-        const offer = String(params.message || params.offer || title);
-        const startDate = params.start_date ? String(params.start_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
-        const endDate = params.end_date ? String(params.end_date).slice(0, 10) : new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
-        await this.campaigns.create(tenantId, {
-          title,
-          description: String(params.message || title),
-          condition: String(params.condition || offer),
-          offer,
-          min_amount: params.min_amount != null ? Number(params.min_amount) : 0,
-          min_quantity: params.min_quantity != null ? Number(params.min_quantity) : 0,
-          target_product: String(params.target_product || ''),
-          start_date: startDate,
-          end_date: endDate,
-          active: true,
+        const created = await this.campaigns.create(tenantId, {
+          title: String(params.title), description: String(params.message || params.title),
+          condition: '', offer: String(params.message || ''), min_quantity: 0, target_product: '', active: true,
         });
-        return `Kampanya oluşturuldu: ${title}.`;
+        return `Kampanya oluşturuldu: ${params.title}.`;
       }
       case 'SEND_CAMPAIGN': {
         const channel = String(params.channel || 'whatsapp') === 'sms' ? 'sms' : 'whatsapp';
@@ -992,7 +427,7 @@ private readonly campaigns: CampaignsService,
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const [t, a, s, prod] = await Promise.all([
           this.supabase.db.from('orders').select('total_price').eq('tenant_id', tenantId).gte('created_at', today.toISOString()).is('deleted_at', null),
-          this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).in('status', ['new', 'PAYMENT_WAITING']).is('deleted_at', null),
+          this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).in('status', ['new', 'approved', 'preparing']).is('deleted_at', null),
           this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).eq('status', 'shipped').is('deleted_at', null),
           this.supabase.db.from('products').select('id').eq('tenant_id', tenantId).is('deleted_at', null),
         ]);
@@ -1006,22 +441,11 @@ private readonly campaigns: CampaignsService,
     }
   }
 
-  private async buildReport(tenantId: string, periodRaw: string, metric: 'amount' | 'weight' = 'amount'): Promise<string> {
+  private async buildReport(tenantId: string, period: string): Promise<string> {
     const now = new Date();
-    const p = String(periodRaw || '').toLowerCase().trim();
-    // Kelime-sınırı eşleşmesi ("today" içindeki "ay" tuzağını önler)
-    const hasWord = (w: string) => new RegExp(`(^|[^a-zçğıöşü])${w}($|[^a-zçğıöşü])`, 'i').test(p);
-    const period = hasWord('geçen') || hasWord('gecen') || hasWord('last') ? 'last_week'
-      : hasWord('hafta') || hasWord('week') || hasWord('weekly') || p.includes('son 7') ? 'weekly'
-      : hasWord('bugün') || hasWord('bugun') || hasWord('today') ? 'today'
-      : hasWord('ay') || hasWord('month') || hasWord('monthly') ? 'monthly'
-      : hasWord('top') ? 'top_products'
-      : 'today';
     let start: Date;
-    let end: Date | null = null;
     if (period === 'today') { start = new Date(); start.setHours(0, 0, 0, 0); }
     else if (period === 'weekly') { start = new Date(now); start.setDate(now.getDate() - 7); start.setHours(0, 0, 0, 0); }
-    else if (period === 'last_week') { end = new Date(now); end.setDate(now.getDate() - 7); end.setHours(0, 0, 0, 0); start = new Date(end); start.setDate(end.getDate() - 7); }
     else if (period === 'monthly') { start = new Date(now.getFullYear(), now.getMonth(), 1); }
     else if (period === 'top_products') {
       const { data } = await this.supabase.db.from('order_items').select('product_name,total').gte('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()).limit(500);
@@ -1032,53 +456,24 @@ private readonly campaigns: CampaignsService,
       return top.length ? 'Bu ay en çok satan ürünler: ' + top.map(([n, v]) => `${n} (${v.total.toLocaleString('tr-TR')} TL)`).join(', ') : 'Bu ay satış verisi yok.';
     } else { start = new Date(); start.setHours(0, 0, 0, 0); }
 
-    const label = period === 'weekly' ? 'Son 7 gün' : period === 'last_week' ? 'Geçen hafta (8-14 gün önce)' : period === 'monthly' ? 'Bu ay' : 'Bugün';
-
-    // P26: kg/adet raporu
-    if (metric === 'weight') {
-      const { data } = await this.supabase.db.from('orders').select('id,created_at')
-        .eq('tenant_id', tenantId).gte('created_at', start.toISOString()).is('deleted_at', null);
-      const oRows = ((data || []) as any[]).filter((o) => !end || new Date(o.created_at).getTime() < end!.getTime());
-      const ids = oRows.map((o) => o.id);
-      let kg = 0; let adet = 0; let lines = 0;
-      if (ids.length) {
-        const { data: items } = await this.supabase.db.from('order_items').select('quantity,unit').in('order_id', ids).is('deleted_at', null).limit(2000);
-        for (const it of (items || []) as any[]) {
-          const u = String(it.unit || '').toLowerCase();
-          const q = Number(it.quantity || 0);
-          if (u.includes('kg') || u.includes('kilo')) kg += q; else adet += q;
-          lines++;
-        }
-      }
-      const parts = [kg > 0 ? `${kg.toLocaleString('tr-TR')} kg` : '', adet > 0 ? `${adet.toLocaleString('tr-TR')} adet` : ''].filter(Boolean).join(' ve ');
-      return `${label}: ${parts || 'satış kalemi yok'} (${oRows.length} sipariş, ${lines} kalem).`;
-    }
-
-    const { data } = await this.supabase.db.from('orders').select('total_price,status,created_at')
+    const { data } = await this.supabase.db.from('orders').select('total_price,status')
       .eq('tenant_id', tenantId).gte('created_at', start.toISOString()).is('deleted_at', null);
-    const rows = ((data || []) as any[]).filter((o) => !end || new Date(o.created_at).getTime() < end!.getTime());
+    const rows = (data || []) as any[];
     const total = rows.reduce((s, o) => s + Number(o.total_price || 0), 0);
-    const paid = rows.filter((o) => o.status === 'DELIVERED' || o.status === 'completed' || o.status === 'shipped').length;
-    return `${label}: ${rows.length} sipariş, toplam ${total.toLocaleString('tr-TR')} TL (${paid} teslim/kargoda).`;
+    const paid = rows.filter((o) => o.status === 'completed' || o.status === 'shipped').length;
+    return `${period === 'weekly' ? 'Son 7 gün' : period === 'monthly' ? 'Bu ay' : 'Bugün'}: ${rows.length} sipariş, toplam ${total.toLocaleString('tr-TR')} TL (${paid} teslim/kargoda).`;
   }
 
-  private async askAI(
-    cfg: AiEmployeeConfig, tenantId: string, text: string,
-    history: { role: 'user' | 'assistant'; content: string }[] = [],
-  ): Promise<{ type: string; reply?: string; intent?: string; params?: Record<string, unknown> } | null> {
+  private async askAI(cfg: AiEmployeeConfig, tenantId: string, text: string, history: { role: 'user' | 'assistant'; content: string }[] = []): Promise<{ type: string; reply?: string; intent?: string; params?: Record<string, unknown> } | null> {
     const snapshot = await this.buildSnapshot(tenantId);
     const system = `${ANAYASA}\n\n[PERSONA]\nAd: ${cfg.name}\nSize hitap: ${this.salutation(cfg)}\nTon: ${cfg.tone}\n\n[İŞLETME DURUMU]\n${snapshot}\n\n${COMMAND_SCHEMA}`;
     const apiKey = this.config.get<string>('DEEPSEEK_API_KEY');
     if (!apiKey) return null;
-    const client = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com/v1', timeout: 12000, maxRetries: 1 });
+    const client = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com/v1', timeout: 12000, maxRetries: 0 });
     const resp = await client.chat.completions.create({
       model: this.config.get<string>('DEEPSEEK_MODEL', 'deepseek-chat'),
-      messages: [
-        { role: 'system', content: system },
-        ...history.slice(-6),
-        { role: 'user', content: text },
-      ],
-      temperature: 0.3, max_tokens: 350,
+      messages: [{ role: 'system', content: system }, ...history.slice(-6), { role: 'user', content: text }],
+      temperature: 0.3, max_tokens: 600,
       response_format: { type: 'json_object' },
     });
     const content = resp.choices?.[0]?.message?.content || '';
@@ -1091,154 +486,106 @@ private readonly campaigns: CampaignsService,
     }
   }
 
-  /** Realtime (Gemini Live) için sistem talimatı. */
-  async buildRealtimeSystem(tenantId: string, cfg: AiEmployeeConfig): Promise<string> {
-    const snapshot = await this.buildSnapshot(tenantId);
-    const sal = this.salutation(cfg);
+  private remember(key: string, user: string, assistant: string): void {
+    const list = this.histories.get(key) || [];
+    list.push({ role: 'user', content: user.slice(0, 500) }, { role: 'assistant', content: assistant.slice(0, 800) });
+    this.histories.set(key, list.slice(-6));
+  }
+
+  private validate(intent: string, params: Record<string, unknown>): string | null {
+    const price = Number(params.price);
+    if (['CREATE_PRODUCT', 'UPDATE_PRODUCT_PRICE', 'SET_CUSTOMER_PRICE'].includes(intent) && (!price || price <= 0)) return 'geçerli bir fiyat gerekli.';
+    if (intent === 'CREATE_PRODUCT' && !params.name) return 'ürün adı gerekli.';
+    if (intent === 'CREATE_CUSTOMER' && !params.name) return 'müşteri adı gerekli.';
+    if (intent === 'SET_CUSTOMER_PRICE' && (!params.customer || !params.product)) return 'müşteri ve ürün adı gerekli.';
+    if (['CANCEL_ORDER', 'DELETE_ORDER', 'CREATE_SHIPPING', 'ORDER_DETAIL'].includes(intent) && !params.order_number) return 'sipariş numarası gerekli.';
+    if (intent === 'SEND_MESSAGE' && (!params.customer || !params.message)) return 'müşteri ve mesaj gerekli.';
+    if (intent === 'SEND_CAMPAIGN' && !params.message) return 'kampanya mesajı gerekli.';
+    if (intent === 'CREATE_CAMPAIGN' && !params.title) return 'kampanya adı gerekli.';
+    if (intent === 'UPGRADE_SUBSCRIPTION' && !params.plan_code) return 'paket kodu gerekli (pro/ultra/mega).';
+    return null;
+  }
+
+  private async findProduct(tenantId: string, name: string) {
+    const { data } = await this.supabase.db.from('products').select('id, product_name, unit, price').eq('tenant_id', tenantId).is('deleted_at', null).ilike('product_name', `%${name}%`).limit(1);
+    return data?.[0] || null;
+  }
+  private async findCustomer(tenantId: string, nameOrPhone: string) {
+    const phone = normalizeTrPhone(nameOrPhone);
+    const variants = phoneVariants(nameOrPhone);
+    if (variants.length) {
+      const { data } = await this.supabase.db.from('customers').select('id, name, phone, city, address, note').eq('tenant_id', tenantId).is('deleted_at', null).in('phone', variants).limit(5);
+      if (data?.length) return data[0];
+    }
+    const { data } = await this.supabase.db.from('customers').select('id, name, phone, city, address, note').eq('tenant_id', tenantId).is('deleted_at', null).ilike('name', `%${nameOrPhone}%`).limit(1);
+    return data?.[0] || null;
+  }
+  private async findOrder(tenantId: string, orderNumber: string) {
+    const { data } = await this.supabase.db.from('orders').select('id, order_number, status, total_price, customer_name, customer_phone, customer_city, customer_district, customer_address, payment_method, payment_status, source, cargo_company, order_items(product_name, quantity, unit, unit_price, total)').eq('tenant_id', tenantId).is('deleted_at', null).ilike('order_number', `%${orderNumber}%`).limit(1);
+    return data?.[0] || null;
+  }
+
+  private async buildSnapshot(tenantId: string): Promise<string> {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const [todayOrders, activeOrders, pendingShipments, lastOrder, products] = await Promise.all([
+      this.supabase.db.from('orders').select('id,total_price').eq('tenant_id', tenantId).gte('created_at', today.toISOString()).is('deleted_at', null),
+      this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).in('status', ['new', 'approved', 'preparing']).is('deleted_at', null),
+      this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).eq('status', 'shipped').is('deleted_at', null),
+      this.supabase.db.from('orders').select('order_number,total_price,status,created_at,customer:customer_id(name)').eq('tenant_id', tenantId).is('deleted_at', null).order('created_at', { ascending: false }).limit(1),
+      this.supabase.db.from('products').select('product_name,price,unit').eq('tenant_id', tenantId).is('deleted_at', null).limit(10),
+    ]);
+    const todayArr = (todayOrders.data || []) as any[];
+    const todayTotal = todayArr.reduce((s, o) => s + Number(o.total_price || 0), 0);
+    const last = lastOrder.data?.[0] as any;
+    const prodList = ((products.data || []) as any[]).slice(0, 8).map((p) => `${p.product_name} ${Number(p.price).toLocaleString('tr-TR')} TL/${p.unit}`).join(', ');
     return [
-      ANAYASA,
-      '',
-      `[PERSONA] Ad: ${cfg.name} | Size hitap: ${sal} | Ton: ${cfg.tone}`,
-      `[İŞLETME DURUMU] ${snapshot}`,
-      '',
-      '[KONUŞMA KURALLARI]',
-      '- Kullanıcıyla doğal, kısa ve sıcak Türkçe konuş; esnaf olduğunu unutma.',
-      '- DİL: Yanıtların YALNIZCA Türkçe olmalı. İngilizce veya başka bir dilde ASLA cevap verme; kullanıcı başka dilde konuşsa bile Türkçe yanıtla.',
-      '- Müşteri ad, soyad, telefon ve adres bilgileri İŞLETMENİN KENDİ VERİSİDİR; listelemek ve söylemek serbesttir (esnafın kendi müşterisidir).',
-      '- Snapshot\'taki ÖZET/SAYI bilgilerini (bugünkü/bu ay sipariş, aktif, kargoda, son sipariş, müşteri sayısı, abonelik) ARAÇ ÇAĞIRMADAN doğrudan cevapla.',
-      '- LİSTE verileri (ürün listesi, müşteri listesi, son görüşmeler, talep/şikâyet) için HER ZAMAN business_tool çağır — snapshot eski olabilir, güncel veriyi araçtan al.',
-      '- Sorgu yönlendirmesi: "şikayet/talep/istek" → COMPLAINTS_LIST; "ürün listesi/katalog" → PRODUCT_LIST; "müşteri listesi" → CUSTOMER_LIST; "son görüşme/özet" → RECENT_CONVERSATIONS; "sipariş numarası / kargo / takip" → ORDER_DETAIL; "aktif/bekleyen siparişler neler / sipariş listesi" → ORDER_LIST (scope=active); "abonelik/kalan hak" → SUBSCRIPTION_STATUS; "günaydın" → DAILY_BRIEFING.',
-      '- Rapor: "bugün / bu hafta / geçen hafta / bu ay / en çok satan" ifadelerinde REPORT çağır ve `period` alanını MUTLAKA doldur (today | weekly | last_week | monthly | top_products). "Geçen hafta" → last_week, "bu hafta/son 7 gün" → weekly, "bugün" → today, "bu ay" → monthly. "Kaç kg/kilo sattık" gibi sorularda `metric`=weight gönder (kg/adet raporu).',
-      '- Kargo ve sipariş çıktılarında müşterinin İLİ varsa mutlaka belirt ("... — İl: Afyonkarahisar").',
-      '- Onay akışı: kullanıcı yazma işlemini onaylarsa ("evet/onaylıyorum/tamam") ilgili business_tool çağrısını confirm=true ile HEMEN tamamla; onaydan sonra başka soru sorsa bile önce bekleyen işlemi bitir.',
-      '- Müşteri bazlı sorgular: "X müşterisinin siparişi/siparişleri" → CUSTOMER_ORDERS; "X müşterisinin kargosu/kargo durumu" → CUSTOMER_CARGO; "X müşterisinin talebi/şikâyeti" → CUSTOMER_COMPLAINTS; "X müşterisinin görüşmesi" → CONVERSATION_SUMMARY; "X müşterisinin bilgisi/telefonu/adresi" → CUSTOMER_DETAIL; "tüm kargolar" → CARGO_STATUS.',
-      '- CUSTOMER_DETAIL / CUSTOMER_ORDERS / CUSTOMER_CARGO / CUSTOMER_COMPLAINTS / CONVERSATION_SUMMARY çağırırken `customer` alanını MUTLAKA doldur. Kullanıcı bir müşteri adı veya telefon söylemişse, o değeri `customer` alanına yaz; boş bırakma.',
-      '- Takip soruları: esnaf bir liste/detaydan sonra "diğerleri/başkaları/kalanlar neler/peki ya ..." gibi devam sorusu sorarsa, ilgili komutu (örn. COMPLAINTS_LIST, PRODUCT_LIST, CUSTOMER_ORDERS) yeniden çağırıp kalanı/diğerini söyle; sohbeti doğal sürdür, sessiz kalma.',
-      '- Esnaf ne sorarsa onu yerine getir; bir soru cevaplandı diye konuşmayı bitirme, doğal diyalog gibi devam et.',
-      '- CEVAPLARINI YALNIZCA tool sonucundan üret; sistemden veri yoksa "veri yok" de, ASLA uydurma.',
-      '- ORDER_DETAIL "bulunamadı" dönerse kullanıcıdan sipariş numarasını tekrar iste (örn. "25-00099 şeklinde söyler misiniz?") ve okuduğunu doğrula.',
-      '- Spesifik sipariş/müşteri istendiğinde ORDER_DETAIL / CUSTOMER_DETAIL çağır; sadece sayı söyleme, detayı da ver (sipariş no, müşteri, tutar, durum, kargo, takip no).',
-      '- "Ne sipariş etmiş / içeriği ne / hangi ürünler" sorularında: bir müşterinin tümü isteniyorsa CUSTOMER_ORDERS (ürünleriyle gelir); belirli bir sipariş isteniyorsa ORDER_DETAIL (ürünleriyle gelir). Ürün bilgisini MUTLAKA söyle.',
-      '- Bir siparişte ürün kaydı yoksa ("ürün kaydı yok" dönerse) bunu net söyle: "bu siparişte ürün kaydı bulunmuyor"; ASLA uydurma.',
-      '- Sipariş numarası verildiğinde YALNIZCA o numaraya odaklan; önceki listedeki/son görüşmedeki başka tutar veya siparişle KARIŞTIRMA. Emin değilsen numarayı tekrar doğrula.',
-      '- İşlem (ekle/sil/güncelle/gönder/kampanya/paket) için business_tool çağır.',
-      '- Araç çağrısı yaptığında "birazdan detayını vereceğim / kontrol ediyorum / sistemi dinliyorum" gibi dolgu konuşma YAPMA; araç sonucunu alınca doğrudan, kısa ve net söyle.',
-      '- Bilmediğin veya kapsam dışı konuda kısa, doğal cevap ver; işlem yapma.',
-      '',
-      '[EKLEME AKIŞLARI]',
-      '- "Ürün ekle" derse: SIRASIYLA ürün adını, fiyatını ve satış tipini (kilogram, adet, koli veya tepsi — "kg" demek yerine tam adı söyle) sor. Hepsi toplanınca business_tool confirm=false ile CREATE_PRODUCT çağır (params: {name, price, unit}).',
-      '- "Müşteri ekle" derse: SIRASIYLA müşteri adını, soyadını, telefon numarasını ve adresini sor. Hepsi alınınca business_tool confirm=false ile CREATE_CUSTOMER çağır (params: {name, surname, phone, address}).',
-      '- "Kampanya oluştur" derse: SIRASIYLA kampanya adını ve kampanya mesajını sor. İKİSİ de alınınca DERHAL business_tool confirm=false ile CREATE_CAMPAIGN çağır (params: {title, message}). Aracı çağırmadan ASLA "oluşturdum" veya "sistemde hata var" DEME. Onayını iste, onaylanınca AYNI parametrelerle confirm=true ile tamamla.',
-      '- Zorunlu: Kampanya/ürün/müşteri ekleme isteğinde, gerekli bilgiler toplandığında business_tool çağrısını MUTLAKA yap. Aracı çağırmadan sonuç uydurma, "sistem hatası" deme.',
-      '- Kullanıcı "evet/onaylıyorum/tamam" derse ve bekleyen bir yazma işlemi varsa, ilk iş AYNI komutu AYNI parametrelerle confirm=true çağırmaktır; başka soru sorsa bile önce onu tamamla.',
-      '- Eksik bilgi varsa ASLA işlemi çalıştırma; tek tek sor.',
-      '',
-      '[ONAY KURALI]',
-      '- Yazma işleminde: business_tool ile confirm=false çağır → "pending+preview" döner (işlem HENÜZ yapılmadı).',
-      '- Önizlemeyi kullanıcıya OKU ve açıkça sor: "eklememi/oluşturmamı onaylıyor musunuz?"',
-      '- Kullanıcı "evet / onaylıyorum / tamam" derse, business_tool\'u confirm=true ile AYNI komut ve TÜM parametreleri EKSİKSİZ göndererek hemen tekrar çağır. Sonra sonucu bildir.',
-      '- Kullanıcı "hayır / iptal / vazgeç" derse işlemi iptal et, devam et.',
-      '- Kullanıcı açıkça onaylamadan hiçbir yazma işlemini çalıştırma; onaysız çağrı yalnızca önizleme döndürür.',
-      '- Yazma işlemi BAŞARILI olursa mutlaka kısa ve net duyur: "X ürününü ekledim, 500 TL/kilogram." veya "X müşterisini ekledim." — sessiz kalma.',
-      '',
-      '[KAPANMA]',
-      '- Kullanıcı "tamam teşekkürler / sessize geç / kapan / uyu / iyi günler / bay bay / görüşürüz" derse kısa bir veda söyle ve business_tool komut="SLEEP" çağır.',
+      `Bugünkü sipariş: ${todayArr.length} adet, toplam ${todayTotal.toLocaleString('tr-TR')} TL`,
+      `Aktif (bekleyen) sipariş: ${(activeOrders.data || []).length}`,
+      `Kargoda: ${(pendingShipments.data || []).length}`,
+      last ? `Son sipariş: #${last.order_number} - ${last.customer?.name || 'Müşteri'} - ${Number(last.total_price).toLocaleString('tr-TR')} TL (${statusLabel(last.status)})` : 'Son sipariş yok',
+      prodList ? `Ürünler (ilk 8): ${prodList}` : 'Ürün yok',
     ].join('\n');
   }
 
-  /** Realtime tool çağrısı: READ doğrudan; WRITE onay akışıyla. */
-  async runTool(
-    tenantId: string, role: string, intent: string,
-    params: Record<string, unknown>, confirm: boolean, hint?: string, recentTexts?: string[],
-  ): Promise<{ pending?: boolean; preview?: string; result?: string; error?: string }> {
-    const t0 = Date.now();
-    const out = await this.runToolInner(tenantId, role, intent, params, confirm, hint, recentTexts);
-    const ms = Date.now() - t0;
-    this.logger.log(`runTool ${intent} confirm=${confirm} ${ms}ms ${out.error ? 'HATA: ' + out.error : out.pending ? 'PENDING' : 'OK'}`);
-    return out;
-  }
-
-  private async runToolInner(
-    tenantId: string, role: string, intent: string,
-    params: Record<string, unknown>, confirm: boolean, hint?: string, recentTexts?: string[],
-  ): Promise<{ pending?: boolean; preview?: string; result?: string; error?: string }> {
-    const sal = this.salutation(await this.aiEmployee.get(tenantId));
-    if (!TOOL_ROLES[intent] && !READ_COMMANDS.has(intent)) return { error: 'Bilinmeyen komut: ' + intent };
-    const allowed = TOOL_ROLES[intent];
-    if (allowed && !allowed.includes(role)) return { error: 'Bu işlem için yetkiniz yok' };
-    params = normalizeParams(params); // P13/P17: fiyat/anahtar/birim toleransı
-    // P19/P26: eksik period/metrik'i kullanıcı cümlesinden çıkar
-    if (intent === 'REPORT') {
-      if (params.period == null || params.period === '') params.period = hint ? inferPeriod(hint) : 'today';
-      if (params.metric == null || params.metric === '') params.metric = hint ? inferMetric(hint) : 'amount';
-    }
-    // P29: ORDER_LIST kapsamını kullanıcı cümlesinden çıkar (kullanıcı cümlesi belirleyici)
-    if (intent === 'ORDER_LIST' && hint) {
-      const s = inferOrderScope(hint);
-      if (s) params.scope = s;
-    }
-    // P35: müşteri alanlı komutlarda eksik "customer"ı cümlelerden çıkar
-    if (CUSTOMER_FIELD_COMMANDS.has(intent) && !params.customer && !params.name) {
-      const inferred = await this.inferCustomerArg(tenantId, hint, recentTexts);
-      if (inferred) params.customer = inferred;
-    }
-    const vErr = this.validate(intent, params);
-    if (vErr) return { error: vErr };
-
-    if (READ_COMMANDS.has(intent)) {
-      try {
-        const result = await this.execTool(tenantId, intent, params, false);
-        await this.recordUsage(tenantId, `read:${intent}`, 'conversation');
-        await this.logAudit(undefined, 'read', `read:${intent}`, tenantId, intent, params, String(result || '').slice(0, 2000));
-        return { result };
-      } catch (e) { return { error: (e as Error).message }; }
-    }
-
-    // Yazma (işlem) → önce onay
-    if (!confirm) {
-      const preview = this.buildToolPreview(sal, intent, params);
-      const auditId = await this.logAudit(undefined, 'pending', preview, tenantId, intent, params);
-      this.pending.set(tenantId, { intent, params, preview, role, expiresAt: Date.now() + PENDING_TTL_MS, attempts: 0, auditId });
-      return { pending: true, preview };
-    }
-    const pend = this.pending.get(tenantId);
-    if (!pend || pend.intent !== intent) return { error: 'Onay bekleyen işlem bulunamadı. İşlemi yeniden söyleyin.' };
-    this.pending.delete(tenantId);
+  private async logAudit(auditId: string | undefined, status: string, preview: string | undefined, tenantId?: string, intent?: string, params?: Record<string, unknown>, result?: string): Promise<string | undefined> {
     try {
-      // Onay çağrısındaki eksik alanları, bekleyen onayın kayıtlı parametreleriyle tamamla
-      const merged = { ...(pend.params || {}), ...(params || {}) };
-      const result = await this.execTool(tenantId, intent, merged, true);
-      await this.logAudit(pend.auditId, 'confirmed', pend.preview, tenantId, intent, merged, result);
-      await this.recordUsage(tenantId, `executed:${intent}`, 'command');
-      return { result };
-    } catch (e) {
-      await this.logAudit(pend.auditId, 'failed', pend.preview, tenantId, intent, params, (e as Error).message);
-      return { error: (e as Error).message };
-    }
+      if (auditId) {
+        await this.supabase.db.from('ai_employee_audit').update({ status, result: result || null, confirmed: status === 'confirmed' }).eq('id', auditId);
+        return auditId;
+      }
+      if (!tenantId || !intent) return undefined;
+      const { data } = await this.supabase.db.from('ai_employee_audit').insert({ tenant_id: tenantId, command: intent, intent, params: params || {}, preview: preview || null, status, confirmed: status === 'confirmed', result: result || null }).select('id').single();
+      return data?.id;
+    } catch { return undefined; }
   }
 
-  private buildToolPreview(sal: string, intent: string, params: Record<string, unknown>): string {
-    const s = (v: unknown) => String(v ?? '');
-    switch (intent) {
-      case 'CREATE_PRODUCT': return `${sal}, yeni ürün ekleniyor: ${s(params.name)}, ${Number(params.price).toLocaleString('tr-TR')} TL/${s(params.unit || 'KG')}.`;
-      case 'UPDATE_PRODUCT_PRICE': return `${sal}, ${s(params.product)} ürün fiyatı ${Number(params.price).toLocaleString('tr-TR')} TL olarak güncellenecek.`;
-      case 'DELETE_PRODUCT': return `${sal}, ${s(params.product)} ürünü silinecek.`;
-      case 'CREATE_CUSTOMER': return `${sal}, yeni müşteri eklenecek: ${s(params.name)} (${s(params.phone || 'telefon yok')}).`;
-      case 'SET_CUSTOMER_PRICE': return `${sal}, ${s(params.customer)} müşterisine ${s(params.product)} ürünü özel fiyatı ${Number(params.price).toLocaleString('tr-TR')} TL.`;
-      case 'CANCEL_ORDER': return `${sal}, ${s(params.order_number)} nolu sipariş iptal edilecek.`;
-      case 'DELETE_ORDER': return `${sal}, ${s(params.order_number)} nolu sipariş silinecek.`;
-      case 'CREATE_SHIPPING': return `${sal}, ${s(params.order_number)} nolu sipariş kargoya verilecek.`;
-      case 'SEND_MESSAGE': return `${sal}, ${s(params.customer)} müşterisine mesaj gönderilecek.`;
-      case 'CREATE_CAMPAIGN': return `${sal}, yeni kampanya oluşturulacak: ${s(params.title)}.`;
-      case 'SEND_CAMPAIGN': return `${sal}, kampanya ${s(params.channel || 'whatsapp')} üzerinden gönderilecek.`;
-      case 'UPGRADE_SUBSCRIPTION': return `${sal}, paket ${s(params.plan_code)} olarak yükseltilecek.`;
-      default:
-        return `${sal}, islem hazir.`;
-    }
+  /** Kullanım metriği kaydı (latency, token, maliyet) — 065 kolonları + ai_pricing config. */
+  private async recordUsage(tenantId: string, text: string, kind: 'conversation' | 'command' | 'notification'): Promise<void> {
+    try {
+      const startedAt = Date.now();
+      const inputTokens = Math.max(1, Math.ceil(text.length / 4)); // ~4 karakter/token
+      const outputTokens = 100; // tahmini çıktı
+      const latencyMs = Date.now() - startedAt;
+      const cost = await this.pricing.costFor('deepseek', 'deepseek-chat', inputTokens, outputTokens);
+      await this.supabase.db.from('ai_employee_usage').insert({
+        tenant_id: tenantId,
+        kind,
+        duration_sec: 0,
+        latency_ms: latencyMs,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        provider: 'deepseek',
+        cost_estimate: cost,
+        note: text.slice(0, 120),
+      });
+    } catch { /* sessiz */ }
   }
 
-  /** Whisper STT: ses dosyasını Türkçe metne çevirir.
-   *  Provider: STT_PROVIDER=groq (varsayılan, ücretsiz whisper-large-v3-turbo) | openai (gpt-4o-transcribe/whisper-1). */
+  private salutation(cfg: AiEmployeeConfig): string {
+    if (cfg.salutation === 'ozel') return cfg.custom_salutation || 'Patron';
+    const map: Record<string, string> = { patron: 'Patron', usta: 'Ustam', bey: 'Beyefendi', hanim: 'Hanımefendi', abi: 'Abi', kardesim: 'Kardeşim' };
+    return map[cfg.salutation] || 'Patron';
+  }
   async transcribeAudio(tenantId: string, file: any): Promise<string> {
     if (!file || !file.buffer) throw new Error('Ses dosyası yok');
     let provider = (
@@ -1302,7 +649,8 @@ private readonly campaigns: CampaignsService,
     } else {
       apiKey = this.config.get<string>('GROQ_API_KEY');
       baseURL = 'https://api.groq.com/openai/v1';
-      models = ['whisper-large-v3', 'whisper-large-v3-turbo'];
+      const preferred = this.config.get<string>('AI_EMPLOYEE_STT_MODEL') || 'whisper-large-v3-turbo';
+      models = Array.from(new Set([preferred, 'whisper-large-v3-turbo', 'whisper-large-v3']));
     }
     if (!apiKey) throw new Error(`${provider === 'openai' ? 'OPENAI_API_KEY' : 'GROQ_API_KEY'} tanımlı değil`);
 
@@ -1330,291 +678,4 @@ private readonly campaigns: CampaignsService,
     return text;
   }
 
-  private validate(intent: string, params: Record<string, unknown>): string | null {
-    const price = Number(params.price);
-    if (['CREATE_PRODUCT', 'UPDATE_PRODUCT_PRICE', 'SET_CUSTOMER_PRICE'].includes(intent) && (!price || price <= 0)) return 'fiyat sayısal olmalı (örn. 1600). Fiyatı sadece sayı olarak tekrar gönder.';
-    if (intent === 'CREATE_PRODUCT' && !params.name) return 'ürün adı (name) gerekli; tekrar gönder.';
-    if (intent === 'CREATE_CUSTOMER' && !params.name) return 'müşteri adı (name) gerekli; tekrar gönder.';
-    if (intent === 'SET_CUSTOMER_PRICE' && (!params.customer || !params.product)) return 'müşteri (customer) ve ürün (product) alanları gerekli; tekrar gönder.';
-    if (['CANCEL_ORDER', 'DELETE_ORDER', 'CREATE_SHIPPING', 'ORDER_DETAIL'].includes(intent) && !params.order_number) return 'sipariş numarası (order_number) gerekli; tekrar gönder.';
-    if (intent === 'SEND_MESSAGE' && (!params.customer || !params.message)) return 'müşteri (customer) ve mesaj (message) alanları gerekli; tekrar gönder.';
-    if (intent === 'SEND_CAMPAIGN' && !params.message) return 'kampanya mesajı (message) gerekli; tekrar gönder.';
-    if (intent === 'CREATE_CAMPAIGN' && !params.title) return 'kampanya adı (title) gerekli; tekrar gönder.';
-    if (intent === 'UPGRADE_SUBSCRIPTION' && !params.plan_code) return 'paket kodu (plan_code: pro/ultra/mega) gerekli; tekrar gönder.';
-    return null;
-  }
-
-  private async findProduct(tenantId: string, name: string) {
-    const { data } = await this.supabase.db.from('products').select('id, product_name, unit, price').eq('tenant_id', tenantId).is('deleted_at', null).ilike('product_name', `%${name}%`).limit(1);
-    return data?.[0] || null;
-  }
-  private outboundError(code: string | undefined, channel: string): string {
-    const ch = channel === 'sms' ? 'SMS' : 'WhatsApp';
-    if (code && /NOT_CONFIGURED/i.test(code)) return `${ch} entegrasyonu yapılandırılmamış; mesaj gönderilemedi.`;
-    return code || 'Mesaj gönderilemedi';
-  }
-  /** Verilen sipariş id'leri için ürün özetlerini (ad + miktar + birim) toplar. */
-  private async itemsByOrder(_tenantId: string, orderIds: (string | null | undefined)[]): Promise<Record<string, string[]>> {
-    const ids = Array.from(new Set(orderIds.filter(Boolean))) as string[];
-    const map: Record<string, string[]> = {};
-    if (!ids.length) return map;
-    try {
-      const { data } = await this.supabase.db.from('order_items').select('order_id,product_name,quantity,unit').in('order_id', ids).is('deleted_at', null);
-      for (const it of (data || []) as any[]) {
-        (map[it.order_id] = map[it.order_id] || []).push(`${it.product_name} ${Number(it.quantity).toLocaleString('tr-TR')} ${it.unit || 'ADET'}`);
-      }
-    } catch { /* yoksay */ }
-    return map;
-  }
-  private async findCustomer(tenantId: string, nameOrPhone: string) {
-    const q = String(nameOrPhone || '').trim();
-    if (!q) return null;
-    const phone = q.replace(/\D/g, '');
-    // Önce sipariş snapshot'ında ara (müşteri tablosu eski kalabilir; testte aynı numara)
-    const { data: ords } = await this.supabase.db.from('orders')
-      .select('customer_id, customer_name, customer_phone, customer_city')
-      .eq('tenant_id', tenantId).is('deleted_at', null)
-      .or(phone && phone.length >= 9 ? `customer_phone.eq.${phone},customer_name.ilike.%${q}%` : `customer_name.ilike.%${q}%`)
-      .order('created_at', { ascending: false }).limit(1);
-    const so = (ords || [])[0] as any;
-    if (so?.customer_name) return { id: so.customer_id, name: so.customer_name, phone: so.customer_phone, city: so.customer_city };
-    const nameQ = `name.ilike.%${q}%`;
-    const orQ = phone && phone.length >= 9 ? `phone.eq.${phone},${nameQ}` : nameQ;
-    const { data } = await this.supabase.db.from('customers').select('id, name, phone, city').eq('tenant_id', tenantId).is('deleted_at', null).or(orQ).order('created_at', { ascending: true }).limit(5);
-    if (data && data[0]) return data[0];
-    // Türkçe harf (ı/İ/ş/ğ) farkı: ilike eşleşmezse ascii-normalize edilmiş fallback
-    const fq = asciiFold(q.toLowerCase());
-    if (fq.length >= 3) {
-      const { data: all } = await this.supabase.db.from('customers').select('id, name, phone, city').eq('tenant_id', tenantId).is('deleted_at', null).limit(300);
-      const hit = ((all || []) as any[]).find((c) => asciiFold(String(c.name || '').toLowerCase()).includes(fq));
-      if (hit) return hit;
-    }
-    return null;
-  }
-
-  /**
-   * P35: Model `customer` alanını boş bıraktığında, son kullanıcı cümlelerinden
-   * müşteri adı (bilinen isim eşleşmesi / kalıp) veya telefon numarasını çıkarır.
-   */
-  private async inferCustomerArg(tenantId: string, hint?: string, recentTexts?: string[]): Promise<string | null> {
-    const joined = [hint || '', ...(recentTexts || [])].join(' ').trim();
-    if (!joined) return null;
-    // 1) Telefon (9+ hane)
-    const phone = extractPhone(joined);
-    if (phone) return phone;
-    // 2) Bilinen müşteri adlarıyla eşleşme
-    try {
-      const { data } = await this.supabase.db.from('customers').select('name').eq('tenant_id', tenantId).is('deleted_at', null).limit(200);
-      const names = ((data || []) as any[]).map((c) => String(c.name || ''));
-      const known = matchKnownName(joined, names);
-      if (known) return known;
-    } catch { /* yoksay */ }
-    // 3) "X müşterisi / X'in adresi" kalıbı
-    return extractNamePattern(hint || joined);
-  }
-  private orderNorm(value: string): string {
-    return String(value || '').replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
-  }
-
-  private orderDistance(a: string, b: string): number {
-    if (a === b) return 0;
-    if (!a.length) return b.length;
-    if (!b.length) return a.length;
-    const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-    for (let i = 1; i <= a.length; i++) {
-      let last = prev[0];
-      prev[0] = i;
-      for (let j = 1; j <= b.length; j++) {
-        const old = prev[j];
-        prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, last + (a[i - 1] === b[j - 1] ? 0 : 1));
-        last = old;
-      }
-    }
-    return prev[b.length];
-  }
-
-  private async resolveOrderNumber(tenantId: string, raw: string): Promise<{ order?: any; ambiguous?: boolean; candidates: any[] }> {
-    const digits = digitsFromOrderText(raw);
-    if (!digits) return { candidates: [] };
-    const short = digits.length <= 5;
-    const { data } = await this.supabase.db.from('orders')
-      .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
-      .eq('tenant_id', tenantId).is('deleted_at', null)
-      .order('created_at', { ascending: false }).limit(250);
-    const rows = (data || []) as any[];
-    const exact = rows.filter((o) => {
-      const n = this.orderNorm(o.order_number);
-      return n === digits || (short && n.endsWith(digits));
-    });
-    const near = rows.filter((o) => {
-      if (exact.some((e) => e.id === o.id)) return false;
-      const n = this.orderNorm(o.order_number);
-      const a = n.slice(-3);
-      const b = digits.slice(-3);
-      return a.length === 3 && b.length === 3 && Math.abs(Number(a) - Number(b)) <= 1;
-    });
-    const seen = new Set<string>();
-    const candidates = [...exact, ...near].filter((o) => {
-      if (seen.has(o.id)) return false;
-      seen.add(o.id);
-      return true;
-    });
-    if (!candidates.length) return { candidates: [] };
-    return { order: exact[0] || near[0], ambiguous: candidates.length > 1, candidates };
-  }
-
-  private orderClarification(sal: string, candidates: any[], reason = 'Sipariş numarasını netleştirir misiniz?'): string {
-    const options = candidates.slice(0, 2).map((o) => {
-      const name = o.customer_name || o.customer?.name || 'Müşteri';
-      return `#${o.order_number} (${name})`;
-    });
-    return `${sal}, ${options.join(' mı, ')} mi? ${reason}`;
-  }
-
-  private matchOrderCandidate(text: string, candidates: any[]): any | null {
-    const lower = String(text || '').toLowerCase();
-    if (/birinci|ilk/.test(lower)) return candidates[0] || null;
-    if (/ikinci|sonraki/.test(lower)) return candidates[1] || null;
-    if (/üçüncü|ucuncu/.test(lower)) return candidates[2] || null;
-    const digits = digitsFromOrderText(text);
-    if (!digits) return null;
-    return candidates.find((o) => {
-      const n = this.orderNorm(o.order_number);
-      return n === digits || n.endsWith(digits) || (digits.length >= 3 && n.endsWith(digits.slice(-3)));
-    }) || null;
-  }
-
-  private orderActionPreview(sal: string, intent: string, order: any): string {
-    const who = order.customer_name || order.customer?.name || 'Müşteri';
-    const total = Number(order.total_price || 0).toLocaleString('tr-TR');
-    const action = intent === 'CREATE_SHIPPING' ? 'kargoya veriyorum'
-      : intent === 'CANCEL_ORDER' ? 'iptal ediyorum'
-      : intent === 'DELETE_ORDER' ? 'siliyorum'
-      : 'işleme alıyorum';
-    return `${sal}, #${order.order_number} - ${who} - ${total} TL ${action}.`;
-  }
-
-  private async findOrder(tenantId: string, orderNumber: string) {
-    const raw = String(orderNumber || '').trim();
-    const digits = this.orderNorm(raw);
-    const tail5 = digits.slice(-5);
-    const tail4 = digits.slice(-4);
-    const { data } = await this.supabase.db.from('orders')
-        .select('id, order_number, status, total_price, payment_method, payment_status, cargo_company, tracking_number, source, customer_name, customer_phone, customer_city, customer_district, customer_address, customer:customer_id(name, phone, city), order_items(product_name, quantity, unit, unit_price, total)')
-      .eq('tenant_id', tenantId).is('deleted_at', null)
-      .or(`order_number.ilike.%${tail5}%,order_number.ilike.%${digits}%,order_number.ilike.%${tail4}%`)
-      .limit(30);
-    const rows = (data || []) as any[];
-    if (!rows.length) return null;
-    const exact = rows.find((o) => this.orderNorm(o.order_number) === digits);
-    if (exact) return exact;
-    const byTail5 = rows.filter((o) => this.orderNorm(o.order_number).slice(-5) === tail5);
-    if (byTail5.length === 1) return byTail5[0];
-    const byTail4 = rows.filter((o) => this.orderNorm(o.order_number).slice(-4) === tail4);
-    return byTail4.length === 1 ? byTail4[0] : null;
-  }
-
-  private async buildSnapshot(tenantId: string): Promise<string> {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const [todayOrders, activeOrders, pendingShipments, lastOrder, products, customers, conv, sub, monthOrders] = await Promise.all([
-      this.supabase.db.from('orders').select('id,total_price').eq('tenant_id', tenantId).gte('created_at', today.toISOString()).is('deleted_at', null),
-      this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).in('status', ['new', 'PAYMENT_WAITING']).is('deleted_at', null),
-      this.supabase.db.from('orders').select('id').eq('tenant_id', tenantId).eq('status', 'shipped').is('deleted_at', null),
-      this.supabase.db.from('orders').select('order_number,total_price,status,created_at,customer:customer_id(name)').eq('tenant_id', tenantId).is('deleted_at', null).order('created_at', { ascending: false }).limit(1),
-      this.supabase.db.from('products').select('product_name,price,unit').eq('tenant_id', tenantId).is('deleted_at', null).limit(10),
-      this.supabase.db.from('customers').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).is('deleted_at', null),
-      this.supabase.db.from('conversation_sessions').select('channel,phone,created_at,session_data').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(3),
-      this.saas.getSubscription(tenantId) as Promise<any>,
-      this.supabase.db.from('orders').select('total_price,status').eq('tenant_id', tenantId).gte('created_at', monthStart.toISOString()).is('deleted_at', null),
-    ]);
-    const todayArr = (todayOrders.data || []) as any[];
-    const todayTotal = todayArr.reduce((s, o) => s + Number(o.total_price || 0), 0);
-    const last = lastOrder.data?.[0] as any;
-    const prodList = ((products.data || []) as any[]).slice(0, 8).map((p) => `${p.product_name} ${Number(p.price).toLocaleString('tr-TR')} TL/${p.unit}`).join(', ');
-    const custCount = customers.count || 0;
-    const monthArr = (monthOrders.data || []) as any[];
-    const monthTotal = monthArr.reduce((s, o) => s + Number(o.total_price || 0), 0);
-    const subj = sub as any;
-    const subLimit = Number(subj?.order_limit) || 0;
-    const subUsed = Number(subj?.orders_used) ?? 0;
-    const subRemaining = subLimit > 0 ? Math.max(0, subLimit - subUsed) : (subj?.remaining_orders ?? '?');
-    const convList = ((conv.data || []) as any[]).slice(0, 3).map((r) => {
-      const sd = typeof r.session_data === 'string' ? JSON.parse(r.session_data) : (r.session_data || {});
-      return `${sd.customer_name || r.phone || 'Müşteri'} (${r.channel || '-'})`;
-    }).join(', ');
-    return [
-      `Bugünkü sipariş: ${todayArr.length} adet, toplam ${todayTotal.toLocaleString('tr-TR')} TL`,
-      `Bu ay: ${monthArr.length} sipariş, toplam ${monthTotal.toLocaleString('tr-TR')} TL`,
-      `Aktif (bekleyen) sipariş: ${(activeOrders.data || []).length}`,
-      `Kargoda: ${(pendingShipments.data || []).length}`,
-      last ? `Son sipariş: #${last.order_number} - ${last.customer?.name || 'Müşteri'} - ${Number(last.total_price).toLocaleString('tr-TR')} TL (${last.status})` : 'Son sipariş yok',
-      prodList ? `Ürünler (ilk 8): ${prodList}` : 'Ürün yok',
-      `Müşteri sayısı: ${custCount}`,
-      (subj?.plan?.name || subj?.plan_name) ? `Abonelik: ${subj?.plan?.name || subj?.plan_name}${subLimit > 0 ? ` (${subLimit} sipariş hakkı, kullanılan ${subUsed}, kalan ${subRemaining})` : ` (kalan hak: ${subRemaining})`}` : (subj ? `Abonelik: kalan hak ${subRemaining}` : 'Abonelik bilgisi yok'),
-      convList ? `Son görüşmeler: ${convList}` : 'Görüşme yok',
-    ].join('\n');
-  }
-
-  private async logAudit(auditId: string | undefined, status: string, preview: string | undefined, tenantId?: string, intent?: string, params?: Record<string, unknown>, result?: string): Promise<string | undefined> {
-    try {
-      if (auditId) {
-        await this.supabase.db.from('ai_employee_audit').update({ status, result: result || null, confirmed: status === 'confirmed' }).eq('id', auditId);
-        return auditId;
-      }
-      if (!tenantId || !intent) return undefined;
-      const { data } = await this.supabase.db.from('ai_employee_audit').insert({ tenant_id: tenantId, command: intent, intent, params: params || {}, preview: preview || null, status, confirmed: status === 'confirmed', result: result || null }).select('id').single();
-      return data?.id;
-    } catch { return undefined; }
-  }
-
-  private remember(key: string, user: string, assistant: string): void {
-    const list = this.histories.get(key) || [];
-    list.push({ role: 'user', content: user }, { role: 'assistant', content: assistant });
-    this.histories.set(key, list.slice(-8));
-  }
-
-  private async recordTurnLatency(tenantId: string, key: string, latencyMs: number): Promise<void> {
-    try {
-      await this.supabase.db.from('ai_employee_usage').insert({
-        tenant_id: tenantId,
-        kind: 'conversation',
-        duration_sec: Math.max(0, Math.round(latencyMs / 1000)),
-        latency_ms: latencyMs,
-        input_tokens: 0,
-        output_tokens: 0,
-        provider: 'deepseek',
-        cost_estimate: 0,
-        note: `turn:${key.slice(0, 80)}`,
-      });
-    } catch { /* sessiz */ }
-  }
-
-  /** Kullanım metriği kaydı (latency, token, maliyet) — 065 kolonları + ai_pricing config. */
-  private async recordUsage(tenantId: string, text: string, kind: 'conversation' | 'command' | 'notification'): Promise<void> {
-    try {
-      const startedAt = Date.now();
-      const inputTokens = Math.max(1, Math.ceil(text.length / 4)); // ~4 karakter/token
-      const outputTokens = 100; // tahmini çıktı
-      const latencyMs = Date.now() - startedAt;
-      const cost = await this.pricing.costFor('deepseek', 'deepseek-chat', inputTokens, outputTokens);
-      await this.supabase.db.from('ai_employee_usage').insert({
-        tenant_id: tenantId,
-        kind,
-        duration_sec: 0,
-        latency_ms: latencyMs,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        provider: 'deepseek',
-        cost_estimate: cost,
-        note: text.slice(0, 120),
-      });
-    } catch { /* sessiz */ }
-  }
-
-  private salutation(cfg: AiEmployeeConfig): string {
-    if (cfg.salutation === 'ozel') return cfg.custom_salutation || 'Patron';
-    const map: Record<string, string> = { patron: 'Patron', usta: 'Ustam', bey: 'Beyefendi', hanim: 'Hanımefendi', abi: 'Abi', kardesim: 'Kardeşim' };
-    return map[cfg.salutation] || 'Patron';
-  }
 }

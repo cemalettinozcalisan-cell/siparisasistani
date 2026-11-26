@@ -5,6 +5,7 @@ import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { WhatsAppConversationsService } from '../whatsapp/conversations/conversations.service';
 import { OutboundService } from '../messages/outbound.service';
 import { ProductLookupService } from '../common/product-lookup.service';
+import { normalizeTrPhone, phoneVariants } from '../common/phone';
 
 const PREPAID_METHODS = ['iban', 'paytr', 'iyzico', 'website'];
 
@@ -41,12 +42,19 @@ export class OrderEngineService {
     input: AiOrderInput,
     tenantId: string,
   ) {
-    const { data: existing } = await this.supabase.db
+    const phone = normalizeTrPhone(input.customer.phone);
+    input.customer.phone = phone || input.customer.phone;
+    const variants = phoneVariants(phone);
+    const { data: matches } = await this.supabase.db
       .from('customers')
       .select('id, name, phone')
       .eq('tenant_id', tenantId)
-      .eq('phone', input.customer.phone)
-      .maybeSingle();
+      .in('phone', variants)
+      .limit(10);
+    const rows = (matches || []) as any[];
+    const existing = rows.find((c) => normalizeTrPhone(c.phone) === phone && String(c.name || '').toLocaleLowerCase('tr-TR') === String(input.customer.name || '').toLocaleLowerCase('tr-TR'))
+      || rows.find((c) => normalizeTrPhone(c.phone) === phone)
+      || rows[0];
 
     if (existing) {
       this.logger.log(`Existing customer: ${existing.id}`);
@@ -66,7 +74,8 @@ export class OrderEngineService {
       .insert({
         tenant_id: tenantId,
         name: input.customer.name,
-        phone: input.customer.phone,
+        phone,
+
         address: [input.customer.address, input.customer.district].filter(Boolean).join(', ') || null,
         city: input.customer.city || null,
         company_name: input.customer.company_name || null,
@@ -235,7 +244,7 @@ export class OrderEngineService {
     const newCity = input.customer?.city || String(old.customer_city || '');
     const newDistrict = input.customer?.district || String(old.customer_district || '');
     const newName = input.customer?.name || String(old.customer_name || '');
-    const newPhone = input.customer?.phone || String(old.customer_phone || '');
+    const newPhone = normalizeTrPhone(input.customer?.phone || String(old.customer_phone || ''));
 
     const { data: order, error } = await this.supabase.db
       .from('orders')

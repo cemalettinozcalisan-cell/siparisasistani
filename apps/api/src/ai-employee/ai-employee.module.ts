@@ -4,7 +4,6 @@ import { AiEmployeeService } from './ai-employee.service';
 import { VoiceNotificationService } from './voice-notification.service';
 import { AiEmployeeConversationService } from './ai-employee-conversation.service';
 import { AiPricingService } from './ai-pricing.service';
-import { RealtimeGateway } from './realtime.gateway';
 import { SupabaseService } from '../common/supabase.client';
 import { VoiceModule } from '../voice/voice.module';
 import { CargoTrackingModule } from '../cargo-tracking/cargo-tracking.module';
@@ -15,7 +14,7 @@ import { SaasModule } from '../saas/saas.module';
 @Module({
   imports: [VoiceModule, CargoTrackingModule, MessagesModule, CampaignsModule, SaasModule],
   controllers: [AiEmployeeController],
-  providers: [AiEmployeeService, VoiceNotificationService, AiEmployeeConversationService, SupabaseService, AiPricingService, RealtimeGateway],
-  exports: [AiEmployeeService, VoiceNotificationService, RealtimeGateway],
+  providers: [AiEmployeeService, VoiceNotificationService, AiEmployeeConversationService, SupabaseService, AiPricingService],
+  exports: [AiEmployeeService, VoiceNotificationService],
 })
 export class AiEmployeeModule {}

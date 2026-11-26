@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../../common/supabase.client';
 import { OutboundChannel, OutboundMessage, OutboundSendResult, OutboundHealth } from '../outbound-channel.interface';
+import { normalizeTrPhone } from '../../common/phone';
 
 interface MetaWhatsappCredentials {
   token: string;
@@ -52,7 +53,8 @@ export class MetaWhatsappProvider implements OutboundChannel {
     if (!creds) {
       return { success: false, error: 'META_WHATSAPP_NOT_CONFIGURED' };
     }
-    if (!message.to) return { success: false, error: 'WhatsApp hedef telefon yok' };
+    const to = normalizeTrPhone(message.to);
+    if (!to) return { success: false, error: 'WhatsApp hedef telefon yok' };
 
     let payload: Record<string, unknown>;
     if (message.templateId) {
@@ -62,7 +64,7 @@ export class MetaWhatsappProvider implements OutboundChannel {
       payload = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
-        to: message.to,
+        to,
         type: 'template',
         template: {
           name: message.templateId,
@@ -74,7 +76,7 @@ export class MetaWhatsappProvider implements OutboundChannel {
       payload = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
-        to: message.to,
+        to,
         type: 'text',
         text: { preview_url: false, body: message.body },
       };
@@ -93,7 +95,11 @@ export class MetaWhatsappProvider implements OutboundChannel {
       const json = (await response.json().catch(() => ({}))) as { messages?: { id?: string }[]; error?: { message?: string } };
       if (!response.ok) {
         this.logger.warn(`Meta WhatsApp send failed: ${json.error?.message || response.statusText}`);
-        return { success: false, provider: 'meta_whatsapp', error: json.error?.message || `HTTP ${response.status}` };
+        const rawError = json.error?.message || `HTTP ${response.status}`;
+        const friendly = /131030|allowed list/i.test(rawError)
+          ? 'WhatsApp test modunda bu numara izinli de?il. Meta panelinden al?c?y? test listesine ekleyin veya uygulamay? Live moda al?n.'
+          : rawError;
+        return { success: false, provider: 'meta_whatsapp', error: friendly };
       }
 
       return { success: true, provider: 'meta_whatsapp', providerMessageId: json.messages?.[0]?.id };

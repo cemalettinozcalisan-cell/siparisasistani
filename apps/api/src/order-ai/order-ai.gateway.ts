@@ -7,7 +7,6 @@ import { AuthService } from '../auth/auth.service';
 import { PromptEngineService } from '../ai/prompt-engine/prompt-engine.service';
 import { SupabaseService } from '../common/supabase.client';
 import { OrderAiToolsService } from './order-ai-tools.service';
-import { RealtimeGateway } from '../ai-employee/realtime.gateway';
 
 /**
  * F1: Sipariş AI — Gemini Live realtime (İZOLE).
@@ -57,7 +56,6 @@ export class OrderAiGateway implements OnApplicationBootstrap {
     private readonly promptEngine: PromptEngineService,
     private readonly supabase: SupabaseService,
     private readonly tools: OrderAiToolsService,
-    private readonly aiEmployeeRealtime: RealtimeGateway,
   ) {}
 
   onApplicationBootstrap() {
@@ -75,10 +73,6 @@ export class OrderAiGateway implements OnApplicationBootstrap {
       server.removeAllListeners('upgrade');
       server.on('upgrade', (req: any, socket: any, head: any) => {
         const pathname = String(req.url || '').split('?')[0];
-        if (pathname === '/api/ai-employee/realtime') {
-          this.aiEmployeeRealtime.handleUpgrade(req, socket, head);
-          return;
-        }
         if (pathname === '/api/order-ai/realtime') {
           this.wss!.handleUpgrade(req, socket, head, (ws) => this.wss!.emit('connection', ws, req));
           return;

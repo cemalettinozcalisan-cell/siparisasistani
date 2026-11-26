@@ -4,6 +4,7 @@ import { TimelineService } from '../timeline/timeline.service';
 import { TenantGuard } from '../auth/tenant.guard';
 import { Roles } from '../auth/roles.decorator';
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
+import { normalizeTrPhone } from '../common/phone';
 
 @UseGuards(TenantGuard)
 @Controller('orders-list')
@@ -55,7 +56,7 @@ export class OrdersListController {
         payment_method: o.payment_method || '', payment_status: o.payment_status || '',
         created_at: o.created_at,
         customer_name: (o as any).customer_name || (o.customer as Record<string, unknown>)?.name || (o as any).customer_name || '',
-        customer_phone: (o as any).customer_phone || (o.customer as Record<string, unknown>)?.phone || (o as any).customer_phone || '',
+        customer_phone: normalizeTrPhone(String((o as any).customer_phone || (o.customer as Record<string, unknown>)?.phone || '')),
         customer_city: (o as any).customer_city || (o.customer as Record<string, unknown>)?.city || '',
         customer_district: (o as any).customer_district || '',
         customer_address: (o as any).customer_address || (o.customer as Record<string, unknown>)?.address || (o as any).customer_address || '',
@@ -139,7 +140,7 @@ export class OrdersListController {
     for (const [key, value] of Object.entries(body)) {
       if (key.startsWith('customer_')) {
         const dbKey = key === 'customer_name' ? 'name' : key === 'customer_phone' ? 'phone' : key === 'customer_city' ? 'city' : key === 'customer_address' ? 'address' : key === 'customer_company' ? 'company_name' : key === 'customer_identity' ? 'identity_number' : key === 'customer_birthday' ? 'birth_date' : key.replace('customer_', '');
-        if (value !== undefined && value !== '') customerFields[dbKey] = value;
+        if (value !== undefined && value !== '') customerFields[dbKey] = key === 'customer_phone' ? normalizeTrPhone(String(value)) : value;
         if (key === 'customer_note') orderFields['customer_note'] = value;
       } else {
         orderFields[key] = value;

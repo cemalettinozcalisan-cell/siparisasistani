@@ -10,6 +10,7 @@ import { ComplaintProcessorService } from '../complaint-processor/complaint-proc
 import { EventBusService, SystemEvents } from '../event-bus/event-bus.service';
 import { AliasEngineService } from '../alias-engine/alias-engine.service';
 import { resolveTrCity, resolveTrDistrict } from '../geo/tr-geo';
+import { normalizeTrPhone } from '../common/phone';
 import { AiOrderInput, PaymentMethod } from '@siparis/types';
 
 /**
@@ -173,7 +174,7 @@ export class OrderAiToolsService {
       switch (tool) {
         case 'set_customer': {
           const name = String(args.name || args.customer_name || '').trim();
-          let phone = String(args.phone || args.customer_phone || '').replace(/[^\d]/g, '').replace(/^0/, '');
+          let phone = normalizeTrPhone(String(args.phone || args.customer_phone || ''));
           if (name) d.customer.name = name;
           // Model, prompt'taki FİRMA telefonunu müşteriye yazabiliyor → firma numarasını yok say.
           if (phone) {

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Param, Body, Query, Delete } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.client';
 import { TimelineService } from '../timeline/timeline.service';
+import { normalizeTrPhone } from '../common/phone';
 
 @Controller('customers')
 export class CustomersController {
@@ -65,6 +66,7 @@ export class CustomersController {
 
       const results = customers.map((c: Record<string, unknown>) => ({
         ...c,
+        phone: normalizeTrPhone(String(c.phone || '')),
         order_count: orderCounts[c.id as string] || 0,
         total_spent: 0,
         last_channel: channelInfo[c.id as string]?.channel || '',
@@ -172,6 +174,7 @@ export class CustomersController {
     for (const key of allowed) {
       if (body[key] !== undefined) out[key] = body[key];
     }
+    if (out.phone !== undefined) out.phone = normalizeTrPhone(String(out.phone || ''));
     if (out.note === undefined && body.notes !== undefined) out.note = body.notes;
     if (out.birth_date === undefined && body.birthday !== undefined) out.birth_date = body.birthday;
     return out;
@@ -259,9 +262,7 @@ export class CustomersController {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const name = String(row.name || row.Name || row['Ad Soyad'] || '').trim();
-      const phone = String(row.phone || row.Phone || row.Telefon || '').trim()
-        .replace(/[\s\-.()]/g, '')
-        .replace(/^0/, '');
+      const phone = normalizeTrPhone(String(row.phone || row.Phone || row.Telefon || '').trim());
 
       if (!name || !phone) {
         skipped++;

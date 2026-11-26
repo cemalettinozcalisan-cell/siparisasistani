@@ -5,7 +5,6 @@ import { Mic } from 'lucide-react';
 import { getTenantId } from '@/lib/tenant';
 import { unlockAudio, playUrlAndWait, stopPlayback } from '@/lib/voice-playback';
 import { createClapDetector } from '@/lib/clap-detect';
-import { openRealtime, createAudioPlayer, primeRealtimeAudio, type RealtimeHandle, type AudioPlayer } from '@/lib/gemini-realtime';
 
 /**
  * AI Çalışanım — konuşma istemcisi (Whisper STT + VAD).
@@ -17,12 +16,6 @@ import { openRealtime, createAudioPlayer, primeRealtimeAudio, type RealtimeHandl
  */
 
 const SLEEP_PHRASES = /(tamam teşekkürler|tamam tesekkurler|sessize geç|sessize gec|uyu|iyi günler|iyi gunler|bay bay|görüşürüz|gorusuruz|bitti|kapan)/i;
-
-const speechRecognitionCtor = (): any => {
-  if (typeof window === 'undefined') return null;
-  const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
-};
 
 const tokenSim = (a: string, b: string): number => {
   const A = new Set(a.toLowerCase().split(/\s+/).filter(Boolean));
@@ -70,7 +63,7 @@ const VAD = {
   speechRms: 0.035,
   sustainMs: 200,
   minSpeechMs: 350,
-  silenceMs: 1500,
+  silenceMs: 2000,
   maxMs: 15000,
   bargeRms: 0.06,
   bargeSustainMs: 300,
@@ -92,8 +85,6 @@ export function AiEmployeeChat() {
   const [lastPending, setLastPending] = useState(false);
   const [typed, setTyped] = useState('');
   const [unsupported, setUnsupported] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState<boolean | null>(null);
-  const [rtActive, setRtActive] = useState(false); // Gemini Live oturumu aktif
   const [pttActive, setPttActive] = useState(false); // Bas-Konuş ile açılan oturum
 
   const clapRef = useRef(createClapDetector());
@@ -112,26 +103,10 @@ export function AiEmployeeChat() {
   const busyRef = useRef(false); // aynı anda tek kayıt
   const pttAbortRef = useRef<AbortController | null>(null);
   const pttBusyRef = useRef(false);
-  const pttRecRef = useRef<any>(null);
-  const wakeRecRef = useRef<any>(null);
-  const wakeTimerRef = useRef<any>(null);
-  const wsSessionRef = useRef<any>(null);
-  const wsRestartTimerRef = useRef<any>(null);
-  const wsModeRef = useRef(false);
-  const speechSupportedRef = useRef<boolean | null>(null);
   const sessionIdRef = useRef<string>(`s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
-  const rtHandleRef = useRef<RealtimeHandle | null>(null);
-  const rtPlayerRef = useRef<AudioPlayer | null>(null);
-  const rtActiveRef = useRef(false);
-  const rtLastActivityRef = useRef(0);
-  const rtWatchRef = useRef<any>(null);
-  const rtReconnectRef = useRef(0); // oturum başına otomatik reconnect sayısı (döngü koruması)
 
   useEffect(() => {
     aliveRef.current = true;
-    const sr = !!speechRecognitionCtor();
-    speechSupportedRef.current = sr;
-    setSpeechSupported(sr);
     if (typeof window !== 'undefined' && (typeof navigator.mediaDevices === 'undefined' || typeof navigator.mediaDevices.getUserMedia !== 'function' || typeof window.MediaRecorder === 'undefined')) setUnsupported(true);
     if (!tid) return;
     fetch(`/api/ai-employee/${tid}`)
@@ -156,8 +131,8 @@ export function AiEmployeeChat() {
       const d = (e as CustomEvent)?.detail;
       if (d && typeof d.enabled === 'boolean') {
         setCfg((p) => (p ? { ...p, enabled: d.enabled } : p));
-        if (!d.enabled) { stopRealtime(); endSession(); }
-        else { try { unlockAudio(); primeRealtimeAudio(); } catch {} } // jest içinde context'leri ısıt
+        if (!d.enabled) endSession();
+        else { try { unlockAudio(); unlockAudio(); } catch {} } // jest içinde context'leri ısıt
       }
     };
     window.addEventListener('ai-employee-config', onConfig);
@@ -172,19 +147,10 @@ export function AiEmployeeChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg?.enabled, cfg?.wake_enabled, sleeping]);
 
-  const stopWebSession = () => {
-    if (wsRestartTimerRef.current) { clearTimeout(wsRestartTimerRef.current); wsRestartTimerRef.current = null; }
-    const r = wsSessionRef.current;
-    wsSessionRef.current = null;
-    if (r) { try { r.abort(); } catch { try { r.stop(); } catch {} } }
-  };
-
   const stopAll = () => {
     if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
     stopClap();
-    stopWebSession();
     stopMicStream();
-    stopRealtime();
     sessionOpenRef.current = false;
   };
 
@@ -348,81 +314,13 @@ export function AiEmployeeChat() {
 
   // ---- Wake word (alkış → isim) ----
 
-  const stopWakeRec = () => {
-    if (wakeTimerRef.current) { clearTimeout(wakeTimerRef.current); wakeTimerRef.current = null; }
-    const r = wakeRecRef.current;
-    wakeRecRef.current = null;
-    if (r) { try { r.abort(); } catch { try { r.stop(); } catch {} } }
-  };
-
-  const handleWakeText = (text: string) => {
-    setWakeDiag(`Tanındı: "${text}"`);
-    const name = (cfgRef.current?.name || 'Bilge').toLowerCase();
-    const wake = (cfgRef.current?.wake_word || cfgRef.current?.name || 'Bilge').toLowerCase();
-    const ww = wake.replace(/\s+/g, '');
-    const norm = text.toLowerCase().replace(/\s+/g, '');
-    if (nameMatches(norm, name, ww)) {
-      stopWakeRec();
-      startSession();
-    } else {
-      stopWakeRec();
-      stopMicStream();
-      setWaking(false); setHint('');
-      rearmWake();
-    }
-  };
-
   const onClaps = () => {
     stopClap();
     setWaking(true);
     setHint('Uyanmak için isminizi söyleyin...');
     setWakeDiag('');
-    const Ctor = speechRecognitionCtor();
-    if (Ctor && speechSupportedRef.current) {
-      stopWakeRec();
-      const rec = new Ctor();
-      rec.lang = 'tr-TR';
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      wakeRecRef.current = rec;
-      wakeTimerRef.current = setTimeout(() => {
-        stopWakeRec();
-        if (!aliveRef.current) return;
-        setWaking(false); setHint('');
-        rearmWake();
-      }, 5000);
-      rec.onresult = (e: any) => {
-        let final = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        }
-        const t = final.trim();
-        if (t) handleWakeText(t);
-      };
-      rec.onerror = () => {
-        stopWakeRec();
-        if (!aliveRef.current) return;
-        setWaking(false); setHint('');
-        rearmWake();
-      };
-      rec.onend = () => {
-        if (wakeRecRef.current !== rec) return;
-        wakeRecRef.current = null;
-        if (wakeTimerRef.current) { clearTimeout(wakeTimerRef.current); wakeTimerRef.current = null; }
-        if (aliveRef.current) {
-          setWaking(false); setHint('');
-          rearmWake();
-        }
-      };
-      try { rec.start(); } catch {
-        stopWakeRec();
-        setWaking(false); setHint('');
-        rearmWake();
-      }
-      return;
-    }
     (async () => {
+      // Önceki kayıt hâlâ sürüyorsa (yanlış tetikleme) bitmesini bekle, sonra wake kaydı yap
       if (busyRef.current) {
         for (let i = 0; i < 8 && busyRef.current && aliveRef.current; i++) await new Promise((r) => setTimeout(r, 250));
       }
@@ -453,195 +351,17 @@ export function AiEmployeeChat() {
     })();
   };
 
-  const startWebSession = () => {
-    if (!aliveRef.current || !sessionOpenRef.current) return;
-    const Ctor = speechRecognitionCtor();
-    if (!Ctor) {
-      wsModeRef.current = false;
-      beginListen();
-      return;
-    }
-    stopWebSession();
-    wsModeRef.current = true;
-    setListening(true); setMicOn(true); setSessionDiag('Web Speech dinliyor...');
-    const rec = new Ctor();
-    rec.lang = 'tr-TR';
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-    wsSessionRef.current = rec;
-    rec.onresult = (e: any) => {
-      let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      }
-      const t = final.trim();
-      if (!t) return;
-      setLastText(t);
-      setSessionDiag(`Ses: "${t}"`);
-      if (SLEEP_PHRASES.test(t) && !lastPending) { endSession(); return; }
-      void ask(t);
-    };
-    rec.onerror = (ev: any) => {
-      const err = String(ev?.error || '');
-      if (err === 'not-allowed' || err === 'service-not-allowed') {
-        setSessionDiag('Mikrofon izni reddedildi');
-      } else if (aliveRef.current && sessionOpenRef.current && !processingRef.current) {
-        wsRestartTimerRef.current = setTimeout(() => startWebSession(), 350);
-      }
-    };
-    rec.onend = () => {
-      if (wsSessionRef.current !== rec) return;
-      wsSessionRef.current = null;
-      if (aliveRef.current && sessionOpenRef.current && !processingRef.current) {
-        wsRestartTimerRef.current = setTimeout(() => startWebSession(), 350);
-      }
-    };
-    try { rec.start(); } catch { wsModeRef.current = false; beginListen(); }
-  };
-
   const startSession = () => {
     setWaking(false); setSleeping(false); setHint(''); setSessionDiag('');
     sessionOpenRef.current = true;
     bargeCountRef.current = 0;
-    rtReconnectRef.current = 0;
     stopMicStream();
-    try { unlockAudio(); primeRealtimeAudio(); } catch {}
-    if (process.env.NEXT_PUBLIC_AI_EMPLOYEE_REALTIME === 'false' && speechSupportedRef.current) {
-      startWebSession();
-      return;
-    }
-    startRealtime();
+    try { unlockAudio(); } catch {}
+    beginListen();
   };
 
-  // Gemini Live oturumu — bağlanamazsa B'ye (Whisper+VAD) düşer
-  const startRealtime = () => {
-    if (process.env.NEXT_PUBLIC_AI_EMPLOYEE_REALTIME === 'false') {
-      setSessionDiag('');
-      if (speechSupportedRef.current) startWebSession();
-      else beginListen();
-      return;
-    }
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token || !tid) { beginListen(); return; }
-    // Bağlanana kadar UI boş kalmasın — gösterge hemen açık
-    setListening(true); setMicOn(true); setSessionDiag('Bağlanıyor...');
-    const player = createAudioPlayer();
-    rtPlayerRef.current = player;
-    let setupDone = false;
-    const fallbackTimer = setTimeout(() => {
-      if (!setupDone && aliveRef.current && sessionOpenRef.current) {
-        rtHandleRef.current?.close();
-        rtHandleRef.current = null;
-        rtPlayerRef.current?.close();
-        rtPlayerRef.current = null;
-        if (aliveRef.current && sessionOpenRef.current && !processingRef.current) beginListen();
-      }
-    }, 9000);
-    const handle = openRealtime(tid, token, {
-      onSetup: () => {
-        setupDone = true;
-        clearTimeout(fallbackTimer);
-        rtActiveRef.current = true;
-        rtLastActivityRef.current = Date.now();
-        setRtActive(true);
-        setListening(true); setMicOn(true);
-        setSessionDiag('Hazırlanıyor...');
-        setTimeout(() => { if (aliveRef.current) setSessionDiag('Realtime bağlandı'); }, 900);
-      },
-      onAudio: (b64) => { rtLastActivityRef.current = Date.now(); rtPlayerRef.current?.push(b64); },
-      onUserText: (text) => {
-        const t = (text || '').trim();
-        rtLastActivityRef.current = Date.now();
-        if (!t) return;
-        setLastText(t);
-        setSessionDiag(`Sen: ${t}`);
-        rtPlayerRef.current?.stop(); // kullanıcı konuştu → AI sesini kes (barge-in)
-        if (SLEEP_PHRASES.test(t)) { stopRealtime(); endSession(); }
-      },
-      onText: (text) => { rtLastActivityRef.current = Date.now(); if (text) setSessionDiag(`Bilge: ${text}`); },
-      onInterrupted: () => { rtPlayerRef.current?.stop(); }, // Gemini kesme sinyali → anında boşalt
-      onSleep: () => { stopRealtime(); endSession(); }, // model "sessize geç" → oturumu kapat
-      onError: (msg) => {
-        if (!setupDone) {
-          clearTimeout(fallbackTimer);
-          rtHandleRef.current?.close();
-          rtHandleRef.current = null;
-          rtPlayerRef.current?.close();
-          rtPlayerRef.current = null;
-          setRtActive(false);
-          setSessionDiag('');
-          if (aliveRef.current && sessionOpenRef.current && !processingRef.current) beginListen();
-        } else {
-          setSessionDiag(`Hata: ${msg}`);
-        }
-      },
-      onClose: () => {
-        clearTimeout(fallbackTimer);
-        if (!setupDone) {
-          rtHandleRef.current?.close();
-          rtHandleRef.current = null;
-          rtPlayerRef.current?.close();
-          rtPlayerRef.current = null;
-          setRtActive(false);
-          setSessionDiag('');
-          if (aliveRef.current && sessionOpenRef.current && !processingRef.current) beginListen();
-          return;
-        }
-        if (rtActiveRef.current) {
-          rtActiveRef.current = false;
-          setRtActive(false);
-          rtPlayerRef.current?.close();
-          rtPlayerRef.current = null;
-          // Ani kapanış (1006 vb.) → tek seferlik otomatik yeniden bağlanma; olmazsa Whisper'a düş
-          if (aliveRef.current && sessionOpenRef.current && !processingRef.current) {
-            if (rtReconnectRef.current < 1) {
-              rtReconnectRef.current++;
-              setSessionDiag('Bağlantı koptu, yeniden bağlanıyor...');
-              setTimeout(() => { if (aliveRef.current && sessionOpenRef.current) startRealtime(); }, 600);
-            } else {
-              beginListen();
-            }
-          }
-        }
-      },
-    });
-    rtHandleRef.current = handle;
-
-    // Dead-session watchdog: aktifken model 45sn çıktı üretmezse BİR KEZ yeniden bağla (döngü koruması)
-    if (rtWatchRef.current) clearInterval(rtWatchRef.current);
-    rtWatchRef.current = setInterval(() => {
-      if (!rtActiveRef.current || !aliveRef.current || !sessionOpenRef.current) return;
-      if (Date.now() - rtLastActivityRef.current > 45000 && rtReconnectRef.current < 1) {
-        rtReconnectRef.current++;
-        setSessionDiag('Yeniden bağlanıyor...');
-        const old = rtHandleRef.current;
-        rtHandleRef.current = null;
-        old?.close();
-        rtPlayerRef.current?.close();
-        rtPlayerRef.current = null;
-        if (rtActiveRef.current) {
-          rtActiveRef.current = false;
-          startRealtime();
-        }
-      }
-    }, 5000);
-  };
-
-  const stopRealtime = () => {
-    if (rtWatchRef.current) { clearInterval(rtWatchRef.current); rtWatchRef.current = null; }
-    rtActiveRef.current = false;
-    setRtActive(false);
-    rtHandleRef.current?.close();
-    rtHandleRef.current = null;
-    rtPlayerRef.current?.close();
-    rtPlayerRef.current = null;
-  };
-
-  // Sürekli dinleme: konuşmayı kaydet → Whisper → işle → döngü
   const beginListen = () => {
     if (!aliveRef.current || !sessionOpenRef.current || processingRef.current || busyRef.current) return;
-    wsModeRef.current = false;
     setListening(true); setMicOn(true);
     (async () => {
       const { blob, speech } = await recordUtterance();
@@ -673,9 +393,6 @@ export function AiEmployeeChat() {
   const endSession = () => {
     sessionOpenRef.current = false;
     if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
-    stopWebSession();
-    wsModeRef.current = false;
-    stopRealtime();
     stopMicStream(); // realtime/B mik akışını bırak → clap yeniden mik alabilsin (yeniden uyandırma)
     setListening(false); setSleeping(true); setMicOn(false); setHint('');
     setLastReply(''); setLastPending(false); setSessionDiag(''); setPttActive(false);
@@ -684,7 +401,6 @@ export function AiEmployeeChat() {
   const ask = async (text: string, opts: { resume?: boolean } = {}) => {
     processingRef.current = true;
     setProcessing(true);
-    if (wsModeRef.current) stopWebSession();
     try {
       unlockAudio();
       let rateLimited = false;
@@ -718,10 +434,7 @@ export function AiEmployeeChat() {
     finally {
       processingRef.current = false;
       setProcessing(false);
-      if (opts.resume !== false && aliveRef.current && sessionOpenRef.current) {
-        if (wsModeRef.current) startWebSession();
-        else restartTimerRef.current = setTimeout(beginListen, 300);
-      }
+      if (opts.resume !== false && aliveRef.current && sessionOpenRef.current) restartTimerRef.current = setTimeout(beginListen, 300);
     }
   };
 
@@ -820,61 +533,17 @@ export function AiEmployeeChat() {
     unlockAudio();
     if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
     stopClap();
-    stopRealtime();
     stopMicStream();
     sessionOpenRef.current = false;
     setSleeping(false); setListening(true); setMicOn(true); setPttActive(true);
     setHint(''); setSessionDiag('Dinliyorum...');
     pttBusyRef.current = true;
-    const closePttUi = () => {
-      stopRealtime();
-      stopMicStream();
-      sessionOpenRef.current = false;
-      setListening(false); setMicOn(false); setSleeping(true); setPttActive(false);
-    };
-    const Ctor = speechRecognitionCtor();
-    if (Ctor && speechSupportedRef.current) {
-      const rec = new Ctor();
-      rec.lang = 'tr-TR';
-      rec.continuous = false;
-      rec.interimResults = false;
-      rec.maxAlternatives = 1;
-      pttRecRef.current = rec;
-      let settled = false;
-      const finish = (text?: string) => {
-        if (settled) return;
-        settled = true;
-        pttBusyRef.current = false;
-        pttRecRef.current = null;
-        try { rec.abort(); } catch { try { rec.stop(); } catch {} }
-        const t = String(text || '').trim();
-        if (!t) {
-          setSessionDiag('Ses anlaşılamadı');
-          closePttUi();
-          return;
-        }
-        setLastText(t);
-        setSessionDiag(`Ses: "${t}"`);
-        void ask(t, { resume: false }).finally(closePttUi);
-      };
-      rec.onresult = (e: any) => {
-        let final = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        }
-        if (final.trim()) finish(final);
-      };
-      rec.onerror = () => finish();
-      rec.onend = () => { if (!settled) finish(); };
-      try { rec.start(); } catch { finish(); }
-      return;
-    }
     const ctrl = new AbortController();
     pttAbortRef.current = ctrl;
     try {
       await getMicStream();
       const { blob, speech } = await recordUtterance({
-        maxMs: 60000, silenceMs: 1500, sustainMs: 200, minSpeechMs: 300, stopSignal: ctrl.signal,
+        maxMs: 60000, silenceMs: 2000, sustainMs: 200, minSpeechMs: 300, stopSignal: ctrl.signal,
       });
       if (!aliveRef.current) return;
       if (!blob || !speech) {
@@ -897,7 +566,6 @@ export function AiEmployeeChat() {
       pttBusyRef.current = false;
       pttAbortRef.current = null;
       if (aliveRef.current) {
-        stopRealtime();
         stopMicStream();
         sessionOpenRef.current = false;
         setListening(false); setMicOn(false); setSleeping(true); setPttActive(false);
@@ -906,7 +574,6 @@ export function AiEmployeeChat() {
   };
 
   const pttUp = () => {
-    if (pttRecRef.current) { try { pttRecRef.current.stop(); } catch {} }
     pttAbortRef.current?.abort();
   };
 
@@ -915,11 +582,7 @@ export function AiEmployeeChat() {
     if (!t || processing) return;
     setTyped('');
     setLastText(t);
-    if (rtActiveRef.current) {
-      rtHandleRef.current?.sendText(t);
-    } else {
-      ask(t);
-    }
+    ask(t);
   };
 
   const showMic = micOn || waking || listening || processing || (!!cfg?.enabled && !!cfg?.wake_enabled && sleeping);
@@ -933,11 +596,6 @@ export function AiEmployeeChat() {
         </div>
       ) : (
         <>
-          {speechSupported === false && (
-            <div className="fixed bottom-6 right-6 z-40 max-w-xs rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800 shadow-lg dark:border-amber-800 dark:bg-amber-950/80 dark:text-amber-200">
-              Sesli komutlar için Chrome veya Edge kullanın. Şu an sınırlı moddasınız.
-            </div>
-          )}
           {showPtt && (
             <button
               aria-label="Basılı tut ve konuş"
